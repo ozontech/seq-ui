@@ -1,0 +1,333 @@
+syntax = "proto3";
+
+option go_package = "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1;seqproxyapi";
+
+package seqproxyapi.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+// seq-db public api. Exposes APIs related to document querying.
+service SeqProxyApi {
+  // Fetch documents for given SearchQuery.
+  rpc Search(SearchRequest) returns (SearchResponse) {}
+
+  // Fetch documents, aggregations and histograms for given queries correspondingly.
+  rpc ComplexSearch(ComplexSearchRequest) returns (ComplexSearchResponse) {}
+
+  // Fetch aggregations for given SearchQuery and AggQueries.
+  rpc GetAggregation(GetAggregationRequest) returns (GetAggregationResponse) {}
+
+  // Fetch histogram for given SearchQuery and HistQuery.
+  rpc GetHistogram(GetHistogramRequest) returns (GetHistogramResponse) {}
+
+  // Fetch documents by the corresponding seq-ids.
+  rpc Fetch(FetchRequest) returns (stream Document) {}
+
+  // Fetch current seq-db mapping.
+  rpc Mapping(MappingRequest) returns (MappingResponse) {}
+
+  // Fetch seq-db store's availability information.
+  rpc Status(StatusRequest) returns (StatusResponse) {}
+
+  // Stream documents for given SearchQuery. Same as Search, but returns streaming response.
+  rpc Export(ExportRequest) returns (stream ExportResponse) {}
+
+  // Starts a new asynchronous search operation.
+  // The server processes the request in the background and returns a search ID.
+  rpc StartAsyncSearch(StartAsyncSearchRequest) returns (StartAsyncSearchResponse) {}
+
+  // Fetches the result or current status of a previously started async search.
+  // Clients should use the search ID returned by StartAsyncSearch.
+  rpc FetchAsyncSearchResult(FetchAsyncSearchResultRequest) returns (FetchAsyncSearchResultResponse) {}
+
+  // Cancels an ongoing asynchronous search operation if it hasn't completed yet.
+  rpc CancelAsyncSearch(CancelAsyncSearchRequest) returns (CancelAsyncSearchResponse) {}
+
+  // Frees up resources if the result is no longer needed.
+  rpc DeleteAsyncSearch(DeleteAsyncSearchRequest) returns (DeleteAsyncSearchResponse) {}
+
+  // Fetch list of async searches.
+  rpc GetAsyncSearchesList(GetAsyncSearchesListRequest) returns (GetAsyncSearchesListResponse) {}
+}
+
+// Custom error code, returned by seq-db proxy.
+enum ErrorCode {
+  ERROR_CODE_UNSPECIFIED = 0;            // Unknown/undefined code.
+  ERROR_CODE_NO = 1;                     // No error code. Returned when there were no problems during the request handling.
+  ERROR_CODE_PARTIAL_RESPONSE = 2;       // Partial response code. Returned when some of the seq-stores returned an error.
+  ERROR_CODE_TOO_MANY_FRACTIONS_HIT = 3; // Too many fractions hit code. Returned when too many fractions were hit during search exceeded limit.
+}
+
+// Additional details provided if an error during request handling occurred.
+message Error {
+  ErrorCode code = 1; // Response error code.
+  string message = 2; // Additional message.
+}
+
+// Document returned by seq-db.
+message Document {
+  string id = 1;                      // seq-id of the document.
+  bytes data = 2;                     // content of the document in utf-8 format.
+  google.protobuf.Timestamp time = 3; // timestamp from the document.
+}
+
+// Aggregation response.
+message Aggregation {
+  // Key-value pair containing result of single aggregation.
+  message Bucket {
+    reserved 1;
+    string key = 2;                            // Field name.
+    double value = 3;                          // Calculated aggregation value.
+    int64 not_exists = 4;                      // Number of documents without presence of that field.
+    repeated double quantiles = 5;             // Value of quantiles for given request. Returned when quantiles aggregation func used.
+    optional google.protobuf.Timestamp ts = 6; // Will be used to determine bin of time series.
+  }
+
+  repeated Bucket buckets = 1; // List of aggregations for given request.
+  int64 not_exists = 2;        // Number of documents in which such field does not exist
+}
+
+// Histogram response.
+message Histogram {
+  // Key-value pair with time as a key and number of documents in this bucket as a value.
+  message Bucket {
+    uint64 doc_count = 1;             // Number of documents in bucket.
+    google.protobuf.Timestamp ts = 2; // Left border of the bucket.
+  }
+
+  repeated Bucket buckets = 1; // Buckets for given histogram request.
+}
+
+// General search query for requesting documents.
+message SearchQuery {
+  string query = 1;                   // Search query.
+  google.protobuf.Timestamp from = 2; // Lower bound for search (inclusive).
+  google.protobuf.Timestamp to = 3;   // Upper bound for search (inclusive).
+  bool explain = 4;                   // Should request be explained (tracing will be provided with the result).
+}
+
+// Aggregation function used in request.
+enum AggFunc {
+  AGG_FUNC_COUNT = 0;    // Returns how many times `field` was equal to particular value.
+  AGG_FUNC_SUM = 1;      // Performs an addition operation on `field`, among documents with same `group_by` field.
+  AGG_FUNC_MIN = 2;      // Finds minimum value for `field`, among documents with same `group_by` field.
+  AGG_FUNC_MAX = 3;      // Finds maximum value for `field`, among documents with same `group_by` field.
+  AGG_FUNC_AVG = 4;      // Finds average value for `field`, among documents with same `group_by` field.
+  AGG_FUNC_QUANTILE = 5; // Finds quantiles for `field`, among documents with same `group_by` field.
+  AGG_FUNC_UNIQUE = 6;   // Finds unique values for `group_by` field.
+}
+
+// Order of document sorting.
+enum Order {
+  ORDER_DESC = 0; // Type for descending order.
+  ORDER_ASC = 1;  // Type for ascending order.
+}
+
+// Aggregation query. Generally uses `field` and `group_by`, for details, refer to AggFunc definition.
+message AggQuery {
+  string field = 1;              // Field over which aggregation function is used on.
+  reserved 2;                    //
+  string group_by = 3;           // Field over which to create group for further aggregation.
+  AggFunc func = 4;              // Function to apply on aggregated field.
+  repeated double quantiles = 5; // Field used only for `AGG_FUNC_QUANTILE`. Represents list of quantiles to calculate.
+  optional string interval = 6;  // Field used only for time series.
+}
+
+// Histogram query
+message HistQuery {
+  string interval = 1; // Interval in promql duration format like `1m`, `5s`. More details: https://prometheus.io/docs/prometheus/latest/querying/basics/#float-literals-and-time-durations
+}
+
+message SearchRequest {
+  SearchQuery query = 1; // Search query.
+  int64 size = 2;        // Maximum number of documents to return.
+  int64 offset = 3;      // Search offset.
+  bool with_total = 4;   // Should total number of documents be returned in response.
+  Order order = 5;       // Document order ORDER_DESC/ORDER_ASC.
+}
+
+message ComplexSearchRequest {
+  SearchQuery query = 1;        // Search query.
+  repeated AggQuery aggs = 2;   // List of aggregation queries.
+  optional HistQuery hist = 3;  // Histogram query.
+  int64 size = 4;               // Maximum number of documents to return.
+  int64 offset = 5;             // Search offset.
+  bool with_total = 6;          // Should total number of documents be returned in response.
+  Order order = 7;              // Document order ORDER_DESC/ORDER_ASC.
+}
+
+message SearchResponse {
+  bool partial_response = 1 [deprecated = true]; // True if some stores returned an error. Deprecated, use `Error` instead.
+  int64 total = 2;                               // Total number of documents satisfying request. Returned if `with_total` field in request is `true`.
+  repeated Document docs = 3;                    // Documents, satisfying the request.
+  Error error = 4;                               // Error if happened.
+}
+
+message ComplexSearchResponse {
+  bool partial_response = 1 [deprecated = true]; // True if some stores returned an error. Deprecated, use `Error` instead.
+  int64 total = 2;                               // Total number of documents satisfying request. Returned if `with_total` field in request is `true`.
+  repeated Document docs = 3;                    // Documents, satisfying the request.
+  repeated Aggregation aggs = 4;                 // Aggregation results.
+  optional Histogram hist = 5;                   // Histogram results.
+  Error error = 6;                               // Error if happened.
+}
+
+message StartAsyncSearchRequest {
+  // Duration to retain the result of an asynchronous query.
+  // After this period, the result will be deleted.
+  google.protobuf.Duration retention = 1;
+  // Search query to execute.
+  SearchQuery query = 2;
+  // List of aggregation queries.
+  repeated AggQuery aggs = 3;
+  // Optional histogram query.
+  optional HistQuery hist = 4;
+  // Set this to true to enable document retrieval via FetchAsyncSearch.
+  // Note: enabling this may significantly increase disk space usage.
+  bool with_docs = 5;
+}
+
+message StartAsyncSearchResponse {
+  // Unique ID used to retrieve search results with FetchAsyncSearchResult.
+  string search_id = 1;
+}
+
+message FetchAsyncSearchResultRequest {
+  string search_id = 1;
+  // Maximum number of documents to fetch (pagination).
+  // Ignored if with_docs was set to false, since documents are not stored in that case.
+  int32 size = 2;
+  // Document offset (pagination).
+  // Ignored if with_docs was set to false, since documents are not stored in that case.
+  int32 offset = 3;
+  // Documents sort order.
+  Order order = 4;
+}
+
+enum AsyncSearchStatus {
+  // The asynchronous search is still in progress.
+  // See the 'progress' field for completion percentage.
+  AsyncSearchStatusInProgress = 0;
+  // The asynchronous search completed successfully.
+  AsyncSearchStatusDone = 1;
+  // The asynchronous search was canceled, possibly via the CancelAsyncSearch handler.
+  AsyncSearchStatusCanceled = 2;
+  // The asynchronous search encountered errors in some shards.
+  // See ComplexSearchResponse.Error for details.
+  AsyncSearchStatusError = 3;
+}
+
+message FetchAsyncSearchResultResponse {
+  AsyncSearchStatus status = 1;
+  StartAsyncSearchRequest request = 2;
+  ComplexSearchResponse response = 3;
+  google.protobuf.Timestamp started_at = 4;
+  google.protobuf.Timestamp expires_at = 5;
+  optional google.protobuf.Timestamp canceled_at = 6;
+  // Search progress in range [0, 1].
+  double progress = 7;
+  // The size of data stored on disk, in bytes.
+  uint64 disk_usage = 8;
+}
+
+message CancelAsyncSearchRequest{
+  string search_id = 1;
+}
+
+message CancelAsyncSearchResponse{}
+
+message DeleteAsyncSearchRequest {
+  string search_id = 1;
+}
+
+message DeleteAsyncSearchResponse {}
+
+message GetAsyncSearchesListRequest {
+  optional AsyncSearchStatus status = 1;
+  // Maximum number of searches to fetch (pagination).
+  int32 size = 2;
+  // Searches offset (pagination).
+  int32 offset = 3;
+  // list of async search ids to filter out result
+  repeated string ids = 4; 
+}
+
+message GetAsyncSearchesListResponse {
+  repeated AsyncSearchesListItem searches = 1;
+}
+
+message AsyncSearchesListItem {
+  string search_id = 1;
+  AsyncSearchStatus status = 2;
+  StartAsyncSearchRequest request = 3;
+  google.protobuf.Timestamp started_at = 4;
+  google.protobuf.Timestamp expires_at = 5;
+  optional google.protobuf.Timestamp canceled_at = 6;
+  // Search progress in range [0, 1].
+  double progress = 7;
+  // The size of data stored on disk, in bytes.
+  uint64 disk_usage = 8;
+}
+
+message GetAggregationRequest {
+  SearchQuery query = 1;      // Search query.
+  repeated AggQuery aggs = 2; // List of aggregation queries.
+}
+
+message GetAggregationResponse {
+  bool partial_response = 1 [deprecated = true]; // True if some stores returned an error. Deprecated, use `Error` instead.
+  int64 total = 2;                               // Total number of documents satisfying request. Returned if `with_total` field in request is `true`.
+  repeated Aggregation aggs = 3;                 // Aggregation results.
+  Error error = 4;                               // Error if happened.
+}
+
+message GetHistogramRequest {
+  SearchQuery query = 1; // Search query.
+  HistQuery hist = 2;    // Histogram query.
+}
+
+message GetHistogramResponse {
+  bool partial_response = 1 [deprecated = true]; // True if some stores returned an error. Deprecated, use `Error` instead.
+  int64 total = 2;                               // Total number of documents satisfying request. Returned if `with_total` field in request is `true`.
+  Histogram hist = 3;                            // Histogram results.
+  Error error = 4;                               // Error if happened.
+}
+
+message FetchRequest {
+  repeated string ids = 1; // Document ids to fetch.
+}
+
+message MappingRequest {}
+
+message MappingResponse {
+  bytes data = 1; // utf-8 encoded mapping info.
+}
+
+message StatusRequest {}
+
+message StatusResponse {
+  int32 number_of_stores = 1;                                 // Total number of stores.
+  optional google.protobuf.Timestamp oldest_storage_time = 2; // Timestamp of the oldest stored document across all stores.
+  repeated StoreStatus stores = 4;                            // Detailed information about each store.
+}
+
+message StoreStatus {
+  string host = 1;                       // Store's IP-address.
+  optional StoreStatusValues values = 2; // Store's status information.
+  optional string error = 3;             // Error during the request.
+}
+
+message StoreStatusValues {
+  google.protobuf.Timestamp oldest_time = 1; // Timestamp of the oldest stored document.
+}
+
+message ExportRequest {
+  SearchQuery query = 1; // Search query.
+  int64 size = 2;        // Maximum number of documents to return.
+  int64 offset = 3;      // Search offset.
+}
+
+message ExportResponse {
+  Document doc = 1; // Response document.
+}

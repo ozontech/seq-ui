@@ -1,0 +1,2775 @@
+{
+    "consumes": [
+        "application/json"
+    ],
+    "produces": [
+        "application/json"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "title": "SeqUI Server",
+        "contact": {},
+        "version": "1.0"
+    },
+    "paths": {
+        "/dashboards/v1/": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "dashboards_v1"
+                ],
+                "operationId": "dashboards_v1_create",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dashboards.v1.CreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/dashboards.v1.CreateResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/dashboards/v1/all": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "dashboards_v1"
+                ],
+                "operationId": "dashboards_v1_getAll",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dashboards.v1.GetAllRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/dashboards.v1.GetAllResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/dashboards/v1/my": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "dashboards_v1"
+                ],
+                "operationId": "dashboards_v1_getMy",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dashboards.v1.GetMyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/dashboards.v1.GetMyResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/dashboards/v1/search": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "dashboards_v1"
+                ],
+                "operationId": "dashboards_v1_search",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dashboards.v1.SearchRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/dashboards.v1.SearchResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/dashboards/v1/{uuid}": {
+            "get": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "dashboards_v1"
+                ],
+                "operationId": "dashboards_v1_getByUUID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Dashboard UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/dashboards.v1.Dashboard"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "dashboards_v1"
+                ],
+                "operationId": "dashboards_v1_delete",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Dashboard UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response"
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "dashboards_v1"
+                ],
+                "operationId": "dashboards_v1_update",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Dashboard UUID",
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dashboards.v1.UpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response"
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/errorgroups/v1/details": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "errorgroups_v1"
+                ],
+                "operationId": "errorgroups_v1_get_details",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/errorgroups.v1.GetDetailsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/errorgroups.v1.GetDetailsResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/errorgroups/v1/groups": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "errorgroups_v1"
+                ],
+                "operationId": "errorgroups_v1_get_groups",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/errorgroups.v1.GetGroupsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/errorgroups.v1.GetGroupsResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/errorgroups/v1/hist": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "errorgroups_v1"
+                ],
+                "operationId": "errorgroups_v1_get_hist",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/errorgroups.v1.GetHistRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/errorgroups.v1.GetHistResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/errorgroups/v1/releases": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "errorgroups_v1"
+                ],
+                "operationId": "errorgroups_v1_get_releases",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/errorgroups.v1.GetReleasesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/errorgroups.v1.GetReleasesResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/errorgroups/v1/services": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "errorgroups_v1"
+                ],
+                "operationId": "errorgroups_v1_get_services",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/errorgroups.v1.GetServicesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/errorgroups.v1.GetServicesResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/massexport/v1/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "massexport_v1"
+                ],
+                "operationId": "massexport_v1_cancel",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/massexport.v1.CancelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response"
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/massexport/v1/check": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "massexport_v1"
+                ],
+                "operationId": "massexport_v1_check",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/massexport.v1.CheckRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/massexport.v1.CheckResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/massexport/v1/jobs": {
+            "get": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "massexport_v1"
+                ],
+                "operationId": "massexport_v1_jobs",
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/massexport.v1.GetAllResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/massexport/v1/restore": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "massexport_v1"
+                ],
+                "operationId": "massexport_v1_restore",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/massexport.v1.RestoreRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response"
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/massexport/v1/start": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "massexport_v1"
+                ],
+                "operationId": "massexport_v1_start",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/massexport.v1.StartRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/massexport.v1.StartResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/seqapi/v1/aggregation": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "seqapi_v1"
+                ],
+                "operationId": "seqapi_v1_getAggregation",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.GetAggregationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.GetAggregationResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/seqapi/v1/aggregation_ts": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "seqapi_v1"
+                ],
+                "operationId": "seqapi_v1_getAggregationTs",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.GetAggregationTsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.GetAggregationTsResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/seqapi/v1/async_search/fetch": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "seqapi_v1"
+                ],
+                "operationId": "seqapi_v1_fetch_async_search_result",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.FetchAsyncSearchResultRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.FetchAsyncSearchResultResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/seqapi/v1/async_search/list": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "seqapi_v1"
+                ],
+                "operationId": "seqapi_v1_get_async_searches_list",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.GetAsyncSearchesListRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.GetAsyncSearchesListResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/seqapi/v1/async_search/start": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "seqapi_v1"
+                ],
+                "operationId": "seqapi_v1_start_async_search",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.StartAsyncSearchRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.StartAsyncSearchResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/seqapi/v1/async_search/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "seqapi_v1"
+                ],
+                "operationId": "seqapi_v1_delete_async_search",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "search id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response"
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/seqapi/v1/async_search/{id}/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "seqapi_v1"
+                ],
+                "operationId": "seqapi_v1_cancel_async_search",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "search id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response"
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/seqapi/v1/events/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "seqapi_v1"
+                ],
+                "operationId": "seqapi_v1_getEvent",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Event ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.GetEventResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/seqapi/v1/export": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "seqapi_v1"
+                ],
+                "operationId": "seqapi_v1_export",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.ExportRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful streaming responses",
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.ExportResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/seqapi/v1/fields": {
+            "get": {
+                "tags": [
+                    "seqapi_v1"
+                ],
+                "operationId": "seqapi_v1_getFields",
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.GetFieldsResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/seqapi/v1/fields/pinned": {
+            "get": {
+                "tags": [
+                    "seqapi_v1"
+                ],
+                "operationId": "seqapi_v1_getPinnedFields",
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.GetFieldsResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/seqapi/v1/histogram": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "seqapi_v1"
+                ],
+                "operationId": "seqapi_v1_getHistogram",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.GetHistogramRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.GetHistogramResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/seqapi/v1/limits": {
+            "get": {
+                "tags": [
+                    "seqapi_v1"
+                ],
+                "operationId": "seqapi_v1_getLimits",
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.GetLimitsResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/seqapi/v1/logs_lifespan": {
+            "get": {
+                "tags": [
+                    "seqapi_v1"
+                ],
+                "operationId": "seqapi_v1_get_logs_lifespan",
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.GetLogsLifespanResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/seqapi/v1/search": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "seqapi_v1"
+                ],
+                "operationId": "seqapi_v1_search",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.SearchRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.SearchResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/seqapi/v1/status": {
+            "get": {
+                "tags": [
+                    "seqapi_v1"
+                ],
+                "operationId": "seqapi_v1_status",
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.StatusResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/userprofile/v1/profile": {
+            "get": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "userprofile_v1"
+                ],
+                "operationId": "userprofile_v1_getUserProfile",
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/userprofile.v1.UserProfile"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "userprofile_v1"
+                ],
+                "operationId": "userprofile_v1_updateUserProfile",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/userprofile.v1.UpdateUserProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response"
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/userprofile/v1/queries/favorite": {
+            "get": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "userprofile_v1"
+                ],
+                "operationId": "userprofile_v1_getFavoriteQueries",
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/userprofile.v1.GetFavoriteQueriesResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "userprofile_v1"
+                ],
+                "operationId": "userprofile_v1_createFavoriteQuery",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/userprofile.v1.CreateFavoriteQueryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/userprofile.v1.CreateFavoriteQueryResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/userprofile/v1/queries/favorite/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "userprofile_v1"
+                ],
+                "operationId": "userprofile_v1_deleteFavoriteQuery",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "int64",
+                        "description": "Favorite Query ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response"
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "UnexpectedError": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "dashboards.v1.CreateRequest": {
+            "type": "object",
+            "properties": {
+                "meta": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "dashboards.v1.CreateResponse": {
+            "type": "object",
+            "properties": {
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
+        "dashboards.v1.Dashboard": {
+            "type": "object",
+            "properties": {
+                "meta": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "owner_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "dashboards.v1.GetAllRequest": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dashboards.v1.GetAllResponse": {
+            "type": "object",
+            "properties": {
+                "dashboards": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dashboards.v1.InfoWithOwner"
+                    }
+                }
+            }
+        },
+        "dashboards.v1.GetMyRequest": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dashboards.v1.GetMyResponse": {
+            "type": "object",
+            "properties": {
+                "dashboards": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dashboards.v1.Info"
+                    }
+                }
+            }
+        },
+        "dashboards.v1.Info": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
+        "dashboards.v1.InfoWithOwner": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "owner_name": {
+                    "type": "string"
+                },
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
+        "dashboards.v1.SearchFilter": {
+            "type": "object",
+            "properties": {
+                "owner_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "dashboards.v1.SearchRequest": {
+            "type": "object",
+            "properties": {
+                "filter": {
+                    "$ref": "#/definitions/dashboards.v1.SearchFilter"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "query": {
+                    "type": "string"
+                }
+            }
+        },
+        "dashboards.v1.SearchResponse": {
+            "type": "object",
+            "properties": {
+                "dashboards": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dashboards.v1.InfoWithOwner"
+                    }
+                }
+            }
+        },
+        "dashboards.v1.UpdateRequest": {
+            "type": "object",
+            "properties": {
+                "meta": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "errorgroups.v1.Bucket": {
+            "type": "object",
+            "properties": {
+                "count": {
+                    "type": "integer"
+                },
+                "time": {
+                    "type": "string",
+                    "format": "date-time"
+                }
+            }
+        },
+        "errorgroups.v1.Distribution": {
+            "type": "object",
+            "properties": {
+                "percent": {
+                    "type": "integer"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "errorgroups.v1.Distributions": {
+            "type": "object",
+            "properties": {
+                "by_env": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/errorgroups.v1.Distribution"
+                    }
+                },
+                "by_release": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/errorgroups.v1.Distribution"
+                    }
+                }
+            }
+        },
+        "errorgroups.v1.Env": {
+            "type": "object",
+            "properties": {
+                "env": {
+                    "type": "string"
+                },
+                "percent": {
+                    "type": "integer"
+                }
+            }
+        },
+        "errorgroups.v1.GetDetailsRequest": {
+            "type": "object",
+            "properties": {
+                "env": {
+                    "type": "string"
+                },
+                "group_hash": {
+                    "type": "string",
+                    "format": "uint64"
+                },
+                "release": {
+                    "type": "string"
+                },
+                "service": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                }
+            }
+        },
+        "errorgroups.v1.GetDetailsResponse": {
+            "type": "object",
+            "properties": {
+                "distributions": {
+                    "$ref": "#/definitions/errorgroups.v1.Distributions"
+                },
+                "envs": {
+                    "description": "Deprecated. Use `distributions.by_envs` instead",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/errorgroups.v1.Env"
+                    }
+                },
+                "first_seen_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "group_hash": {
+                    "type": "string",
+                    "format": "uint64"
+                },
+                "last_seen_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "log_tags": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                },
+                "seen_total": {
+                    "type": "integer"
+                },
+                "source": {
+                    "type": "string"
+                }
+            }
+        },
+        "errorgroups.v1.GetGroupsRequest": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "description": "In go duration format. If not specified, then for the entire time.",
+                    "type": "string",
+                    "format": "duration",
+                    "example": "1h"
+                },
+                "env": {
+                    "type": "string"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "order": {
+                    "$ref": "#/definitions/errorgroups.v1.Order"
+                },
+                "release": {
+                    "type": "string"
+                },
+                "service": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "with_total": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "errorgroups.v1.GetGroupsResponse": {
+            "type": "object",
+            "properties": {
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/errorgroups.v1.Group"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "errorgroups.v1.GetHistRequest": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "description": "In go duration format. If not specified, `1h` is used.",
+                    "type": "string",
+                    "format": "duration",
+                    "example": "1h"
+                },
+                "env": {
+                    "type": "string"
+                },
+                "group_hash": {
+                    "type": "string",
+                    "format": "uint64"
+                },
+                "release": {
+                    "type": "string"
+                },
+                "service": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                }
+            }
+        },
+        "errorgroups.v1.GetHistResponse": {
+            "type": "object",
+            "properties": {
+                "buckets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/errorgroups.v1.Bucket"
+                    }
+                }
+            }
+        },
+        "errorgroups.v1.GetReleasesRequest": {
+            "type": "object",
+            "properties": {
+                "env": {
+                    "type": "string"
+                },
+                "service": {
+                    "type": "string"
+                }
+            }
+        },
+        "errorgroups.v1.GetReleasesResponse": {
+            "type": "object",
+            "properties": {
+                "releases": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "errorgroups.v1.GetServicesRequest": {
+            "type": "object",
+            "properties": {
+                "env": {
+                    "type": "string"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "query": {
+                    "type": "string"
+                }
+            }
+        },
+        "errorgroups.v1.GetServicesResponse": {
+            "type": "object",
+            "properties": {
+                "services": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "errorgroups.v1.Group": {
+            "type": "object",
+            "properties": {
+                "first_seen_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "hash": {
+                    "type": "string",
+                    "format": "uint64"
+                },
+                "last_seen_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "seen_total": {
+                    "type": "integer"
+                },
+                "source": {
+                    "type": "string"
+                }
+            }
+        },
+        "errorgroups.v1.Order": {
+            "type": "string",
+            "enum": [
+                "frequent",
+                "latest",
+                "oldest"
+            ],
+            "x-enum-varnames": [
+                "OrderFrequent",
+                "OrderLatest",
+                "OrderOldest"
+            ]
+        },
+        "http.AsyncSearchRequestHistogram": {
+            "type": "object",
+            "properties": {
+                "interval": {
+                    "type": "string"
+                }
+            }
+        },
+        "massexport.v1.CancelRequest": {
+            "type": "object",
+            "properties": {
+                "session_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "massexport.v1.CheckRequest": {
+            "type": "object",
+            "properties": {
+                "session_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "massexport.v1.CheckResponse": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "finished_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "links": {
+                    "type": "string"
+                },
+                "packed_size": {
+                    "type": "integer"
+                },
+                "progress": {
+                    "type": "number"
+                },
+                "started_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/massexport.v1.ExportStatus"
+                },
+                "unpacked_size": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "massexport.v1.ExportStatus": {
+            "type": "string",
+            "enum": [
+                "UNSPECIFIED",
+                "START",
+                "CANCEL",
+                "FAIL",
+                "FINISH"
+            ],
+            "x-enum-varnames": [
+                "exportStatusUnspecified",
+                "exportStatusStart",
+                "exportStatusCancel",
+                "exportStatusFail",
+                "exportStatusFinish"
+            ]
+        },
+        "massexport.v1.GetAllResponse": {
+            "type": "object",
+            "properties": {
+                "exports": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/massexport.v1.CheckResponse"
+                    }
+                }
+            }
+        },
+        "massexport.v1.RestoreRequest": {
+            "type": "object",
+            "properties": {
+                "session_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "massexport.v1.StartRequest": {
+            "type": "object",
+            "properties": {
+                "from": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "window": {
+                    "type": "string"
+                }
+            }
+        },
+        "massexport.v1.StartResponse": {
+            "type": "object",
+            "properties": {
+                "session_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "seqapi.v1.Aggregation": {
+            "type": "object",
+            "properties": {
+                "buckets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seqapi.v1.AggregationBucket"
+                    }
+                },
+                "not_exists": {
+                    "type": "integer"
+                }
+            }
+        },
+        "seqapi.v1.AggregationBucket": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "not_exists": {
+                    "type": "integer"
+                },
+                "quantiles": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "value": {
+                    "type": "number"
+                }
+            }
+        },
+        "seqapi.v1.AggregationFunc": {
+            "type": "string",
+            "enum": [
+                "count",
+                "sum",
+                "min",
+                "max",
+                "avg",
+                "quantile",
+                "unique"
+            ],
+            "x-enum-varnames": [
+                "afCount",
+                "afSum",
+                "afMin",
+                "afMax",
+                "afAvg",
+                "afQuantile",
+                "afUnique"
+            ]
+        },
+        "seqapi.v1.AggregationQuery": {
+            "type": "object",
+            "properties": {
+                "agg_func": {
+                    "default": "count",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/seqapi.v1.AggregationFunc"
+                        }
+                    ]
+                },
+                "field": {
+                    "type": "string"
+                },
+                "group_by": {
+                    "type": "string"
+                },
+                "quantiles": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                }
+            }
+        },
+        "seqapi.v1.AggregationSeries": {
+            "type": "object",
+            "properties": {
+                "metric": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "values": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seqapi.v1.AggregationTsBucket"
+                    }
+                }
+            }
+        },
+        "seqapi.v1.AggregationTs": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "object",
+                    "properties": {
+                        "result": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/seqapi.v1.AggregationSeries"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "seqapi.v1.AggregationTsBucket": {
+            "type": "object",
+            "properties": {
+                "timestamp": {
+                    "type": "integer"
+                },
+                "value": {
+                    "type": "number"
+                }
+            }
+        },
+        "seqapi.v1.AggregationTsQuery": {
+            "type": "object",
+            "properties": {
+                "agg_func": {
+                    "default": "count",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/seqapi.v1.AggregationFunc"
+                        }
+                    ]
+                },
+                "field": {
+                    "type": "string"
+                },
+                "group_by": {
+                    "type": "string"
+                },
+                "interval": {
+                    "type": "string",
+                    "format": "duration",
+                    "example": "1m"
+                },
+                "quantiles": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                }
+            }
+        },
+        "seqapi.v1.AsyncSearchStatus": {
+            "type": "string",
+            "enum": [
+                "in_progress",
+                "done",
+                "canceled",
+                "error"
+            ],
+            "x-enum-varnames": [
+                "AsyncSearchStatusInProgress",
+                "AsyncSearchStatusDone",
+                "AsyncSearchStatusCanceled",
+                "AsyncSearchStatusError"
+            ]
+        },
+        "seqapi.v1.AsyncSearchesListItem": {
+            "type": "object",
+            "properties": {
+                "canceled_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "disk_usage": {
+                    "type": "string",
+                    "format": "int64"
+                },
+                "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "owner_name": {
+                    "type": "string"
+                },
+                "progress": {
+                    "type": "number"
+                },
+                "request": {
+                    "$ref": "#/definitions/seqapi.v1.StartAsyncSearchRequest"
+                },
+                "search_id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "started_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "status": {
+                    "$ref": "#/definitions/seqapi.v1.AsyncSearchStatus"
+                }
+            }
+        },
+        "seqapi.v1.Error": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "default": "ERROR_CODE_NO",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/seqapi.v1.ErrorCode"
+                        }
+                    ]
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "seqapi.v1.ErrorCode": {
+            "type": "string",
+            "enum": [
+                "ERROR_CODE_NO",
+                "ERROR_CODE_PARTIAL_RESPONSE",
+                "ERROR_CODE_QUERY_TOO_HEAVY",
+                "ERROR_CODE_TOO_MANY_FRACTIONS_HIT"
+            ],
+            "x-enum-varnames": [
+                "aecNo",
+                "aecPartialResponse",
+                "aecQueryTooHeavy",
+                "aecTooManyFractionsHit"
+            ]
+        },
+        "seqapi.v1.Event": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "time": {
+                    "type": "string",
+                    "format": "date-time"
+                }
+            }
+        },
+        "seqapi.v1.ExportFormat": {
+            "type": "string",
+            "enum": [
+                "jsonl",
+                "csv"
+            ],
+            "x-enum-varnames": [
+                "efJSONL",
+                "efCSV"
+            ]
+        },
+        "seqapi.v1.ExportRequest": {
+            "type": "object",
+            "properties": {
+                "fields": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "format": {
+                    "default": "jsonl",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/seqapi.v1.ExportFormat"
+                        }
+                    ]
+                },
+                "from": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "limit": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "offset": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "string",
+                    "format": "date-time"
+                }
+            }
+        },
+        "seqapi.v1.ExportResponse": {
+            "description": "Export response in one of the following formats:\u003cbr\u003e - JSONL: {\"id\":\"some-id\",\"data\":{\"field1\":\"value1\",\"field2\":\"value2\"},\"time\":\"2024-12-31T10:20:30.0004Z\"}\u003cbr\u003e - CSV: value1,value2,value3",
+            "type": "object"
+        },
+        "seqapi.v1.FetchAsyncSearchResultRequest": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "offset": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "order": {
+                    "default": "desc",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/seqapi.v1.Order"
+                        }
+                    ]
+                },
+                "search_id": {
+                    "type": "string",
+                    "format": "uuid"
+                }
+            }
+        },
+        "seqapi.v1.FetchAsyncSearchResultResponse": {
+            "type": "object",
+            "properties": {
+                "canceled_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "disk_usage": {
+                    "type": "string",
+                    "format": "int64"
+                },
+                "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "progress": {
+                    "type": "number"
+                },
+                "request": {
+                    "$ref": "#/definitions/seqapi.v1.StartAsyncSearchRequest"
+                },
+                "response": {
+                    "$ref": "#/definitions/seqapi.v1.SearchResponse"
+                },
+                "started_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "status": {
+                    "$ref": "#/definitions/seqapi.v1.AsyncSearchStatus"
+                }
+            }
+        },
+        "seqapi.v1.Field": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "default": "unknown",
+                    "enum": [
+                        "unknown",
+                        "keyword",
+                        "text"
+                    ]
+                }
+            }
+        },
+        "seqapi.v1.GetAggregationRequest": {
+            "type": "object",
+            "properties": {
+                "aggField": {
+                    "type": "string"
+                },
+                "aggregations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seqapi.v1.AggregationQuery"
+                    }
+                },
+                "from": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "string",
+                    "format": "date-time"
+                }
+            }
+        },
+        "seqapi.v1.GetAggregationResponse": {
+            "type": "object",
+            "properties": {
+                "aggregation": {
+                    "$ref": "#/definitions/seqapi.v1.Aggregation"
+                },
+                "aggregations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seqapi.v1.Aggregation"
+                    }
+                },
+                "error": {
+                    "$ref": "#/definitions/seqapi.v1.Error"
+                },
+                "partialResponse": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "seqapi.v1.GetAggregationTsRequest": {
+            "type": "object",
+            "properties": {
+                "aggregations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seqapi.v1.AggregationTsQuery"
+                    }
+                },
+                "from": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "string",
+                    "format": "date-time"
+                }
+            }
+        },
+        "seqapi.v1.GetAggregationTsResponse": {
+            "type": "object",
+            "properties": {
+                "aggregations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seqapi.v1.AggregationTs"
+                    }
+                },
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "seqapi.v1.GetAsyncSearchesListRequest": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "offset": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "owner_name": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/seqapi.v1.AsyncSearchStatus"
+                }
+            }
+        },
+        "seqapi.v1.GetAsyncSearchesListResponse": {
+            "type": "object",
+            "properties": {
+                "searches": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seqapi.v1.AsyncSearchesListItem"
+                    }
+                }
+            }
+        },
+        "seqapi.v1.GetEventResponse": {
+            "type": "object",
+            "properties": {
+                "event": {
+                    "$ref": "#/definitions/seqapi.v1.Event"
+                }
+            }
+        },
+        "seqapi.v1.GetFieldsResponse": {
+            "type": "object",
+            "properties": {
+                "fields": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seqapi.v1.Field"
+                    }
+                }
+            }
+        },
+        "seqapi.v1.GetHistogramRequest": {
+            "type": "object",
+            "properties": {
+                "from": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "interval": {
+                    "type": "string"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "string",
+                    "format": "date-time"
+                }
+            }
+        },
+        "seqapi.v1.GetHistogramResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "$ref": "#/definitions/seqapi.v1.Error"
+                },
+                "histogram": {
+                    "$ref": "#/definitions/seqapi.v1.Histogram"
+                },
+                "partialResponse": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "seqapi.v1.GetLimitsResponse": {
+            "type": "object",
+            "properties": {
+                "maxAggregationsPerRequest": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "maxExportLimit": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "maxParallelExportRequests": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "maxSearchLimit": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "seqCliMaxSearchLimit": {
+                    "type": "integer",
+                    "format": "int32"
+                }
+            }
+        },
+        "seqapi.v1.GetLogsLifespanResponse": {
+            "type": "object",
+            "properties": {
+                "lifespan": {
+                    "type": "integer"
+                }
+            }
+        },
+        "seqapi.v1.Histogram": {
+            "type": "object",
+            "properties": {
+                "buckets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seqapi.v1.HistogramBucket"
+                    }
+                }
+            }
+        },
+        "seqapi.v1.HistogramBucket": {
+            "type": "object",
+            "properties": {
+                "docCount": {
+                    "type": "string",
+                    "format": "uint64"
+                },
+                "key": {
+                    "type": "string",
+                    "format": "uint64"
+                }
+            }
+        },
+        "seqapi.v1.Order": {
+            "type": "string",
+            "enum": [
+                "desc",
+                "asc"
+            ],
+            "x-enum-varnames": [
+                "oDESC",
+                "oASC"
+            ]
+        },
+        "seqapi.v1.SearchRequest": {
+            "type": "object",
+            "properties": {
+                "aggregations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seqapi.v1.AggregationQuery"
+                    }
+                },
+                "from": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "histogram": {
+                    "type": "object",
+                    "properties": {
+                        "interval": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "limit": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "offset": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "order": {
+                    "default": "desc",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/seqapi.v1.Order"
+                        }
+                    ]
+                },
+                "query": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "withTotal": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "seqapi.v1.SearchResponse": {
+            "type": "object",
+            "properties": {
+                "aggregations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seqapi.v1.Aggregation"
+                    }
+                },
+                "error": {
+                    "$ref": "#/definitions/seqapi.v1.Error"
+                },
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seqapi.v1.Event"
+                    }
+                },
+                "histogram": {
+                    "$ref": "#/definitions/seqapi.v1.Histogram"
+                },
+                "partialResponse": {
+                    "type": "boolean"
+                },
+                "total": {
+                    "type": "string",
+                    "format": "int64"
+                }
+            }
+        },
+        "seqapi.v1.StartAsyncSearchRequest": {
+            "type": "object",
+            "properties": {
+                "aggregations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seqapi.v1.AggregationQuery"
+                    }
+                },
+                "from": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "histogram": {
+                    "$ref": "#/definitions/http.AsyncSearchRequestHistogram"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "retention": {
+                    "type": "string",
+                    "format": "duration",
+                    "example": "1h"
+                },
+                "to": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "with_docs": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "seqapi.v1.StartAsyncSearchResponse": {
+            "type": "object",
+            "properties": {
+                "search_id": {
+                    "type": "string",
+                    "format": "uuid"
+                }
+            }
+        },
+        "seqapi.v1.StatusResponse": {
+            "type": "object",
+            "properties": {
+                "number_of_stores": {
+                    "type": "integer"
+                },
+                "oldest_storage_time": {
+                    "type": "string"
+                },
+                "stores": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seqapi.v1.StoreStatus"
+                    }
+                }
+            }
+        },
+        "seqapi.v1.StoreStatus": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "values": {
+                    "$ref": "#/definitions/seqapi.v1.StoreStatusValues"
+                }
+            }
+        },
+        "seqapi.v1.StoreStatusValues": {
+            "type": "object",
+            "properties": {
+                "oldest_time": {
+                    "type": "string"
+                }
+            }
+        },
+        "userprofile.v1.CreateFavoriteQueryRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "relativeFrom": {
+                    "type": "string",
+                    "format": "uint64"
+                }
+            }
+        },
+        "userprofile.v1.CreateFavoriteQueryResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "format": "int64"
+                }
+            }
+        },
+        "userprofile.v1.FavoriteQuery": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "format": "int64"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "query": {
+                    "type": "string"
+                },
+                "relativeFrom": {
+                    "type": "string",
+                    "format": "uint64"
+                }
+            }
+        },
+        "userprofile.v1.GetFavoriteQueriesResponse": {
+            "type": "object",
+            "properties": {
+                "queries": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/userprofile.v1.FavoriteQuery"
+                    }
+                }
+            }
+        },
+        "userprofile.v1.UpdateUserProfileRequest": {
+            "type": "object",
+            "properties": {
+                "log_columns": {
+                    "type": "object",
+                    "properties": {
+                        "columns": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "onboardingVersion": {
+                    "type": "string"
+                },
+                "timezone": {
+                    "type": "string"
+                }
+            }
+        },
+        "userprofile.v1.UserProfile": {
+            "type": "object",
+            "properties": {
+                "log_columns": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "onboardingVersion": {
+                    "type": "string"
+                },
+                "timezone": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "bearer": {
+            "description": "Authentication token, prefixed by Bearer: Bearer {token}",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
+}

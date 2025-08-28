@@ -1,0 +1,317 @@
+syntax = "proto3";
+
+package seqapi.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "github.com/ozontech/seq-ui/pkg/seqapi/v1;seqapi";
+
+service SeqAPIService {
+  rpc Search(SearchRequest) returns (SearchResponse) {}
+
+  rpc GetEvent(GetEventRequest) returns (GetEventResponse) {}
+
+  rpc GetHistogram(GetHistogramRequest) returns (GetHistogramResponse) {}
+
+  rpc GetAggregation(GetAggregationRequest) returns (GetAggregationResponse) {}
+
+  rpc GetFields(GetFieldsRequest) returns (GetFieldsResponse) {}
+
+  rpc GetPinnedFields(GetFieldsRequest) returns (GetFieldsResponse) {}
+
+  rpc GetLimits(GetLimitsRequest) returns (GetLimitsResponse) {}
+
+  rpc Status(StatusRequest) returns (StatusResponse) {}
+
+  rpc GetLogsLifespan(GetLogsLifespanRequest) returns (GetLogsLifespanResponse) {}
+
+  rpc StartAsyncSearch(StartAsyncSearchRequest) returns (StartAsyncSearchResponse) {}
+  
+  rpc FetchAsyncSearchResult(FetchAsyncSearchResultRequest) returns (FetchAsyncSearchResultResponse) {}
+  
+  rpc GetAsyncSearchesList(GetAsyncSearchesListRequest) returns (GetAsyncSearchesListResponse) {}
+  
+  rpc CancelAsyncSearch(CancelAsyncSearchRequest) returns (CancelAsyncSearchResponse) {}
+  
+  rpc DeleteAsyncSearch(DeleteAsyncSearchRequest) returns (DeleteAsyncSearchResponse) {}
+}
+
+enum ErrorCode {
+  ERROR_CODE_UNSPECIFIED = 0;
+  ERROR_CODE_NO = 1;
+  ERROR_CODE_PARTIAL_RESPONSE = 2;
+  ERROR_CODE_QUERY_TOO_HEAVY = 3;
+  ERROR_CODE_TOO_MANY_FRACTIONS_HIT = 4;
+}
+
+enum Order {
+  ORDER_DESC = 0;
+  ORDER_ASC = 1;
+}
+
+message Error {
+  ErrorCode code = 1;
+  string message = 2;
+}
+
+message Event {
+  google.protobuf.Timestamp time = 1;
+  string id = 2;
+  reserved 3;
+  // The values of this map is JSON.
+  // For example, the data can be:
+  // message: "ok google";
+  // errorKind: { "kind": "NotFound", "code": "404" };
+  // status: 404;
+  map<string, string> data = 4;
+}
+
+message Histogram {
+  message Bucket {
+    uint64 doc_count = 1;
+    uint64 key = 2;
+  }
+
+  repeated Bucket buckets = 1;
+}
+
+message Aggregation {
+  message Bucket {
+    reserved 1;
+    string key = 2;
+    optional double value = 3;
+    int64 not_exists = 4;
+    repeated double quantiles = 5;
+    optional google.protobuf.Timestamp ts = 6;
+  }
+
+  repeated Bucket buckets = 1;
+  int64 not_exists = 2;
+}
+
+enum AggFunc {
+  AGG_FUNC_COUNT = 0;
+  AGG_FUNC_SUM = 1;
+  AGG_FUNC_MIN = 2;
+  AGG_FUNC_MAX = 3;
+  AGG_FUNC_AVG = 4;
+  AGG_FUNC_QUANTILE = 5;
+  AGG_FUNC_UNIQUE = 6;
+}
+
+message AggregationQuery {
+  string field = 1;
+  reserved 2;
+  string group_by = 3;
+  AggFunc func = 4;
+  repeated double quantiles = 5;
+  optional string interval = 6;
+}
+
+message SearchRequest {
+  message Histogram {
+    string interval = 1;
+  }
+
+  string query = 1; // query for SeqDB in key:value format
+  google.protobuf.Timestamp from = 2;
+  google.protobuf.Timestamp to = 3;
+  int32 limit = 4;
+  int32 offset = 5;
+  optional Histogram histogram = 6;
+  bool with_total = 7;
+  repeated AggregationQuery aggregations = 8;
+  Order order = 9;
+}
+
+message SearchResponse {
+  repeated Event events = 1;
+  int64 total = 2;
+  optional Histogram histogram = 3;
+  bool partial_response = 4 [deprecated=true];
+  repeated Aggregation aggregations = 5;
+  optional Error error = 6;
+}
+
+message GetEventRequest {
+  string id = 1;
+}
+
+message GetEventResponse {
+  Event event = 1;
+}
+
+message GetHistogramRequest {
+  string query = 1;
+  string interval = 2;
+  google.protobuf.Timestamp from = 3;
+  google.protobuf.Timestamp to = 4;
+}
+
+message GetHistogramResponse {
+  Histogram histogram = 1;
+  bool partial_response = 2 [deprecated=true];
+  optional Error error = 3;
+}
+
+message GetAggregationRequest {
+  string query = 1;
+  google.protobuf.Timestamp from = 2;
+  google.protobuf.Timestamp to = 3;
+  string agg_field = 4 [deprecated=true];
+  repeated AggregationQuery aggregations = 5;
+}
+
+message GetAggregationResponse {
+  Aggregation aggregation = 1 [deprecated=true];
+  bool partial_response = 2 [deprecated=true];
+  repeated Aggregation aggregations = 3;
+  optional Error error = 4;
+}
+
+enum FieldType {
+  unknown = 0;
+  keyword = 1;
+  text = 2;
+}
+
+message Field {
+  string name = 1;
+  FieldType type = 2;
+}
+
+message GetFieldsRequest {}
+
+message GetFieldsResponse {
+  repeated Field fields = 1;
+}
+
+enum ExportFormat {
+  EXPORT_FORMAT_JSONL = 0;
+  EXPORT_FORMAT_CSV = 1;
+}
+
+message ExportRequest {
+  string query = 1; // query for SeqDB in key:value format
+  google.protobuf.Timestamp from = 2;
+  google.protobuf.Timestamp to = 3;
+  int32 limit = 4;
+  int32 offset = 5;
+  ExportFormat format = 6;
+  repeated string fields = 7;
+}
+
+message GetLimitsRequest {}
+
+message GetLimitsResponse {
+  int32 max_search_limit = 1;
+  int32 max_export_limit = 2;
+  int32 max_parallel_export_requests = 3;
+  int32 max_aggregations_per_request = 4;
+  int32 seq_cli_max_search_limit = 5;
+}
+
+message StatusRequest {}
+
+message StatusResponse {
+  int32 number_of_stores = 1;
+  optional google.protobuf.Timestamp oldest_storage_time = 2;
+  repeated StoreStatus stores = 4;
+}
+
+message StoreStatus {
+  string host = 1;
+  optional StoreStatusValues values = 2;
+  optional string error = 3;
+}
+
+message StoreStatusValues {
+  google.protobuf.Timestamp oldest_time = 1;
+}
+
+message GetLogsLifespanRequest {}
+
+message GetLogsLifespanResponse {
+  google.protobuf.Duration lifespan = 1;
+}
+
+message StartAsyncSearchRequest {
+  message HistQuery {
+    string interval = 1;
+  }
+
+  google.protobuf.Duration retention = 1;
+  string query = 2;
+  google.protobuf.Timestamp from = 3;
+  google.protobuf.Timestamp to = 4;
+  repeated AggregationQuery aggs = 5;
+  optional HistQuery hist = 6;
+  bool with_docs = 7;
+}
+
+message StartAsyncSearchResponse {
+  string search_id = 1;
+}
+
+message FetchAsyncSearchResultRequest {
+  string search_id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+  Order order = 4;
+}
+
+enum AsyncSearchStatus {
+  ASYNC_SEARCH_STATUS_UNSPECIFIED = 0;
+  ASYNC_SEARCH_STATUS_IN_PROGRESS = 1;
+  ASYNC_SEARCH_STATUS_DONE = 2;
+  ASYNC_SEARCH_STATUS_CANCELED = 3;
+  ASYNC_SEARCH_STATUS_ERROR = 4;
+}
+
+message FetchAsyncSearchResultResponse {
+  AsyncSearchStatus status = 1;
+  StartAsyncSearchRequest request = 2;
+  SearchResponse response = 3;
+  google.protobuf.Timestamp started_at = 4;
+  google.protobuf.Timestamp expires_at = 5;
+  optional google.protobuf.Timestamp canceled_at = 6;
+  double progress = 7;
+  uint64 disk_usage = 8;
+}
+
+message GetAsyncSearchesListRequest {
+  optional AsyncSearchStatus status = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+  optional string owner_name = 4;
+}
+
+message GetAsyncSearchesListResponse {
+  message ListItem {
+  string search_id = 1;
+  AsyncSearchStatus status = 2;
+  StartAsyncSearchRequest request = 3;
+  google.protobuf.Timestamp started_at = 4;
+  google.protobuf.Timestamp expires_at = 5;
+  optional google.protobuf.Timestamp canceled_at = 6;
+  double progress = 7;
+  uint64 disk_usage = 8;
+  string owner_name = 9;
+}
+
+  repeated ListItem searches = 1;
+}
+
+message CancelAsyncSearchRequest {
+  string search_id = 1;
+}
+
+message CancelAsyncSearchResponse {}
+
+message DeleteAsyncSearchRequest {
+  string search_id = 1;
+}
+
+message DeleteAsyncSearchResponse {}
+

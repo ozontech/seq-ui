@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package dashboards.v1;
+
+option go_package = "github.com/ozontech/seq-ui/pkg/dashboards/v1;dashboards";
+
+service DashboardsService {
+  rpc GetAll(GetAllRequest) returns (GetAllResponse) {}
+
+  rpc GetMy(GetMyRequest) returns (GetMyResponse) {}
+
+  rpc GetByUUID(GetByUUIDRequest) returns (GetByUUIDResponse) {}
+
+  rpc Create(CreateRequest) returns (CreateResponse) {}
+
+  rpc Update(UpdateRequest) returns (UpdateResponse) {}
+
+  rpc Delete(DeleteRequest) returns (DeleteResponse) {}
+
+  rpc Search(SearchRequest) returns (SearchResponse) {}
+}
+
+message GetAllRequest {
+  int32 limit = 1;
+  int32 offset = 2;
+}
+
+message GetAllResponse {
+  message Dashboard {
+    string uuid = 1;
+    string name = 2;
+    string owner_name = 3;
+  }
+
+  repeated Dashboard dashboards = 1;
+}
+
+message GetMyRequest {
+  int32 limit = 1;
+  int32 offset = 2;
+}
+
+message GetMyResponse {
+  message Dashboard {
+    string uuid = 1;
+    string name = 2;
+  }
+
+  repeated Dashboard dashboards = 1;
+}
+
+message GetByUUIDRequest {
+  string uuid = 1;
+}
+
+message GetByUUIDResponse {
+  string name = 1;
+  string meta = 2;
+  string owner_name = 3;
+}
+
+message CreateRequest {
+  string name = 1;
+  string meta = 2;
+}
+
+message CreateResponse {
+  string uuid = 1;
+}
+
+message UpdateRequest {
+  string uuid = 1;
+  optional string name = 2;
+  optional string meta = 3;
+}
+
+message UpdateResponse {}
+
+message DeleteRequest {
+  string uuid = 1;
+}
+
+message DeleteResponse {}
+
+message SearchRequest{
+  message Filter {
+    optional string owner_name = 1;
+  }
+
+  string query = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+  optional Filter filter = 4;
+}
+
+message SearchResponse{
+  message Dashboard {
+    string uuid = 1;
+    string name = 2;
+    string owner_name = 3;
+  }
+
+  repeated Dashboard dashboards = 1;
+}

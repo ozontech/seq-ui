@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package massexport.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "github.com/ozontech/seq-ui/pkg/massexport/v1;massexport";
+
+service MassExportService {
+  rpc Start(StartRequest) returns (StartResponse) {}
+
+  rpc Check(CheckRequest) returns (CheckResponse) {}
+
+  rpc Cancel(CancelRequest) returns (CancelResponse) {}
+
+  rpc Restore(RestoreRequest) returns (RestoreResponse) {}
+
+  rpc GetAll(GetAllRequest) returns (GetAllResponse) {}
+}
+
+message StartRequest {
+  string query = 1; // query for SeqDB in key:value format
+  google.protobuf.Timestamp from = 2;
+  google.protobuf.Timestamp to = 3;
+  string window = 4;
+  string name = 5;
+}
+
+message StartResponse {
+  string session_id = 1;
+}
+
+enum ExportStatus {
+  EXPORT_STATUS_UNSPECIFIED = 0;
+  EXPORT_STATUS_START = 1;
+  EXPORT_STATUS_CANCEL = 2;
+  EXPORT_STATUS_FAIL = 3;
+  EXPORT_STATUS_FINISH = 4;
+}
+
+message CheckRequest {
+  string session_id = 1;
+}
+
+message CheckResponse {
+  string id = 1;
+  ExportStatus status = 2;
+  double progress = 3;
+  string links = 4;
+  string user_id = 5;
+  google.protobuf.Timestamp started_at = 6;
+  google.protobuf.Timestamp finished_at = 7;
+  google.protobuf.Duration duration = 8;
+  string error = 9;
+  int64 unpacked_size = 10;
+  int64 packed_size = 11;
+}
+
+message CancelRequest {
+  string session_id = 1;
+}
+
+message CancelResponse {}
+
+message RestoreRequest {
+  string session_id = 1;
+}
+
+message RestoreResponse {}
+
+message GetAllRequest {}
+
+message GetAllResponse {
+  repeated CheckResponse exports = 1;
+}

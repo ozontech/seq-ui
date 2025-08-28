@@ -1,0 +1,15 @@
+/seq-ui-server
+bin/*
+*.pprof
+*.test
+ozon*
+dist/
+tests-offsets
+testdata
+
+.idea/
+.vscode
+.DS_Store
+
+*.test
+*.out

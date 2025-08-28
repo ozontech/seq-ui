@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: "postgres"
+  redis:
+    image: redis
+    restart: always
+    ports:
+      - "6379:6379"
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    restart: always
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    environment:
+      CLICKHOUSE_DB: "seq_ui_server"
+      CLICKHOUSE_USER: "default"
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"

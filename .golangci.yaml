@@ -1,0 +1,69 @@
+linters-settings:
+  dupl:
+    threshold: 150
+  goconst:
+    min-len: 2
+    min-occurrences: 3
+  misspell:
+    locale: US
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - whyNoLint
+      - paramTypeCombine
+      - unnamedResult
+      - sprintfQuotedString
+      - tooManyResultsChecker
+      - hugeParam
+
+linters:
+  disable-all: true
+  enable:
+    - dogsled
+    - dupl
+    - errcheck
+    - gochecknoglobals
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - goimports
+    - gosec
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - prealloc
+    - typecheck
+    - unconvert
+    - whitespace
+    - gosimple
+    - unparam
+    - unused
+
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    # Disable linters that are annoying in tests.
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+        - goconst
+
+    - path: main\.go
+      linters:
+        - gochecknoglobals
+
+    # Ignore shadowing of err.
+    - linters: [ govet ]
+      text: 'declaration of "(err|ctx)"'
+    
+    - linters: [ gosec ]
+      text: 'integer overflow conversion'

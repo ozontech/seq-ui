@@ -1,0 +1,112 @@
+syntax = "proto3";
+
+package userprofile.v1;
+
+option go_package = "github.com/ozontech/seq-ui/pkg/userprofile/v1;userprofile";
+
+service UserProfileService {
+  rpc GetUserProfile(GetUserProfileRequest) returns (GetUserProfileResponse) {}
+
+  rpc UpdateUserProfile(UpdateUserProfileRequest) returns (UpdateUserProfileResponse) {}
+
+  rpc GetFavoriteQueries(GetFavoriteQueriesRequest) returns (GetFavoriteQueriesResponse) {}
+
+  rpc CreateFavoriteQuery(CreateFavoriteQueryRequest) returns (CreateFavoriteQueryResponse) {}
+
+  rpc DeleteFavoriteQuery(DeleteFavoriteQueryRequest) returns (DeleteFavoriteQueryResponse) {}
+}
+
+message LogColumns {
+  repeated string log_columns = 1;
+}
+
+message GetUserProfileRequest {}
+
+message GetUserProfileResponse {
+  string timezone = 1;
+  string onboarding_version = 2;
+  LogColumns log_columns = 3;
+}
+
+message UpdateUserProfileRequest {
+  optional string timezone = 1;
+  optional string onboarding_version = 2;
+  optional LogColumns log_columns = 3;
+}
+
+message UpdateUserProfileResponse {}
+
+
+message GetFavoriteQueriesRequest {}
+
+message GetFavoriteQueriesResponse {
+  message Query {
+    int64 id = 1;
+    string query = 2;
+    optional string name = 3;
+    optional uint64 relative_from = 4; // measured in seconds
+  }
+
+  repeated Query queries = 1;
+}
+
+message CreateFavoriteQueryRequest {
+  string query = 1;
+  optional string name = 2;
+  optional uint64 relative_from = 3; // measured in seconds
+}
+
+message CreateFavoriteQueryResponse {
+  int64 id = 1;
+}
+
+message DeleteFavoriteQueryRequest {
+  int64 id = 1;
+}
+
+message DeleteFavoriteQueryResponse {}
+
+
+message GetDashboardsRequest {}
+
+message GetDashboardsResponse {
+  message Dashboard {
+    string uuid = 1;
+    string name = 2;
+  }
+
+  repeated Dashboard dashboards = 1;
+}
+
+message GetDashboardRequest {
+  string uuid = 1;
+}
+
+message GetDashboardResponse {
+  string name = 1;
+  string meta = 2;
+  string owner_name = 3;
+}
+
+message CreateDashboardRequest {
+  string name = 1;
+  string meta = 2;
+}
+
+message CreateDashboardResponse {
+  string uuid = 1;
+}
+
+message UpdateDashboardRequest {
+  string uuid = 1;
+  optional string name = 2;
+  optional string meta = 3;
+}
+
+message UpdateDashboardResponse {}
+
+message DeleteDashboardRequest {
+  string uuid = 1;
+}
+
+message DeleteDashboardResponse {}

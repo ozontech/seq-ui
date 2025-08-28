@@ -1,0 +1,111 @@
+server:
+  oidc:
+    skip_verify: true
+    auth_urls:
+      - "<sso_host>"
+    cache_secret_key: "change-me"
+  jwt_secret_key: "change-me"
+  http_addr: "127.0.0.1:5555"
+  grpc_addr: "127.0.0.1:5556"
+  debug_addr: "127.0.0.1:5557"
+  cors:
+    allowed_origins:
+      - "*"
+    allowed_methods:
+      - "HEAD"
+      - "GET"
+      - "POST"
+      - "PATCH"
+      - "DELETE"
+    allowed_headers:
+      - "Content-Type"
+    max_age: 300
+  grpc_connection_timeout: 45s
+  http_read_header_timeout: 15s
+  http_read_timeout: 30s
+  http_write_timeout: 45s
+  db:
+    name: "postgres"
+    host: "localhost"
+    port: 5432
+    pass: "postgres"
+    user: "postgres"
+    request_timeout: 5s
+    connection_pool_capacity: 32
+  clickhouse:
+    addrs:
+      - "localhost:9000"
+    database: "seq_ui_server"
+    username: "default"
+    password: ""
+    dial_timeout: "5s"
+    read_timeout: "30s"
+  rate_limiters:
+    seqapi:
+      default:
+        rate_per_sec: 3
+        max_burst: 2
+        per_handler: false
+        store_max_keys: 65536
+      spec_users:
+        spammer:
+          rate_per_sec: 1
+          max_burst: 0
+          per_handler: false
+          store_max_keys: 20
+    userprofile:
+      default:
+        rate_per_sec: 3
+        max_burst: 2
+        per_handler: true
+        store_max_keys: 65536
+    UserProfileService:
+      default:
+        rate_per_sec: 3
+        max_burst: 2
+        per_handler: true
+        store_max_keys: 65536
+    dashboards:
+      default:
+        rate_per_sec: 3
+        max_burst: 2
+        store_max_keys: 65536
+  cache:
+    inmemory:
+      num_counters: 10000000
+      max_cost: 1000000
+      buffer_items: 64
+    redis:
+      addr: localhost:6379
+clients:
+  seq_db_timeout: 15s
+  seq_db_avg_doc_size: 100
+  seq_db_addrs:
+    - "<seqdb_ingestor_addr>"
+  request_retries: 3
+  proxy_client_mode: "grpc"
+  grpc_keepalive_params:
+    time: 10s
+    timeout: 10s
+    permit_without_stream: true
+handlers:
+  seq_api:
+    seq_cli_max_search_limit: 10000
+    max_search_limit: 100
+    max_search_total_limit: 1000000
+    max_search_offset_limit: 1000000
+    max_export_limit: 10000
+    max_parallel_export_requests: 1
+    max_aggregations_per_request: 3
+    max_buckets_per_aggregation_ts: 100
+    events_cache_ttl: 1h
+    pinned_fields:
+      - name: field1
+        type: keyword
+      - name: field2
+        type: text
+  error_groups:
+    log_tags_mapping:
+      release: ['release_name', '_service_release']
+    query_filter:
+      cluster: test

@@ -1,0 +1,116 @@
+syntax = "proto3";
+
+package errorgroups.v1;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/ozontech/seq-ui/pkg/errorgroups/v1;errorgroups";
+
+service ErrorGroupsService {
+  rpc GetGroups(GetGroupsRequest) returns (GetGroupsResponse) {}
+  rpc GetHist(GetHistRequest) returns (GetHistResponse) {}
+  rpc GetDetails(GetDetailsRequest) returns (GetDetailsResponse) {}
+  rpc GetReleases(GetReleasesRequest) returns (GetReleasesResponse) {}
+  rpc GetServices(GetServicesRequest) returns (GetServicesResponse) {}
+}
+
+enum Order {
+    ORDER_FREQUENT = 0;
+    ORDER_LATEST = 1;
+    ORDER_OLDEST = 2;
+}
+
+message GetGroupsRequest {
+    string service = 1;
+    optional string env = 2;
+    optional string release = 3;
+    google.protobuf.Duration duration = 4;
+    uint32 limit = 5;
+    uint32 offset = 6;
+    Order order = 7;
+    bool with_total = 8;
+    optional string source = 9;
+}
+
+message GetGroupsResponse {
+    uint64 total = 1;
+    repeated Group groups = 2;
+}
+
+message Group {
+    uint64 hash = 1;
+    string message = 2;
+    uint64 seen_total = 3;
+    google.protobuf.Timestamp first_seen_at = 4;
+    google.protobuf.Timestamp last_seen_at = 5;
+    string source = 6;
+}
+
+message GetHistRequest {
+    string service = 1;
+    optional uint64 group_hash = 2;
+    optional string env = 3;
+    optional string release = 4;
+    optional google.protobuf.Duration duration = 5;
+    optional string source = 6;
+}
+
+message GetHistResponse {
+    repeated Bucket buckets = 1;
+}
+
+message Bucket {
+    google.protobuf.Timestamp time = 1;
+    uint64 count = 2;
+}
+
+message GetDetailsRequest {
+    string service = 1;
+    uint64 group_hash = 2;
+    optional string env = 3;
+    optional string release = 4;
+    optional string source = 5;
+}
+
+message GetDetailsResponse {
+    message Distribution {
+        string value = 1;
+        uint64 percent = 2;
+    }
+    
+    message Distributions {
+        repeated Distribution by_env = 1;
+        repeated Distribution by_release = 2;
+    }
+
+    uint64 group_hash = 1;
+    string message = 2;
+    uint64 seen_total = 3;
+    google.protobuf.Timestamp first_seen_at = 4;
+    google.protobuf.Timestamp last_seen_at = 5;
+    Distributions distributions = 6;
+    map<string, string> log_tags = 7;
+    string source = 8;
+}
+
+message GetReleasesRequest {
+    string service = 1;
+    reserved 2;
+    optional string env = 3;
+}
+
+message GetReleasesResponse {
+    repeated string releases = 1;
+}
+
+message GetServicesRequest {
+    string query = 1;
+    optional string env = 2;
+    uint32 limit = 3;
+    uint32 offset = 4;
+}
+
+message GetServicesResponse {
+    repeated string services = 1;
+}
