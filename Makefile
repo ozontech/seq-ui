@@ -1,3 +1,4 @@
+IMAGE ?= ghcr.io/ozontech/seq-ui
 VERSION ?= $(shell git describe --abbrev=4 --dirty --always --tags)
 TIME := $(shell date '+%Y-%m-%d_%H:%M:%S')
 
@@ -9,10 +10,56 @@ LOCAL_BIN := $(CURDIR)/bin
 GOLANGCI_LINT_VER=1.64.8
 PROTOC_GEN_GO_VER=1.34.2
 PROTOC_GEN_GO_GRPC_VER=1.4.0
-MOCKGEN_VER=0.5.1
+MOCKGEN_VER=0.6.0
 SWAG_VER=1.16.2
 
 export GOBIN=$(LOCAL_BIN)
+
+.PHONY: build-bin
+build-bin:
+	$(info Building binaries)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+		-trimpath \
+		-ldflags "-X github.com/ozontech/seq-ui/buildinfo.Version=${VERSION} \
+				  -X github.com/ozontech/seq-ui/buildinfo.BuildTime=${TIME}" \
+		-o ${LOCAL_BIN}/seq-ui \
+		./cmd/seq-ui
+
+.PHONY: build-image
+build-image:
+	$(info Building image)
+	docker buildx build --platform linux/amd64 \
+		--build-arg VERSION=${VERSION} \
+		--build-arg BUILD_TIME=${TIME} \
+		--file build/package/Dockerfile \
+		-t ${IMAGE}:${VERSION} \
+		.
+
+.PHONY: push-image
+push-image: build-image
+	docker push ${IMAGE}:${VERSION}
+
+.PHONY: run
+run:
+	go run ./cmd/seq-ui
+
+.PHONY: clean
+clean:
+	rm -rf bin
+
+.PHONY: test
+test:
+	CGO_ENABLED=1 go test -count=1 -v -race ./...
+
+.PHONY: lint
+lint:
+	go run github.com/golangci/golangci-lint/cmd/golangci-lint@v$(GOLANGCI_LINT_VER) run \
+		--new-from-rev=origin/master --config=.golangci.yaml --timeout=5m
+
+.PHONY: lint-full
+lint-full:
+	go run github.com/golangci/golangci-lint/cmd/golangci-lint@v$(GOLANGCI_LINT_VER) run \
+		--config=.golangci.yaml --timeout=5m
 
 .PHONY: deps
 deps: .protoc-plugins .install-tools
@@ -69,33 +116,6 @@ swagger:
 .PHONY: generate
 generate: protoc mock swagger
 
-.PHONY: build
-build:
-	$(info Building app)
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $$GOBIN/seq-ui-server -trimpath -ldflags "-X github.com/ozontech/seq-ui/buildinfo.Version=${VERSION} -X github.com/ozontech/seq-ui.BuildTime=${TIME}" ./cmd/seq_ui_server
-
-.PHONY: run
-run:
-	go run ./cmd/seq_ui_server
-
-.PHONY: clean
-clean:
-	rm -rf bin
-
-.PHONY: test
-test:
-	CGO_ENABLED=1 go test -count=1 -v -race ./...
-
-.PHONY: lint
-lint:
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@v$(GOLANGCI_LINT_VER) run \
-		--new-from-rev=origin/master --config=.golangci.yaml --timeout=5m
-
-.PHONY: lint-full
-lint-full:
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@v$(GOLANGCI_LINT_VER) run \
-		--config=.golangci.yaml --timeout=5m
-
 .PHONY: .protoc-plugins
 .protoc-plugins:
 	$(info Downloading protoc plugins)
@@ -129,12 +149,3 @@ migrate-ch:
 .PHONY: undo-last-migration-ch
 undo-last-migration-ch:
 	goose -dir='migration_ch' clickhouse "$(MIGRATION_DSN_CLICKHOUSE)" down
-
-UNAME := $(shell uname)
-.PHONY: check-os
-check-os:
-ifeq ($(OS), Linux)
-	@echo "Linux"
-else
-	@echo $(PROCESSOR_ARCHITECTURE)
-endif

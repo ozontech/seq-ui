@@ -19,12 +19,12 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/json-iterator/go v1.1.12
+	github.com/ozontech/seq-ui/pkg v0.2.0
 	github.com/prometheus/client_golang v1.20.4
 	github.com/rakyll/statik v0.1.7
 	github.com/redis/go-redis/v9 v9.6.1
 	github.com/stretchr/testify v1.9.0
 	github.com/throttled/throttled/v2 v2.12.0
-	github.com/ozontech/seq-ui/pkg v0.2.0
 	go.opentelemetry.io/otel v1.30.0
 	go.opentelemetry.io/otel/exporters/jaeger v1.17.0
 	go.opentelemetry.io/otel/sdk v1.30.0
