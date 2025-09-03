@@ -227,17 +227,17 @@ func (s *exportService) downloadOnePart(ctx context.Context, writer io.Writer, t
 			return fmt.Errorf("check export status: %w", err)
 		}
 
-		switch info.Status {
-		case types.ExportStatusCancel:
-			return errors.New("worker stops: export canceled")
-		case types.ExportStatusFail:
-			return errors.New("worker stops: export failed")
-		case types.ExportStatusFinish:
-			return errors.New("impossible: export finished before worker stopped")
-		case types.ExportStatusStart:
-			break
-		default:
-			return fmt.Errorf("unknown export status: %s", info.Status.String())
+		if info.Status != types.ExportStatusStart {
+			switch info.Status {
+			case types.ExportStatusCancel:
+				return errors.New("worker stops: export canceled")
+			case types.ExportStatusFail:
+				return errors.New("worker stops: export failed")
+			case types.ExportStatusFinish:
+				return errors.New("impossible: export finished before worker stopped")
+			default:
+				return fmt.Errorf("unknown export status: %s", info.Status.String())
+			}
 		}
 
 		subFrom := subTo.Add(-task.window)

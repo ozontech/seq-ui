@@ -32,7 +32,7 @@ func New(
 	inmemWithRedisCache cache.Cache,
 	redisCache cache.Cache,
 	asyncSearches *asyncsearches.Service,
-	profiles *profiles.Profiles,
+	p *profiles.Profiles,
 ) *API {
 	var fCache *fieldsCache
 	if cfg.FieldsCacheTTL > 0 {
@@ -48,7 +48,7 @@ func New(
 		fieldsCache:         fCache,
 		pinnedFields:        parsePinnedFields(cfg.PinnedFields),
 		asyncSearches:       asyncSearches,
-		profiles:            profiles,
+		profiles:            p,
 	}
 }
 

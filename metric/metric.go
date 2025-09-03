@@ -28,7 +28,6 @@ const (
 	sessionIDLabel  = "session_id"
 )
 
-// nolint:gochecknoglobals
 var (
 	defaultBuckets = prometheus.ExponentialBuckets(0.002, 2, 16)
 

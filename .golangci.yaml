@@ -1,69 +1,81 @@
-linters-settings:
-  dupl:
-    threshold: 150
-  goconst:
-    min-len: 2
-    min-occurrences: 3
-  misspell:
-    locale: US
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - whyNoLint
-      - paramTypeCombine
-      - unnamedResult
-      - sprintfQuotedString
-      - tooManyResultsChecker
-      - hugeParam
-
+version: "2"
 linters:
-  disable-all: true
+  default: none
   enable:
-    - dogsled
-    - dupl
     - errcheck
-    - gochecknoglobals
-    - gochecknoinits
     - goconst
     - gocritic
-    - goimports
     - gosec
     - govet
     - ineffassign
     - misspell
     - nakedret
     - prealloc
-    - typecheck
+    - staticcheck
     - unconvert
     - whitespace
-    - gosimple
     - unparam
     - unused
+  settings:
+    goconst:
+      min-len: 2
+      min-occurrences: 3
+    misspell:
+      locale: US
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+      disabled-checks:
+        - whyNoLint
+        - paramTypeCombine
+        - unnamedResult
+        - sprintfQuotedString
+        - tooManyResultsChecker
+        - hugeParam
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - gocyclo
+          - errcheck
+          - dupl
+          - gosec
+          - goconst
+      - linters: [ govet ]
+        text: 'declaration of "(err|ctx)"'
+      - linters: [ gosec ]
+        text: 'integer overflow conversion'
+      - linters: [ staticcheck ]
+        text: 'SA1019:' # <something> is deprecated 
+      - linters: [ staticcheck ]
+        text: 'QF1008:' # could remove embedded field <something> from selector 
+    paths:
+      - bin
+      - vendor
+      - var
+      - tmp
+      - third_party$
+      - builtin$
+      - examples$
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    paths:
+      - bin
+      - vendor
+      - var
+      - tmp
+      - third_party$
+      - builtin$
+      - examples$
 
 issues:
-  exclude-use-default: false
-  exclude-rules:
-    # Disable linters that are annoying in tests.
-    - path: _test\.go
-      linters:
-        - gocyclo
-        - errcheck
-        - dupl
-        - gosec
-        - goconst
-
-    - path: main\.go
-      linters:
-        - gochecknoglobals
-
-    # Ignore shadowing of err.
-    - linters: [ govet ]
-      text: 'declaration of "(err|ctx)"'
-    
-    - linters: [ gosec ]
-      text: 'integer overflow conversion'
+  max-issues-per-linter: 0
+  max-same-issues: 0

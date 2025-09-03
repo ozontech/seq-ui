@@ -55,7 +55,7 @@ func (a *API) Start(ctx context.Context, req *massexport_v1.StartRequest) (*mass
 		return nil, grpcutil.ProcessError(types.NewErrInvalidRequestField("'from' is not before 'to'"))
 	}
 
-	if !(window <= to.Sub(from)) {
+	if window > to.Sub(from) {
 		return nil, grpcutil.ProcessError(types.NewErrInvalidRequestField("'window' is larger than whole interval"))
 	}
 

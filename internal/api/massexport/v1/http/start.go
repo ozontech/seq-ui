@@ -74,7 +74,7 @@ func (a *API) serveStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !(window <= httpReq.To.Sub(httpReq.From)) {
+	if window > httpReq.To.Sub(httpReq.From) {
 		wr.Error(errors.New("'window' is larger than whole interval"), http.StatusBadRequest)
 		return
 	}

@@ -19,7 +19,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func GRPCLogInterceptor(logger *tracing.Logger) grpc.UnaryServerInterceptor {
+func GRPCLogInterceptor(l *tracing.Logger) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context, req any, info *grpc.UnaryServerInfo,
 		h grpc.UnaryHandler,
@@ -27,7 +27,7 @@ func GRPCLogInterceptor(logger *tracing.Logger) grpc.UnaryServerInterceptor {
 		md, _ := metadata.FromIncomingContext(ctx)
 		rBody, err := protojson.Marshal(req.(proto.Message))
 		if err != nil {
-			logger.Error(ctx, "failed to marshal request message", zap.Error(err))
+			l.Error(ctx, "failed to marshal request message", zap.Error(err))
 		}
 		reqLogArgs := requestLogArgs{
 			component:   "gRPC",
@@ -35,7 +35,7 @@ func GRPCLogInterceptor(logger *tracing.Logger) grpc.UnaryServerInterceptor {
 			fullMethod:  info.FullMethod,
 			requestBody: string(rBody),
 		}
-		logRequestBeforeHandler(ctx, logger, reqLogArgs)
+		logRequestBeforeHandler(ctx, l, reqLogArgs)
 
 		start := time.Now()
 		resp, err := h(ctx, req)
@@ -64,7 +64,7 @@ func GRPCLogInterceptor(logger *tracing.Logger) grpc.UnaryServerInterceptor {
 			reqLogArgs.details = details
 		}
 
-		logRequestAfterHandler(ctx, logger, reqLogArgs)
+		logRequestAfterHandler(ctx, l, reqLogArgs)
 
 		return resp, err
 	}
@@ -124,7 +124,6 @@ func GRPCTraceInterceptor() grpc.UnaryServerInterceptor {
 	}
 }
 
-// nolint: gochecknoglobals
 var noAuthGRPCMethods = map[string]map[string]struct{}{
 	"SeqAPIService": {
 		"GetFields":       {},

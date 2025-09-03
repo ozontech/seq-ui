@@ -1,6 +1,6 @@
 module github.com/ozontech/seq-ui
 
-go 1.23
+go 1.24
 
 replace github.com/ozontech/seq-ui/pkg => ./pkg
 

@@ -11,10 +11,8 @@ import (
 	"github.com/ozontech/seq-ui/logger"
 )
 
-// nolint: gochecknoglobals
 var errAuthProviderNotInit = errors.New("auth provider was not initialized")
 
-// nolint: gochecknoglobals
 var (
 	tokenAuthServices = map[string]struct{}{
 		"seqapi":            {},

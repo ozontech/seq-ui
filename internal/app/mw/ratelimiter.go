@@ -16,7 +16,6 @@ import (
 
 const RateLimiterDefaultUser = "_"
 
-// nolint: gochecknoglobals
 var grpcServices = map[string]struct{}{
 	"SeqAPIService":      {},
 	"UserProfileService": {},

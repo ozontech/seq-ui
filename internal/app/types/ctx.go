@@ -5,7 +5,6 @@ import (
 	"errors"
 )
 
-// nolint:gochecknoglobals
 var (
 	ErrUnauthenticated     = errors.New("unauthenticated")
 	ErrBadUserKeyValueType = errors.New("invalid JWT token")

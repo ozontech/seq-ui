@@ -8,12 +8,10 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// nolint:gochecknoglobals
 var Instance *zap.Logger
 
 const defaultLevel = zap.InfoLevel
 
-// nolint:gochecknoinits
 func init() {
 	var level zapcore.Level
 	switch strings.ToLower(os.Getenv("LOG_LEVEL")) {

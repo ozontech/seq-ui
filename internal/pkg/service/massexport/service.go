@@ -126,7 +126,7 @@ func (s *exportService) StartExport(ctx context.Context, req types.StartExportRe
 	from := floor(req.From, s.partLength)
 	to := ceil(req.To, s.partLength)
 
-	if !(req.Window <= s.partLength) {
+	if req.Window > s.partLength {
 		return types.StartExportResponse{}, fmt.Errorf("'window' is larger then part length (%s)", s.partLength)
 	}
 

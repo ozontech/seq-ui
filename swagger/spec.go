@@ -64,7 +64,6 @@ func (s Spec) HasApi(api string) bool {
 	return false
 }
 
-// nolint: gochecknoglobals
 var (
 	swaggerSpec spec.Swagger
 

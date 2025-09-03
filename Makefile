@@ -7,7 +7,7 @@ MIGRATION_DSN_CLICKHOUSE ?= tcp://default@localhost:9000/seq_ui_server
 
 LOCAL_BIN := $(CURDIR)/bin
 
-GOLANGCI_LINT_VER=1.64.8
+GOLANGCI_LINT_VER=2.4.0
 PROTOC_GEN_GO_VER=1.34.2
 PROTOC_GEN_GO_GRPC_VER=1.4.0
 MOCKGEN_VER=0.6.0
@@ -53,12 +53,12 @@ test:
 
 .PHONY: lint
 lint:
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@v$(GOLANGCI_LINT_VER) run \
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v$(GOLANGCI_LINT_VER) run \
 		--new-from-rev=origin/master --config=.golangci.yaml --timeout=5m
 
 .PHONY: lint-full
 lint-full:
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@v$(GOLANGCI_LINT_VER) run \
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v$(GOLANGCI_LINT_VER) run \
 		--config=.golangci.yaml --timeout=5m
 
 .PHONY: deps
