@@ -100,7 +100,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: profile.out, profile-race.out
+          files: profile.out
           disable_search: true
 
   check-generate:

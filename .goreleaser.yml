@@ -19,6 +19,5 @@ builds:
     mod_timestamp: '{{ .CommitTimestamp }}'
     flags:
       - -trimpath
-      - -pgo=default.pgo
     ldflags:
       - -X github.com/ozontech/seq-ui/buildinfo.Version={{.Version}}
