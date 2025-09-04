@@ -18,7 +18,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// nolint:gochecknoglobals
 var serviceName string
 
 type Settings struct {

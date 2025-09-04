@@ -7,7 +7,6 @@ import (
 	jsoniter "github.com/json-iterator/go"
 )
 
-// nolint:gochecknoglobals
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type mapStringJson map[string]jsoniter.RawMessage

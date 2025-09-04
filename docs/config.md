@@ -6,7 +6,7 @@ Config is read from yaml file and consists of three sections: server, clients, h
 You can specify your config file when running seq-ui-server by providing it with flag `--config`
 
 ```sh
-go run ./cmd/seq_ui_server --config <path-to-config-file>
+go run ./cmd/seq-ui --config <path-to-config-file>
 ```
 
 ## Config file example

@@ -13,7 +13,6 @@ import (
 var (
 	ErrEmptyCert = errors.New("both CA cert and cert key must be set")
 
-	// nolint:gochecknoglobals
 	pemBegin = []byte("-----BEGIN")
 )
 

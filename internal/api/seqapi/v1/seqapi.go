@@ -23,11 +23,11 @@ func New(
 	inmemWithRedisCache cache.Cache,
 	redisCache cache.Cache,
 	asyncSearches *asyncsearches.Service,
-	profiles *profiles.Profiles,
+	p *profiles.Profiles,
 ) *SeqAPI {
 	return &SeqAPI{
-		grpcAPI: grpc_api.New(cfg, seqDB, inmemWithRedisCache, redisCache, asyncSearches, profiles),
-		httpAPI: http_api.New(cfg, seqDB, inmemWithRedisCache, redisCache, asyncSearches, profiles),
+		grpcAPI: grpc_api.New(cfg, seqDB, inmemWithRedisCache, redisCache, asyncSearches, p),
+		httpAPI: http_api.New(cfg, seqDB, inmemWithRedisCache, redisCache, asyncSearches, p),
 	}
 }
 

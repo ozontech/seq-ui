@@ -10,7 +10,6 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// nolint: gochecknoglobals
 var nonLogHeaders = map[string]struct{}{"authorization": {}}
 
 // arrStr wrapper for []string logging.

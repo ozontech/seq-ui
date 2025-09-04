@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: latest
+          only-new-issues: false
+          args: --timeout 5m
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        flags: [ '', '-race' ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Build
+        run: go build ./...
+
+      - name: Test
+        env:
+          GOFLAGS: ${{ matrix.flags }}
+          LOG_LEVEL: error
+        run: |
+          go test -coverprofile=profile${{ matrix.flags }}.out -covermode=atomic -v -coverpkg=./... ./... -json | tee test-report${{ matrix.flags }}.json
+
+      - name: Coverage report
+        run: |
+          if [ -f profile${{ matrix.flags }}.out ]; then
+            go tool cover -html=profile${{ matrix.flags }}.out -o coverage${{ matrix.flags }}.html
+          else
+            echo "No coverage data generated for ${{ matrix.flags }} tests" > coverage${{ matrix.flags }}.html
+          fi
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-artifacts${{ matrix.flags }}
+          path: |
+            profile${{ matrix.flags }}.out
+            test-report${{ matrix.flags }}.json
+            coverage${{ matrix.flags }}.html
+          retention-days: 1
+
+      - name: Publish test report
+        uses: dorny/test-reporter@v2
+        if: always()
+        with:
+          name: Test Results
+          path: test-report${{ matrix.flags }}.json
+          reporter: golang-json
+          fail-on-error: true
+          list-suites: none
+          list-tests: failed
+
+  upload:
+    runs-on: ubuntu-latest
+    needs:
+      - test
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v5
+        with:
+          pattern: test-artifacts*
+          merge-multiple: true
+
+      - name: Send coverage
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: profile.out, profile-race.out
+          disable_search: true
+
+  check-generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download && go mod tidy
+
+      - name: Verify modules
+        run: go mod verify
+
+      - name: Download binary dependencies
+        run: make deps
+
+      - name: Generate
+        run: make mock && make swagger
+
+      - name: Check git diff
+        run: git diff --exit-code

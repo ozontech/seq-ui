@@ -24,7 +24,6 @@ const (
 	maxHTTPHeaderBytes        = 1 << 12 // 4 KiB
 )
 
-// nolint: gochecknoglobals
 var defaultCORSAllowedMethods = []string{"HEAD", "GET", "POST", "PATCH", "DELETE"}
 
 func (s *Server) init(ctx context.Context, registrar *api.Registrar) error {

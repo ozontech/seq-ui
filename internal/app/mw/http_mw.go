@@ -37,12 +37,12 @@ func getRoutePattern(ctx context.Context) string {
 	return ""
 }
 
-func HTTPLogInterceptor(logger *tracing.Logger) func(next http.Handler) http.Handler {
+func HTTPLogInterceptor(l *tracing.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			reqBody, err := io.ReadAll(r.Body)
 			if err != nil {
-				logger.Error(r.Context(), "failed to read request body", zap.Error(err))
+				l.Error(r.Context(), "failed to read request body", zap.Error(err))
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -64,7 +64,7 @@ func HTTPLogInterceptor(logger *tracing.Logger) func(next http.Handler) http.Han
 				reqLogArgs.user = userName
 			}
 
-			logRequestBeforeHandler(r.Context(), logger, reqLogArgs)
+			logRequestBeforeHandler(r.Context(), l, reqLogArgs)
 
 			start := time.Now()
 			next.ServeHTTP(ww, r)
@@ -76,7 +76,7 @@ func HTTPLogInterceptor(logger *tracing.Logger) func(next http.Handler) http.Han
 			reqLogArgs.statusCode = http.StatusText(statusCodeInt)
 			reqLogArgs.took = took
 
-			if errType == respClientError {
+			if errType == respClientError { // nolint:staticcheck
 				reqLogArgs.clientError = ww.ErrorMessage
 				if reqLogArgs.clientError == "" {
 					reqLogArgs.clientError = "unknown error"
@@ -88,7 +88,7 @@ func HTTPLogInterceptor(logger *tracing.Logger) func(next http.Handler) http.Han
 				}
 			}
 
-			logRequestAfterHandler(r.Context(), logger, reqLogArgs)
+			logRequestAfterHandler(r.Context(), l, reqLogArgs)
 		}
 		return http.HandlerFunc(fn)
 	}

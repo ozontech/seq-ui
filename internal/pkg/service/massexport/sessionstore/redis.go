@@ -281,7 +281,7 @@ func (s *redisSessionStore) ConfirmPart(ctx context.Context, sessionID string, p
 		return fmt.Errorf("get: %w", err)
 	}
 
-	if !(0 <= partID && partID < len(info.PartIsUploaded)) {
+	if partID < 0 || partID >= len(info.PartIsUploaded) {
 		return fmt.Errorf("index out of range; index = %d; parts count = %d", partID, len(info.PartIsUploaded))
 	}
 
