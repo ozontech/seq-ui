@@ -97,7 +97,7 @@ jobs:
           merge-multiple: true
 
       - name: Send coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           files: profile.out, profile-race.out
           disable_search: true
