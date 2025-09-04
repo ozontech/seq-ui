@@ -126,14 +126,11 @@ jobs:
       - name: Verify modules
         run: go mod verify
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
-
       - name: Download binary dependencies
         run: make deps
 
       - name: Generate
-        run: make generate
+        run: make mock && make swagger
 
       - name: Check git diff
         run: git diff --exit-code
