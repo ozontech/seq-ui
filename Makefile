@@ -54,7 +54,7 @@ test:
 .PHONY: lint
 lint:
 	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v$(GOLANGCI_LINT_VER) run \
-		--new-from-rev=origin/master --config=.golangci.yaml --timeout=5m
+		--new-from-rev=origin/main --config=.golangci.yaml --timeout=5m
 
 .PHONY: lint-full
 lint-full:
