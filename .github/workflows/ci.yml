@@ -29,10 +29,6 @@ jobs:
           version: latest
           only-new-issues: false
           args: --timeout 5m
-          # Disable module cache.
-          skip-pkg-cache: true
-          # Disable build cache.
-          skip-build-cache: true
 
   test:
     runs-on: ubuntu-latest
