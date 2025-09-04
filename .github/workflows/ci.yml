@@ -126,6 +126,9 @@ jobs:
       - name: Verify modules
         run: go mod verify
 
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v3
+
       - name: Download binary dependencies
         run: make deps
 
