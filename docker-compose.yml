@@ -2,23 +2,23 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres
+    image: postgres:latest
     restart: always
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT}:5432"
     environment:
-      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
   redis:
-    image: redis
+    image: redis:latest
     restart: always
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT}:6379"
   clickhouse:
     image: clickhouse/clickhouse-server:24.8
     restart: always
     ports:
-      - "8123:8123"
-      - "9000:9000"
+      - "${CLICKHOUSE_HTTP_PORT}:8123"
+      - "${CLICKHOUSE_TCP_PORT}:9000"
     environment:
       CLICKHOUSE_DB: "seq_ui_server"
       CLICKHOUSE_USER: "default"
