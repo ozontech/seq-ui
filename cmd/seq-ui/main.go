@@ -39,7 +39,7 @@ import (
 )
 
 const (
-	defaultConfig = "seq-ui-server-config.yaml"
+	defaultConfig = "config/config.example.yaml"
 
 	defaultClientMaxRecvMsgSize = 4 * 1024 * 1024 // 4MB
 )

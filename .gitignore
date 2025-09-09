@@ -1,8 +1,7 @@
-/seq-ui-server
+/seq-ui
 bin/*
 *.pprof
 *.test
-ozon*
 dist/
 tests-offsets
 testdata
