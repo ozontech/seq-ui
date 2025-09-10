@@ -1,4 +1,5 @@
 # Config
+
 The configuration is set via a yaml file and consists of three sections:
 - [server](#server) - seq-ui server configutarion
 - [clients](#clients) - seq-db clients configuration
@@ -10,9 +11,9 @@ go run ./cmd/seq-ui --config <path-to-config-file>
 ```
 
 ## Config examples
+
 See config examples in `config` directory:
 - [example](https://github.com/ozontech/seq-ui/tree/main/config/config.example.yaml) - the minimal config
-- TODO
 
 ## Server
 
