@@ -1,4 +1,6 @@
-# Config
+# Configuration
+
+> Despite the fact that there are a huge number of parameters in the configuration, not all of them are supported by UI at the moment. As the UI evolves, more and more of the parameters will be relevant.
 
 The configuration is set via a yaml file and consists of three sections:
 - [server](#server) - seq-ui server configutarion

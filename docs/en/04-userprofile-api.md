@@ -2,7 +2,7 @@
 
 UserProfile API provides the ability to manage users and their data.
 
-**The API requires a PostgreSQL DB and Authorization to work, which must be specified in [config](https://github.com/ozontech/seq-ui/blob/main/docs/en/02-config.md).**
+**The API requires a PostgreSQL DB and Authorization to work, which must be specified in [config](./02-configuration.md).**
 
 ## HTTP API
 
