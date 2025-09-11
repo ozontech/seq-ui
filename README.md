@@ -17,7 +17,7 @@ Get started quickly by following our [Quickstart Guide](/docs/en/01-quickstart.m
 
 ## Configuring
 
-The application can be configured via yaml file. See the details in [Config documentation](/docs/en/02-config.md).
+The application can be configured via yaml file. See the details in [Config documentation](/docs/en/02-configuration.md).
 
 Examples of config file can be found [here](/config).
 

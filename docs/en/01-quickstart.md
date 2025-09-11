@@ -55,6 +55,6 @@ curl -X POST \
 ## What's next
 
 seq-ui offers many more useful features for working with logs and users:
-- [Seq API](https://github.com/ozontech/seq-ui/blob/main/docs/en/03-seq-api.md) provides access to logs, aggregations and histogram
-- [UserProfile API](https://github.com/ozontech/seq-ui/blob/main/docs/en/04-userprofile-api.md) provides the ability to manage users and their data
-- [Dashboards API](https://github.com/ozontech/seq-ui/blob/main/docs/en/05-dashboards-api.md) provides the ability to combine a search query, aggregations and a histogram in a dashboard and save it to DB
+- [Seq API](./03-seq-api.md) provides access to logs, aggregations and histogram
+- [UserProfile API](./04-userprofile-api.md) provides the ability to manage users and their data
+- [Dashboards API](./05-dashboards-api.md) provides the ability to combine a search query, aggregations and a histogram in a dashboard and save it to DB

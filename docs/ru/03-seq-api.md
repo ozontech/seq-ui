@@ -450,7 +450,7 @@ curl -X POST \
 
 ### `GET /fields/pinned`
 
-Returns the list of fields that will be pinned in UI. Set in the `handlers.seq_api.pinned_fields` [config section](https://github.com/ozontech/seq-ui/blob/main/docs/en/02-config.md#seqapi).
+Returns the list of fields that will be pinned in UI. Set in the `handlers.seq_api.pinned_fields` [config section](./02-configuration.md#seqapi).
 
 **Auth:** NO
 
@@ -481,7 +481,7 @@ curl -X GET \
 
 ### `GET /limits`
 
-Returns the list of limits set in the `handlers.seq_api` [config section](https://github.com/ozontech/seq-ui/blob/main/docs/en/02-config.md#seqapi).
+Returns the list of limits set in the `handlers.seq_api` [config section](./02-configuration.md#seqapi).
 
 **Auth:** NO
 
