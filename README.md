@@ -1,55 +1,40 @@
-# Seq UI Server
+# seq-ui
 
-## First steps
+## Overview
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/ozontech/seq-ui/graphs/commit-activity)
+[![CI](https://github.com/ozontech/seq-ui/actions/workflows/ci.yml/badge.svg)](https://github.com/ozontech/seq-ui/actions/workflows/ci.yml)
+[![Code coverage](https://codecov.io/github/ozontech/seq-ui/coverage.svg?branch=main)](https://codecov.io/github/ozontech/seq-ui?branch=main)
+[![Go version](https://img.shields.io/github/go-mod/go-version/ozontech/seq-ui)](https://github.com/ozontech/seq-ui)
+[![GoReportCard example](https://goreportcard.com/badge/github.com/ozontech/seq-ui)](https://goreportcard.com/report/github.com/ozontech/seq-ui)
+[![Telegram](https://telegram-badge.vercel.app/api/telegram-badge?channelId=@file_d_community)](https://t.me/file_d_community)
 
-### Third party dependencies
+**seq-ui** is a UI backend for [seq-db](https://github.com/ozontech/seq-db).
+It supports log search, analysis and visualization.
 
-To download third party binary dependencies (e.g. proto-gen-go, grpc-gateway, vtproto) run `make deps`.
+## Quickstart
 
-### Build
-
-Use `make build` to build the application.
-It compiles the application into the `bin` folder.
-
-### Local run
-
-Use `docker compose up -d` to start all necessary containers.
-
-Use `make migrate` and `make migrate-ch` to run postgres and clickhouse migrations.
-
-Use `make run` to run the application with default config path `seq-ui-server-config.yaml`.
-
-SeqUI starts listening for requests:
-* HTTP - `http://localhost:5555`
-* gRPC - `http://localhost:5556`
-* Debug - `http://localhost:5557`
-
-SwaggerUI available at `http://localhost:5557/docs`.
-
-## Migrations
-
-There are two options to run migrations:
-1. Change variable `MIGRATION_DSN`/`MIGRATION_DSN_CLICKHOUSE` in Makefile and use `make migrate`/`make migrate-ch`
-2. Use `make migrate MIGRATION_DSN="{your_dsn}"`/`make migrate-ch MIGRATION_DSN_CLICKHOUSE="{your_dsn}"`
-
-Similar options for rolling back the last migration, but use `make undo-last-migration`/`make undo-last-migration-ch` command.
-
-## Lint before commit 
-
-Run `make lint`. It will check *.proto files with [buf](https://buf.build/) and *.go files with golangci-lint.
+Get started quickly by following our [Quickstart Guide](/docs/en/01-quickstart.md).
 
 ## Configuring
 
-The application can be configured via yaml file. See the details in [docs/config.md](docs/config.md).
+The application can be configured via yaml file. See the details in [Config documentation](/docs/en/02-config.md).
 
-Example of config file can be found [here](config/app.example.yaml).
+Examples of config file can be found [here](/config).
 
-## Tracing initialization
+## Contributing
 
-Run this before start to enable tracing:
-```shell
-export TRACING_SERVICE_NAME=seq-ui-server-local
-export TRACING_SAMPLER_PARAM=1.0
-export JAEGER_AGENT_PORT=6831
-export JAEGER_AGENT_HOST=127.0.0.1
-```
+`seq-ui` is an open-source project and contributions are very welcome! Please make sure to read our [contributing guide](/CONTRIBUTING.md) before creating an issue and opening a PR!
+
+## GitHub Registry
+
+The latest versions of seq-ui are available in
+our [GitHub Registry](https://github.com/ozontech/seq-ui/pkgs/container/seq-ui).
+
+## Community
+
+Join our community for discussions, support, and contributions:
+- [Telegram](https://t.me/file_d_community)
+
+## License
+
+This project is licensed under the [Apache 2.0 License](/LICENSE).
