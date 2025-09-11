@@ -1,0 +1,16 @@
+server:
+  http_addr: ':5555'
+  grpc_addr: ':5556'
+  debug_addr: ':5557'
+clients:
+  seq_db_addrs:
+    - 'seq-db-proxy:9004'
+  seq_db_timeout: 15s
+handlers:
+  seq_api:
+    max_search_limit: 100
+    pinned_fields:
+      - name: level
+        type: keyword
+      - name: message
+        type: text
