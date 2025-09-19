@@ -33,7 +33,7 @@ func TestServeStartAsyncSearch(t *testing.T) {
 	to := from.Add(time.Second)
 
 	formatReqBody := func(retention string) string {
-		return fmt.Sprintf(`{"retention":%q,"query":%q,"from":%q,"to":%q,"with_docs":true,"histogram":{"interval":"1s"},"aggregations":[{"field":"v","group_by":"level","agg_func":"avg","quantiles":[0.95]}]}`,
+		return fmt.Sprintf(`{"retention":%q,"query":%q,"from":%q,"to":%q,"with_docs":true,"size":100,"histogram":{"interval":"1s"},"aggregations":[{"field":"v","group_by":"level","agg_func":"avg","quantiles":[0.95]}]}`,
 			retention, query, from.Format(time.RFC3339), to.Format(time.RFC3339))
 	}
 
@@ -69,6 +69,7 @@ func TestServeStartAsyncSearch(t *testing.T) {
 					From:      timestamppb.New(from),
 					To:        timestamppb.New(to),
 					WithDocs:  true,
+					Size:      100,
 					Hist: &seqapi.StartAsyncSearchRequest_HistQuery{
 						Interval: "1s",
 					},

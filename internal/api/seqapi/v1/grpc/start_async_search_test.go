@@ -56,6 +56,7 @@ func TestServeStartAsyncSearch(t *testing.T) {
 				From:      timestamppb.New(from),
 				To:        timestamppb.New(to),
 				WithDocs:  true,
+				Size:      100,
 				Hist: &seqapi.StartAsyncSearchRequest_HistQuery{
 					Interval: "1s",
 				},

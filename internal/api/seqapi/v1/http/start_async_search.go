@@ -69,6 +69,10 @@ func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
 			Key:   "with_docs",
 			Value: attribute.BoolValue(httpReq.WithDocs),
 		},
+		{
+			Key:   "size",
+			Value: attribute.Int64Value(int64(httpReq.Size)),
+		},
 	}
 	if httpReq.Histogram != nil && httpReq.Histogram.Interval != "" {
 		spanAttributes = append(spanAttributes, attribute.KeyValue{
@@ -113,6 +117,7 @@ type startAsyncSearchRequest struct {
 	Aggregations aggregationQueries           `json:"aggregations,omitempty"`
 	Histogram    *AsyncSearchRequestHistogram `json:"histogram,omitempty"`
 	WithDocs     bool                         `json:"with_docs"`
+	Size         int32                        `json:"size"`
 } //	@name	seqapi.v1.StartAsyncSearchRequest
 
 func (r startAsyncSearchRequest) toProto(parsedRetention time.Duration) *seqapi.StartAsyncSearchRequest {
@@ -123,6 +128,7 @@ func (r startAsyncSearchRequest) toProto(parsedRetention time.Duration) *seqapi.
 		To:        timestamppb.New(r.To),
 		Aggs:      r.Aggregations.toProto(),
 		WithDocs:  r.WithDocs,
+		Size:      r.Size,
 	}
 	if r.Histogram != nil && r.Histogram.Interval != "" {
 		req.Hist = &seqapi.StartAsyncSearchRequest_HistQuery{

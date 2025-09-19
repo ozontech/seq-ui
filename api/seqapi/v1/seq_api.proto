@@ -248,6 +248,7 @@ message StartAsyncSearchRequest {
   repeated AggregationQuery aggs = 5;
   optional HistQuery hist = 6;
   bool with_docs = 7;
+  int32 size = 8;
 }
 
 message StartAsyncSearchResponse {
