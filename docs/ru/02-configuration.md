@@ -1,21 +1,21 @@
-# Configuration
+# Конфигурация
 
-> Despite the fact that there are a huge number of parameters in the configuration, not all of them are supported by UI at the moment. As the UI evolves, more and more of the parameters will be relevant.
+> Несмотря на то, что в конфигурации имеется огромное количество параметров, не все из них на данный момент поддерживаются пользовательским интерфейсом. По мере развития пользовательского интерфейса бОльшее количество параметров станет актуальным.
 
-The configuration is set via a yaml file and consists of three sections:
-- [server](#server) - seq-ui server configutarion
-- [clients](#clients) - seq-db clients configuration
-- [handlers](#handlers) - seq-ui api handlers configuration
+Конфигурация задается `yaml`-файлом и состоит из 3 разделов:
+- [server](#server) - конфигурация сервера seq-ui
+- [clients](#clients) - конфигурация seq-db клиентов 
+- [handlers](#handlers) - конфигурация seq-ui API
 
-You can specify your config file when running seq-ui by providing it with flag `--config`:
+Вы можете указать свой конфигурационный файл при запуске seq-ui используя флаг `--config`:
 ```shell
-go run ./cmd/seq-ui --config <path-to-config-file>
+go run ./cmd/seq-ui --config <путь-до-файла>
 ```
 
-## Config examples
+## Примеры конфигурационных файлов
 
-See config examples in `config` directory:
-- [example](https://github.com/ozontech/seq-ui/tree/main/config/config.example.yaml) - the minimal config
+Вы найдете примеры конфигурационных файлов в каталоге `config`:
+- [example](https://github.com/ozontech/seq-ui/tree/main/config/config.example.yaml) - минимальный конфигурационный файл
 
 ## Server
 
@@ -37,323 +37,324 @@ server:
   clickhouse:
 ```
 
-### gRPC/HTTP server
+### gRPC/HTTP сервер
 
 **`http_addr`** *`string`* *`required`*
 
-Host for HTTP server.
+Адрес HTTP-сервера.
 
 **`grpc_addr`** *`string`* *`required`*
 
-Host for gRPC server.
+Адрес gRPC-сервера.
 
 **`debug_addr`** *`string`* *`required`*
 
-Host for debug server.
+Адрес debug-сервера.
 
 **`grpc_connection_timeout`** *`string`* *`default="0"`*
 
-Sets the timeout for connection establishment (up to and including HTTP/2 handshaking) for all new connections in gRPC server. A zero or negative value will result in an immediate timeout.
+Время ожидания установки соединения (вплоть до HTTP/2 подтверждения) для всех новых подключений к gRPC-серверу. Нулевое или отрицательное значение приведет к немедленному истечению времени ожидания.
 
-> The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+> Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
 **`http_read_timeout`** *`string`* *`default="0"`*
 
-The maximum duration for reading the entire request, including the body. A zero or negative value means there will be no timeout.
+Максимальная продолжительность чтения всего запроса, включая тело. Нулевое или отрицательное значение означает, что продолжительность чтения не ограничена.
 
-> The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+> Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
 **`http_read_header_timeout`** *`string`* *`default="0"`*
 
-The amount of time allowed to read request headers. If zero, the value of `http_read_timeout` is used. If both are zero or negative value, there is no timeout.
+Максимальная продолжительность чтения заголовков запроса. Нулевое значение означает, что будет использоваться значение `http_read_timeout`. Если оба параметра имеют нулевое или отрицательное значение, то продолжительность чтения не будет ограничена.
 
-> The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+> Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
 **`http_write_timeout`** *`string`* *`default="0"`*
 
-The maximum duration after header is read and before timing out writes of the response. A zero or negative value means there will be no timeout.
+Максимально допустимое время записи ответа после прочтения заголовка. Нулевое или отрицательное значение означает, что время записи не ограничено.
 
-> The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+> Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
 **`cors`** *`CORS`* *`optional`*
 
-HTTP server CORS config. If not set, no CORS settings will be applied.
+Политики CORS HTTP-сервера. Если параметр не задан, политики CORS применяться не будут.
 
-`CORS` fields:
+Поля `CORS`:
 
 + **`allowed_origins`** *`[]string`* *`default=["*"]`*
 
-  A list of origins a cross-domain request can be executed from. If the special `"*"` value is present in the list, all origins will be allowed.
+  Список источников, из которых может быть выполнен междоменный запрос. Если в списке присутствует специальное значение `"*"`, то будут разрешены все источники.
 
 + **`allowed_methods`** *`[]string`* *`default=["HEAD", "GET", "POST", "PATCH", "DELETE"]`*
 
-  A list of methods the client is allowed to use with cross-domain requests.
+  Список методов, которые разрешены при междоменных запросах.
 
 + **`allowed_headers`** *`[]string`* *`default=[]`*
 
-  A list of non simple headers the client is allowed to use with cross-domain requests. If the special `"*"` value is present in the list, all headers will be allowed.
+  Список нестандартных заголовков, которые клиенту разрешено использовать в междоменных запросах. Если в списке присутствует специальное значение `"*"`, то будут разрешены все заголовки.
   
-  > `"Origin"` header is always appended to the list.
+  > Заголовок `"Origin"` всегда добавляется в список.
 
 + **`exposed_headers`** *`[]string`* *`default=[]`*
 
-  Indicates which headers are safe to expose to the API of a CORS API specification.
+  Список заголовок, безопасных для использования в API спецификации CORS API.
 
 + **`allow_credentials`** *`bool`* *`default=false`*
 
-  Indicates whether the request can include user credentials like cookies, HTTP authentication or client side SSL certificates.
+  Определяет, может ли запрос включать учетные данные пользователя, такие как файлы cookie, HTTP-аутентификацию или клиентские SSL-сертификаты.
 
 + **`max_age`** *`int`* *`default=0`*
 
-  Indicates how long (in seconds) the results of a preflight request can be cached.
+  Указывает, как долго (в секундах) могут кэшироваться результаты `preflight`-запроса.
 
 + **`options_passthrough`** *`bool`* *`default=false`*
 
-  Instructs preflight to let other potential next handlers to process the OPTIONS method. Turn this on if you handles OPTIONS.
+  Определяет, могут ли следующие потенциальные обработчики принимать метод `OPTIONS`. Включите, если обрабатываете метод `OPTIONS`.
 
-### Auth
+### Авторизация
 
 **`jwt_secret_key`** *`string`*  *`default=""`*
 
-If set to non-empty string, JWT provider is created for API tokens verification.
+Если задана непустая строка, то создается JWT-провайдер для верификации токенов.
 
-> API tokens allow access only for [`/seqapi/*`, `/massexport/*`] routes in HTTP API and [`SeqAPIService`, `MassExportService`] service in gRPC API. For other routes/services requiring auth, OIDC check will be performed, so `jwt_secret_key` should be used in pair with `oidc`.
+> Авторизация по токенам разрешена только для обработчиков [`/seqapi/*`, `/massexport/*`] в HTTP API и сервисам [`SeqAPIService`, `MassExportService`] в gRPC API. Для других обработчиков/сервисов, требующих авторизацию, будет использоваться OIDC, поэтому `jwt_secret_key` следует использовать в паре с `oidc`.
 
 **`oidc`** *`OIDC`* *`optional`*
 
-Open ID Connnect config. If not set, no OIDC verification will be applied.
+Конфигурация Open ID Connect. Если не задано, то верификации по OIDC не будет.
 
-`OIDC` fields:
+Поля `OIDC`:
 
 + **`auth_urls`** *`[]string`* *`required`*
 
-  List of OIDC auth URLs for sending verification requests. For each verification, the entire `auth_urls` list will be searched, choosing a URL.
+  Список адресов OIDC для отправки запросов на верификацию. Для каждого запроса все адреса из списка могут быть использованы.
   
 + **`root_ca`** *`string`* *`default=""`*
 
-  Path to file with CA root certificate or the certificate itself. If set, it will be passed to OIDC client tls config.
+  Путь до файла или содержимое корневого CA сертификата. Если задан, то будет использоваться в tls конфигурации OIDC клиента.
 
 + **`ca_cert`** *`string`* *`default=""`*
 
-  Path to file with CA certificate or the certificate itself. If set, it will be passed to OIDC client tls config.
+  Путь до файла или содержимое CA сертификата. Если задан, то будет использоваться в tls конфигурации OIDC клиента.
 
 + **`private_key`** *`string`* *`default=""`*
 
-  Path to file with private key generated with CA certificate or the private key itself. If set, it will be passed to OIDC client tls config.
+  Путь до файла или содержимое приватного ключа, сгенерированного вместе с сертификатом. Если задан, то будет использоваться в tls конфигурации OIDC клиента.
 
 + **`ssl_skip_verify`** *`bool`* *`default=false`*
 
-  If set, disables security checks on OIDC client.
+  Определяет, отключать ли проверку безопасности на OIDC клиенте.
 
 + **`allowed_clients`** *`[]string`*  *`default=[]`*
 
-  List of allowed clients. If set, only the specified clients will be verified. The `Audience` token field is used.
+  Список разрешенных клиентов. Если задан непустой список, то будут допущены только указанные клиенты. Для определения клиента используется поле `Audience` из токена.
 
 + **`skip_verify`** *`bool`* *`default=false`*
 
-  If set, only the issuer and expiration are checked locally without requests to `auth_urls`.
+  Определяет, выполнять ли проверку только `issuer` и `expiration` локально без запросов в `auth_urls`.
 
 + **`cache_secret_key`** *`string`* *`default=""`*
 
-  If set to non-empty string, OIDC tokens are cached using `cache_secret_key` until the token expiration.
+  Если задана непустая строка, то OIDC токены кешируются используя `cache_secret_key` до истечения их срока действия.
 
-### Rate limiting
+### Ограничение частоты запросов
 
 **`rate_limiters`** *`map[string]ApiRateLimiters`* *`optional`*
 
-gRPC and HTTP server rate limiters configs. If not set, rate limiting will not be applied.
+Конфигурации ограничения частоты запросов в gRPC и HTTP сервере. Если не задано, то частота запросов неограничена.
 
-> Map key is HTTP API base route or gRPC API service name:
+> Ключ карты - базовый url HTTP API или имя сервиса gRPC API:
 > - `seqapi`, `userprofile`, `dashboards`, `massexport`, `errorgroups`
 > - `SeqAPIService`, `UserProfileService`, `DashboardsService`, `MassExportService`, `ErrorGroupsService`
 
-
-`ApiRateLimiters` fields:
+Поля `ApiRateLimiters`:
 
 + **`default`** *`RateLimiter`* *`required`*
 
-  Describes default rate limiter for unspecified and unauthorized users.
+  Ограничение частоты запросов по умолчанию, для неопределенных и неавторизованных пользователей.
 
 + **`spec_users`** *`map[string]RateLimiter`* *`optional`*
 
-  Describes rate limiters for special users and tokens. Key is username or token name.
+  Ограничение частоты запросов для конкретных пользователей и токенов. Ключ - имя пользователя или токена.
 
-`RateLimiter` fields:
+Поля `RateLimiter`:
 
 + **`rate_per_sec`** *`int`* *`required`*
 
-  Number of requests allowed per second. If [auth](#auth) is active, each user gets personal quota, otherwise the quota is general for all requests.
+  Разрешенное количество запросов в секунду. Если настроена [авторизация](#авторизация), то у каждого пользователя персональная квота. В противном случае квота общая для всех запросов.
 
-  > The app utilizes rate limiter based on [Generic Cell Rate Algorithm (GCRA)](https://en.wikipedia.org/wiki/Generic_cell_rate_algorithm). If `max_burst` is set to zero, the next request will be allowed after `(1 sec / rate_per_sec)` time (e.g. `rate_per_sec` is set to 2, then the next request will be allowed after 500ms).
+  > Механизм ограничения частоты запросов основан на [Generic Cell Rate Algorithm (GCRA)](https://en.wikipedia.org/wiki/Generic_cell_rate_algorithm). Если значение `max_burst` равно нулю, то следующий запрос будет разрешен по истечении времени `(1 секунда / rate_per_sec)` (например, если значение `rate_per_sec` равно 2, тогда следующий запрос будет разрешен через 500 миллисекунд).
 
 + **`max_burst`** *`int`* *`default=0`*
 
-  Number of requests that will be allowed to exceed the rate in a single burst.
+  Количество запросов, которым будет разрешено превысить ограничение в рамках одно временнОго окна.
 
-  > Total amount of requests allowed per second can be higher than `rate_per_sec`, if `max_burst` is greater than zero.
+  > Общее количество разрешенных запросов в секунду может превышать значение `rate_per_sec`, если значение `max_burst` больше нуля.
 
 + **`store_max_keys`** *`int`* *`default=0`*
 
-  Max amount of keys to be stored in rate limiter store. A zero or negative value means that the amount of keys is considered unlimited.
+  Максимальное количество ключей, которое может храниться в хранилище ограничения частоты запросов. Нулевое или отрицательное значение означает, что количество ключей - не ограничено.
 
 + **`per_handler`** *`bool`* *`default=false`*
 
-  If set, every API handler will be limited separately.
+  Определяет, будет ли каждый обработчик API иметь свое ограничение.
 
-### Cache
+### Кэш
 
 **`cache`** *`Cache`* *`optional`*
 
-Cache config.
+Конфигурация кэша.
 
-`Cache` fields:
+Поля `Cache`:
 
 + **`inmemory`** *`InmemoryCache`* *`optional`*
 
-  Config for in-memory cache.
+  Конфигурация кэша в оперативной памяти.
 
-  > If not set, it will be applied with default values.
+  > Если не задано, то будет создан кэш с параметрами по умолчанию.
 
 + **`redis`** *`Redis`* *`optional`*
 
-  Config for redis cache.
+  Конфигурация Redis-кэша.
 
-  It works in pair with in-memory cache:
-  + when a key-value pair sets in redis, it's also sets in in-memory cache
-  + when in-memory cache contains the key, the request to redis doesn't occur
-  + when in-memory cache doesn't contain the key, but redis contains, the redis result sets in in-memory cache
+  Работает в паре с кэшем в оперативной памяти:
+  + когда пара ключ-значение сохраняется в redis, она также сохраняется в кэш в оперативной памяти
+  + когда кэш в оперативной памяти содержит ключ, запрос к redis-кэшу не выполняется
+  + если ключ не найден в кэше в оперативной памяти, но найден в redis-кэше, то значение сохраняется в кэше в оперативной памяти
 
-  > If redis isn't available, it falls back to in-memory cache.
+  > Если redis недоступен, то вместо него будет использоваться кэш в оперативной памяти.
 
-`InmemoryCache` fields:
+Поля `InmemoryCache`:
 
 + **`num_counters`** *`int`* *`default=1e7`*
 
-  The number of counters (keys) to keep that hold access frequency information. It's generally a good idea to have more counters than the max cache capacity (`max_cost`), as this will improve eviction accuracy and subsequent hit ratios. If set to zero or negative value, then it will be reset to `default`.
+  Количество счетчиков (ключей), которые содержат информацию о частоте обращения. Если установлено нулевое или отрицательное значение, то оно будет сброшено на `default`.
+
+  > Рекомендуется иметь больше счетчиков, чем максимальная вместимость кэша (`max_cost`), т.к. это повысит точность вытеснения и последующие коэффициенты попадания
 
 + **`max_cost`** *`int`* *`default=1e6`*
 
-  Cache capacity. If set to zero or negative value, then it will be reset to `default`.
+  Вместимость кэша. Если установлено нулевое или отрицательное значение, то оно будет сброшено на `default`.
 
 + **`buffer_items`** *`int`* *`default=64`*
 
-  Determines the size of Get buffers. If set to zero or negative value, then it will be reset to `default`.
+  Размер Get-буферов. Если установлено нулевое или отрицательное значение, то оно будет сброшено на `default`.
 
-`Redis` fields:
+Поля `Redis`:
 
 + **`addr`** *`string`* *`required`*
 
-  Address in `host:port` format.
+  Адрес в формате `host:port`.
 
 + **`username`** *`string`* *`default=""`*
 
-  Username to authenticate the connection when connecting to a Redis 6.0 instance, or greater, that is using the Redis ACL system.
+  Имя пользователя для проверки подлинности соединения при подключении к Redis 6.0 или более поздней версии, использующей систему Redis ACL.
 
 + **`password`** *`string`* *`default=""`*
 
-  Password specified in the requirepass server configuration option (if connecting to a Redis 5.0 instance, or lower), or the User Password when connecting to a Redis 6.0 instance, or greater, that is using the Redis ACL system.
+  Пароль, указанный в параметре `requirepass` конфигурации сервера (при подключении к Redis версии 5.0 или ниже), или пароль пользователя (при подключении к Redis версии 6.0 или выше, использующей систему Redis ACL).
 
 + **`timeout`** *`string`* *`default="3s"`*
 
-  Read/write timeout. If set to `-1`, disables timeout.
+  Время ожидания чтения/записи. Если установлено значение `-1`, то время ожидание неограничено.
 
-  > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+  > Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
 + **`max_retries`** *`int`* *`default=3`*
 
-  Maximum number of retries before giving up. If set to `-1`, disables retries.
+  Максимальное количество повторных попыток при неуспешных запросах. Если установлено значение `-1`, то количество попыток неограничено.
 
 + **`min_retry_backoff`** *`string`* *`default="8ms"`*
 
-  Minimum backoff between each retry. If set to `-1`, disables backoff.
+  Минимальная задержка между повторными попытками. Если установлено значение `-1`, то задержки между повторами нет.
 
-  > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+  > Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
 + **`max_retry_backoff`** *`string`* *`default="512ms"`*
 
-  Maximum backoff between each retry (`512ms` by default). If set to `-1`, disables backoff.
+  Максимальная задержка между повторными попытками. Если установлено значение `-1`, то задержки между повторами нет.
 
-  > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+  > Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
-### External storages
+### Внешние хранилища
 
 **`db`** *`DB`* *`optional`*
 
-Postgres database config.
+Конфигурация базы данных PostgreSQL.
 
-> Required for `/userprofile` and `seqapi/v1/async_search/` handlers.
+> Необходимо для работы API `/userprofile` и `seqapi/v1/async_search/`.
 
-`DB` fields:
+Поля `DB`:
 
 + **`name`** *`string`* *`required`*
 
-  Database name.
+  Имя базы данных.
 
 + **`host`** *`string`* *`required`*
 
-  Database host.
+  Адрес базы данных.
 
 + **`port`** *`int`* *`required`*
 
-  Database port.
+  Порт базы данных.
 
 + **`user`** *`string`* *`required`*
 
-  Database username.
+  Имя пользователя базы данных.
 
 + **`pass`** *`string`* *`required`*
 
-  Database password.
+  Пароль пользователя базы данных.
 
 + **`connection_pool_capacity`** *`int`* *`required`*
 
-  The maximum connection pool size.
+  Максимальный размер пула подключений.
 
 + **`request_timeout`** *`string`* *`required`*
 
-  Timeout for all database requests.
+  Время ожидания для всех запросов к базе данных.
 
-  > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+  > Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
 + **`use_prepared_statements`** *`bool`* *`default=true`*
 
-  If set to `false`, disables the use of postgres prepared statements.
+  Определяет, использовать ли `prepared statements` PostgreSQL.
 
 **`clickhouse`** *`ClickHouse`* *`optional`*
 
-> Required for `/errorgroups` handlers.
+Конфигурация базы данных ClickHouse.
 
-ClickHouse database config.
+> Необходимо для работы API `/errorgroups`.
 
-`ClickHouse` fields:
+Поля `ClickHouse`:
 
 + **`database`** *`string`* *`required`*
 
-  Database name.
+  Имя базы данных.
 
 + **`username`** *`string`* *`required`*
 
-  Database username.
+  Имя пользователя базы данных.
 
 + **`password`** *`int`* *`required`*
 
-  Database password.
+  Пароль пользователя базы данных.
 
 + **`dial_timeout`** *`int`* *`default="5s"`*
 
-  Database dial timeout. If set to zero or negative value, then it will be reset to `default`.
+  Время ожидания подключения к базе данных. Если установлено нулевое или отрицательное значение, то оно будет сброшено на `default`.
 
-  > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+  > Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
 + **`read_timeout`** *`int`* *`default="30s"`*
 
-  Database read timeout. If set to zero or negative value, then it will be reset to `default`.
+  Время ожидания чтения из базы данных. Если установлено нулевое или отрицательное значение, то оно будет сброшено на `default`.
 
-  > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+  > Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
 + **`sharded`** *`bool`* *`default=false`*
 
-  Indicates whether the clickhouse is sharded. It is used for some queries that depend on the clickhouse scheme.
+  Указывает, является ли ClickHouse реплицированным. Используется для некоторых запросов, которые зависят от схемы ClickHouse.
 
 ## Clients
 
@@ -371,64 +372,61 @@ clients:
 
 **`seq_db_addrs`** *`[]string`* *`required`*
 
-List of seq-db proxy hosts to be used in client calls. If there are more than one host, for each request random host will be chosen.
+Список адресов seq-db proxy, которые будут использоваться для клиентских вызовов. Если указано более одного адреса, то адрес для каждого запроса будет выбираться случайным образом.
 
 **`proxy_client_mode`** *`string`* *`default="grpc"`* *`options="grpc"`*
 
-Allow choosing how to send requests to seq-db.
+Способ отправки запросов в seq-db.
 
 **`seq_db_timeout`** *`string`* *`default="0"`*
 
-Timeout for requests made by the client. A zero value means no timeout.
+Время ожидания для всех запросов к seq-db. Нулевое значение означает, что время ожидания не ограничено.
 
-> The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+> Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
 **`seq_db_avg_doc_size`** *`int`* *`default=0`*
 
-Specifies the average documents size in `KB` that the client calls returns.
-It's used in combination with `handlers.seq_api.max_search_limit` to calculate the maximum response size per client request.
+Средний размер документов в `KB`, который возвращает seq-db. Используется в сочетании с `handlers.seq_api.max_search_limit` для расчета максимального размера ответа на запрос клиента.
 
-> Regardless of `seq_db_avg_doc_size`, the minimum response size per client request is `4MB`.
+> Независимо от `seq_db_avg_doc_size`, минимальный размер ответа на запрос клиента составляет `4MB`.
 
 **`request_retries`** *`int`* *`default=0`*
 
-The number of retries to send a request to client after the first attempt. For each retry, the entire `seq_db_addrs` list will be searched, choosing a random host. A zero value means no retries.
-
-> If set to negative value, then it will be reset to `default`.
+Количество повторных попыток отправки запроса клиенту после первой попытки. Для каждой повторной попытки будет выбран случайный адрес из списка `seq_db_addrs`. Нулевое значение означает отсутствие повторных попыток. Если установлено отрицательное значение, то оно будет сброшено на `default`.
 
 **`initial_retry_backoff`** *`string`* *`default="0"`*
 
-Initial duration interval value to be used in backoff with retries. If set to `0`, disables backoff.
+Начальная задержка между повторными попытками. Если установлено значение `0`, то задержки между повторами нет.
 
-> The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+> Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
 **`max_retry_backoff`** *`string`* *`default="0"`*
 
-Max duration interval value to be used in backoff with retries. If set to `0`, only value from `initial_retry_backoff` is used for calculating backoff and the backoff is not higher than `initial_retry_backoff * 2`.
+Максимальная задержка между повторными попытками. Если установлено значение `0`, то используется значение из `initial_retry_backoff`, и максимальная задержка не превышает `initial_retry_backoff * 2`.
 
-> The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+> Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
 **`grpc_keepalive_params`** *`GRPCKeepaliveParams`* *`optional`*
 
-If gRPC keepalive params are not set, no keepalive params are applied to gRPC client.
+Параметры keepalive gRPC-клиента seq-db.
 
-`GRPCKeepaliveParams` fields:
+Поля `GRPCKeepaliveParams`:
 
 + **`time`** *`string`* *`default="10s"`*
 
-  After a duration of this time if the client doesn't see any activity it pings the server to see if the transport is still alive. If set below `10s`, a minimum value of `10s` will be used instead.
+  Время неактивности, по истечении которого клиент проверяет работоспособность сервера. Если установлено значение меньше `10s`, то оно будет сброшено на `default`.
 
-  > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+  > Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
 + **`timeout`** *`string`* *`default="1s"`*
 
-  After having pinged for keepalive check, the client waits for a duration of Timeout and if no activity is seen even after that the connection is closed. If set below `1s`, a minimum value of `1s` will be used instead.
+  Время ожидания при проверке работоспособности, по истечении которого в случае бездействия соединение будет закрыто. Если установлено значение меньше `10s`, то оно будет сброшено на `default`.
 
-  > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+  > Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
 + **`permit_without_stream`** *`bool`* *`default=false`*
 
-  If set to `true`, client sends keepalive pings even with no active RPCs. Otherwise, when there are no active RPCs, `time` and `timeout` will be ignored and no keepalive pings will be sent.
+  Если установлено значение `true`, клиент отправляет запросы даже при отсутствии активных RPC. В противном случае, когда активных RPC нет, значения `time` и `timeout` будут проигнорированы, и запросы отправлены не будут.
 
 ## Handlers
 
@@ -443,185 +441,185 @@ handlers:
 
 **`seq_api`** *`SeqAPI`* *`optional`*
 
-Config for `/seqapi` API handlers.
+Конфигурация `/seqapi` API.
 
 `SeqAPI` fields:
 
 + **`max_search_limit`** *`int`* *`default=0`*
 
-  Max value for `limit` field in search requests.
+  Максимальное значение для поля `limit` в поисковых запросах.
 
 + **`max_search_total_limit`** *`int`* *`default=1e6`*
 
-  If search response returns number of events greater than `max_search_total_limit`, then the error will return.
+  Если поисковый запрос возвращает количество событий, превышающее `max_search_total_limit`, то возвращается ошибка.
 
 + **`max_search_offset_limit`** *`int`* *`default=1e6`*
 
-  Max value for `offset` field in search requests.
+  Максимальное значение для поля `offset` в поисковых запросах.
 
 + **`max_export_limit`** *`int`* *`default=0`*
 
-  Max value for `limit` field in export requests.
+  Максимальное значение для поля `limit` в запросах на экспорт.
 
 + **`seq_cli_max_search_limit`** *`int`* *`default=0`*
 
-  The maximum number of logs that can be processed by seq-cli in one search command run.
+  Максимальное количество событий, которое может быть получено за одну команду поиска в seq-cli.
 
 + **`max_parallel_export_requests`** *`int`* *`default=1`*
 
-  Number of parallel export requests allowed. If [auth](#auth) is active, each user gets personal quota, otherwise the quota is general for all requests. If set to zero or negative value, then it will be reset to `default`.
+  Максимальное количество параллельных запросов на экспорт. Если настроена [авторизация](#авторизация), то каждый пользователь получает персональную квоту, в противном случае квота является общей для всех запросов. Если установлено нулевое или отрицательное значение, то оно будет сброшено на `default`.
 
 + **`max_aggregations_per_request`** *`int`* *`default=1`*
 
-  Max allowed aggregations per request. If set to zero or negative value, then it will be reset to `default`.
+  Максимальное количество аггрегаций за один поисковый запрос. Если установлено нулевое или отрицательное значение, то оно будет сброшено на `default`.
 
 + **`max_buckets_per_aggregation_ts`** *`int`* *`default=200`*
 
-  Max allowed buckets per aggregation with timeseries request. The number of buckets is calculated as (`to`-`from`) / `interval`. If set to zero or negative value, then it will be reset to `default`.
+  Максимальное количество бакетов за один запрос аггрегации с таймсерией. Количество бакетов рассчитывается как (`to`-`from`) / `interval`. Если установлено нулевое или отрицательное значение, то оно будет сброшено на `default`.
 
 + **`events_cache_ttl`** *`string`* *`default="24h"`*
 
-  TTL for events caching. If not set or set to zero, then it will be reset to `default`.
+  TTL кэширования событий. Если установлено нулевое или отрицательное значение, то оно будет сброшено на `default`.
 
-  > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+  > Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
 + **`logs_lifespan_cache_key`** *`string`* *`default="logs_lifespan"`*
 
-  Cache key for logs lifespan data. Useful when multiple instances of seq-ui use one Redis cache. If set to empty string, then it will be reset to `default`.
+  Ключ кэширования данных о времени жизни логов. Полезно, когда несколько инстансов seq-ui используют один Redis-кэш. Если установлена пустая строка, то она будет сброшена на `default`.
 
 + **`logs_lifespan_cache_ttl`** *`string`* *`default="10m"`*
 
-  TTL for logs lifespan caching. If not set or set to zero, then it will be reset to `default`.
+  TTL кэширования данных о времени жизни логов. Если установлено нулевое или отрицательное значение, то оно будет сброшено на `default`.
 
-  > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+  > Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
 + **`fields_cache_ttl`** *`string`* *`default="0"`*
 
-  TTL for fields caching. A zero value means no caching.
+  TTL кэширования индексируемых полей. Нулевое значение означает, что кэширование не происходит.
 
-  > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+  > Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
 + **`pinned_fields`** *`[]PinnedField`* *`default=[]`*
 
-  List of fields which will be pinned.
+  Список полей, которые будут закреплены в пользовательском интерфейсе.
 
-  `PinnedField` fields:
+  Поля `PinnedField`:
 
   + **`name`** *`string`* *`required`*
 
-    Name of field.
+    Имя поля.
 
   + **`type`** *`string`* *`required`* *`options="text"|"keyword"`*
 
-    Type of field.
+    Тип поля.
 
 ### Error groups
 
 **`error_groups`** *`ErrorGroups`* *`optional`*
 
-Config for `/errorgroups` API handlers.
+Конфигурация `/errorgroups` API.
 
-`ErrorGroups` fields:
+Поля `ErrorGroups`:
 
 + **`log_tags_mapping`** *`LogTagsMapping`* *`optional`*
 
-    Mapping of clickhouse column names and `log_tags` keys.
+  Сопоставление имен ClickHouse-столбцов и ключей в столбце `log_tags`.
 
-  `LogTagsMapping` fields:
+  Поля `LogTagsMapping`:
 
   + **`release`** *`[]string`* *`default=[]`*
 
-    `log_tags` keys for `release` column.
+    Ключи `log_tags` для столбца `release`.
 
 + **`query_filter`** *`map[string]string`* *`optional`*
 
-    Additional conditions to be added to clickhouse queries.
+  Дополнительные условия, которые будут добавлены к запросам в СlickHouse.
 
 ### Mass export
 
 **`mass_export`** *`MassExport`* *`optional`*
 
-Config for `/massexport` API handlers.
+Конфигурация `/massexport` API.
 
-`MassExport` fields:
+Поля `MassExport`:
 
 + **`batch_size`** *`int`* *`default=10000`*
 
-  Size of batch to fetch logs from log storage per request.
+  Количество событий, извлекаемых из `seq-db`, за один запрос.
 
 + **`workers_count`** *`int`* *`required`*
 
-  Number of workers downloading logs from `seq-db` and uploading them to file store simultaneously. Must be positive.
+  Количество "воркеров", параллельно выгружающих события из `seq-db` и загружающих их в хранилище файлов. Значение должно быть неотрицательным.
 
 + **`tasks_channel_size`** *`int`* *`default=10000000`*
 
-  Size of channel that contains time subsegments to export. Must be positive.
+  Размер канала, содержащего временные сегменты экспорта. Значение должно быть неотрицательным.
 
 + **`part_length`** *`string`* *`default="1h"`*
 
-  Length of time segment which logs stored in one file.
+  Отрезок времени, за который хранятся события в одном файле.
 
-  > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+  > Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
 + **`url_prefix`** *`string`* *`required`*
 
-  URL prefix to form links to files in s3. Must be non-empty string.
+  URL-префикс для формирования ссылок на файлы в S3. Значение должно быть непустой строкой.
 
 + **`allowed_users`** *`[]string`* *`default=[]`*
 
-  List of users who can use mass export api. If it's empty then mass exports allowed for all users; display username is `anonymous`.
+  Список пользователей, которым разрешено использовать `/massexport` API. Если задан пустой список, то API доступно для всех пользователей. В этом случае отображаемое имя - `anonymous`.
 
 + **`file_store`** *`FileStore`* *`required`*
 
-  File store config.
+  Конфигурация файлового хранилища.
 
 + **`session_store`** *`SessionStore`* *`required`*
 
-  Session store config.
+  Конфигурация хранилища сессий.
 
 + **`seq_proxy_downloader`** *`SeqProxyDownloader`* *`required`*
 
-  seq-db proxy client config.
+  Конфигурация клиента seq-db proxy.
 
-`FileStore` fields:
+Поля `FileStore`:
 
 + **`s3`** *`S3`* *`required`*
 
-  S3 config.
+  Конфигурация S3.
 
-  `S3` fields:
+  Поля `S3`:
   + **`endpoint`** *`string`* *`required`*
   + **`access_key_id`** *`string`* *`required`*
   + **`secret_access_key`** *`string`* *`required`*
   + **`bucket_name`** *`string`* *`required`*
   + **`enable_ssl`** *`bool`* *`default=false`*
 
-`SessionStore` fields:
+Поля `SessionStore`:
 
 + **`redis`** *`Redis`* *`required`*
 
-  Redis session store config. See `Redis` in [Cache](#cache) section.
+  Конфигурация Redis в качестве хранилища сессий. Для деталей смотрите `Redis` в разделе [Кэш](#кэш).
 
 + **`export_lifetime`** *`string`* *`default="168h"`*
 
-  Expiration time for all keys stored in redis.
+  Время жизни ключей в хранилище сессий.
 
-`SeqProxyDownloader` fields:
+Поля `SeqProxyDownloader`:
 
 + **`delay`** *`string`* *`default="1s"`*
 
-  Represents delay between seq-db search queries.
+  Задержка между поисковыми запросами в seq-db.
 
-  > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+  > Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
 + **`initial_retry_backoff`** *`string`* *`default="0"`*
 
-  Initial retry backoff if previous query was rate-limited. If it's less than `delay`, then `delay` value will be reset to `initial_retry_backoff`.
+  Начальная задержка между повторными попытками. Если значение меньше, чем `delay`, то значение `delay` будет сброшено на `initial_retry_backoff`.
   
-  > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+  > Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
 + **`max_retry_backoff`** *`string`* *`default="0"`*
 
-  Max retry backoff if previous query was rate-limited. If it's less than `initial_retry_backoff`, then `initial_retry_backoff` value will be reset to `max_retry_backoff`
+  Максимальная задержка между повторными попытками. Если значение меньше, чем `initial_retry_backoff`, то значение `initial_retry_backoff` будет сброшено на `max_retry_backoff`
 
-  > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+  > Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
