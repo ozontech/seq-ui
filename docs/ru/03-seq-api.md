@@ -459,7 +459,7 @@ curl -X POST \
 
 **Авторизация:** НЕТ
 
-#### Request
+#### Запрос
 
 ```shell
 curl -X GET \
@@ -467,7 +467,7 @@ curl -X GET \
   -H "accept: application/json"
 ```
 
-#### Response
+#### Ответ
 
 ```json
 {
@@ -490,7 +490,7 @@ curl -X GET \
 
 **Авторизация:** НЕТ
 
-#### Request
+#### Запрос
 
 ```shell
 curl -X GET \
@@ -498,7 +498,7 @@ curl -X GET \
   -H "accept: application/json"
 ```
 
-#### Response
+#### Ответ
 
 ```json
 {
@@ -516,7 +516,7 @@ curl -X GET \
 
 **Авторизация:** НЕТ
 
-#### Request
+#### Запрос
 
 ```shell
 curl -X GET \
@@ -524,7 +524,7 @@ curl -X GET \
   -H "accept: application/json"
 ```
 
-#### Response
+#### Ответ
 
 ```json
 {
@@ -538,7 +538,7 @@ curl -X GET \
 
 **Авторизация:** НЕТ
 
-#### Request
+#### Запрос
 
 ```shell
 curl -X GET \
@@ -546,7 +546,7 @@ curl -X GET \
   -H "accept: application/json"
 ```
 
-#### Response
+#### Ответ
 
 ```json
 {
