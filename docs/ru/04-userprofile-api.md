@@ -1,29 +1,29 @@
 # UserProfile API
 
-UserProfile API provides the ability to manage users and their data.
+UserProfile API предоставляет возможность управлять пользователями и их данными.
 
-**The API requires a PostgreSQL DB and Authorization to work, which must be specified in [config](./02-configuration.md).**
+**Для работы API требуется база данных PostgreSQL и Авторизация, которые должны быть настроены в [конфигурации](./02-configuration.md).**
 
 ## HTTP API
 
-**Base URL:** `/userprofile/v1`
+**Базовый URL-адрес:** `/userprofile/v1`
 
-The username is taken from the `Authorization` header.
+Имя пользователя берется из заголовка `Authorization`.
 
-> You can also use [swagger file](https://github.com/ozontech/seq-ui/blob/main/swagger/swagger.json) to view the HTTP API in detail.
+> Вы также можете использовать [swagger-файл](https://github.com/ozontech/seq-ui/blob/main/swagger/swagger.json) для подробного просмотра HTTP API.
 
 ### `GET /profile`
 
-Returns user data:
-- Timezone
-- Onboarding version
-- Log columns (Pinned table columns in UI)
+Возвращает пользовательские данные:
+- Часовой пояс
+- Версия пройденного обучения 
+- Столбцы таблицы логов (закрепленные столбцы таблицы в пользовательском интерфейсе)
 
-> If user doesn't exist in the DB, it will be created.
+> Если пользователя нет в базе данных, то он будет создан.
 
-**Auth:** YES
+**Авторизация:** ДА
 
-#### Request
+#### Запрос
 
 ```shell
 curl -X GET \
@@ -32,7 +32,7 @@ curl -X GET \
   -H "Authorization: Bearer <token>"
 ```
 
-#### Response
+#### Ответ
 
 ```json
 {
@@ -44,20 +44,20 @@ curl -X GET \
 
 ### `PATCH /profile`
 
-Updates user data:
-- Timezone
-- Onboarding version
-- Log columns (Pinned table columns in UI)
+Обновлят пользовательские данные:
+- Часовой пояс
+- Версия пройденного обучения 
+- Столбцы таблицы логов (закрепленные столбцы таблицы в пользовательском интерфейсе)
 
-**Auth:** YES
+**Авторизация:** ДА
 
-**Request Body (application/json):**
-- `timezone` (*string*, *optional*): User's timezone.
-- `onboardingVersion` (*string*, *optional*): User's onboarding version.
-- `log_columns` (*object*, *optional*): User's pinned table columns.
-  - `columns` (*[]string*, *required*): List of columns.
+**Тело запроса (application/json):**
+- `timezone` (*string*, *optional*): Часовой пояс пользователя.
+- `onboardingVersion` (*string*, *optional*): Версия пройденного пользователем обучения.
+- `log_columns` (*object*, *optional*): Закрепленные пользователем столбцы таблицы логов.
+  - `columns` (*[]string*, *required*): Список столбцов.
 
-#### Request
+#### Запрос
 
 ```shell
 curl -X PATCH \
@@ -73,7 +73,7 @@ curl -X PATCH \
   }'
 ```
 
-#### Response
+#### Ответ
 
 ```json
 {}
@@ -81,11 +81,11 @@ curl -X PATCH \
 
 ### `GET /queries/favorite`
 
-Returns user's favorite (saved) search queries.
+Возвращает избранные (сохраненные) поисковые запросы пользователя.
 
-**Auth:** YES
+**Авторизация:** ДА
 
-#### Request
+#### Запрос
 
 ```shell
 curl -X GET \
@@ -94,7 +94,7 @@ curl -X GET \
   -H "Authorization: Bearer <token>"
 ```
 
-#### Response
+#### Ответ
 
 ```json
 {
@@ -125,16 +125,16 @@ curl -X GET \
 
 ### `POST /queries/favorite`
 
-Saves user's search query.
+Сохраняет поисковый запрос пользователя.
 
-**Auth:** YES
+**Авторизация:** ДА
 
-**Request Body (application/json):**
-- `query` (*string*, *required*): Search query.
-- `name` (*string*, *optional*): Search query name.
-- `relativeFrom` (*string*, *optional*): The number of seconds relative to the current time to calculate the `from-to` search range.
+**Тело запроса (application/json):**
+- `query` (*string*, *required*): Поисковый запрос.
+- `name` (*string*, *optional*): Название поискового запроса.
+- `relativeFrom` (*string*, *optional*): Количество секунд относительно текущего времени для вычисления диапазона поиска `from-to`.
 
-#### Request
+#### Запрос
 
 ```shell
 curl -X POST \
@@ -148,7 +148,7 @@ curl -X POST \
   }'
 ```
 
-#### Response
+#### Ответ
 
 ```json
 {
@@ -158,14 +158,14 @@ curl -X POST \
 
 ### `DELETE /queries/favorite/{id}`
 
-Deletes a specific favorite (saved) search query by their ID.
+Удаляет определенный избранный поисковый запрос пользователя по его идентификатору.
 
-**Auth:** YES
+**Авторизация:** ДА
 
-**Params:**
-- `id` (*int*, *required*): The unique identifier of the favorite query.
+**Параметры:**
+- `id` (*int*, *required*): Уникальный идентификатор избранного запроса.
 
-#### Request
+#### Запрос
 
 ```shell
 curl -X DELETE \
@@ -174,7 +174,7 @@ curl -X DELETE \
   -H "Authorization: Bearer <token>"
 ```
 
-#### Response
+#### Ответ
 
 ```json
 {}

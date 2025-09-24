@@ -45,7 +45,7 @@ curl -X GET \
 
 Returns a list of events that satisfy the [search query](https://github.com/ozontech/seq-db/blob/main/docs/en/05-seq-ql.md).
 
-> Allows obtain [aggregations](#aggregation) and a [histogram](#histogram) within a single query.
+> Allows obtain [aggregations](#post-aggregation) and a [histogram](#post-histogram) within a single query.
 
 **Auth:** YES
 
@@ -55,7 +55,7 @@ Returns a list of events that satisfy the [search query](https://github.com/ozon
 - `to` (*string*, *required*): Timestamp of the end of search in `date-time` format.
 - `histogram` (*object*, *optional*): Histogram query.
   - `interval` (*string*, *required*): Histogram interval in `duration` format.
-- `aggregations` (*[]object*, *optional*): List of aggregation queries (see [/aggregation](#aggregation) for details).
+- `aggregations` (*[]object*, *optional*): List of aggregation queries (see [/aggregation](#post-aggregation) for details).
 - `limit` (*int*, *required*): Search limit.
 - `offset` (*int*, *optional*): Search offset.
 - `withTotal` (*bool*, *optional*): If set, returns the total number of events found.
@@ -80,6 +80,7 @@ curl -X POST \
 ```
 
 #### Response
+
 ```json
 {
   "events": [
@@ -136,6 +137,7 @@ curl -X GET \
 ```
 
 #### Response
+
 ```json
 {
   "event": {
@@ -225,7 +227,7 @@ level,message
 
 Calculates aggregations based on events that satisfy the search query.
 
-> Aggregations can also be obtained using [/search](#search).
+> Aggregations can also be obtained using [/search](#post-search).
 
 **Auth:** YES
 
@@ -261,6 +263,7 @@ curl -X POST \
 ```
 
 #### Response
+
 ```json
 {
   "aggregations": [
@@ -327,6 +330,7 @@ curl -X POST \
 ```
 
 #### Response
+
 ```json
 {
   "aggregations": [
@@ -389,7 +393,7 @@ curl -X POST \
 
 Calculates histogram based on events that satisfy the search query.
 
-> Histogram can also be obtained using [/search](#search).
+> Histogram can also be obtained using [/search](#post-search).
 
 **Auth:** YES
 
@@ -416,6 +420,7 @@ curl -X POST \
 ```
 
 #### Response
+
 ```json
 {
   "histogram": {

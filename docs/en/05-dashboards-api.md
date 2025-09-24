@@ -26,7 +26,7 @@ Creates dashboard.
 
 **Request Body (application/json):**
 - `name` (*string*, *required*): Dashboard name.
-- `meta` (*string*, *required*): Dashboard metadata in `json`-format that is used in frontend.
+- `meta` (*string*, *required*): Dashboard metadata in `json`-format that is used in frontend app.
 
 #### Request
 
@@ -225,7 +225,7 @@ Updates a specific dashboard by their ID.
 
 **Request Body (application/json):**
 - `name` (*string*, *optional*): Dashboard name.
-- `meta` (*string*, *optional*): Dashboard metadata in `json`-format that is used in frontend.
+- `meta` (*string*, *optional*): Dashboard metadata in `json`-format that is used in frontend app.
 
 #### Request
 

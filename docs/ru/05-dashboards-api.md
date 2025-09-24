@@ -1,34 +1,34 @@
 # Dashboards API
 
-Dashboards API provides the ability to manage dashboards.
+Dashboards API pпредоставляет возможность управлять дашбордами.
 
-The dashboard consists of:
-- search query
-- search interval
-- widgets: aggregations and a histogram
-- list of pinned table columns
+Дашборд состоит из:
+- поискового запроса
+- интервала поиска
+- виджетов: агрегаций и гистограммы
+- списка закрепленных столбцов таблицы логов
 
-**The API requires a PostgreSQL DB and Authorization to work, which must be specified in [config](./02-configuration.md).**
+**Для работы API требуется база данных PostgreSQL и Авторизация, которые должны быть настроены в [конфигурации](./02-configuration.md).**
 
 ## HTTP API
 
-**Base URL:** `/dashboards/v1`
+**Базовый URL-адрес:** `/dashboards/v1`
 
-The dashboard owner is taken from the `Authorization` header.
+Владелец дашборда берется из заголовка `Authorization`.
 
-> You can also use [swagger file](https://github.com/ozontech/seq-ui/blob/main/swagger/swagger.json) to view the HTTP API in detail.
+> Вы также можете использовать [swagger-файл](https://github.com/ozontech/seq-ui/blob/main/swagger/swagger.json) для подробного просмотра HTTP API.
 
 ### `POST /`
 
-Creates dashboard.
+Создает дашборд.
 
-**Auth:** YES
+**Авторизация:** ДА
 
-**Request Body (application/json):**
-- `name` (*string*, *required*): Dashboard name.
-- `meta` (*string*, *required*): Dashboard metadata in `json`-format that is used in frontend.
+**Тело запроса (application/json):**
+- `name` (*string*, *required*): Название дашборда.
+- `meta` (*string*, *required*): Метаданные дашборда в формате `json`, которые используются frontend-приложением.
 
-#### Request
+#### Запрос
 
 ```shell
 curl -X POST \
@@ -42,7 +42,7 @@ curl -X POST \
   }'
 ```
 
-#### Response
+#### Ответ
 
 ```json
 {
@@ -52,15 +52,15 @@ curl -X POST \
 
 ### `POST /all`
 
-Returns list of dashboards of all users.
+Возвращает список дашбордов всех пользователей.
 
-**Auth:** YES
+**Авторизация:** ДА
 
-**Request Body (application/json):**
-- `limit` (*int*, *required*): Limit of the returned list.
-- `offset` (*int*, *optional*): Offset from beginning of the list.
+**Тело запроса (application/json):**
+- `limit` (*int*, *required*): Ограничение размера возвращаемого списка.
+- `offset` (*int*, *optional*): Смещение от начала списка.
 
-#### Request
+#### Запрос
 
 ```shell
 curl -X POST \
@@ -74,7 +74,7 @@ curl -X POST \
   }'
 ```
 
-#### Response
+#### Ответ
 
 ```json
 {
@@ -100,15 +100,15 @@ curl -X POST \
 
 ### `POST /my`
 
-Returns list of dashboards of the current user.
+Возвращает список дашбордов текущего пользователя.
 
-**Auth:** YES
+**Авторизация:** ДА
 
-**Request Body (application/json):**
-- `limit` (*int*, *required*): Limit of the returned list.
-- `offset` (*int*, *optional*): Offset from beginning of the list.
+**Тело запроса (application/json):**
+- `limit` (*int*, *required*): Ограничение размера возвращаемого списка.
+- `offset` (*int*, *optional*): Смещение от начала списка.
 
-#### Request
+#### Запрос
 
 ```shell
 curl -X POST \
@@ -122,7 +122,7 @@ curl -X POST \
   }'
 ```
 
-#### Response
+#### Ответ
 
 ```json
 {
@@ -141,18 +141,18 @@ curl -X POST \
 
 ### `POST /search`
 
-Returns list of dashboards that satisfy the search query. The search is performed by the name of the dashboard.
+Возвращает список дашбордов, удовлетворяющих поисковому запросу. Поиск выполняется по названию дашборда.
 
-**Auth:** YES
+**Авторизация:** ДА
 
-**Request Body (application/json):**
-- `query` (*string*, *required*): Search query.
-- `limit` (*int*, *required*): Limit of the returned list.
-- `offset` (*int*, *optional*): Offset from beginning of the list.
-- `filter` (*object*, *optional*): Search filter.
-  - `owner_name` (*string*, *optional*): Filter by owner name.
+**Тело запроса (application/json):**
+- `query` (*string*, *required*): Поисковый запрос.
+- `limit` (*int*, *required*): Ограничение размера возвращаемого списка.
+- `offset` (*int*, *optional*): Смещение от начала списка.
+- `filter` (*object*, *optional*): Поисковый фильтр.
+  - `owner_name` (*string*, *optional*): Фильтрация по владельцу.
 
-#### Request
+#### Запрос
 
 ```shell
 curl -X POST \
@@ -167,7 +167,7 @@ curl -X POST \
   }'
 ```
 
-#### Response
+#### Ответ
 
 ```json
 {
@@ -188,14 +188,14 @@ curl -X POST \
 
 ### `GET /{uuid}`
 
-Retrieves a specific dashboard by their ID.
+Извлекает определенный дашборд по его идентификатору.
 
-**Auth:** YES
+**Авторизация:** ДА
 
-**Params:**
-- `uuid` (*string*, *required*): The unique identifier of the dashboard.
+**Параметры:**
+- `uuid` (*string*, *required*): Уникальный идентификатор дашборда.
 
-#### Request
+#### Запрос
 
 ```shell
 curl -X GET \
@@ -204,7 +204,7 @@ curl -X GET \
   -H "Authorization: Bearer <token>"
 ```
 
-#### Response
+#### Ответ
 
 ```json
 {
@@ -216,18 +216,18 @@ curl -X GET \
 
 ### `PATCH /{uuid}`
 
-Updates a specific dashboard by their ID.
+Обновляет определенный дашборд по его идентификатору.
 
-**Auth:** YES
+**Авторизация:** ДА
 
-**Params:**
-- `uuid` (*string*, *required*): The unique identifier of the dashboard.
+**Параметры:**
+- `uuid` (*string*, *required*): Уникальный идентификатор дашборда.
 
-**Request Body (application/json):**
-- `name` (*string*, *optional*): Dashboard name.
-- `meta` (*string*, *optional*): Dashboard metadata in `json`-format that is used in frontend.
+**Тело запроса (application/json):**
+- `name` (*string*, *optional*): Название дашборда.
+- `meta` (*string*, *optional*): Метаданные дашборда в формате `json`, которые используются frontend-приложением.
 
-#### Request
+#### Запрос
 
 ```shell
 curl -X PATCH \
@@ -240,7 +240,7 @@ curl -X PATCH \
   }'
 ```
 
-#### Response
+#### Ответ
 
 ```json
 {}
@@ -248,14 +248,14 @@ curl -X PATCH \
 
 ### `DELETE /{uuid}`
 
-Deletes a specific dashboard by their ID.
+Удаляет определенный дашборд по его идентификатору.
 
-**Auth:** YES
+**Авторизация:** ДА
 
-**Params:**
-- `uuid` (*string*, *required*): The unique identifier of the dashboard.
+**Параметры:**
+- `uuid` (*string*, *required*): Уникальный идентификатор дашборда.
 
-#### Request
+#### Запрос
 
 ```shell
 curl -X DELETE \
@@ -264,7 +264,7 @@ curl -X DELETE \
   -H "Authorization: Bearer <token>"
 ```
 
-#### Response
+#### Ответ
 
 ```json
 {}

@@ -1,14 +1,15 @@
-# Quickstart
+# Быстрый запуск
 
-Welcome to the seq-ui quickstart guide! In just a few minutes, you'll learn how to:
-- Quickly create a seq-ui instance
-- Get [seq-db](https://github.com/ozontech/seq-db) indexed fields and search some events using `/seqapi`
+Добро пожаловать в руководство по быстрому запуску seq-ui! Всего через несколько минут вы узнаете, как:
+- Быстро запустить seq-ui
+- Получить список индексируемых полей [seq-db](https://github.com/ozontech/seq-db)
+- Искать события (логи) используя `/seqapi`
 
-## Running seq-ui
+## Запуск seq-ui
 
-Before launch you need to create config file based on the [example config](https://github.com/ozontech/seq-ui/tree/main/config/config.example.yaml) or use it as-is.
+Перед запуском вам нужно создать файл конфигурации, взяв за основу [пример](https://github.com/ozontech/seq-ui/tree/main/config/config.example.yaml), или использовать его без изменений.
 
-seq-ui can be quickly launched in a docker container. Pull seq-ui image from Docker hub and create a container:
+seq-ui можно быстро запустить в docker-контейнере. Следующая команда скачает образ seq-ui из GitHub Container Registry (GHCR) и запустит контейнер:
 ```shell
 docker run --rm \
   --name seq-ui \
@@ -19,24 +20,24 @@ docker run --rm \
   -it ghcr.io/ozontech/seq-ui:latest --config=config.yaml
 ```
 
-## Running seq-ui with seq-db
+## Запуск seq-ui вместе с seq-db
 
-Before next steps, we need to setup seq-db. See [seq-db quickstart](https://github.com/ozontech/seq-db/blob/main/docs/en/01-quickstart.md) for details.
+Перед тем как перейти к следующим шагам, необходимо запустить seq-db. Обратитесь к [Быстрому запуску seq-db](https://github.com/ozontech/seq-db/blob/main/docs/ru/01-quickstart.md) за детальной информацией.
 
-## Get seq-db indexed fields
+## Список индексируемых полей seq-db
 
-seq-db doesn't index any fields from the ingested data by default. Instead, indexing is controlled through a special file called the mapping file. See [index types](https://github.com/ozontech/seq-db/blob/main/docs/en/03-index-types.md) for details.
+По умолчанию, seq-db не индексирует поля из записываемых данных, вместо этого есть специальный файл маппинга, в котором указаны индексируемые поля и используемые типы индексов. Для более детальной информации смотрите [Типы индексов](https://github.com/ozontech/seq-db/blob/main/docs/ru/03-index-types.md).
 
-The fields can be obtained using `/seqapi/v1/fields`:
+Спиоск полей может быть получен, используя `/seqapi/v1/fields`:
 ```shell
 curl -X GET \
   "http://localhost:5555/seqapi/v1/fields" \
   -H "accept: application/json"
 ```
 
-## Search for events
+## Поиск событий
 
-Search last 10 events with simple query that filters logs by `message` or `level` fields using `/seqapi/v1/search`:
+Выполним поиск последних `10` событий с простым поисковым запросом, фильтрующим события по полю `message` или `level`, используя `/seqapi/v1/search`:
 ```shell
 curl -X POST \
   "http://localhost:5555/seqapi/v1/search" \
@@ -52,9 +53,9 @@ curl -X POST \
   }'
 ```
 
-## What's next
+## Что дальше
 
-seq-ui offers many more useful features for working with logs and users:
-- [Seq API](./03-seq-api.md) provides access to logs, aggregations and histogram
-- [UserProfile API](./04-userprofile-api.md) provides the ability to manage users and their data
-- [Dashboards API](./05-dashboards-api.md) provides the ability to combine a search query, aggregations and a histogram in a dashboard and save it to DB
+seq-ui имеет множество других функций для работы с логами и пользователями:
+- [Seq API](./03-seq-api.md) предоставляет доступ к логам, агрегациям и гистограмме
+- [UserProfile API](./04-userprofile-api.md) предоставляет возможность управлять пользователями и их данными
+- [Dashboards API](./05-dashboards-api.md) предоставляет возможность объединять поисковый запрос, аггрегации и гистограмму в дашборд, сохраняя его в базе данных

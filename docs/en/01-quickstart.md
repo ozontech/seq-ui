@@ -2,13 +2,14 @@
 
 Welcome to the seq-ui quickstart guide! In just a few minutes, you'll learn how to:
 - Quickly create a seq-ui instance
-- Get [seq-db](https://github.com/ozontech/seq-db) indexed fields and search some events using `/seqapi`
+- Get [seq-db](https://github.com/ozontech/seq-db) indexed fields
+- Search events using `/seqapi`
 
 ## Running seq-ui
 
 Before launch you need to create config file based on the [example config](https://github.com/ozontech/seq-ui/tree/main/config/config.example.yaml) or use it as-is.
 
-seq-ui can be quickly launched in a docker container. Pull seq-ui image from Docker hub and create a container:
+seq-ui can be quickly launched in a docker container. Pull seq-ui image from GitHub Container Registry (GHCR) and create a container:
 ```shell
 docker run --rm \
   --name seq-ui \
@@ -36,7 +37,7 @@ curl -X GET \
 
 ## Search for events
 
-Search last 10 events with simple query that filters logs by `message` or `level` fields using `/seqapi/v1/search`:
+Search last `10` events with simple query that filters logs by `message` or `level` fields using `/seqapi/v1/search`:
 ```shell
 curl -X POST \
   "http://localhost:5555/seqapi/v1/search" \

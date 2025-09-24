@@ -2,7 +2,7 @@
 
 > Despite the fact that there are a huge number of parameters in the configuration, not all of them are supported by UI at the moment. As the UI evolves, more and more of the parameters will be relevant.
 
-The configuration is set via a yaml file and consists of three sections:
+The configuration is set via a `yaml`-file and consists of three sections:
 - [server](#server) - seq-ui server configutarion
 - [clients](#clients) - seq-db clients configuration
 - [handlers](#handlers) - seq-ui api handlers configuration
@@ -53,7 +53,7 @@ Host for debug server.
 
 **`grpc_connection_timeout`** *`string`* *`default="0"`*
 
-Sets the timeout for connection establishment (up to and including HTTP/2 handshaking) for all new connections in gRPC server. A zero or negative value will result in an immediate timeout.
+The timeout for connection establishment (up to and including HTTP/2 handshaking) for all new connections in gRPC server. A zero or negative value will result in an immediate timeout.
 
 > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
 
@@ -109,7 +109,7 @@ HTTP server CORS config. If not set, no CORS settings will be applied.
 
 + **`options_passthrough`** *`bool`* *`default=false`*
 
-  Instructs preflight to let other potential next handlers to process the OPTIONS method. Turn this on if you handles OPTIONS.
+  Instructs preflight to let other potential next handlers to process the OPTIONS method. Turn this on if you handles `OPTIONS`.
 
 ### Auth
 
@@ -121,7 +121,7 @@ If set to non-empty string, JWT provider is created for API tokens verification.
 
 **`oidc`** *`OIDC`* *`optional`*
 
-Open ID Connnect config. If not set, no OIDC verification will be applied.
+Open ID Connect config. If not set, no OIDC verification will be applied.
 
 `OIDC` fields:
 
@@ -166,7 +166,6 @@ gRPC and HTTP server rate limiters configs. If not set, rate limiting will not b
 > Map key is HTTP API base route or gRPC API service name:
 > - `seqapi`, `userprofile`, `dashboards`, `massexport`, `errorgroups`
 > - `SeqAPIService`, `UserProfileService`, `DashboardsService`, `MassExportService`, `ErrorGroupsService`
-
 
 `ApiRateLimiters` fields:
 
@@ -229,7 +228,9 @@ Cache config.
 
 + **`num_counters`** *`int`* *`default=1e7`*
 
-  The number of counters (keys) to keep that hold access frequency information. It's generally a good idea to have more counters than the max cache capacity (`max_cost`), as this will improve eviction accuracy and subsequent hit ratios. If set to zero or negative value, then it will be reset to `default`.
+  The number of counters (keys) to keep that hold access frequency information. If set to zero or negative value, then it will be reset to `default`.
+
+  > It's generally a good idea to have more counters than the max cache capacity (`max_cost`), as this will improve eviction accuracy and subsequent hit ratios.
 
 + **`max_cost`** *`int`* *`default=1e6`*
 
@@ -251,7 +252,7 @@ Cache config.
 
 + **`password`** *`string`* *`default=""`*
 
-  Password specified in the requirepass server configuration option (if connecting to a Redis 5.0 instance, or lower), or the User Password when connecting to a Redis 6.0 instance, or greater, that is using the Redis ACL system.
+  Password specified in the `requirepass` server configuration option (if connecting to a Redis 5.0 instance, or lower), or the User Password when connecting to a Redis 6.0 instance, or greater, that is using the Redis ACL system.
 
 + **`timeout`** *`string`* *`default="3s"`*
 
@@ -271,7 +272,7 @@ Cache config.
 
 + **`max_retry_backoff`** *`string`* *`default="512ms"`*
 
-  Maximum backoff between each retry (`512ms` by default). If set to `-1`, disables backoff.
+  Maximum backoff between each retry. If set to `-1`, disables backoff.
 
   > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
 
@@ -279,7 +280,7 @@ Cache config.
 
 **`db`** *`DB`* *`optional`*
 
-Postgres database config.
+PostgreSQL database config.
 
 > Required for `/userprofile` and `seqapi/v1/async_search/` handlers.
 
@@ -385,16 +386,13 @@ Timeout for requests made by the client. A zero value means no timeout.
 
 **`seq_db_avg_doc_size`** *`int`* *`default=0`*
 
-Specifies the average documents size in `KB` that the client calls returns.
-It's used in combination with `handlers.seq_api.max_search_limit` to calculate the maximum response size per client request.
+Specifies the average documents size in `KB` that the client calls returns. It's used in combination with `handlers.seq_api.max_search_limit` to calculate the maximum response size per client request.
 
 > Regardless of `seq_db_avg_doc_size`, the minimum response size per client request is `4MB`.
 
 **`request_retries`** *`int`* *`default=0`*
 
-The number of retries to send a request to client after the first attempt. For each retry, the entire `seq_db_addrs` list will be searched, choosing a random host. A zero value means no retries.
-
-> If set to negative value, then it will be reset to `default`.
+The number of retries to send a request to client after the first attempt. For each retry, the entire `seq_db_addrs` list will be searched, choosing a random host. A zero value means no retries. If set to negative value, then it will be reset to `default`.
 
 **`initial_retry_backoff`** *`string`* *`default="0"`*
 
@@ -416,13 +414,13 @@ If gRPC keepalive params are not set, no keepalive params are applied to gRPC cl
 
 + **`time`** *`string`* *`default="10s"`*
 
-  After a duration of this time if the client doesn't see any activity it pings the server to see if the transport is still alive. If set below `10s`, a minimum value of `10s` will be used instead.
+  After a duration of this time if the client doesn't see any activity it pings the server to see if the transport is still alive. If set below `10s`, then it will be reset to `default`.
 
   > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
 
 + **`timeout`** *`string`* *`default="1s"`*
 
-  After having pinged for keepalive check, the client waits for a duration of Timeout and if no activity is seen even after that the connection is closed. If set below `1s`, a minimum value of `1s` will be used instead.
+  After having pinged for keepalive check, the client waits for a duration of Timeout and if no activity is seen even after that the connection is closed. If set below `1s`, then it will be reset to `default`.
 
   > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
 
@@ -453,7 +451,7 @@ Config for `/seqapi` API handlers.
 
 + **`max_search_total_limit`** *`int`* *`default=1e6`*
 
-  If search response returns number of events greater than `max_search_total_limit`, then the error will return.
+  If search request returns number of events greater than `max_search_total_limit`, then the error will return.
 
 + **`max_search_offset_limit`** *`int`* *`default=1e6`*
 
@@ -503,7 +501,7 @@ Config for `/seqapi` API handlers.
 
 + **`pinned_fields`** *`[]PinnedField`* *`default=[]`*
 
-  List of fields which will be pinned.
+  List of fields which will be pinned in UI.
 
   `PinnedField` fields:
 
@@ -525,7 +523,7 @@ Config for `/errorgroups` API handlers.
 
 + **`log_tags_mapping`** *`LogTagsMapping`* *`optional`*
 
-    Mapping of clickhouse column names and `log_tags` keys.
+  Mapping of clickhouse column names and `log_tags` keys.
 
   `LogTagsMapping` fields:
 
@@ -535,7 +533,7 @@ Config for `/errorgroups` API handlers.
 
 + **`query_filter`** *`map[string]string`* *`optional`*
 
-    Additional conditions to be added to clickhouse queries.
+  Additional conditions to be added to clickhouse queries.
 
 ### Mass export
 
@@ -569,7 +567,7 @@ Config for `/massexport` API handlers.
 
 + **`allowed_users`** *`[]string`* *`default=[]`*
 
-  List of users who can use mass export api. If it's empty then mass exports allowed for all users; display username is `anonymous`.
+  List of users who can use `/massexport` API.. If it's empty then mass exports allowed for all users; display username is `anonymous`.
 
 + **`file_store`** *`FileStore`* *`required`*
 
