@@ -2613,6 +2613,9 @@
                     "format": "duration",
                     "example": "1h"
                 },
+                "size": {
+                    "type": "integer"
+                },
                 "to": {
                     "type": "string",
                     "format": "date-time"

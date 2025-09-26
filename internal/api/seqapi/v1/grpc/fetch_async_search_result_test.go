@@ -60,6 +60,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 						Interval: "1s",
 					},
 					WithDocs: true,
+					Size:     100,
 				},
 				Response: &seqapi.SearchResponse{
 					Events: []*seqapi.Event{

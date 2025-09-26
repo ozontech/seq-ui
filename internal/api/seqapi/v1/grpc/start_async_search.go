@@ -46,6 +46,10 @@ func (a *API) StartAsyncSearch(
 			Key:   "with_docs",
 			Value: attribute.BoolValue(req.GetWithDocs()),
 		},
+		{
+			Key:   "size",
+			Value: attribute.Int64Value(int64(req.GetSize())),
+		},
 	}
 	if req.Hist != nil && req.Hist.Interval != "" {
 		spanAttributes = append(spanAttributes, attribute.KeyValue{

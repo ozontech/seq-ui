@@ -353,6 +353,7 @@ func newProxyStartAsyncSearchRequest(req *seqapi.StartAsyncSearchRequest) *seqpr
 		Aggs:     newProxyAggQuerySlice(req.Aggs),
 		Hist:     newProxyHistQuery(req.Hist),
 		WithDocs: req.WithDocs,
+		Size:     int64(req.Size),
 	}
 }
 
@@ -452,6 +453,7 @@ func newSeqapiStartAsyncSearchRequest(r *seqproxyapi.StartAsyncSearchRequest) *s
 		Aggs:      newSeqapiAggQuerySlice(r.Aggs),
 		Hist:      hist,
 		WithDocs:  r.WithDocs,
+		Size:      int32(r.Size),
 	}
 }
 
