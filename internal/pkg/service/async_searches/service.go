@@ -150,6 +150,10 @@ func (s *Service) GetAsyncSearchesList(
 		searchIDs = append(searchIDs, search.SearchID)
 	}
 
+	if len(searchIDs) == 0 {
+		return &seqapi.GetAsyncSearchesListResponse{}, nil
+	}
+
 	resp, err := s.seqDB.GetAsyncSearchesList(ctx, req, searchIDs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get async searches list from seq-db: %w", err)
