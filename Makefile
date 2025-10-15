@@ -40,8 +40,14 @@ push-image: build-image
 	docker push ${IMAGE}:${VERSION}
 
 .PHONY: run
-run:
-	go run ./cmd/seq-ui
+run: .check-config
+	go run ./cmd/seq-ui -config=config/config.local.yaml
+
+.PHONY: .check-config
+.check-config:
+	@if [ ! -f config/config.local.yaml ]; then\
+		cp config/config.example.yaml config/config.local.yaml;\
+	fi
 
 .PHONY: clean
 clean:
