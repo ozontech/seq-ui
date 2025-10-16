@@ -12,6 +12,19 @@ import (
 const (
 	ProxyClientModeGRPC = "grpc"
 
+	MaskModeMask    = "mask"
+	MaskModeReplace = "replace"
+	MaskModeCut     = "cut"
+
+	FieldFilterConditionAnd = "and"
+	FieldFilterConditionOr  = "or"
+	FieldFilterConditionNot = "not"
+
+	FieldFilterModeEqual    = "equal"
+	FieldFilterModeContains = "contains"
+	FieldFilterModePrefix   = "prefix"
+	FieldFilterModeSuffix   = "suffix"
+
 	minGRPCKeepaliveTime    = 10 * time.Second
 	minGRPCKeepaliveTimeout = 1 * time.Second
 
@@ -228,6 +241,36 @@ type SeqAPI struct {
 	LogsLifespanCacheKey       string        `yaml:"logs_lifespan_cache_key"`
 	LogsLifespanCacheTTL       time.Duration `yaml:"logs_lifespan_cache_ttl"`
 	FieldsCacheTTL             time.Duration `yaml:"fields_cache_ttl"`
+	Masking                    *Masking      `yaml:"masking"`
+}
+
+type Masking struct {
+	Masks         []Mask   `yaml:"masks"`
+	ProcessFields []string `yaml:"process_fields"`
+	IgnoreFields  []string `yaml:"ignore_fields"`
+}
+
+type Mask struct {
+	Re          string `yaml:"re"`
+	Groups      []int  `yaml:"groups"`
+	Mode        string `yaml:"mode"`         // "mask" or "replace" or "cut"
+	ReplaceWord string `yaml:"replace_word"` // for mode:replace
+
+	ProcessFields []string `yaml:"process_fields"`
+	IgnoreFields  []string `yaml:"ignore_fields"`
+
+	FieldFilters *FieldFilterSet `yaml:"field_filters"`
+}
+
+type FieldFilter struct {
+	Field  string   `yaml:"field"`
+	Mode   string   `yaml:"mode"` // "equal" or "contains" or "prefix" or "suffix"
+	Values []string `yaml:"values"`
+}
+
+type FieldFilterSet struct {
+	Condition string        `yaml:"condition"` // "and" or "or" or "not"
+	Filters   []FieldFilter `yaml:"filters"`   // max 1 if condition:not
 }
 
 type LogTagsMapping struct {

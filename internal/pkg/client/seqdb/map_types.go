@@ -1,7 +1,7 @@
 package seqdb
 
 import (
-	"bytes"
+	"strconv"
 	"strings"
 
 	jsoniter "github.com/json-iterator/go"
@@ -27,16 +27,26 @@ func (m mapStringJson) toStringMap() mapStringString {
 	return mss
 }
 
-func (m mapStringJson) getValues(keys []string, raw bool) []string {
+type mapStringString map[string]string
+
+func newMapStringString(data []byte) (mapStringString, error) {
+	m, err := newMapStringJson(data)
+	if err != nil {
+		return nil, err
+	}
+	return m.toStringMap(), nil
+}
+
+func (m mapStringString) getValues(keys []string, raw bool) []string {
 	values := make([]string, 0, len(keys))
 	for _, k := range keys {
 		if v, ok := m[k]; ok {
-			val := marshalRaw(v)
 			if !raw {
-				val = bytes.TrimPrefix(val, []byte{'"'})
-				val = bytes.TrimSuffix(val, []byte{'"'})
+				if unq, err := strconv.Unquote(v); err == nil {
+					v = unq
+				}
 			}
-			values = append(values, validateString(string(val)))
+			values = append(values, v)
 		} else {
 			val := ""
 			if raw {
@@ -46,16 +56,6 @@ func (m mapStringJson) getValues(keys []string, raw bool) []string {
 		}
 	}
 	return values
-}
-
-type mapStringString map[string]string
-
-func newMapStringString(data []byte) (mapStringString, error) {
-	m, err := newMapStringJson(data)
-	if err != nil {
-		return nil, err
-	}
-	return m.toStringMap(), nil
 }
 
 const invalidUTF8Replacement = "�"
