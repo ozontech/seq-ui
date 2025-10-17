@@ -617,6 +617,10 @@ handlers:
   + **`release`** *`[]string`* *`default=[]`*
 
     Ключи `log_tags` для столбца `release`.
+  
+  + **`env`** *`[]string`* *`default=[]`*
+
+    Ключи `log_tags` для столбца `env`.
 
 + **`query_filter`** *`map[string]string`* *`optional`*
 

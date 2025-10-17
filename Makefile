@@ -39,9 +39,29 @@ build-image:
 push-image: build-image
 	docker push ${IMAGE}:${VERSION}
 
+.PHONY: build-migration-image
+build-migration-image:
+	$(info Building pg-migration image)
+	docker buildx build --platform linux/amd64 \
+		--build-arg VERSION=${VERSION} \
+		--build-arg BUILD_TIME=${TIME} \
+		--file migration/Dockerfile \
+		-t ${IMAGE}-pg-migration:${VERSION} \
+		./migration
+
+.PHONY: push-migration-image
+push-migration-image: build-migration-image
+	docker push ${IMAGE}-pg-migration:${VERSION}
+
 .PHONY: run
-run:
-	go run ./cmd/seq-ui
+run: .check-config
+	go run ./cmd/seq-ui -config=config/config.local.yaml
+
+.PHONY: .check-config
+.check-config:
+	@if [ ! -f config/config.local.yaml ]; then\
+		cp config/config.example.yaml config/config.local.yaml;\
+	fi
 
 .PHONY: clean
 clean:

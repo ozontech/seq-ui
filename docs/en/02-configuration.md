@@ -617,6 +617,10 @@ Config for `/errorgroups` API handlers.
   + **`release`** *`[]string`* *`default=[]`*
 
     `log_tags` keys for `release` column.
+  
+  + **`env`** *`[]string`* *`default=[]`*
+
+    `log_tags` keys for `env` column.
 
 + **`query_filter`** *`map[string]string`* *`optional`*
 
