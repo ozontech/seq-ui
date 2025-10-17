@@ -39,3 +39,14 @@ func (m *Masker) Mask(event map[string]string) {
 		mask.apply(event)
 	}
 }
+
+func (m *Masker) MaskAgg(field string, bucketKeys []string) []string {
+	if len(bucketKeys) == 0 {
+		return bucketKeys
+	}
+
+	for _, mask := range m.masks {
+		bucketKeys = mask.applyAgg(field, bucketKeys)
+	}
+	return bucketKeys
+}

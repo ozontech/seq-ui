@@ -158,6 +158,21 @@ func (m *mask) apply(event map[string]string) {
 	}
 }
 
+func (m *mask) applyAgg(field string, bucketKeys []string) []string {
+	if m.fields != nil {
+		_, has := m.fields.f[field]
+		if m.fields.mode == fieldsModeProcess && !has ||
+			m.fields.mode == fieldsModeIgnore && has {
+			return bucketKeys
+		}
+	}
+
+	for i := range bucketKeys {
+		bucketKeys[i] = m.maskValue(bucketKeys[i])
+	}
+	return bucketKeys
+}
+
 func (m *mask) maskValue(val string) string {
 	if val == "" {
 		return ""
