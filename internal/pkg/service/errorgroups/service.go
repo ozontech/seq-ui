@@ -144,12 +144,17 @@ func (s *Service) GetDetails(
 		ByRelease: calcDistribution(counts.ByRelease),
 	}
 
-	// remove tags if they are not included in request
-	if req.Release == nil || *req.Release == "" {
-		for _, r := range s.logTagsMapping.Release {
-			delete(details.LogTags, r)
+	clearLogTags := func(filter *string, mapping []string) {
+		if filter == nil || *filter == "" {
+			for _, v := range mapping {
+				delete(details.LogTags, v)
+			}
 		}
 	}
+
+	// remove tags if they are not included in request
+	clearLogTags(req.Release, s.logTagsMapping.Release)
+	clearLogTags(req.Env, s.logTagsMapping.Env)
 
 	return details, nil
 }

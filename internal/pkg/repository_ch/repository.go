@@ -368,7 +368,7 @@ func (r *repository) GetErrorReleases(
 		OrderBy("release")
 
 	for col, val := range r.queryFilter {
-		q = q.Where(sq.Eq{col: val}).GroupBy(col)
+		q = q.Where(sq.Eq{col: val})
 	}
 
 	if req.Env != nil && *req.Env != "" {
@@ -410,7 +410,7 @@ func (r *repository) GetServices(
 		OrderBy("service")
 
 	for col, val := range r.queryFilter {
-		q = q.Where(sq.Eq{col: val}).GroupBy(col)
+		q = q.Where(sq.Eq{col: val})
 	}
 
 	if req.Env != nil && *req.Env != "" {
@@ -429,7 +429,7 @@ func (r *repository) GetServices(
 	rows, err := r.conn.Query(ctx, metricLabels, query, args...)
 	if err != nil {
 		incErrorMetric(err, metricLabels)
-		return nil, fmt.Errorf("failed to get releases: %w", err)
+		return nil, fmt.Errorf("failed to get services: %w", err)
 	}
 
 	services := make([]string, 0)
