@@ -43,15 +43,15 @@ push-image: build-image
 build-migration-image:
 	$(info Building pg-migration image)
 	docker buildx build --platform linux/amd64 \
-		--build-arg VERSION=${VERSION}-pg-migration \
+		--build-arg VERSION=${VERSION} \
 		--build-arg BUILD_TIME=${TIME} \
 		--file migration/Dockerfile \
-		-t ${IMAGE}:${VERSION}-pg-migration \
+		-t ${IMAGE}-pg-migration:${VERSION} \
 		./migration
 
 .PHONY: push-migration-image
 push-migration-image: build-migration-image
-	docker push ${IMAGE}:${VERSION}-pg-migration
+	docker push ${IMAGE}-pg-migration:${VERSION}
 
 .PHONY: run
 run: .check-config
