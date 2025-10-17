@@ -515,90 +515,90 @@ handlers:
 
 + **`masking`** *`Masking`* *`optional`*
 
-  Masking configuration.
+  Конфигурация маскирования данных.
 
-  `Masking` fields:
+  Поля `Masking`:
 
   + **`masks`** *`[]Mask`* *`required`*
 
-    List of masks.
+    Список масок.
 
   + **`process_fields`** *`[]string`* *`default=[]`*
 
-    List of processed event fields.
+    Список полей события, которые необходимо маскировать.
 
-    > It is wrong to set non-empty ignored fields list and non-empty processed fields list at the same time.
+    > Параметры `process_fields` и `ignore_fields` не должны задаваться одновременно.
   
   + **`ignore_fields`** *`[]string`* *`default=[]`*
 
-    List of ignored event fields.
+    Список полей события, которые нет необходимости маскировать.
 
-    > It is wrong to set non-empty ignored fields list and non-empty processed fields list at the same time.
+    > Параметры `process_fields` и `ignore_fields` не должны задаваться одновременно.
   
-  `Mask` fields:
+  Поля `Mask`:
 
   + **`re`** *`string`* *`required`*
 
-    Regular expression for masking.
+    Регулярное выражение для маскирования.
 
   + **`groups`** *`[]int`* *`default=[]`*
 
-    Groups are numbers of masking groups in expression. If set to empty list or `[0]`, then full expression will be masked.
+    Номера маскируемых групп в выражении. Если установлен пустой массив или `[0]`, то замаскировано будет все выражение.
   
   + **`mode`** *`string`* *`required`* *`options="mask"|"replace"|"cut"`*
 
-    Masking mode:
-      - `mask` - asterisks (`*`) are used for masking
-      - `replace` - `replace_word` is used for masking
-      - `cut` - masking parts will be cut instead of being replaced
+    Режим маскирования:
+      - `mask` - используются звездочки (`*`)
+      - `replace` - используется `replace_word`
+      - `cut` - маскируемые группы будут вырезаны, а не заменены
 
   + **`replace_word`** *`string`* *`default=""`*
 
-    Replacement word used in `mode: replace`.
+    Заменяющее слово, используемое в режиме `mode: replace`.
 
-    > Ignored in other mods.
+    > Игнорируется в других режимах .
   
   + **`process_fields`** *`[]string`* *`default=[]`*
 
-    List of mask-specific processed event fields.
+    Список специфичных для маски полей события, которые необходимо маскировать.
 
-    > It is wrong to set non-empty ignored fields list and non-empty processed fields list at the same time.
+    > Параметры `process_fields` и `ignore_fields` не должны задаваться одновременно.
   
   + **`ignore_fields`** *`[]string`* *`default=[]`*
 
-    List of mask-specific ignored event fields.
+    Список специфичных для маски полей события, которые нет необходимости маскировать.
 
-    > It is wrong to set non-empty ignored fields list and non-empty processed fields list at the same time.
+    > Параметры `process_fields` и `ignore_fields` не должны задаваться одновременно.
   
   + **`field_filters`** *`FieldFilterSet`* *`optional`*
 
-    Set of field filters to filter events before masking.
+    Набор фильтров полей для фильтрации событий перед маскировкой.
 
-  `FieldFilterSet` fields:
+  Поля `FieldFilterSet`:
 
   + **`condition`** *`string`* *`required`* *`options="and"|"or"|"not"`*
 
-    Condition for combining filters.
+    Условие для объединения фильтров.
 
   + **`filters`** *`[]FieldFilter`* *`required`*
 
-    List of filters.
+    Список фильтров.
 
-    > Maximum 1 when `condition: not`.
+    > Максимум 1 при `condition: not`.
   
-  `FieldFilter` fields:
+  Поля `FieldFilter`:
 
   + **`field`** *`string`* *`required`*
 
-    Event field.
+    Поле события.
 
   + **`mode`** *`string`* *`required`* *`options="equal"|"contains"|"prefix"|"suffix"`*
 
-    Filter mode.
+    Режим фильтрации.
 
   + **`values`** *`[]string`* *`required`*
 
-    List of event field values to filter.
+    Список значений поля события для фильтрации.
 
 ### Error groups
 
