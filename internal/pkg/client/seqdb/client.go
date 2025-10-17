@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
+	"github.com/ozontech/seq-ui/internal/pkg/mask"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
 
@@ -21,6 +22,9 @@ type Client interface {
 	GetAsyncSearchesList(context.Context, *seqapi.GetAsyncSearchesListRequest, []string) (*seqapi.GetAsyncSearchesListResponse, error)
 	CancelAsyncSearch(context.Context, *seqapi.CancelAsyncSearchRequest) (*seqapi.CancelAsyncSearchResponse, error)
 	DeleteAsyncSearch(context.Context, *seqapi.DeleteAsyncSearchRequest) (*seqapi.DeleteAsyncSearchResponse, error)
+
+	// masking
+	WithMasking(m *mask.Masker)
 }
 
 type GRPCKeepaliveParams struct {

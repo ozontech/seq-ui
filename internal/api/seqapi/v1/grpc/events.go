@@ -37,5 +37,9 @@ func (a *API) GetEvent(ctx context.Context, req *seqapi.GetEventRequest) (*seqap
 		logger.Error("failed to marshal event proto for caching", zap.String("id", req.Id), zap.Error(err))
 	}
 
+	if a.masker != nil && resp.Event != nil {
+		a.masker.Mask(resp.Event.Data)
+	}
+
 	return resp, nil
 }

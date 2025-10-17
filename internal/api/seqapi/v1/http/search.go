@@ -112,7 +112,14 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	wr.WriteJson(searchResponseFromProto(resp, httpReq.WithTotal))
+	searchResp := searchResponseFromProto(resp, httpReq.WithTotal)
+	if a.masker != nil {
+		for i := range searchResp.Events {
+			a.masker.Mask(searchResp.Events[i].Data)
+		}
+	}
+
+	wr.WriteJson(searchResp)
 }
 
 type order string // @name seqapi.v1.Order

@@ -58,24 +58,40 @@ func (c *GRPCClient) Export(ctx context.Context, req *seqapi.ExportRequest, cw *
 			return err
 		}
 
-		if eResp != nil && eResp.Doc != nil {
-			if req.Format == seqapi.ExportFormat_EXPORT_FORMAT_CSV {
-				m, err := newMapStringJson(eResp.Doc.Data)
-				if err != nil {
-					continue
+		if eResp == nil || eResp.Doc == nil {
+			continue
+		}
+
+		if req.Format == seqapi.ExportFormat_EXPORT_FORMAT_CSV {
+			m, err := newMapStringString(eResp.Doc.Data)
+			if err != nil {
+				continue
+			}
+			if c.masker != nil {
+				c.masker.Mask(m)
+			}
+			if err := csvWriter.Write(m.getValues(req.Fields, false)); err != nil {
+				continue
+			}
+		} else {
+			timeJson, _ := json.Marshal(eResp.Doc.Time.AsTime())
+
+			data := eResp.Doc.Data
+			if c.masker != nil {
+				if m, err := newMapStringString(data); err == nil {
+					c.masker.Mask(m)
+					if d, err := json.Marshal(m); err == nil {
+						data = d
+					}
 				}
-				if err := csvWriter.Write(m.getValues(req.Fields, false)); err != nil {
-					continue
-				}
-			} else {
-				timeJson, _ := json.Marshal(eResp.Doc.Time.AsTime())
-				cw.WriteString(fmt.Sprintf(exportJSONLFormat, eResp.Doc.Id, eResp.Doc.Data, timeJson))
 			}
 
-			if i%batchSize == 0 {
-				csvWriter.Flush()
-				cw.Flush()
-			}
+			cw.WriteString(fmt.Sprintf(exportJSONLFormat, eResp.Doc.Id, data, timeJson))
+		}
+
+		if i%batchSize == 0 {
+			csvWriter.Flush()
+			cw.Flush()
 		}
 	}
 

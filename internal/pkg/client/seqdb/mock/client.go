@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	httputil "github.com/ozontech/seq-ui/internal/api/httputil"
+	mask "github.com/ozontech/seq-ui/internal/pkg/mask"
 	seqapi "github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -219,4 +220,16 @@ func (m *MockClient) Status(arg0 context.Context, arg1 *seqapi.StatusRequest) (*
 func (mr *MockClientMockRecorder) Status(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Status", reflect.TypeOf((*MockClient)(nil).Status), arg0, arg1)
+}
+
+// WithMasking mocks base method.
+func (m_2 *MockClient) WithMasking(m *mask.Masker) {
+	m_2.ctrl.T.Helper()
+	m_2.ctrl.Call(m_2, "WithMasking", m)
+}
+
+// WithMasking indicates an expected call of WithMasking.
+func (mr *MockClientMockRecorder) WithMasking(m any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithMasking", reflect.TypeOf((*MockClient)(nil).WithMasking), m)
 }
