@@ -16,6 +16,7 @@ import (
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -257,5 +258,39 @@ func TestServeGetAggregationTs(t *testing.T) {
 				WantStatus:   tt.wantStatus,
 			})
 		})
+	}
+}
+
+func TestQuantileDupls(t *testing.T) {
+	req := aggregationTsQuery{
+		aggregationQuery: aggregationQuery{
+			Func:      afQuantile,
+			GroupBy:   "test",
+			Quantiles: []float64{0.95},
+		},
+	}
+
+	genBuckets := func(key string, count int) []*seqapi.Aggregation_Bucket {
+		res := make([]*seqapi.Aggregation_Bucket, count)
+		for i := range count {
+			res[i] = &seqapi.Aggregation_Bucket{
+				Key:       key,
+				Value:     new(float64),
+				Quantiles: []float64{float64(i + 1)},
+			}
+		}
+		return res
+	}
+
+	const wantSeries = 3
+
+	buckets := make([]*seqapi.Aggregation_Bucket, 0)
+	for i := range wantSeries {
+		buckets = append(buckets, genBuckets(fmt.Sprintf("test%d", i), 50)...)
+	}
+
+	for range 1000 {
+		got := aggregationsSeriesFromProto(buckets, req)
+		require.Equal(t, wantSeries, len(got))
 	}
 }
