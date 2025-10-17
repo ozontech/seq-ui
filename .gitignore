@@ -1,4 +1,5 @@
 /seq-ui
+config/config.local.*
 bin/*
 *.pprof
 *.test
