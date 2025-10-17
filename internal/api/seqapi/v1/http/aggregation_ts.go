@@ -144,19 +144,14 @@ func aggregationsSeriesFromProto(proto []*seqapi.Aggregation_Bucket, reqAgg aggr
 	res := make(aggregationsSeries, 0)
 	keyToIdx := make(map[string]int)
 
-	addBucket := func(labels map[string]string, val *float64, ts int64) {
-		mapKey := ""
-		for _, v := range labels {
-			mapKey += v
-		}
-
-		idx, ok := keyToIdx[mapKey]
+	addBucket := func(labels map[string]string, labelsHash string, val *float64, ts int64) {
+		idx, ok := keyToIdx[labelsHash]
 		if !ok {
 			res = append(res, aggregationSeries{
 				Labels: labels,
 			})
 			idx = len(res) - 1
-			keyToIdx[mapKey] = idx
+			keyToIdx[labelsHash] = idx
 		}
 
 		res[idx].Buckets = append(res[idx].Buckets, aggregationTsBucket{
@@ -179,16 +174,20 @@ func aggregationsSeriesFromProto(proto []*seqapi.Aggregation_Bucket, reqAgg aggr
 		ts := b.Ts.GetSeconds()
 
 		if len(b.Quantiles) == 0 {
-			addBucket(map[string]string{
+			lbls := map[string]string{
 				label: b.Key,
-			}, b.Value, ts)
+			}
+			addBucket(lbls, b.Key, b.Value, ts)
+			continue
 		}
 
 		for i, q := range b.Quantiles {
-			addBucket(map[string]string{
+			quantileValue := formatQuantile(reqAgg.Quantiles[i])
+			lbls := map[string]string{
 				label:         b.Key,
-				quantileLabel: formatQuantile(reqAgg.Quantiles[i]),
-			}, &q, ts)
+				quantileLabel: quantileValue,
+			}
+			addBucket(lbls, b.Key+quantileValue, &q, ts)
 		}
 	}
 	return res

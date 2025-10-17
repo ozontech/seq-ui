@@ -64,7 +64,7 @@ func (s *Server) setupCORS(mux *chi.Mux) {
 	mux.Use(cors.Handler(cors.Options{
 		AllowedOrigins:     allowedOrigins,
 		AllowedMethods:     allowedMethods,
-		AllowedHeaders:     s.config.CORS.AllowedOrigins,
+		AllowedHeaders:     s.config.CORS.AllowedHeaders,
 		ExposedHeaders:     s.config.CORS.ExposedHeaders,
 		AllowCredentials:   s.config.CORS.AllowCredentials,
 		MaxAge:             s.config.CORS.MaxAge,
