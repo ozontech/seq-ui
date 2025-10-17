@@ -47,7 +47,7 @@ build-migration-image:
 		--build-arg BUILD_TIME=${TIME} \
 		--file migration/Dockerfile \
 		-t ${IMAGE}-pg-migration:${VERSION} \
-		./migration
+		.
 
 .PHONY: push-migration-image
 push-migration-image: build-migration-image
