@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/gofrs/uuid"
+	"go.uber.org/zap"
 
 	"github.com/ozontech/seq-ui/internal/api/profiles"
 	"github.com/ozontech/seq-ui/internal/app/config"
@@ -12,7 +13,9 @@ import (
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
+	"github.com/ozontech/seq-ui/internal/pkg/mask"
 	asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches"
+	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
 
@@ -27,6 +30,7 @@ type API struct {
 	exportLimiter       *tokenlimiter.Limiter
 	asyncSearches       *asyncsearches.Service
 	profiles            *profiles.Profiles
+	masker              *mask.Masker
 }
 
 func New(
@@ -42,6 +46,15 @@ func New(
 		fCache = newFieldsCache(cfg.FieldsCacheTTL)
 	}
 
+	masker, err := mask.New(cfg.Masking)
+	if err != nil {
+		logger.Fatal("failed to init masking", zap.Error(err))
+	}
+	// for export
+	if masker != nil {
+		seqDB.WithMasking(masker)
+	}
+
 	return &API{
 		config:              cfg,
 		seqDB:               seqDB,
@@ -53,6 +66,7 @@ func New(
 		exportLimiter:       tokenlimiter.New(cfg.MaxParallelExportRequests),
 		asyncSearches:       asyncSearches,
 		profiles:            p,
+		masker:              masker,
 	}
 }
 

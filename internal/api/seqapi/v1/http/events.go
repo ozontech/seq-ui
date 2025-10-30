@@ -58,7 +58,12 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 		logger.Error("failed to marshal event proto for caching", zap.String("id", id), zap.Error(err))
 	}
 
-	wr.WriteJson(getEventResponseFromProto(resp))
+	eventResp := getEventResponseFromProto(resp)
+	if a.masker != nil {
+		a.masker.Mask(eventResp.Event.Data)
+	}
+
+	wr.WriteJson(eventResp)
 }
 
 type event struct {

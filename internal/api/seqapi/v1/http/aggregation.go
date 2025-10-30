@@ -73,7 +73,31 @@ func (a *API) serveGetAggregation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wr.WriteJson(getAggregationResponseFromProto(resp))
+	getAggResp := getAggregationResponseFromProto(resp)
+
+	if a.masker != nil {
+		buf := make([]string, 0)
+		for i, agg := range getAggResp.Aggregations {
+			buf = buf[:0]
+			for _, b := range agg.Buckets {
+				buf = append(buf, b.Key)
+			}
+
+			aggReq := httpReq.Aggregations[i]
+			field := aggReq.Field
+			if aggReq.GroupBy != "" {
+				field = aggReq.GroupBy
+			}
+
+			buf = a.masker.MaskAgg(field, buf)
+
+			for j, key := range buf {
+				getAggResp.Aggregations[i].Buckets[j].Key = key
+			}
+		}
+	}
+
+	wr.WriteJson(getAggResp)
 }
 
 type aggregationFunc string // @name seqapi.v1.AggregationFunc
