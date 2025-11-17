@@ -1,10 +1,8 @@
 FROM gomicro/goose
 
-WORKDIR /migration
+COPY migration/*.sql /migrations
+COPY migration/entrypoint.sh /migrations
 
-COPY *.sql ./
-COPY entrypoint.sh ./
+RUN chmod +x /migrations/entrypoint.sh
 
-RUN chmod +x ./entrypoint.sh
-
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["/migrations/entrypoint.sh"]

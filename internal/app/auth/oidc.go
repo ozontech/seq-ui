@@ -15,6 +15,7 @@ import (
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/metric"
+	"go.uber.org/zap"
 )
 
 const (
@@ -81,6 +82,7 @@ func NewOIDCProvider(ctx context.Context, cfg *config.OIDC, cacheCfg config.Cach
 		} else {
 			provider, err := oidc.NewProvider(oidcCtx, url)
 			if err != nil {
+				logger.Error("failed to init OIDC provider", zap.String("url", url), zap.Error(err))
 				continue
 			}
 			verifier = provider.Verifier(oidcCfg)
@@ -90,7 +92,7 @@ func NewOIDCProvider(ctx context.Context, cfg *config.OIDC, cacheCfg config.Cach
 	}
 
 	if len(verifiers) == 0 {
-		return nil, fmt.Errorf("no valid OIDS auth urls")
+		return nil, fmt.Errorf("no valid OIDC auth urls")
 	}
 
 	return &oidcProvider{
