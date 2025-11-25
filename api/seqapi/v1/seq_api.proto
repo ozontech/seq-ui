@@ -249,6 +249,7 @@ message StartAsyncSearchRequest {
   optional HistQuery hist = 6;
   bool with_docs = 7;
   int32 size = 8;
+  string meta = 9;
 }
 
 message StartAsyncSearchResponse {
@@ -279,6 +280,7 @@ message FetchAsyncSearchResultResponse {
   optional google.protobuf.Timestamp canceled_at = 6;
   double progress = 7;
   uint64 disk_usage = 8;
+  string meta = 9;
 }
 
 message GetAsyncSearchesListRequest {

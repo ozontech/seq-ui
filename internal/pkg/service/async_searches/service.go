@@ -54,6 +54,7 @@ func (s *Service) StartAsyncSearch(
 			SearchID:  resp.SearchId,
 			OwnerID:   ownerID,
 			ExpiresAt: time.Now().Add(req.Retention.AsDuration()),
+			Meta:      req.Meta,
 		})
 	}, backoff.NewExponentialBackOff(
 		backoff.WithInitialInterval(backoffInitialInterval),
@@ -125,10 +126,18 @@ func (s *Service) FetchAsyncSearchResult(
 	ctx context.Context,
 	req *seqapi.FetchAsyncSearchResultRequest,
 ) (*seqapi.FetchAsyncSearchResultResponse, error) {
+	searchInfo, err := s.repo.GetAsyncSearchById(ctx, req.SearchId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get async search by id: %w", err)
+	}
+
 	resp, err := s.seqDB.FetchAsyncSearchResult(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch search result: %w", err)
 	}
+
+	resp.Meta = searchInfo.Meta
+
 	return resp, nil
 }
 
