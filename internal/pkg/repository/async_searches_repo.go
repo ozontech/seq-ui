@@ -24,8 +24,8 @@ func (r *asyncSearchesRepository) SaveAsyncSearch(
 	ctx context.Context,
 	req types.SaveAsyncSearchRequest,
 ) error {
-	query, args := "INSERT INTO async_searches (search_id,owner_id,expires_at) VALUES ($1,$2,$3)",
-		[]any{req.SearchID, req.OwnerID, req.ExpiresAt}
+	query, args := "INSERT INTO async_searches (search_id,owner_id,meta,expires_at) VALUES ($1,$2,$3,$4)",
+		[]any{req.SearchID, req.OwnerID, req.Meta, req.ExpiresAt}
 
 	metricLabels := []string{"async_searches", "INSERT"}
 	_, err := r.exec(ctx, metricLabels, query, args...)
@@ -44,7 +44,7 @@ func (r *asyncSearchesRepository) GetAsyncSearchById(
 	as := types.AsyncSearchInfo{}
 
 	query, args := `
-		SELECT s.search_id, s.owner_id, p.user_name, s.created_at, s.expires_at
+		SELECT s.search_id, s.owner_id, p.user_name, s.meta, s.created_at, s.expires_at
 		FROM async_searches AS s
 		JOIN user_profiles AS p	ON p.id = s.owner_id
 		WHERE s.search_id = $1
@@ -56,6 +56,7 @@ func (r *asyncSearchesRepository) GetAsyncSearchById(
 		&as.SearchID,
 		&as.OwnerID,
 		&as.OwnerName,
+		&as.Meta,
 		&as.CreatedAt,
 		&as.ExpiresAt,
 	)
