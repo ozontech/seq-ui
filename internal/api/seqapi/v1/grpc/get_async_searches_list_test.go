@@ -28,6 +28,7 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 		mockUserName2        = "some_user_2"
 		mockProfileID1 int64 = 1
 		mockProfileID2 int64 = 1
+		errorMsg             = "some error"
 
 		mockTime = time.Date(2025, 8, 6, 17, 52, 12, 123, time.UTC)
 	)
@@ -70,6 +71,7 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 						Progress:  1,
 						DiskUsage: 512,
 						OwnerName: mockUserName1,
+						Error:     &errorMsg,
 					},
 					{
 						SearchId: mockSearchID2,

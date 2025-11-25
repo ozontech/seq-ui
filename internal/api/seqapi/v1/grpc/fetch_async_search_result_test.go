@@ -117,6 +117,10 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 							NotExists: 2,
 						},
 					},
+					Error: &seqapi.Error{
+						Code:    seqapi.ErrorCode_ERROR_CODE_NO,
+						Message: "some error",
+					},
 				},
 				StartedAt: timestamppb.New(mockTime.Add(-30 * time.Second)),
 				ExpiresAt: timestamppb.New(mockTime.Add(30 * time.Second)),
