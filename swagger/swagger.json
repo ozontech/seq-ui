@@ -2076,6 +2076,9 @@
                     "type": "string",
                     "format": "int64"
                 },
+                "error": {
+                    "type": "string"
+                },
                 "expires_at": {
                     "type": "string",
                     "format": "date-time"
