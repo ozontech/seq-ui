@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/ozontech/seq-ui/internal/app/config"
@@ -97,7 +98,7 @@ func compileMask(cfg config.Mask, globalFields *maskFields) (mask, error) {
 }
 
 func verifyGroups(groups []int, compiledTotal int) ([]int, error) {
-	if compiledTotal == 0 {
+	if len(groups) == 0 || compiledTotal == 0 || slices.Index(groups, 0) != -1 {
 		return []int{0}, nil
 	}
 
@@ -119,9 +120,11 @@ func verifyGroups(groups []int, compiledTotal int) ([]int, error) {
 	return groups, nil
 }
 
-func (m *mask) processFields(event map[string]string) []string {
+// processFields returns list of fields that must be processed and
+// their presence in the config
+func (m *mask) processFields(event map[string]string) ([]string, bool) {
 	if m.fields == nil {
-		return nil
+		return nil, false
 	}
 
 	fields := make([]string, 0)
@@ -138,7 +141,7 @@ func (m *mask) processFields(event map[string]string) []string {
 			}
 		}
 	}
-	return fields
+	return fields, true
 }
 
 func (m *mask) apply(event map[string]string) {
@@ -146,8 +149,14 @@ func (m *mask) apply(event map[string]string) {
 		return
 	}
 
-	fields := m.processFields(event)
+	fields, exists := m.processFields(event)
+
 	if len(fields) == 0 {
+		// empty list when fields presented in config
+		if exists {
+			return
+		}
+
 		for f, v := range event {
 			event[f] = m.maskValue(v)
 		}

@@ -517,6 +517,8 @@ Config for `/seqapi` API handlers.
 
   Masking configuration.
 
+  ⚠ **Experimental feature**
+
   `Masking` fields:
 
   + **`masks`** *`[]Mask`* *`required`*
@@ -543,7 +545,7 @@ Config for `/seqapi` API handlers.
 
   + **`groups`** *`[]int`* *`default=[]`*
 
-    Groups are numbers of masking groups in expression. If set to empty list or `[0]`, then full expression will be masked.
+    Groups are numbers of masking groups in expression. If set to empty list or the list **contains** `0`, the full expression will be masked.
   
   + **`mode`** *`string`* *`required`* *`options="mask"|"replace"|"cut"`*
 
