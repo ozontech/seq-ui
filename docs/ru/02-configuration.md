@@ -513,6 +513,95 @@ handlers:
 
     Тип поля.
 
++ **`masking`** *`Masking`* *`optional`*
+
+  Конфигурация маскирования данных.
+
+  ⚠ **Экспериментальная функция**
+
+  Поля `Masking`:
+
+  + **`masks`** *`[]Mask`* *`required`*
+
+    Список масок.
+
+  + **`process_fields`** *`[]string`* *`default=[]`*
+
+    Список полей события, которые необходимо маскировать.
+
+    > Параметры `process_fields` и `ignore_fields` не должны задаваться одновременно.
+  
+  + **`ignore_fields`** *`[]string`* *`default=[]`*
+
+    Список полей события, которые нет необходимости маскировать.
+
+    > Параметры `process_fields` и `ignore_fields` не должны задаваться одновременно.
+  
+  Поля `Mask`:
+
+  + **`re`** *`string`* *`required`*
+
+    Регулярное выражение для маскирования.
+
+  + **`groups`** *`[]int`* *`default=[]`*
+
+    Номера маскируемых групп в выражении. Если задан пустой массив или массив **содержит** `0`, то замаскировано будет все выражение.
+  
+  + **`mode`** *`string`* *`required`* *`options="mask"|"replace"|"cut"`*
+
+    Режим маскирования:
+      - `mask` - используются звездочки (`*`)
+      - `replace` - используется `replace_word`
+      - `cut` - маскируемые группы будут вырезаны, а не заменены
+
+  + **`replace_word`** *`string`* *`default=""`*
+
+    Заменяющее слово, используемое в режиме `mode: replace`.
+
+    > Игнорируется в других режимах .
+  
+  + **`process_fields`** *`[]string`* *`default=[]`*
+
+    Список специфичных для маски полей события, которые необходимо маскировать.
+
+    > Параметры `process_fields` и `ignore_fields` не должны задаваться одновременно.
+  
+  + **`ignore_fields`** *`[]string`* *`default=[]`*
+
+    Список специфичных для маски полей события, которые нет необходимости маскировать.
+
+    > Параметры `process_fields` и `ignore_fields` не должны задаваться одновременно.
+  
+  + **`field_filters`** *`FieldFilterSet`* *`optional`*
+
+    Набор фильтров полей для фильтрации событий перед маскировкой.
+
+  Поля `FieldFilterSet`:
+
+  + **`condition`** *`string`* *`required`* *`options="and"|"or"|"not"`*
+
+    Условие для объединения фильтров.
+
+  + **`filters`** *`[]FieldFilter`* *`required`*
+
+    Список фильтров.
+
+    > Максимум 1 при `condition: not`.
+  
+  Поля `FieldFilter`:
+
+  + **`field`** *`string`* *`required`*
+
+    Поле события.
+
+  + **`mode`** *`string`* *`required`* *`options="equal"|"contains"|"prefix"|"suffix"`*
+
+    Режим фильтрации.
+
+  + **`values`** *`[]string`* *`required`*
+
+    Список значений поля события для фильтрации.
+
 ### Error groups
 
 **`error_groups`** *`ErrorGroups`* *`optional`*

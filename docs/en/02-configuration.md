@@ -513,6 +513,95 @@ Config for `/seqapi` API handlers.
 
     Type of field.
 
++ **`masking`** *`Masking`* *`optional`*
+
+  Masking configuration.
+
+  ⚠ **Experimental feature**
+
+  `Masking` fields:
+
+  + **`masks`** *`[]Mask`* *`required`*
+
+    List of masks.
+
+  + **`process_fields`** *`[]string`* *`default=[]`*
+
+    List of processed event fields.
+
+    > It is wrong to set non-empty ignored fields list and non-empty processed fields list at the same time.
+  
+  + **`ignore_fields`** *`[]string`* *`default=[]`*
+
+    List of ignored event fields.
+
+    > It is wrong to set non-empty ignored fields list and non-empty processed fields list at the same time.
+  
+  `Mask` fields:
+
+  + **`re`** *`string`* *`required`*
+
+    Regular expression for masking.
+
+  + **`groups`** *`[]int`* *`default=[]`*
+
+    Groups are numbers of masking groups in expression. If set to empty list or the list **contains** `0`, the full expression will be masked.
+  
+  + **`mode`** *`string`* *`required`* *`options="mask"|"replace"|"cut"`*
+
+    Masking mode:
+      - `mask` - asterisks (`*`) are used for masking
+      - `replace` - `replace_word` is used for masking
+      - `cut` - masking parts will be cut instead of being replaced
+
+  + **`replace_word`** *`string`* *`default=""`*
+
+    Replacement word used in `mode: replace`.
+
+    > Ignored in other mods.
+  
+  + **`process_fields`** *`[]string`* *`default=[]`*
+
+    List of mask-specific processed event fields.
+
+    > It is wrong to set non-empty ignored fields list and non-empty processed fields list at the same time.
+  
+  + **`ignore_fields`** *`[]string`* *`default=[]`*
+
+    List of mask-specific ignored event fields.
+
+    > It is wrong to set non-empty ignored fields list and non-empty processed fields list at the same time.
+  
+  + **`field_filters`** *`FieldFilterSet`* *`optional`*
+
+    Set of field filters to filter events before masking.
+
+  `FieldFilterSet` fields:
+
+  + **`condition`** *`string`* *`required`* *`options="and"|"or"|"not"`*
+
+    Condition for combining filters.
+
+  + **`filters`** *`[]FieldFilter`* *`required`*
+
+    List of filters.
+
+    > Maximum 1 when `condition: not`.
+  
+  `FieldFilter` fields:
+
+  + **`field`** *`string`* *`required`*
+
+    Event field.
+
+  + **`mode`** *`string`* *`required`* *`options="equal"|"contains"|"prefix"|"suffix"`*
+
+    Filter mode.
+
+  + **`values`** *`[]string`* *`required`*
+
+    List of event field values to filter.
+
 ### Error groups
 
 **`error_groups`** *`ErrorGroups`* *`optional`*

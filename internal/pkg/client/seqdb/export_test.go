@@ -159,7 +159,7 @@ func Test_GRPCClient_Export(t *testing.T) {
 			docs: []seqproxyapi.Document{
 				{Id: "test1", Data: []byte(`{"key1":"val1,a","key2":"val2,b","key3":"test \"quoted\""}`), Time: eventTimePB},
 			},
-			wantResp: "key1,key3\r\n\"val1,a\",\"test \\\"\"quoted\\\"\"\"\r\n",
+			wantResp: "key1,key3\r\n\"val1,a\",\"test \"\"quoted\"\"\"\r\n",
 		},
 		{
 			name: "err_proxy",

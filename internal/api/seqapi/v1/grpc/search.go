@@ -95,5 +95,11 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 		}
 	}
 
+	if a.masker != nil {
+		for _, e := range resp.Events {
+			a.masker.Mask(e.Data)
+		}
+	}
+
 	return resp, nil
 }

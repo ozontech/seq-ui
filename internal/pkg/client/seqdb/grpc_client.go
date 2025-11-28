@@ -9,10 +9,6 @@ import (
 	"time"
 
 	grpc_mw "github.com/grpc-ecosystem/go-grpc-middleware"
-	"github.com/ozontech/seq-ui/internal/app/types"
-	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1"
-	"github.com/ozontech/seq-ui/logger"
-	"github.com/ozontech/seq-ui/metric"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -20,6 +16,12 @@ import (
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+
+	"github.com/ozontech/seq-ui/internal/app/types"
+	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1"
+	"github.com/ozontech/seq-ui/internal/pkg/mask"
+	"github.com/ozontech/seq-ui/logger"
+	"github.com/ozontech/seq-ui/metric"
 )
 
 type grpcSearchResp interface {
@@ -123,6 +125,8 @@ type GRPCClient struct {
 	initialRetryBackoff time.Duration
 	maxRetryBackoff     time.Duration
 	reqRetries          int
+
+	masker *mask.Masker
 }
 
 func NewGRPCClient(ctx context.Context, params ClientParams) (*GRPCClient, error) {
@@ -238,4 +242,8 @@ func (c *GRPCClient) sendRequest(ctx context.Context, reqFn grpcReqFn) (any, err
 		return nil, status.Errorf(codes.Internal, "grpc client send request: %v", err)
 	}
 	return grpcResp, err
+}
+
+func (c *GRPCClient) WithMasking(m *mask.Masker) {
+	c.masker = m
 }

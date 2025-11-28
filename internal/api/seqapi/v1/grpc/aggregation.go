@@ -61,5 +61,34 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 	if err != nil {
 		return nil, err
 	}
+
+	if a.masker != nil {
+		buf := make([]string, 0)
+		for i, agg := range resp.Aggregations {
+			if agg == nil {
+				continue
+			}
+
+			buf = buf[:0]
+			for _, b := range agg.Buckets {
+				buf = append(buf, b.GetKey())
+			}
+
+			aggReq := req.Aggregations[i]
+			field := aggReq.Field
+			if aggReq.GroupBy != "" {
+				field = aggReq.GroupBy
+			}
+
+			buf = a.masker.MaskAgg(field, buf)
+
+			for j, key := range buf {
+				if agg.Buckets[j] != nil {
+					agg.Buckets[j].Key = key
+				}
+			}
+		}
+	}
+
 	return resp, nil
 }
