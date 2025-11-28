@@ -25,6 +25,7 @@ func TestServeStartAsyncSearch(t *testing.T) {
 		mockSearchID  = "c9a34cf8-4c66-484e-9cc2-42979d848656"
 		mockUserName  = "some_user"
 		mockProfileID = 1
+		meta          = `{"some":"meta"}`
 	)
 
 	query := "message:error"
@@ -68,6 +69,7 @@ func TestServeStartAsyncSearch(t *testing.T) {
 						Quantiles: []float64{0.95},
 					},
 				},
+				Meta: meta,
 			},
 			resp: &seqapi.StartAsyncSearchResponse{
 				SearchId: mockSearchID,
@@ -83,6 +85,7 @@ func TestServeStartAsyncSearch(t *testing.T) {
 				repoReq: types.SaveAsyncSearchRequest{
 					SearchID: mockSearchID,
 					OwnerID:  mockProfileID,
+					Meta:     meta,
 				},
 			},
 		},

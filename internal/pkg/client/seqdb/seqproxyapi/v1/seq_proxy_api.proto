@@ -253,7 +253,7 @@ message GetAsyncSearchesListRequest {
   // Searches offset (pagination).
   int32 offset = 3;
   // list of async search ids to filter out result
-  repeated string ids = 4; 
+  repeated string ids = 4;
 }
 
 message GetAsyncSearchesListResponse {
@@ -271,6 +271,7 @@ message AsyncSearchesListItem {
   double progress = 7;
   // The size of data stored on disk, in bytes.
   uint64 disk_usage = 8;
+  optional string error = 9;
 }
 
 message GetAggregationRequest {

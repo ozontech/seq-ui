@@ -125,6 +125,7 @@ type asyncSearchesListItem struct {
 	Progress   float64                 `json:"progress"`
 	DiskUsage  string                  `json:"disk_usage" format:"int64"`
 	OwnerName  string                  `json:"owner_name"`
+	Error      *string                 `json:"error,omitempty"`
 } //	@name	seqapi.v1.AsyncSearchesListItem
 
 func getAsyncSearchesListResponseFromProto(resp *seqapi.GetAsyncSearchesListResponse) getAsyncSearchesListResponse {
@@ -147,6 +148,7 @@ func getAsyncSearchesListResponseFromProto(resp *seqapi.GetAsyncSearchesListResp
 			Progress:   s.Progress,
 			DiskUsage:  strconv.FormatUint(s.DiskUsage, 10),
 			OwnerName:  s.OwnerName,
+			Error:      s.Error,
 		})
 	}
 
