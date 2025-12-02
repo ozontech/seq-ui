@@ -27,13 +27,13 @@ service SeqAPIService {
   rpc GetLogsLifespan(GetLogsLifespanRequest) returns (GetLogsLifespanResponse) {}
 
   rpc StartAsyncSearch(StartAsyncSearchRequest) returns (StartAsyncSearchResponse) {}
-  
+
   rpc FetchAsyncSearchResult(FetchAsyncSearchResultRequest) returns (FetchAsyncSearchResultResponse) {}
-  
+
   rpc GetAsyncSearchesList(GetAsyncSearchesListRequest) returns (GetAsyncSearchesListResponse) {}
-  
+
   rpc CancelAsyncSearch(CancelAsyncSearchRequest) returns (CancelAsyncSearchResponse) {}
-  
+
   rpc DeleteAsyncSearch(DeleteAsyncSearchRequest) returns (DeleteAsyncSearchResponse) {}
 }
 
@@ -249,6 +249,7 @@ message StartAsyncSearchRequest {
   optional HistQuery hist = 6;
   bool with_docs = 7;
   int32 size = 8;
+  string meta = 9;
 }
 
 message StartAsyncSearchResponse {
@@ -279,6 +280,7 @@ message FetchAsyncSearchResultResponse {
   optional google.protobuf.Timestamp canceled_at = 6;
   double progress = 7;
   uint64 disk_usage = 8;
+  string meta = 9;
 }
 
 message GetAsyncSearchesListRequest {
@@ -290,16 +292,17 @@ message GetAsyncSearchesListRequest {
 
 message GetAsyncSearchesListResponse {
   message ListItem {
-  string search_id = 1;
-  AsyncSearchStatus status = 2;
-  StartAsyncSearchRequest request = 3;
-  google.protobuf.Timestamp started_at = 4;
-  google.protobuf.Timestamp expires_at = 5;
-  optional google.protobuf.Timestamp canceled_at = 6;
-  double progress = 7;
-  uint64 disk_usage = 8;
-  string owner_name = 9;
-}
+    string search_id = 1;
+    AsyncSearchStatus status = 2;
+    StartAsyncSearchRequest request = 3;
+    google.protobuf.Timestamp started_at = 4;
+    google.protobuf.Timestamp expires_at = 5;
+    optional google.protobuf.Timestamp canceled_at = 6;
+    double progress = 7;
+    uint64 disk_usage = 8;
+    string owner_name = 9;
+    optional string error = 10;
+  }
 
   repeated ListItem searches = 1;
 }
@@ -315,4 +318,3 @@ message DeleteAsyncSearchRequest {
 }
 
 message DeleteAsyncSearchResponse {}
-

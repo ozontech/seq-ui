@@ -16,6 +16,7 @@ import (
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
+	mock_repo "github.com/ozontech/seq-ui/internal/pkg/repository/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
 
@@ -23,6 +24,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 	var (
 		mockSearchID = "c9a34cf8-4c66-484e-9cc2-42979d848656"
 		mockTime     = time.Date(2025, 8, 6, 17, 52, 12, 123, time.UTC)
+		meta         = `{"some":"meta"}`
 	)
 
 	tests := []struct {
@@ -30,6 +32,8 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 
 		req  *seqapi.FetchAsyncSearchResultRequest
 		resp *seqapi.FetchAsyncSearchResultResponse
+
+		repoResp types.AsyncSearchInfo
 
 		err error
 	}{
@@ -117,11 +121,20 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 							NotExists: 2,
 						},
 					},
+					Error: &seqapi.Error{
+						Code:    seqapi.ErrorCode_ERROR_CODE_NO,
+						Message: "some error",
+					},
 				},
 				StartedAt: timestamppb.New(mockTime.Add(-30 * time.Second)),
 				ExpiresAt: timestamppb.New(mockTime.Add(30 * time.Second)),
 				Progress:  1,
 				DiskUsage: 512,
+				Meta:      meta,
+			},
+			repoResp: types.AsyncSearchInfo{
+				SearchID: mockSearchID,
+				Meta:     meta,
 			},
 		},
 		{
@@ -141,6 +154,11 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 			ctrl := gomock.NewController(t)
 
 			if tt.err == nil {
+				asyncSearchesRepoMock := mock_repo.NewMockAsyncSearches(ctrl)
+				asyncSearchesRepoMock.EXPECT().GetAsyncSearchById(gomock.Any(), mockSearchID).
+					Return(tt.repoResp, nil).Times(1)
+				seqData.Mocks.AsyncSearchesRepo = asyncSearchesRepoMock
+
 				seqDbMock := mock_seqdb.NewMockClient(ctrl)
 				seqDbMock.EXPECT().FetchAsyncSearchResult(gomock.Any(), tt.req).
 					Return(tt.resp, nil).Times(1)

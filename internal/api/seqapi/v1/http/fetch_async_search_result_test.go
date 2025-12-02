@@ -13,7 +13,9 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
+	"github.com/ozontech/seq-ui/internal/app/types"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
+	mock_repo "github.com/ozontech/seq-ui/internal/pkg/repository/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
 
@@ -21,12 +23,16 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 	var (
 		mockSearchID = "c9a34cf8-4c66-484e-9cc2-42979d848656"
 		mockTime     = time.Date(2025, 8, 6, 17, 52, 12, 123, time.UTC)
+		meta         = `{"some":"meta"}`
 	)
 
 	type mockArgs struct {
 		proxyReq  *seqapi.FetchAsyncSearchResultRequest
 		proxyResp *seqapi.FetchAsyncSearchResultResponse
 		proxyErr  error
+
+		repoResp types.AsyncSearchInfo
+		repoErr  error
 	}
 
 	tests := []struct {
@@ -124,14 +130,22 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 								NotExists: 2,
 							},
 						},
+						Error: &seqapi.Error{
+							Code:    seqapi.ErrorCode_ERROR_CODE_NO,
+							Message: "some error",
+						},
 					},
 					StartedAt: timestamppb.New(mockTime.Add(-30 * time.Second)),
 					ExpiresAt: timestamppb.New(mockTime.Add(30 * time.Second)),
 					Progress:  1,
 					DiskUsage: 512,
 				},
+				repoResp: types.AsyncSearchInfo{
+					SearchID: mockSearchID,
+					Meta:     meta,
+				},
 			},
-			wantRespBody: `{"status":"done","request":{"retention":"seconds:60","query":"message:error","from":"2025-08-06T17:37:12.000000123Z","to":"2025-08-06T17:52:12.000000123Z","aggregations":[{"field":"x","group_by":"level","agg_func":"avg","quantiles":[0.9,0.5]}],"histogram":{"interval":"1s"},"with_docs":true,"size":100},"response":{"events":[{"id":"017a854298010000-850287cfa326a7fc","data":{"level":"3","message":"some error","x":"2"},"time":"2025-08-06T17:51:12.000000123Z"},{"id":"017a854298010000-8502fe7f2aa33df3","data":{"level":"2","message":"some error 2","x":"8"},"time":"2025-08-06T17:50:12.000000123Z"}],"histogram":{"buckets":[{"key":"1","docCount":"7"},{"key":"2","docCount":"9"}]},"aggregations":[{"buckets":[{"key":"3","value":2,"quantiles":[2,1]},{"key":"2","value":8,"not_exists":1,"quantiles":[7,4]}],"not_exists":2}],"total":"2","error":{"code":"ERROR_CODE_NO"},"partialResponse":false},"started_at":"2025-08-06T17:51:42.000000123Z","expires_at":"2025-08-06T17:52:42.000000123Z","progress":1,"disk_usage":"512"}`,
+			wantRespBody: `{"status":"done","request":{"retention":"seconds:60","query":"message:error","from":"2025-08-06T17:37:12.000000123Z","to":"2025-08-06T17:52:12.000000123Z","aggregations":[{"field":"x","group_by":"level","agg_func":"avg","quantiles":[0.9,0.5]}],"histogram":{"interval":"1s"},"with_docs":true,"size":100},"response":{"events":[{"id":"017a854298010000-850287cfa326a7fc","data":{"level":"3","message":"some error","x":"2"},"time":"2025-08-06T17:51:12.000000123Z"},{"id":"017a854298010000-8502fe7f2aa33df3","data":{"level":"2","message":"some error 2","x":"8"},"time":"2025-08-06T17:50:12.000000123Z"}],"histogram":{"buckets":[{"key":"1","docCount":"7"},{"key":"2","docCount":"9"}]},"aggregations":[{"buckets":[{"key":"3","value":2,"quantiles":[2,1]},{"key":"2","value":8,"not_exists":1,"quantiles":[7,4]}],"not_exists":2}],"total":"2","error":{"code":"ERROR_CODE_NO","message":"some error"},"partialResponse":false},"started_at":"2025-08-06T17:51:42.000000123Z","expires_at":"2025-08-06T17:52:42.000000123Z","progress":1,"disk_usage":"512","meta":"{\"some\":\"meta\"}"}`,
 			wantStatus:   http.StatusOK,
 		},
 		{
@@ -166,6 +180,11 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 
 			if tt.mockArgs != nil {
 				ctrl := gomock.NewController(t)
+
+				asyncSearchesRepoMock := mock_repo.NewMockAsyncSearches(ctrl)
+				asyncSearchesRepoMock.EXPECT().GetAsyncSearchById(gomock.Any(), mockSearchID).
+					Return(tt.mockArgs.repoResp, tt.mockArgs.repoErr).Times(1)
+				seqData.Mocks.AsyncSearchesRepo = asyncSearchesRepoMock
 
 				seqDbMock := mock_seqdb.NewMockClient(ctrl)
 				seqDbMock.EXPECT().FetchAsyncSearchResult(gomock.Any(), tt.mockArgs.proxyReq).

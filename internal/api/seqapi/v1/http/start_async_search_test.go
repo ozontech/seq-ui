@@ -26,6 +26,7 @@ func TestServeStartAsyncSearch(t *testing.T) {
 		mockSearchID  = "c9a34cf8-4c66-484e-9cc2-42979d848656"
 		mockUserName  = "some_user"
 		mockProfileID = 1
+		meta          = `{"some":"meta"}`
 	)
 
 	query := "message:error"
@@ -33,7 +34,7 @@ func TestServeStartAsyncSearch(t *testing.T) {
 	to := from.Add(time.Second)
 
 	formatReqBody := func(retention string) string {
-		return fmt.Sprintf(`{"retention":%q,"query":%q,"from":%q,"to":%q,"with_docs":true,"size":100,"histogram":{"interval":"1s"},"aggregations":[{"field":"v","group_by":"level","agg_func":"avg","quantiles":[0.95]}]}`,
+		return fmt.Sprintf(`{"retention":%q,"query":%q,"from":%q,"to":%q,"with_docs":true,"size":100,"meta":"{\"some\":\"meta\"}","histogram":{"interval":"1s"},"aggregations":[{"field":"v","group_by":"level","agg_func":"avg","quantiles":[0.95]}]}`,
 			retention, query, from.Format(time.RFC3339), to.Format(time.RFC3339))
 	}
 
@@ -81,6 +82,7 @@ func TestServeStartAsyncSearch(t *testing.T) {
 							Quantiles: []float64{0.95},
 						},
 					},
+					Meta: meta,
 				},
 				proxyResp: &seqapi.StartAsyncSearchResponse{
 					SearchId: mockSearchID,
@@ -95,6 +97,7 @@ func TestServeStartAsyncSearch(t *testing.T) {
 				repoReq: types.SaveAsyncSearchRequest{
 					SearchID: mockSearchID,
 					OwnerID:  mockProfileID,
+					Meta:     meta,
 				},
 			},
 			wantRespBody: `{"search_id":"c9a34cf8-4c66-484e-9cc2-42979d848656"}`,

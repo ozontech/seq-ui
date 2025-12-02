@@ -2076,6 +2076,9 @@
                     "type": "string",
                     "format": "int64"
                 },
+                "error": {
+                    "type": "string"
+                },
                 "expires_at": {
                     "type": "string",
                     "format": "date-time"
@@ -2243,6 +2246,9 @@
                 "expires_at": {
                     "type": "string",
                     "format": "date-time"
+                },
+                "meta": {
+                    "type": "string"
                 },
                 "progress": {
                     "type": "number"
@@ -2604,6 +2610,9 @@
                 },
                 "histogram": {
                     "$ref": "#/definitions/http.AsyncSearchRequestHistogram"
+                },
+                "meta": {
+                    "type": "string"
                 },
                 "query": {
                     "type": "string"

@@ -429,6 +429,7 @@ func (p *proxyGetAsyncSearchesListResp) toProto() *seqapi.GetAsyncSearchesListRe
 			CanceledAt: s.CanceledAt,
 			Progress:   s.Progress,
 			DiskUsage:  s.DiskUsage,
+			Error:      s.Error,
 		})
 	}
 
