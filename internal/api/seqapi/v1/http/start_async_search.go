@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
+	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/api_error"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
@@ -46,6 +47,18 @@ func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		wr.Error(fmt.Errorf("failed to parse retention: %w", err), http.StatusBadRequest)
 		return
+	}
+
+	for _, agg := range httpReq.Aggregations {
+		if agg.Interval == "" {
+			continue
+		}
+		if err := api_error.CheckAggregationTsInterval(agg.Interval, httpReq.From, httpReq.To,
+			a.config.MaxBucketsPerAggregationTs,
+		); err != nil {
+			wr.Error(err, http.StatusBadRequest)
+			return
+		}
 	}
 
 	spanAttributes := []attribute.KeyValue{
@@ -114,7 +127,7 @@ type startAsyncSearchRequest struct {
 	Query        string                       `json:"query"`
 	From         time.Time                    `json:"from" format:"date-time"`
 	To           time.Time                    `json:"to" format:"date-time"`
-	Aggregations aggregationQueries           `json:"aggregations,omitempty"`
+	Aggregations aggregationTsQueries         `json:"aggregations,omitempty"`
 	Histogram    *AsyncSearchRequestHistogram `json:"histogram,omitempty"`
 	WithDocs     bool                         `json:"with_docs"`
 	Size         int32                        `json:"size"`

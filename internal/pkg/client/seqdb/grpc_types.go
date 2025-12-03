@@ -467,6 +467,7 @@ func newSeqapiAggQuerySlice(aggs []*seqproxyapi.AggQuery) []*seqapi.AggregationQ
 			GroupBy:   agg.GroupBy,
 			Func:      seqapi.AggFunc(agg.Func),
 			Quantiles: agg.Quantiles,
+			Interval:  agg.Interval,
 		})
 	}
 

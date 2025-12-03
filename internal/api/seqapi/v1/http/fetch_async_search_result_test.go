@@ -68,6 +68,12 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 								Func:      seqapi.AggFunc_AGG_FUNC_AVG,
 								Quantiles: []float64{0.9, 0.5},
 							},
+							{
+								Field:    "y",
+								GroupBy:  "level",
+								Func:     seqapi.AggFunc_AGG_FUNC_SUM,
+								Interval: pointerTo("30s"),
+							},
 						},
 						Hist: &seqapi.StartAsyncSearchRequest_HistQuery{
 							Interval: "1s",
@@ -114,16 +120,36 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 								Buckets: []*seqapi.Aggregation_Bucket{
 									{
 										Key:       "3",
-										Value:     pointerTo(2),
+										Value:     pointerTo[float64](2),
 										NotExists: 0,
 										Quantiles: []float64{2, 1},
-										Ts:        timestamppb.New(mockTime),
 									},
 									{
 										Key:       "2",
-										Value:     pointerTo(8),
+										Value:     pointerTo[float64](8),
 										NotExists: 1,
 										Quantiles: []float64{7, 4},
+									},
+								},
+							},
+							{
+								Buckets: []*seqapi.Aggregation_Bucket{
+									{
+										Key:       "33",
+										Value:     pointerTo[float64](2),
+										NotExists: 0,
+										Ts:        timestamppb.New(mockTime.Add(-30 * time.Second)),
+									},
+									{
+										Key:       "33",
+										Value:     pointerTo[float64](5),
+										NotExists: 0,
+										Ts:        timestamppb.New(mockTime),
+									},
+									{
+										Key:       "22",
+										Value:     pointerTo[float64](8),
+										NotExists: 1,
 										Ts:        timestamppb.New(mockTime.Add(-1 * time.Minute)),
 									},
 								},
@@ -145,7 +171,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 					Meta:     meta,
 				},
 			},
-			wantRespBody: `{"status":"done","request":{"retention":"seconds:60","query":"message:error","from":"2025-08-06T17:37:12.000000123Z","to":"2025-08-06T17:52:12.000000123Z","aggregations":[{"field":"x","group_by":"level","agg_func":"avg","quantiles":[0.9,0.5]}],"histogram":{"interval":"1s"},"with_docs":true,"size":100},"response":{"events":[{"id":"017a854298010000-850287cfa326a7fc","data":{"level":"3","message":"some error","x":"2"},"time":"2025-08-06T17:51:12.000000123Z"},{"id":"017a854298010000-8502fe7f2aa33df3","data":{"level":"2","message":"some error 2","x":"8"},"time":"2025-08-06T17:50:12.000000123Z"}],"histogram":{"buckets":[{"key":"1","docCount":"7"},{"key":"2","docCount":"9"}]},"aggregations":[{"buckets":[{"key":"3","value":2,"quantiles":[2,1]},{"key":"2","value":8,"not_exists":1,"quantiles":[7,4]}],"not_exists":2}],"total":"2","error":{"code":"ERROR_CODE_NO","message":"some error"},"partialResponse":false},"started_at":"2025-08-06T17:51:42.000000123Z","expires_at":"2025-08-06T17:52:42.000000123Z","progress":1,"disk_usage":"512","meta":"{\"some\":\"meta\"}"}`,
+			wantRespBody: `{"status":"done","request":{"retention":"seconds:60","query":"message:error","from":"2025-08-06T17:37:12.000000123Z","to":"2025-08-06T17:52:12.000000123Z","aggregations":[{"field":"x","group_by":"level","agg_func":"avg","quantiles":[0.9,0.5]},{"field":"y","group_by":"level","agg_func":"sum","interval":"30s"}],"histogram":{"interval":"1s"},"with_docs":true,"size":100},"response":{"events":[{"id":"017a854298010000-850287cfa326a7fc","data":{"level":"3","message":"some error","x":"2"},"time":"2025-08-06T17:51:12.000000123Z"},{"id":"017a854298010000-8502fe7f2aa33df3","data":{"level":"2","message":"some error 2","x":"8"},"time":"2025-08-06T17:50:12.000000123Z"}],"histogram":{"buckets":[{"key":"1","docCount":"7"},{"key":"2","docCount":"9"}]},"aggregations":[{"buckets":[{"key":"3","value":2,"quantiles":[2,1]},{"key":"2","value":8,"not_exists":1,"quantiles":[7,4]}]}],"aggregations_ts":[{"data":{"result":[{"metric":{"level":"33"},"values":[{"timestamp":1754502702,"value":2},{"timestamp":1754502732,"value":5}]},{"metric":{"level":"22"},"values":[{"timestamp":1754502672,"value":8}]}]}}],"total":"2","error":{"code":"ERROR_CODE_NO","message":"some error"},"partialResponse":false},"started_at":"2025-08-06T17:51:42.000000123Z","expires_at":"2025-08-06T17:52:42.000000123Z","progress":1,"disk_usage":"512","meta":"{\"some\":\"meta\"}"}`,
 			wantStatus:   http.StatusOK,
 		},
 		{
@@ -218,6 +244,6 @@ func TestServeFetchAsyncSearchResult_Disabled(t *testing.T) {
 	})
 }
 
-func pointerTo[T float64](in T) *T {
+func pointerTo[T any](in T) *T {
 	return &in
 }

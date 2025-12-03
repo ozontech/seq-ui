@@ -170,23 +170,29 @@ func startAsyncSearchRequestFromProto(r *seqapi.StartAsyncSearchRequest) startAs
 		Query:        r.Query,
 		From:         r.From.AsTime(),
 		To:           r.To.AsTime(),
-		Aggregations: aggregationQueriesFromProto(r.Aggs),
+		Aggregations: aggregationTsQueriesFromProto(r.Aggs),
 		Histogram:    hist,
 		WithDocs:     r.WithDocs,
 		Size:         r.Size,
 	}
 }
 
-func aggregationQueriesFromProto(aggs []*seqapi.AggregationQuery) aggregationQueries {
-	result := make(aggregationQueries, 0, len(aggs))
+func aggregationTsQueriesFromProto(aggs []*seqapi.AggregationQuery) aggregationTsQueries {
+	result := make(aggregationTsQueries, 0, len(aggs))
 
 	for _, agg := range aggs {
-		result = append(result, aggregationQuery{
-			Field:     agg.Field,
-			GroupBy:   agg.GroupBy,
-			Func:      aggregationFuncFromProto(agg.Func),
-			Quantiles: agg.Quantiles,
-		})
+		q := aggregationTsQuery{
+			aggregationQuery: aggregationQuery{
+				Field:     agg.Field,
+				GroupBy:   agg.GroupBy,
+				Func:      aggregationFuncFromProto(agg.Func),
+				Quantiles: agg.Quantiles,
+			},
+		}
+		if agg.Interval != nil {
+			q.Interval = *agg.Interval
+		}
+		result = append(result, q)
 	}
 
 	return result

@@ -83,14 +83,16 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 
 type aggregationTsQuery struct {
 	aggregationQuery
-	Interval string `json:"interval" format:"duration" example:"1m"`
+	Interval string `json:"interval,omitempty" format:"duration" example:"1m"`
 } //	@name	seqapi.v1.AggregationTsQuery
 
 func (aq aggregationTsQuery) toProto() *seqapi.AggregationQuery {
 	q := aq.aggregationQuery.toProto()
 
-	q.Interval = new(string)
-	*q.Interval = aq.Interval
+	if aq.Interval != "" {
+		q.Interval = new(string)
+		*q.Interval = aq.Interval
+	}
 
 	return q
 }

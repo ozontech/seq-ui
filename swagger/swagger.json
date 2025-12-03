@@ -2050,6 +2050,42 @@
                 }
             }
         },
+        "seqapi.v1.AsyncSearchResponse": {
+            "type": "object",
+            "properties": {
+                "aggregations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seqapi.v1.Aggregation"
+                    }
+                },
+                "aggregations_ts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seqapi.v1.AggregationTs"
+                    }
+                },
+                "error": {
+                    "$ref": "#/definitions/seqapi.v1.Error"
+                },
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seqapi.v1.Event"
+                    }
+                },
+                "histogram": {
+                    "$ref": "#/definitions/seqapi.v1.Histogram"
+                },
+                "partialResponse": {
+                    "type": "boolean"
+                },
+                "total": {
+                    "type": "string",
+                    "format": "int64"
+                }
+            }
+        },
         "seqapi.v1.AsyncSearchStatus": {
             "type": "string",
             "enum": [
@@ -2257,7 +2293,7 @@
                     "$ref": "#/definitions/seqapi.v1.StartAsyncSearchRequest"
                 },
                 "response": {
-                    "$ref": "#/definitions/seqapi.v1.SearchResponse"
+                    "$ref": "#/definitions/seqapi.v1.AsyncSearchResponse"
                 },
                 "started_at": {
                     "type": "string",
@@ -2601,7 +2637,7 @@
                 "aggregations": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/seqapi.v1.AggregationQuery"
+                        "$ref": "#/definitions/seqapi.v1.AggregationTsQuery"
                     }
                 },
                 "from": {

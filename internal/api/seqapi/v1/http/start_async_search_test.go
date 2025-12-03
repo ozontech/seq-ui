@@ -34,7 +34,7 @@ func TestServeStartAsyncSearch(t *testing.T) {
 	to := from.Add(time.Second)
 
 	formatReqBody := func(retention string) string {
-		return fmt.Sprintf(`{"retention":%q,"query":%q,"from":%q,"to":%q,"with_docs":true,"size":100,"meta":"{\"some\":\"meta\"}","histogram":{"interval":"1s"},"aggregations":[{"field":"v","group_by":"level","agg_func":"avg","quantiles":[0.95]}]}`,
+		return fmt.Sprintf(`{"retention":%q,"query":%q,"from":%q,"to":%q,"with_docs":true,"size":100,"meta":"{\"some\":\"meta\"}","histogram":{"interval":"1s"},"aggregations":[{"field":"v","group_by":"level","agg_func":"avg","quantiles":[0.95],"interval":"30s"}]}`,
 			retention, query, from.Format(time.RFC3339), to.Format(time.RFC3339))
 	}
 
@@ -80,6 +80,7 @@ func TestServeStartAsyncSearch(t *testing.T) {
 							GroupBy:   "level",
 							Func:      seqapi.AggFunc_AGG_FUNC_AVG,
 							Quantiles: []float64{0.95},
+							Interval:  pointerTo("30s"),
 						},
 					},
 					Meta: meta,

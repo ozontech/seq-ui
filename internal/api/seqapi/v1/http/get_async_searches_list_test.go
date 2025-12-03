@@ -87,9 +87,10 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 								To:        timestamppb.New(mockTime),
 								Aggs: []*seqapi.AggregationQuery{
 									{
-										Field:   "x",
-										GroupBy: "level",
-										Func:    seqapi.AggFunc_AGG_FUNC_AVG,
+										Field:    "x",
+										GroupBy:  "level",
+										Func:     seqapi.AggFunc_AGG_FUNC_AVG,
+										Interval: pointerTo("30s"),
 									},
 								},
 								Hist: &seqapi.StartAsyncSearchRequest_HistQuery{
@@ -121,7 +122,7 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 				},
 				searchIDs: []string{mockSearchID1, mockSearchID2},
 			},
-			wantRespBody: `{"searches":[{"search_id":"c9a34cf8-4c66-484e-9cc2-42979d848656","status":"done","request":{"retention":"seconds:60","query":"message:error","from":"2025-08-06T17:37:12.000000123Z","to":"2025-08-06T17:52:12.000000123Z","with_docs":true,"size":100},"started_at":"2025-08-06T17:51:42.000000123Z","expires_at":"2025-08-06T17:52:42.000000123Z","progress":1,"disk_usage":"512","owner_name":"some_user_1","error":"some error"},{"search_id":"9e4c068e-d4f4-4a5d-be27-a6524a70d70d","status":"canceled","request":{"retention":"seconds:360","query":"message:error and level:3","from":"2025-08-06T16:52:12.000000123Z","to":"2025-08-06T17:52:12.000000123Z","aggregations":[{"field":"x","group_by":"level","agg_func":"avg"}],"histogram":{"interval":"1s"},"with_docs":false,"size":0},"started_at":"2025-08-06T17:51:12.000000123Z","expires_at":"2025-08-06T17:57:12.000000123Z","canceled_at":"2025-08-06T17:52:12.000000123Z","progress":1,"disk_usage":"256","owner_name":"some_user_2"}]}`,
+			wantRespBody: `{"searches":[{"search_id":"c9a34cf8-4c66-484e-9cc2-42979d848656","status":"done","request":{"retention":"seconds:60","query":"message:error","from":"2025-08-06T17:37:12.000000123Z","to":"2025-08-06T17:52:12.000000123Z","with_docs":true,"size":100},"started_at":"2025-08-06T17:51:42.000000123Z","expires_at":"2025-08-06T17:52:42.000000123Z","progress":1,"disk_usage":"512","owner_name":"some_user_1","error":"some error"},{"search_id":"9e4c068e-d4f4-4a5d-be27-a6524a70d70d","status":"canceled","request":{"retention":"seconds:360","query":"message:error and level:3","from":"2025-08-06T16:52:12.000000123Z","to":"2025-08-06T17:52:12.000000123Z","aggregations":[{"field":"x","group_by":"level","agg_func":"avg","interval":"30s"}],"histogram":{"interval":"1s"},"with_docs":false,"size":0},"started_at":"2025-08-06T17:51:12.000000123Z","expires_at":"2025-08-06T17:57:12.000000123Z","canceled_at":"2025-08-06T17:52:12.000000123Z","progress":1,"disk_usage":"256","owner_name":"some_user_2"}]}`,
 			wantStatus:   http.StatusOK,
 		},
 		{
