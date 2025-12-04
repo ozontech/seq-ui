@@ -222,7 +222,7 @@ func aggregationsTsFromProto(proto []*seqapi.Aggregation, reqAggs aggregationTsQ
 
 type getAggregationTsResponse struct {
 	Aggregations aggregationsTs `json:"aggregations"`
-	Error        string         `json:"error,omitempty"`
+	Error        apiError       `json:"error"`
 } //	@name	seqapi.v1.GetAggregationTsResponse
 
 func getAggregationTsResponseFromProto(proto *seqapi.GetAggregationResponse, reqAggs aggregationTsQueries) getAggregationTsResponse {
@@ -231,9 +231,7 @@ func getAggregationTsResponseFromProto(proto *seqapi.GetAggregationResponse, req
 	}
 	r := getAggregationTsResponse{
 		Aggregations: aggregationsTsFromProto(proto.Aggregations, reqAggs),
-	}
-	if proto.Error != nil {
-		r.Error = proto.Error.Message
+		Error:        apiErrorFromProto(proto.GetError()),
 	}
 	return r
 }

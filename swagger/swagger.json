@@ -2398,7 +2398,7 @@
                     }
                 },
                 "error": {
-                    "type": "string"
+                    "$ref": "#/definitions/seqapi.v1.Error"
                 }
             }
         },
