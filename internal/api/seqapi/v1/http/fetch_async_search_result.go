@@ -98,7 +98,7 @@ func (r fetchAsyncSearchResultRequest) toProto() *seqapi.FetchAsyncSearchResultR
 type fetchAsyncSearchResultResponse struct {
 	Status     asyncSearchStatus       `json:"status"`
 	Request    startAsyncSearchRequest `json:"request"`
-	Response   searchResponse          `json:"response"`
+	Response   asyncSearchResponse     `json:"response"`
 	StartedAt  time.Time               `json:"started_at" format:"date-time"`
 	ExpiresAt  time.Time               `json:"expires_at" format:"date-time"`
 	CanceledAt *time.Time              `json:"canceled_at,omitempty" format:"date-time"`
@@ -106,6 +106,16 @@ type fetchAsyncSearchResultResponse struct {
 	DiskUsage  string                  `json:"disk_usage" format:"int64"`
 	Meta       string                  `json:"meta"`
 } //	@name	seqapi.v1.FetchAsyncSearchResultResponse
+
+type asyncSearchResponse struct {
+	Events          events         `json:"events"`
+	Histogram       *histogram     `json:"histogram,omitempty"`
+	Aggregations    aggregations   `json:"aggregations,omitempty"`
+	AggregationsTs  aggregationsTs `json:"aggregations_ts,omitempty"`
+	Total           string         `json:"total,omitempty" format:"int64"`
+	Error           apiError       `json:"error"`
+	PartialResponse bool           `json:"partialResponse"`
+} // @name seqapi.v1.AsyncSearchResponse
 
 func fetchAsyncSearchResultResponseFromProto(resp *seqapi.FetchAsyncSearchResultResponse) fetchAsyncSearchResultResponse {
 	var canceledAt *time.Time
@@ -117,7 +127,7 @@ func fetchAsyncSearchResultResponseFromProto(resp *seqapi.FetchAsyncSearchResult
 	return fetchAsyncSearchResultResponse{
 		Status:     asyncSearchStatusFromProto(resp.Status),
 		Request:    startAsyncSearchRequestFromProto(resp.Request),
-		Response:   searchResponseFromProto(resp.Response, true),
+		Response:   asyncSearchResponseFromProto(resp.Response, resp.Request.Aggs),
 		StartedAt:  resp.StartedAt.AsTime(),
 		ExpiresAt:  resp.ExpiresAt.AsTime(),
 		CanceledAt: canceledAt,
@@ -125,4 +135,35 @@ func fetchAsyncSearchResultResponseFromProto(resp *seqapi.FetchAsyncSearchResult
 		DiskUsage:  strconv.FormatUint(resp.DiskUsage, 10),
 		Meta:       resp.Meta,
 	}
+}
+
+func asyncSearchResponseFromProto(proto *seqapi.SearchResponse, reqAggs []*seqapi.AggregationQuery) asyncSearchResponse {
+	sr := asyncSearchResponse{
+		Events:          eventsFromProto(proto.GetEvents()),
+		Histogram:       histogramFromProto(proto.GetHistogram(), false),
+		Error:           apiErrorFromProto(proto.GetError()),
+		PartialResponse: proto.GetPartialResponse(),
+		Total:           strconv.FormatInt(proto.GetTotal(), 10),
+	}
+
+	// split aggs and aggs with timeseries
+	var aggs, aggsTs []*seqapi.Aggregation
+	var reqAggsTs []*seqapi.AggregationQuery
+	for i, agg := range proto.GetAggregations() {
+		if len(agg.Buckets) == 0 {
+			continue
+		}
+
+		if agg.Buckets[0].Ts != nil {
+			aggsTs = append(aggsTs, agg)
+			reqAggsTs = append(reqAggsTs, reqAggs[i])
+		} else {
+			aggs = append(aggs, agg)
+		}
+	}
+
+	sr.Aggregations = aggregationsFromProto(aggs, false)
+	sr.AggregationsTs = aggregationsTsFromProto(aggsTs, aggregationTsQueriesFromProto(reqAggsTs))
+
+	return sr
 }
