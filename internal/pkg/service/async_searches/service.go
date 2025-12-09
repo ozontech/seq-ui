@@ -3,6 +3,7 @@ package asyncsearches
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -25,12 +26,20 @@ const (
 type Service struct {
 	repo  repository.AsyncSearches
 	seqDB seqdb.Client
+
+	admin_users []string
 }
 
-func New(ctx context.Context, repo repository.AsyncSearches, seqDB seqdb.Client) *Service {
+func New(
+	ctx context.Context,
+	repo repository.AsyncSearches,
+	seqDB seqdb.Client,
+	admins []string,
+) *Service {
 	s := &Service{
-		repo:  repo,
-		seqDB: seqDB,
+		repo:        repo,
+		seqDB:       seqDB,
+		admin_users: admins,
 	}
 
 	go s.deleteExpiredAsyncSearches(ctx)
@@ -77,7 +86,7 @@ func (s *Service) DeleteAsyncSearch(
 		return nil, fmt.Errorf("failed to get async search by id: %w", err)
 	}
 
-	if searchInfo.OwnerID != ownerID {
+	if searchInfo.OwnerID != ownerID && !s.isAdmin(ctx) {
 		return nil, types.NewErrPermissionDenied("delete async search")
 	}
 
@@ -110,7 +119,7 @@ func (s *Service) CancelAsyncSearch(
 		return nil, fmt.Errorf("failed to get async search by id: %w", err)
 	}
 
-	if searchInfo.OwnerID != ownerID {
+	if searchInfo.OwnerID != ownerID && !s.isAdmin(ctx) {
 		return nil, types.NewErrPermissionDenied("cancel async search")
 	}
 
@@ -173,6 +182,15 @@ func (s *Service) GetAsyncSearchesList(
 	}
 
 	return resp, nil
+}
+
+func (s *Service) isAdmin(ctx context.Context) bool {
+	userName, err := types.GetUserKey(ctx)
+	if err != nil {
+		return false
+	}
+
+	return slices.Index(s.admin_users, userName) >= 0
 }
 
 func (s *Service) deleteExpiredAsyncSearches(ctx context.Context) {

@@ -15,7 +15,7 @@ func initTestAPI(data test.APITestData) *API {
 }
 
 func initTestAPIWithAsyncSearches(data test.APITestData) *API {
-	as := asyncsearches.New(context.Background(), data.Mocks.AsyncSearchesRepo, data.Mocks.SeqDB)
+	as := asyncsearches.New(context.Background(), data.Mocks.AsyncSearchesRepo, data.Mocks.SeqDB, []string{})
 	s := service.New(&repository.Repository{
 		UserProfiles: data.Mocks.ProfilesRepo,
 	})

@@ -220,6 +220,7 @@ type Handlers struct {
 	SeqAPI      SeqAPI      `yaml:"seq_api"`
 	ErrorGroups ErrorGroups `yaml:"error_groups"`
 	MassExport  *MassExport `yaml:"mass_export"`
+	AsyncSearch AsyncSearch `yaml:"async_search"`
 }
 
 type PinnedField struct {
@@ -281,6 +282,10 @@ type LogTagsMapping struct {
 type ErrorGroups struct {
 	LogTagsMapping LogTagsMapping    `yaml:"log_tags_mapping"`
 	QueryFilter    map[string]string `yaml:"query_filter"`
+}
+
+type AsyncSearch struct {
+	AdminUsers []string `yaml:"admin_users"`
 }
 
 // FromFile parse config from config path.
