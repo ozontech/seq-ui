@@ -154,7 +154,7 @@ func asyncSearchResponseFromProto(proto *seqapi.SearchResponse, reqAggs []*seqap
 			continue
 		}
 
-		if agg.Buckets[0].Ts != nil {
+		if reqAggs[i].Interval != nil {
 			aggsTs = append(aggsTs, agg)
 			reqAggsTs = append(reqAggsTs, reqAggs[i])
 		} else {
