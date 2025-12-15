@@ -173,6 +173,10 @@ func aggregationsSeriesFromProto(proto []*seqapi.Aggregation_Bucket, reqAgg aggr
 	}
 
 	for _, b := range proto {
+		if b.Key == "_not_exists" {
+			continue
+		}
+
 		ts := b.Ts.GetSeconds()
 
 		if len(b.Quantiles) == 0 {
