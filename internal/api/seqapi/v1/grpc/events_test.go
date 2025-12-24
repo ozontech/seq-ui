@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestGetEvent(t *testing.T) {
@@ -130,6 +132,274 @@ func TestGetEvent(t *testing.T) {
 			}
 
 			require.True(t, proto.Equal(tt.resp, resp))
+		})
+	}
+}
+
+func TestGetEventWithMasking(t *testing.T) {
+	type seqDBArgs struct {
+		req  *seqapi.GetEventRequest
+		resp *seqapi.GetEventResponse
+	}
+
+	eventTime := time.Date(2024, time.December, 31, 10, 20, 30, 400000, time.UTC)
+
+	cacheErr := errors.New("test error")
+	cacheTTL := time.Minute
+
+	tests := []struct {
+		name string
+
+		shouldMask bool
+		isCached   bool
+		wantErr    error
+
+		maskingCfg *config.Masking
+	}{
+		{
+			name:       "mask_noncached",
+			shouldMask: true,
+			isCached:   false,
+			maskingCfg: &config.Masking{
+				Masks: []config.Mask{
+					{
+						Re:          `(val1)`,
+						Groups:      []int{0},
+						Mode:        config.MaskModeReplace,
+						ReplaceWord: `***`,
+						FieldFilters: &config.FieldFilterSet{
+							Condition: config.FieldFilterConditionAnd,
+							Filters: []config.FieldFilter{
+								{
+									Field:  "field1",
+									Mode:   "equal",
+									Values: []string{"val1"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:       "mask_from_cache",
+			shouldMask: true,
+			isCached:   true,
+			maskingCfg: &config.Masking{
+				Masks: []config.Mask{
+					{
+						Re:          `(val2)`,
+						Groups:      []int{0},
+						Mode:        config.MaskModeReplace,
+						ReplaceWord: `***`,
+						FieldFilters: &config.FieldFilterSet{
+							Condition: config.FieldFilterConditionAnd,
+							Filters: []config.FieldFilter{
+								{
+									Field:  "field2",
+									Mode:   "equal",
+									Values: []string{"val2"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:       "do_not_mask_noncached_regex",
+			shouldMask: false,
+			isCached:   false,
+			maskingCfg: &config.Masking{
+				Masks: []config.Mask{
+					{
+						Re:          `(nomask)`,
+						Groups:      []int{0},
+						Mode:        config.MaskModeReplace,
+						ReplaceWord: `***`,
+						FieldFilters: &config.FieldFilterSet{
+							Condition: config.FieldFilterConditionAnd,
+							Filters: []config.FieldFilter{
+								{
+									Field:  "field3",
+									Mode:   "equal",
+									Values: []string{"val3"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:       "do_not_mask_from_cache_regex",
+			shouldMask: false,
+			isCached:   true,
+			maskingCfg: &config.Masking{
+				Masks: []config.Mask{
+					{
+						Re:          `(nomask)`,
+						Groups:      []int{0},
+						Mode:        config.MaskModeReplace,
+						ReplaceWord: `***`,
+						FieldFilters: &config.FieldFilterSet{
+							Condition: config.FieldFilterConditionAnd,
+							Filters: []config.FieldFilter{
+								{
+									Field:  "field4",
+									Mode:   "equal",
+									Values: []string{"val4"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:       "do_not_mask_noncached_field_filter",
+			shouldMask: false,
+			isCached:   true,
+			maskingCfg: &config.Masking{
+				Masks: []config.Mask{
+					{
+						Re:          `(val5)`,
+						Groups:      []int{0},
+						Mode:        config.MaskModeReplace,
+						ReplaceWord: `***`,
+						FieldFilters: &config.FieldFilterSet{
+							Condition: config.FieldFilterConditionAnd,
+							Filters: []config.FieldFilter{
+								{
+									Field:  "field5",
+									Mode:   "equal",
+									Values: []string{"val4"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name:       "do_not_mask_from_cache_field_filter",
+			shouldMask: false,
+			isCached:   true,
+			maskingCfg: &config.Masking{
+				Masks: []config.Mask{
+					{
+						Re:          `(val6)`,
+						Groups:      []int{0},
+						Mode:        config.MaskModeReplace,
+						ReplaceWord: `***`,
+						FieldFilters: &config.FieldFilterSet{
+							Condition: config.FieldFilterConditionAnd,
+							Filters: []config.FieldFilter{
+								{
+									Field:  "field6",
+									Mode:   "equal",
+									Values: []string{"val4"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	type eventData struct {
+		id        string
+		event     *seqapi.Event
+		eventJson []byte
+		wantResp  *seqapi.GetEventResponse
+	}
+
+	formEventData := func(i int, shouldMask bool) eventData {
+		num := i + 1
+		id := fmt.Sprintf("test%d", num)
+		eventField := fmt.Sprintf("field%d", num)
+		eventVal := fmt.Sprintf("val%d", num)
+		event := &seqapi.Event{
+			Id: id,
+			Data: map[string]string{
+				eventField: eventVal,
+			},
+			Time: timestamppb.New(eventTime),
+		}
+		if shouldMask {
+			event.Data[eventField] = "***"
+		}
+		eventJson, err := proto.Marshal(event)
+		require.NoError(t, err)
+		wantResp := &seqapi.GetEventResponse{Event: event}
+		return eventData{
+			id:        id,
+			event:     event,
+			eventJson: eventJson,
+			wantResp:  wantResp,
+		}
+	}
+
+	eventsData := make([]eventData, 0, len(tests))
+	for i := 0; i < len(tests); i++ {
+		eventsData = append(eventsData, formEventData(i, tests[i].shouldMask))
+	}
+
+	for i, tt := range tests {
+		i := i
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			curEData := eventsData[i]
+			curEID := curEData.id
+
+			seqData := test.APITestData{
+				Cfg: config.SeqAPI{
+					EventsCacheTTL: cacheTTL,
+					Masking:        tt.maskingCfg,
+				},
+			}
+			ctrl := gomock.NewController(t)
+
+			cacheMock := mock_cache.NewMockCache(ctrl)
+			cacheArgs := test.CacheMockArgs{
+				Key:   curEID,
+				Value: string(curEData.eventJson),
+			}
+			if !tt.isCached {
+				cacheArgs.Err = cacheErr
+			}
+			cacheMock.EXPECT().Get(gomock.Any(), cacheArgs.Key).
+				Return(cacheArgs.Value, cacheArgs.Err).Times(1)
+			seqData.Mocks.Cache = cacheMock
+
+			if !tt.isCached {
+				seqDBArgs := &seqDBArgs{
+					req:  &seqapi.GetEventRequest{Id: curEData.id},
+					resp: &seqapi.GetEventResponse{Event: curEData.event},
+				}
+				seqDbMock := mock_seqdb.NewMockClient(ctrl)
+				seqDbMock.EXPECT().GetEvent(gomock.Any(), seqDBArgs.req).
+					Return(seqDBArgs.resp, nil).Times(1)
+				seqData.Mocks.SeqDB = seqDbMock
+
+				cacheMock.EXPECT().SetWithTTL(gomock.Any(), cacheArgs.Key, cacheArgs.Value, cacheTTL).
+					Return(nil).Times(1)
+			}
+
+			s := initTestAPI(seqData)
+
+			req := &seqapi.GetEventRequest{Id: curEID}
+			resp, err := s.GetEvent(context.Background(), req)
+
+			require.Equal(t, tt.wantErr, err)
+			if tt.wantErr != nil {
+				return
+			}
+
+			require.True(t, proto.Equal(curEData.wantResp, resp))
 		})
 	}
 }
