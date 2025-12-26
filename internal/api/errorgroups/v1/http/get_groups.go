@@ -119,8 +119,9 @@ type getGroupsRequest struct {
 } //	@name	errorgroups.v1.GetGroupsRequest
 
 type getGroupsResponse struct {
-	Total  uint64  `json:"total"`
-	Groups []group `json:"groups"`
+	Total     uint64   `json:"total"`
+	Groups    []group  `json:"groups"`
+	NewGroups []uint64 `json:"new_groups"`
 } //	@name	errorgroups.v1.GetGroupsResponse
 
 type group struct {
