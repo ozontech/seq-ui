@@ -309,6 +309,44 @@
                 }
             }
         },
+        "/errorgroups/v1/diff_by_releases": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "errorgroups_v1"
+                ],
+                "operationId": "errorgroups_v1_diff_by_releases",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/errorgroups.v1.DiffByReleasesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/errorgroups.v1.DiffByReleasesResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
         "/errorgroups/v1/groups": {
             "post": {
                 "security": [
@@ -1490,6 +1528,83 @@
                 }
             }
         },
+        "errorgroups.v1.DiffByReleasesRequest": {
+            "type": "object",
+            "properties": {
+                "env": {
+                    "type": "string"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "order": {
+                    "$ref": "#/definitions/errorgroups.v1.Order"
+                },
+                "releases": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "service": {
+                    "type": "string"
+                },
+                "with_total": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "errorgroups.v1.DiffByReleasesResponse": {
+            "type": "object",
+            "properties": {
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/errorgroups.v1.DiffGroup"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "errorgroups.v1.DiffGroup": {
+            "type": "object",
+            "properties": {
+                "first_seen_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "hash": {
+                    "type": "string",
+                    "format": "uint64"
+                },
+                "last_seen_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "release_infos": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/errorgroups.v1.DiffReleaseInfo"
+                    }
+                }
+            }
+        },
+        "errorgroups.v1.DiffReleaseInfo": {
+            "type": "object",
+            "properties": {
+                "seen_total": {
+                    "type": "integer"
+                }
+            }
+        },
         "errorgroups.v1.Distribution": {
             "type": "object",
             "properties": {
@@ -1634,6 +1749,12 @@
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/errorgroups.v1.Group"
+                    }
+                },
+                "new_groups": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
                     }
                 },
                 "total": {
