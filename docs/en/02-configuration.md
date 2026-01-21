@@ -2,10 +2,11 @@
 
 > Despite the fact that there are a huge number of parameters in the configuration, not all of them are supported by UI at the moment. As the UI evolves, more and more of the parameters will be relevant.
 
-The configuration is set via a `yaml`-file and consists of three sections:
+The configuration is set via a `yaml`-file and consists of four sections:
 - [server](#server) - seq-ui server configutarion
 - [clients](#clients) - seq-db clients configuration
 - [handlers](#handlers) - seq-ui api handlers configuration
+- [tracing](#tracing) - seq-ui tracing configuration.
 
 You can specify your config file when running seq-ui by providing it with flag `--config`:
 ```shell
@@ -436,6 +437,50 @@ handlers:
   error_groups:
   mass_export:
 ```
+
+## Tracing
+
+```yaml
+tracing:
+  service_name:
+  jaeger:
+    agent_host:
+    agent_port:
+  sampler:
+    param:
+```
+
+The `tracing` section is optional in the configuration file . If the section is present, all its internal fields become required.
+
+`Tracing` fields:
+
++ **`service_name`** *`string`* *`required`*
+  
+  Service name that will be displayed in Jaeger.
+
++ **`jaeger`** *`TracingJaeger`* *`required`*
+
+  Jaeger agent connection configuration.
+
++ **`sampler`** *`TracingSampler`* *`required`*
+
+  Sampling configuration controls which requests are traced.
+
+`TracingJaeger` fields:
+
++ **`agent_host`** *`string`* *`required`*
+
+  Host Jaeger agent.
+
++ **`agent_port`** *`string`* *`required`*
+
+  Port Jaeger agent.
+
+`TracingSampler` fields:
+
++ **`param`** *`float64`* *`optional`*
+
+  Sampling rate parameter. Determines the fraction of requests that will be traced.
 
 ### SeqAPI
 

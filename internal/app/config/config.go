@@ -51,6 +51,7 @@ type Config struct {
 	Server   *Server   `yaml:"server"`
 	Clients  *Clients  `yaml:"clients"`
 	Handlers *Handlers `yaml:"handlers"`
+	Tracing  *Tracing  `yaml:"tracing"`
 }
 
 type CORS struct {
@@ -286,6 +287,21 @@ type ErrorGroups struct {
 
 type AsyncSearch struct {
 	AdminUsers []string `yaml:"admin_users"`
+}
+
+type Tracing struct {
+	ServiceName string         `yaml:"service_name"`
+	Jaeger      TracingJaeger  `yaml:"jaeger"`
+	Sampler     TracingSampler `yaml:"sampler"`
+}
+
+type TracingJaeger struct {
+	AgentHost string `yaml:"agent_host"`
+	AgentPort string `yaml:"agent_port"`
+}
+
+type TracingSampler struct {
+	Param float64 `yaml:"param"`
 }
 
 // FromFile parse config from config path.

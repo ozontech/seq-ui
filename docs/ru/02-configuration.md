@@ -2,10 +2,11 @@
 
 > Несмотря на то, что в конфигурации имеется огромное количество параметров, не все из них на данный момент поддерживаются пользовательским интерфейсом. По мере развития пользовательского интерфейса бОльшее количество параметров станет актуальным.
 
-Конфигурация задается `yaml`-файлом и состоит из 3 разделов:
+Конфигурация задается `yaml`-файлом и состоит из 4 разделов:
 - [server](#server) - конфигурация сервера seq-ui
 - [clients](#clients) - конфигурация seq-db клиентов 
 - [handlers](#handlers) - конфигурация seq-ui API
+- [tracing](#tracing) - конфигурация seq-ui трейсинга
 
 Вы можете указать свой конфигурационный файл при запуске seq-ui используя флаг `--config`:
 ```shell
@@ -436,6 +437,50 @@ handlers:
   error_groups:
   mass_export:
 ```
+
+## Tracing
+
+```yaml
+tracing:
+  service_name:
+  jaeger:
+    agent_host:
+    agent_port:
+  sampler:
+    param:
+```
+
+Раздел `tracing` является опциональным в конфигурационном файле. Если раздел присутствует, все его внутренние поля становятся обязательными.
+
+Поля `Tracing`:
+
++ **`service_name`** *`string`* *`required`*
+  
+  Имя сервиса, которое будет отображаться в Jaeger.
+
++ **`jaeger`** *`TracingJaeger`* *`required`*
+
+  Конфигурация Jaeger agent.
+
++ **`sampler`** *`TracingSampler`* *`required`*
+
+  Конфигурация сэмплера.
+
+Поля `TracingJaeger`:
+
++ **`agent_host`** *`string`* *`required`*
+
+  Хост Jaeger agent.
+
++ **`agent_port`** *`string`* *`required`*
+
+  Порт Jaeger agent.
+
+Поля `TracingSampler`:
+
++ **`param`** *`float64`* *`required`*
+
+  Параметр сэмплера, определяющий долю запросов, которые будут отслеживаться.
 
 ### SeqAPI
 

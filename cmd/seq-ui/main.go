@@ -70,16 +70,16 @@ func run(ctx context.Context) {
 		logger.Fatal("read config file error", zap.Error(err))
 	}
 
-	tracingSettings, err := tracing.Initialize()
-	if err != nil {
-		logger.Error("tracing initialization failed", zap.Error(err))
-	} else {
+	errTracing := tracing.Initialize(cfg.Tracing)
+	if errTracing != nil {
+		logger.Error("tracing initialization failed", zap.Error(errTracing))
+	} else if cfg.Tracing != nil {
 		logger.Info(
 			"tracing initialization success",
-			zap.String("agent_host", tracingSettings.JaegerAgent.Host),
-			zap.String("agent_port", tracingSettings.JaegerAgent.Port),
-			zap.String("service_name", tracingSettings.ServiceName),
-			zap.Float64("sampler_param", tracingSettings.SamplerParam))
+			zap.String("agent_host", cfg.Tracing.Jaeger.AgentHost),
+			zap.String("agent_port", cfg.Tracing.Jaeger.AgentPort),
+			zap.String("service_name", cfg.Tracing.ServiceName),
+			zap.Float64("sampler_param", cfg.Tracing.Sampler.Param))
 	}
 
 	registrar := initApp(ctx, cfg)

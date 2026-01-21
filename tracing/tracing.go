@@ -3,10 +3,9 @@ package tracing
 import (
 	"context"
 	"fmt"
-	"os"
-	"strconv"
 	"time"
 
+	"github.com/ozontech/seq-ui/internal/app/config"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/jaeger"
@@ -20,21 +19,19 @@ import (
 
 var serviceName string
 
-type Settings struct {
-	ServiceName  string
-	JaegerAgent  JaegerAgent
-	SamplerParam float64
-}
+func Initialize(cfg *config.Tracing) error {
+	if cfg == nil {
+		return nil
+	}
 
-type JaegerAgent struct {
-	Host string
-	Port string
-}
+	if err := validateTracingConfig(cfg); err != nil {
+		return err
+	}
 
-func Initialize() (Settings, error) {
-	tp, settings, err := newTracerProvider()
+	serviceName = cfg.ServiceName
+	tp, err := newTracerProvider(cfg)
 	if err != nil {
-		return Settings{}, fmt.Errorf("can't create trace provider: %w", err)
+		return fmt.Errorf("can't create trace provider: %w", err)
 	}
 
 	// Register our TracerProvider as the global so any imported
@@ -42,74 +39,37 @@ func Initialize() (Settings, error) {
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 
-	return settings, nil
+	return nil
 }
 
 func StartSpan(ctx context.Context, name string) (context.Context, trace.Span) {
 	return otel.GetTracerProvider().Tracer(serviceName).Start(ctx, name)
 }
 
-func newTracerProvider() (*tracesdk.TracerProvider, Settings, error) {
-	host, err := getEnvVar("JAEGER_AGENT_HOST")
-	if err != nil {
-		return nil, Settings{}, err
-	}
-
-	port, err := getEnvVar("JAEGER_AGENT_PORT")
-	if err != nil {
-		return nil, Settings{}, err
-	}
-
-	serviceName, err = getEnvVar("TRACING_SERVICE_NAME")
-	if err != nil {
-		return nil, Settings{}, err
-	}
-
-	samplerParamStr, err := getEnvVar("TRACING_SAMPLER_PARAM")
-	if err != nil {
-		return nil, Settings{}, err
-	}
-
-	samplerParam, err := strconv.ParseFloat(samplerParamStr, 64)
-	if err != nil {
-		return nil, Settings{}, fmt.Errorf("can't parse sampling param: %w", err)
-	}
-
+func newTracerProvider(cfg *config.Tracing) (*tracesdk.TracerProvider, error) {
 	// Create the Jaeger exporter
 	exp, err := jaeger.New(
 		jaeger.WithAgentEndpoint(
-			jaeger.WithAgentHost(host),
-			jaeger.WithAgentPort(port),
+			jaeger.WithAgentHost(cfg.Jaeger.AgentHost),
+			jaeger.WithAgentPort(cfg.Jaeger.AgentPort),
 		),
 	)
 	if err != nil {
-		return nil, Settings{}, err
+		return nil, err
 	}
 
 	tp := tracesdk.NewTracerProvider(
-		tracesdk.WithSampler(tracesdk.TraceIDRatioBased(samplerParam)),
+		tracesdk.WithSampler(tracesdk.TraceIDRatioBased(cfg.Sampler.Param)),
 		// Always be sure to batch in production.
 		tracesdk.WithBatcher(exp),
 		// Record information about this application in a Resource.
 		tracesdk.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
-			semconv.ServiceName(serviceName),
+			semconv.ServiceName(cfg.ServiceName),
 		)),
 	)
 
-	return tp, Settings{
-		ServiceName:  serviceName,
-		JaegerAgent:  JaegerAgent{Host: host, Port: port},
-		SamplerParam: samplerParam,
-	}, nil
-}
-
-func getEnvVar(name string) (string, error) {
-	value, found := os.LookupEnv(name)
-	if !found {
-		return "", fmt.Errorf("env var '%s' not found", name)
-	}
-	return value, nil
+	return tp, nil
 }
 
 func TimestampToStringValue(t *timestamppb.Timestamp) attribute.Value {
@@ -117,4 +77,20 @@ func TimestampToStringValue(t *timestamppb.Timestamp) attribute.Value {
 		return attribute.StringValue("nil")
 	}
 	return attribute.StringValue(t.AsTime().Format(time.DateTime))
+}
+
+func validateTracingConfig(cfg *config.Tracing) error {
+	if cfg.ServiceName == "" {
+		return fmt.Errorf("tracing service_name not found")
+	}
+	if cfg.Jaeger.AgentHost == "" {
+		return fmt.Errorf("tracing jaeger agent_host not found")
+	}
+	if cfg.Jaeger.AgentPort == "" {
+		return fmt.Errorf("tracing jaeger agent_port not found")
+	}
+	if cfg.Sampler.Param < 0 || cfg.Sampler.Param > 1 {
+		return fmt.Errorf("tracing sampler param must be between 0 and 1, got: %f", cfg.Sampler.Param)
+	}
+	return nil
 }
