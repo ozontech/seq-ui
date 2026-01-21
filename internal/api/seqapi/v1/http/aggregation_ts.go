@@ -63,7 +63,10 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
+
+	aggIntervals := make([]string, 0, len(httpReq.Aggregations))
 	for _, agg := range httpReq.Aggregations {
+		aggIntervals = append(aggIntervals, agg.Interval)
 		if err := api_error.CheckAggregationTsInterval(agg.Interval, httpReq.From, httpReq.To,
 			a.config.MaxBucketsPerAggregationTs,
 		); err != nil {
@@ -76,6 +79,22 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return
+	}
+
+	for i, agg := range resp.Aggregations {
+		if agg == nil || aggIntervals[i] == "" {
+			continue
+		}
+
+		interval, err := time.ParseDuration(aggIntervals[i])
+		if err != nil {
+			wr.Error(fmt.Errorf("failed to parse aggregation interval: %w", err), http.StatusBadRequest)
+			return
+		}
+
+		for _, bucket := range agg.Buckets {
+			*bucket.Value /= interval.Seconds()
+		}
 	}
 
 	wr.WriteJson(getAggregationTsResponseFromProto(resp, httpReq.Aggregations))
