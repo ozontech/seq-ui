@@ -442,10 +442,11 @@ handlers:
 
 ```yaml
 tracing:
-  service_name:
-  jaeger:
-    agent_host:
-    agent_port:
+  resource:
+    service_name:
+  agent:
+    host:
+    port:
   sampler:
     param:
 ```
@@ -454,31 +455,37 @@ The `tracing` section is optional in the configuration file . If the section is 
 
 `Tracing` fields:
 
-+ **`service_name`** *`string`* *`required`*
++ **`resource`** *`TracingResource`* *`required`*
   
-  Service name that will be displayed in Jaeger.
+  Tracing resource containing metadata of service.
 
-+ **`jaeger`** *`TracingJaeger`* *`required`*
++ **`agent`** *`TracingAgent`* *`required`*
 
-  Jaeger agent connection configuration.
+  Agent configuration for trace export.
 
 + **`sampler`** *`TracingSampler`* *`required`*
 
   Sampling configuration controls which requests are traced.
 
-`TracingJaeger` fields:
+`TracingResource` fields:
 
-+ **`agent_host`** *`string`* *`required`*
++ **`service_name`** *`string`* *`required`*
 
-  Host Jaeger agent.
+  Service name used for identification in tracing system.
 
-+ **`agent_port`** *`string`* *`required`*
+`TracingAgent` fields:
 
-  Port Jaeger agent.
++ **`host`** *`string`* *`required`*
+
+  Host agent.
+
++ **`port`** *`string`* *`required`*
+
+  Port agent.
 
 `TracingSampler` fields:
 
-+ **`param`** *`float64`* *`optional`*
++ **`param`** *`float64`* *`required`*
 
   Sampling rate parameter. Determines the fraction of requests that will be traced.
 

@@ -442,10 +442,11 @@ handlers:
 
 ```yaml
 tracing:
-  service_name:
-  jaeger:
-    agent_host:
-    agent_port:
+  resource:
+    service_name:
+  agent:
+    host:
+    port:
   sampler:
     param:
 ```
@@ -454,27 +455,33 @@ tracing:
 
 Поля `Tracing`:
 
-+ **`service_name`** *`string`* *`required`*
++ **`resource`** *`TracingResource`* *`required`*
   
-  Имя сервиса, которое будет отображаться в Jaeger.
+  Ресурс трейсинга, содержащий метаданные сервиса.
 
-+ **`jaeger`** *`TracingJaeger`* *`required`*
++ **`agent`** *`TracingAgent`* *`required`*
 
-  Конфигурация Jaeger agent.
+  Конфигурация агента для экспорта трейсов.
 
 + **`sampler`** *`TracingSampler`* *`required`*
 
   Конфигурация сэмплера.
 
-Поля `TracingJaeger`:
+Поля `TracingResource`:
 
-+ **`agent_host`** *`string`* *`required`*
++ **`service_name`** *`string`* *`required`*
 
-  Хост Jaeger agent.
+  Имя сервиса, используемое для идентификации в системе трейсинга.
 
-+ **`agent_port`** *`string`* *`required`*
+Поля `TracingAgent`:
 
-  Порт Jaeger agent.
++ **`host`** *`string`* *`required`*
+
+  Хост агента.
+
++ **`port`** *`string`* *`required`*
+
+  Порт агента.
 
 Поля `TracingSampler`:
 

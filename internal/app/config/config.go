@@ -290,14 +290,18 @@ type AsyncSearch struct {
 }
 
 type Tracing struct {
-	ServiceName string         `yaml:"service_name"`
-	Jaeger      TracingJaeger  `yaml:"jaeger"`
-	Sampler     TracingSampler `yaml:"sampler"`
+	Resource TracingResource `yaml:"resource"`
+	Agent    TracingAgent    `yaml:"agent"`
+	Sampler  TracingSampler  `yaml:"sampler"`
 }
 
-type TracingJaeger struct {
-	AgentHost string `yaml:"agent_host"`
-	AgentPort string `yaml:"agent_port"`
+type TracingResource struct {
+	ServiceName string `yaml:"service_name"`
+}
+
+type TracingAgent struct {
+	Host string `yaml:"host"`
+	Port string `yaml:"port"`
 }
 
 type TracingSampler struct {
@@ -396,4 +400,16 @@ func parse(cfg []byte) (Config, error) {
 	}
 
 	return result, nil
+}
+
+func (a TracingAgent) String() string {
+	return fmt.Sprintf("%s:%s", a.Host, a.Port)
+}
+
+func (s TracingSampler) String() string {
+	return fmt.Sprintf("%f", s.Param)
+}
+
+func (r TracingResource) String() string {
+	return r.ServiceName
 }

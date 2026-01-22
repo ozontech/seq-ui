@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidateTracingConfig(t *testing.T) {
@@ -13,12 +14,14 @@ func TestValidateTracingConfig(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "valid config",
+			name: "valid_config",
 			cfg: &config.Tracing{
-				ServiceName: "a-cfg-prov-gw",
-				Jaeger: config.TracingJaeger{
-					AgentHost: "localhost",
-					AgentPort: "6831",
+				Resource: config.TracingResource{
+					ServiceName: "a-cfg-prov-gw",
+				},
+				Agent: config.TracingAgent{
+					Host: "localhost",
+					Port: "6831",
 				},
 				Sampler: config.TracingSampler{
 					Param: 0.7,
@@ -27,11 +30,11 @@ func TestValidateTracingConfig(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "missing service_name",
+			name: "missing_service_name",
 			cfg: &config.Tracing{
-				Jaeger: config.TracingJaeger{
-					AgentHost: "localhost",
-					AgentPort: "6831",
+				Agent: config.TracingAgent{
+					Host: "localhost",
+					Port: "6831",
 				},
 				Sampler: config.TracingSampler{
 					Param: 0.7,
@@ -40,11 +43,13 @@ func TestValidateTracingConfig(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "missing agent_host",
+			name: "missing_agent_host",
 			cfg: &config.Tracing{
-				ServiceName: "a-cfg-provider",
-				Jaeger: config.TracingJaeger{
-					AgentPort: "6831",
+				Resource: config.TracingResource{
+					ServiceName: "a-cfg-provider",
+				},
+				Agent: config.TracingAgent{
+					Port: "6831",
 				},
 				Sampler: config.TracingSampler{
 					Param: 0.5,
@@ -53,11 +58,13 @@ func TestValidateTracingConfig(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "missing agent_port",
+			name: "missing_agent_port",
 			cfg: &config.Tracing{
-				ServiceName: "ab-admin-gateway",
-				Jaeger: config.TracingJaeger{
-					AgentHost: "localhost",
+				Resource: config.TracingResource{
+					ServiceName: "ab-admin-gateway",
+				},
+				Agent: config.TracingAgent{
+					Host: "localhost",
 				},
 				Sampler: config.TracingSampler{
 					Param: 0.5,
@@ -66,12 +73,14 @@ func TestValidateTracingConfig(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "sampler param too low",
+			name: "sampler_param_too_low",
 			cfg: &config.Tracing{
-				ServiceName: "ab-controller-public-api",
-				Jaeger: config.TracingJaeger{
-					AgentHost: "localhost",
-					AgentPort: "6831",
+				Resource: config.TracingResource{
+					ServiceName: "ab-controller-public-api",
+				},
+				Agent: config.TracingAgent{
+					Host: "localhost",
+					Port: "6831",
 				},
 				Sampler: config.TracingSampler{
 					Param: -1.5,
@@ -80,12 +89,14 @@ func TestValidateTracingConfig(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "sampler param too high",
+			name: "sampler_param_too_high",
 			cfg: &config.Tracing{
-				ServiceName: "ab-events",
-				Jaeger: config.TracingJaeger{
-					AgentHost: "localhost",
-					AgentPort: "6831",
+				Resource: config.TracingResource{
+					ServiceName: "ab-events",
+				},
+				Agent: config.TracingAgent{
+					Host: "localhost",
+					Port: "6831",
 				},
 				Sampler: config.TracingSampler{
 					Param: 1.5,
@@ -100,9 +111,7 @@ func TestValidateTracingConfig(t *testing.T) {
 		t.Run(tCase.name, func(t *testing.T) {
 			t.Parallel()
 			err := validateTracingConfig(tCase.cfg)
-			if (err != nil) != tCase.wantErr {
-				t.Errorf("validateTracingConfig() error = %v, wantErr %v", err, tCase.wantErr)
-			}
+			require.Equal(t, tCase.wantErr, err != nil)
 		})
 	}
 }

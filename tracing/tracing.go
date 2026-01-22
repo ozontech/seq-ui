@@ -17,7 +17,9 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var serviceName string
+const (
+	tracerName = "seq-ui"
+)
 
 func Initialize(cfg *config.Tracing) error {
 	if cfg == nil {
@@ -28,10 +30,9 @@ func Initialize(cfg *config.Tracing) error {
 		return err
 	}
 
-	serviceName = cfg.ServiceName
 	tp, err := newTracerProvider(cfg)
 	if err != nil {
-		return fmt.Errorf("can't create trace provider: %w", err)
+		return fmt.Errorf("can't create tracer provider: %w", err)
 	}
 
 	// Register our TracerProvider as the global so any imported
@@ -43,15 +44,15 @@ func Initialize(cfg *config.Tracing) error {
 }
 
 func StartSpan(ctx context.Context, name string) (context.Context, trace.Span) {
-	return otel.GetTracerProvider().Tracer(serviceName).Start(ctx, name)
+	return otel.GetTracerProvider().Tracer(tracerName).Start(ctx, name)
 }
 
 func newTracerProvider(cfg *config.Tracing) (*tracesdk.TracerProvider, error) {
 	// Create the Jaeger exporter
 	exp, err := jaeger.New(
 		jaeger.WithAgentEndpoint(
-			jaeger.WithAgentHost(cfg.Jaeger.AgentHost),
-			jaeger.WithAgentPort(cfg.Jaeger.AgentPort),
+			jaeger.WithAgentHost(cfg.Agent.Host),
+			jaeger.WithAgentPort(cfg.Agent.Port),
 		),
 	)
 	if err != nil {
@@ -65,7 +66,7 @@ func newTracerProvider(cfg *config.Tracing) (*tracesdk.TracerProvider, error) {
 		// Record information about this application in a Resource.
 		tracesdk.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
-			semconv.ServiceName(cfg.ServiceName),
+			semconv.ServiceName(cfg.Resource.ServiceName),
 		)),
 	)
 
@@ -80,17 +81,17 @@ func TimestampToStringValue(t *timestamppb.Timestamp) attribute.Value {
 }
 
 func validateTracingConfig(cfg *config.Tracing) error {
-	if cfg.ServiceName == "" {
+	if cfg.Resource.ServiceName == "" {
 		return fmt.Errorf("tracing service_name not found")
 	}
-	if cfg.Jaeger.AgentHost == "" {
-		return fmt.Errorf("tracing jaeger agent_host not found")
+	if cfg.Agent.Host == "" {
+		return fmt.Errorf("tracing agent_host not found")
 	}
-	if cfg.Jaeger.AgentPort == "" {
-		return fmt.Errorf("tracing jaeger agent_port not found")
+	if cfg.Agent.Port == "" {
+		return fmt.Errorf("tracing agent_port not found")
 	}
 	if cfg.Sampler.Param < 0 || cfg.Sampler.Param > 1 {
-		return fmt.Errorf("tracing sampler param must be between 0 and 1, got: %f", cfg.Sampler.Param)
+		return fmt.Errorf("tracing sampler_param must be between 0 and 1, got: %f", cfg.Sampler.Param)
 	}
 	return nil
 }
