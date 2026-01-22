@@ -284,7 +284,7 @@ func TestQuantileDupls(t *testing.T) {
 
 	const wantSeries = 3
 
-	buckets := make([]*seqapi.Aggregation_Bucket, 0)
+	buckets := make([]*seqapi.Aggregation_Bucket, 0, wantSeries)
 	for i := range wantSeries {
 		buckets = append(buckets, genBuckets(fmt.Sprintf("test%d", i), 50)...)
 	}
