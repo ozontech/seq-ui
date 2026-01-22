@@ -1,6 +1,6 @@
 module github.com/ozontech/seq-ui/pkg
 
-go 1.24
+go 1.25
 
 require (
 	google.golang.org/grpc v1.67.0
