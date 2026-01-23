@@ -49,7 +49,6 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 	aggIntervals := make([]*string, 0, len(req.Aggregations))
 	fromRaw, toRaw := req.From.AsTime(), req.To.AsTime()
 	for _, agg := range req.Aggregations {
-		aggIntervals = append(aggIntervals, agg.Interval)
 		if agg.Interval == nil {
 			continue
 		}
@@ -58,6 +57,13 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 		); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
+
+		if agg.Func != seqapi.AggFunc_AGG_FUNC_COUNT {
+			aggIntervals = append(aggIntervals, nil)
+			continue
+		}
+
+		aggIntervals = append(aggIntervals, agg.Interval)
 	}
 
 	resp, err := a.seqDB.GetAggregation(ctx, req)

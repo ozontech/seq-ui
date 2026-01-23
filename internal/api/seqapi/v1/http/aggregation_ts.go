@@ -66,13 +66,19 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 
 	aggIntervals := make([]string, 0, len(httpReq.Aggregations))
 	for _, agg := range httpReq.Aggregations {
-		aggIntervals = append(aggIntervals, agg.Interval)
 		if err := api_error.CheckAggregationTsInterval(agg.Interval, httpReq.From, httpReq.To,
 			a.config.MaxBucketsPerAggregationTs,
 		); err != nil {
 			wr.Error(err, http.StatusBadRequest)
 			return
 		}
+
+		if agg.Func != afCount {
+			aggIntervals = append(aggIntervals, "")
+			continue
+		}
+
+		aggIntervals = append(aggIntervals, agg.Interval)
 	}
 
 	resp, err := a.seqDB.GetAggregation(ctx, httpReq.toProto())
@@ -82,7 +88,7 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i, agg := range resp.Aggregations {
-		if agg == nil || aggIntervals[i] == "" {
+		if agg == nil || agg.Buckets == nil || aggIntervals[i] == "" {
 			continue
 		}
 
@@ -93,6 +99,10 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for _, bucket := range agg.Buckets {
+			if bucket == nil || bucket.Value == nil {
+				continue
+			}
+
 			*bucket.Value /= interval.Seconds()
 		}
 	}
