@@ -82,16 +82,16 @@ func TimestampToStringValue(t *timestamppb.Timestamp) attribute.Value {
 
 func validateTracingConfig(cfg *config.Tracing) error {
 	if cfg.Resource.ServiceName == "" {
-		return fmt.Errorf("tracing service_name not found")
+		return fmt.Errorf("tracing resource.service_name not found")
 	}
 	if cfg.Agent.Host == "" {
-		return fmt.Errorf("tracing agent_host not found")
+		return fmt.Errorf("tracing agent.host not found")
 	}
 	if cfg.Agent.Port == "" {
-		return fmt.Errorf("tracing agent_port not found")
+		return fmt.Errorf("tracing agent.port not found")
 	}
 	if cfg.Sampler.Param < 0 || cfg.Sampler.Param > 1 {
-		return fmt.Errorf("tracing sampler_param must be between 0 and 1, got: %f", cfg.Sampler.Param)
+		return fmt.Errorf("tracing sampler.param must be between 0 and 1, got: %f", cfg.Sampler.Param)
 	}
 	return nil
 }

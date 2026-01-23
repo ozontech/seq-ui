@@ -17,7 +17,7 @@ func TestValidateTracingConfig(t *testing.T) {
 			name: "valid_config",
 			cfg: &config.Tracing{
 				Resource: config.TracingResource{
-					ServiceName: "a-cfg-prov-gw",
+					ServiceName: "seq-ui",
 				},
 				Agent: config.TracingAgent{
 					Host: "localhost",
@@ -46,7 +46,7 @@ func TestValidateTracingConfig(t *testing.T) {
 			name: "missing_agent_host",
 			cfg: &config.Tracing{
 				Resource: config.TracingResource{
-					ServiceName: "a-cfg-provider",
+					ServiceName: "seq-ui",
 				},
 				Agent: config.TracingAgent{
 					Port: "6831",
@@ -61,7 +61,7 @@ func TestValidateTracingConfig(t *testing.T) {
 			name: "missing_agent_port",
 			cfg: &config.Tracing{
 				Resource: config.TracingResource{
-					ServiceName: "ab-admin-gateway",
+					ServiceName: "seq-ui",
 				},
 				Agent: config.TracingAgent{
 					Host: "localhost",
@@ -76,7 +76,7 @@ func TestValidateTracingConfig(t *testing.T) {
 			name: "sampler_param_too_low",
 			cfg: &config.Tracing{
 				Resource: config.TracingResource{
-					ServiceName: "ab-controller-public-api",
+					ServiceName: "seq-ui",
 				},
 				Agent: config.TracingAgent{
 					Host: "localhost",
@@ -92,7 +92,7 @@ func TestValidateTracingConfig(t *testing.T) {
 			name: "sampler_param_too_high",
 			cfg: &config.Tracing{
 				Resource: config.TracingResource{
-					ServiceName: "ab-events",
+					ServiceName: "seq-ui",
 				},
 				Agent: config.TracingAgent{
 					Host: "localhost",

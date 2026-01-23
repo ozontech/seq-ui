@@ -451,9 +451,7 @@ tracing:
     param:
 ```
 
-The `tracing` section is optional in the configuration file . If the section is present, all its internal fields become required.
-
-`Tracing` fields:
+The `tracing` section contains settings for configuring tracing.
 
 + **`resource`** *`TracingResource`* *`required`*
   
@@ -477,11 +475,11 @@ The `tracing` section is optional in the configuration file . If the section is 
 
 + **`host`** *`string`* *`required`*
 
-  Host agent.
+  Agent host.
 
 + **`port`** *`string`* *`required`*
 
-  Port agent.
+  Agent port.
 
 `TracingSampler` fields:
 
