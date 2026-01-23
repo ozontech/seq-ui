@@ -50,6 +50,7 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 	fromRaw, toRaw := req.From.AsTime(), req.To.AsTime()
 	for _, agg := range req.Aggregations {
 		if agg.Interval == nil {
+			aggIntervals = append(aggIntervals, nil)
 			continue
 		}
 		if err := api_error.CheckAggregationTsInterval(*agg.Interval, fromRaw, toRaw,
