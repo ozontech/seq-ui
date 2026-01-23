@@ -33,22 +33,6 @@ func TestGetAggregation(t *testing.T) {
 		cfg config.SeqAPI
 	}{
 		{
-			name: "ok_single_agg",
-			req: &seqapi.GetAggregationRequest{
-				Query:    query,
-				From:     timestamppb.New(from),
-				To:       timestamppb.New(to),
-				AggField: "test1",
-			},
-			resp: &seqapi.GetAggregationResponse{
-				Aggregation:  test.MakeAggregation(2, nil),
-				Aggregations: test.MakeAggregations(1, 2, nil),
-				Error: &seqapi.Error{
-					Code: seqapi.ErrorCode_ERROR_CODE_NO,
-				},
-			},
-		},
-		{
 			name: "ok_multi_agg",
 			req: &seqapi.GetAggregationRequest{
 				Query: query,
@@ -87,10 +71,15 @@ func TestGetAggregation(t *testing.T) {
 		{
 			name: "err_client",
 			req: &seqapi.GetAggregationRequest{
-				Query:    query,
-				From:     timestamppb.New(from),
-				To:       timestamppb.New(to),
-				AggField: "test2",
+				Query: query,
+				From:  timestamppb.New(from),
+				To:    timestamppb.New(to),
+				Aggregations: []*seqapi.AggregationQuery{
+					{Field: "test2"},
+				},
+			},
+			cfg: config.SeqAPI{
+				MaxAggregationsPerRequest: 1,
 			},
 			clientErr: errors.New("client error"),
 		},

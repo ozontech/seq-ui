@@ -93,20 +93,22 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 		}
 	}
 
-	if req.AggField == "" {
-		for i, agg := range resp.Aggregations {
-			if agg == nil || aggIntervals[i] == nil {
+	for i, agg := range resp.Aggregations {
+		if agg == nil || agg.Buckets == nil || aggIntervals[i] == nil {
+			continue
+		}
+
+		interval, err := time.ParseDuration(*aggIntervals[i])
+		if err != nil {
+			return nil, err
+		}
+
+		for _, bucket := range agg.Buckets {
+			if bucket == nil || bucket.Value == nil {
 				continue
 			}
 
-			interval, err := time.ParseDuration(*aggIntervals[i])
-			if err != nil {
-				return nil, err
-			}
-
-			for _, bucket := range agg.Buckets {
-				*bucket.Value /= interval.Seconds()
-			}
+			*bucket.Value /= interval.Seconds()
 		}
 	}
 
