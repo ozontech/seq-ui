@@ -70,8 +70,7 @@ func run(ctx context.Context) {
 		logger.Fatal("read config file error", zap.Error(err))
 	}
 
-	err = tracing.Initialize(cfg.Tracing)
-	if err != nil {
+	if err = tracing.Initialize(cfg.Tracing); err != nil {
 		logger.Error("tracing initialization failed", zap.Error(err))
 	} else if cfg.Tracing != nil {
 		logger.Info(
