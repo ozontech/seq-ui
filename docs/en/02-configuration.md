@@ -485,7 +485,7 @@ The `tracing` section contains settings for configuring tracing.
 
 + **`param`** *`float64`* *`required`*
 
-  Sampling rate parameter. Determines the fraction of requests that will be traced. Must be value between 0.1 and 1.0. For instance, use 0.1 to sample 10% of requests.
+  Sampling rate parameter. Determines the fraction of requests that will be traced. Must be value between 0.0 and 1.0. For instance, use 0.1 to sample 10% of requests.
 
 ### SeqAPI
 
