@@ -68,6 +68,7 @@ type MakeAggOpts struct {
 	NotExists int64
 	Quantiles []float64
 	Ts        []*timestamppb.Timestamp
+	Values    []float64
 }
 
 func MakeAggregation(bucketCount int, opts *MakeAggOpts) *seqapi.Aggregation {
@@ -88,6 +89,9 @@ func MakeAggregation(bucketCount int, opts *MakeAggOpts) *seqapi.Aggregation {
 			}
 			if len(opts.Ts) > 0 {
 				b.Ts = opts.Ts[i]
+			}
+			if len(opts.Values) > 0 {
+				*b.Value = opts.Values[i]
 			}
 		}
 		agg.Buckets = append(agg.Buckets, b)
