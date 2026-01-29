@@ -28,19 +28,19 @@ type Config struct {
 	SamplerParam float64 `env:"TRACING_SAMPLER_PARAM"`
 }
 
-func Initialize() (Config, error) {
+func Initialize() (*Config, error) {
 	tracingCfg, err := readConfig()
 	if err != nil {
-		return Config{}, fmt.Errorf("failed to read tracing config: %w", err)
+		return nil, fmt.Errorf("failed to read tracing config: %w", err)
 	}
 
-	if err := validateTracingConfig(tracingCfg); err != nil {
-		return Config{}, err
+	if err = validateTracingConfig(tracingCfg); err != nil {
+		return nil, err
 	}
 
 	tp, err := newTracerProvider(tracingCfg)
 	if err != nil {
-		return Config{}, fmt.Errorf("can't create tracer provider: %w", err)
+		return nil, fmt.Errorf("can't create tracer provider: %w", err)
 	}
 
 	// Register our TracerProvider as the global so any imported
@@ -48,7 +48,7 @@ func Initialize() (Config, error) {
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 
-	return *tracingCfg, nil
+	return tracingCfg, nil
 }
 
 func StartSpan(ctx context.Context, name string) (context.Context, trace.Span) {

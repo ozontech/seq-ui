@@ -8,6 +8,9 @@
 - [clients](#clients) - конфигурация seq-db клиентов 
 - [handlers](#handlers) - конфигурация seq-ui API
 
+Через переменные окружения настраиваются разделы:
+- [tracing](#tracing) - конфигурация трейсинга seq-ui
+
 Вы можете указать свой конфигурационный файл при запуске seq-ui используя флаг `--config`:
 ```shell
 go run ./cmd/seq-ui --config <путь-до-файла>
@@ -722,6 +725,13 @@ handlers:
 
 Конфигурация трейсинга задается переменными окружения.
 
+```bash
+export TRACING_AGENT_HOST=localhost
+export TRACING_AGENT_PORT=6831
+export TRACING_SAMPLER_PARAM=0.1
+export TRACING_SERVICE_NAME=seq-ui
+```
+
 ### Параметры
 
 + **`TRACING_SERVICE_NAME`**  *`string`*  *`required`*
@@ -740,11 +750,3 @@ handlers:
 
   Параметр сэмплера, определяющий долю запросов, которые будут отслеживаться. Допустимые значения - от 0.0 до 1.0
   включительно. Например, 0.1 соответствует 10% запросов.
-
-### Примеры
-
-```bash
-export TRACING_AGENT_HOST=localhost
-export TRACING_AGENT_PORT=6831
-export TRACING_SAMPLER_PARAM=0.1
-export TRACING_SERVICE_NAME=seq-ui
