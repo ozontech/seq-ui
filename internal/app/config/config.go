@@ -51,7 +51,6 @@ type Config struct {
 	Server   *Server   `yaml:"server"`
 	Clients  *Clients  `yaml:"clients"`
 	Handlers *Handlers `yaml:"handlers"`
-	Tracing  *Tracing  `yaml:"tracing"`
 }
 
 type CORS struct {
@@ -289,25 +288,6 @@ type AsyncSearch struct {
 	AdminUsers []string `yaml:"admin_users"`
 }
 
-type Tracing struct {
-	Resource TracingResource `yaml:"resource"`
-	Agent    TracingAgent    `yaml:"agent"`
-	Sampler  TracingSampler  `yaml:"sampler"`
-}
-
-type TracingResource struct {
-	ServiceName string `yaml:"service_name"`
-}
-
-type TracingAgent struct {
-	Host string `yaml:"host"`
-	Port string `yaml:"port"`
-}
-
-type TracingSampler struct {
-	Param float64 `yaml:"param"`
-}
-
 // FromFile parse config from config path.
 func FromFile(cfgPath string) (Config, error) {
 	cfgBytes, err := os.ReadFile(cfgPath) //nolint:gosec
@@ -400,16 +380,4 @@ func parse(cfg []byte) (Config, error) {
 	}
 
 	return result, nil
-}
-
-func (a TracingAgent) String() string {
-	return fmt.Sprintf("%s:%s", a.Host, a.Port)
-}
-
-func (s TracingSampler) String() string {
-	return fmt.Sprintf("%f", s.Param)
-}
-
-func (r TracingResource) String() string {
-	return r.ServiceName
 }

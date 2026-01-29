@@ -14,6 +14,7 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
 	"github.com/ozontech/seq-ui/internal/api"
 	dashboards_v1 "github.com/ozontech/seq-ui/internal/api/dashboards/v1"
 	errorgroups_v1 "github.com/ozontech/seq-ui/internal/api/errorgroups/v1"
@@ -48,6 +49,10 @@ var (
 	configPath = flag.String("config", defaultConfig, "application config")
 )
 
+func init() {
+	_ = godotenv.Load()
+}
+
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGTERM,
@@ -70,14 +75,15 @@ func run(ctx context.Context) {
 		logger.Fatal("read config file error", zap.Error(err))
 	}
 
-	if err = tracing.Initialize(cfg.Tracing); err != nil {
+	if tracingCfg, err := tracing.Initialize(); err != nil {
 		logger.Error("tracing initialization failed", zap.Error(err))
-	} else if cfg.Tracing != nil {
+	} else {
 		logger.Info(
 			"tracing initialization success",
-			zap.String("resource", cfg.Tracing.Resource.String()),
-			zap.String("agent", cfg.Tracing.Agent.String()),
-			zap.String("sampler", cfg.Tracing.Sampler.String()))
+			zap.String("service_name", tracingCfg.ServiceName),
+			zap.String("agent_host", tracingCfg.AgentHost),
+			zap.String("agent_port", tracingCfg.AgentPort),
+			zap.Float64("sampler_param", tracingCfg.SamplerParam))
 	}
 
 	registrar := initApp(ctx, cfg)
