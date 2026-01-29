@@ -8,6 +8,7 @@ require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.29.0
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/aws/aws-sdk-go v1.55.5
+	github.com/caarlos0/env/v11 v11.3.1
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/coreos/go-oidc/v3 v3.11.0
 	github.com/dgraph-io/ristretto v1.0.0
@@ -18,6 +19,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/jackc/pgx/v5 v5.7.1
+	github.com/joho/godotenv v1.5.1
 	github.com/json-iterator/go v1.1.12
 	github.com/ozontech/seq-ui/pkg v0.2.0
 	github.com/prometheus/client_golang v1.20.4

@@ -1,10 +1,10 @@
 server:
-  http_addr: ':5555'
-  grpc_addr: ':5556'
-  debug_addr: ':5557'
+  http_addr: ":5555"
+  grpc_addr: ":5556"
+  debug_addr: ":5557"
 clients:
   seq_db_addrs:
-    - 'seq-db-proxy:9004'
+    - "seq-db-proxy:9004"
   seq_db_timeout: 15s
 handlers:
   seq_api:
