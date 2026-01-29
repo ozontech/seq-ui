@@ -34,7 +34,7 @@ func Initialize() (*Config, error) {
 		return nil, fmt.Errorf("failed to read tracing config: %w", err)
 	}
 
-	if err = validateTracingConfig(tracingCfg); err != nil {
+	if err := validateTracingConfig(tracingCfg); err != nil {
 		return nil, err
 	}
 
