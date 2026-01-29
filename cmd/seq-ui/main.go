@@ -50,6 +50,8 @@ var (
 )
 
 func init() {
+	// Load .env file for local development (optional).
+	// OS environment variables take precedence.
 	_ = godotenv.Load()
 }
 
