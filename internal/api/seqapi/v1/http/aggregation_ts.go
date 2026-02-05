@@ -64,7 +64,6 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
-
 	for _, agg := range httpReq.Aggregations {
 		if err := api_error.CheckAggregationTsInterval(agg.Interval, httpReq.From, httpReq.To,
 			a.config.MaxBucketsPerAggregationTs,
