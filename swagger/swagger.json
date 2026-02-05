@@ -1552,6 +1552,9 @@
                 "service": {
                     "type": "string"
                 },
+                "source": {
+                    "type": "string"
+                },
                 "with_total": {
                     "type": "boolean"
                 }
@@ -1594,6 +1597,9 @@
                     "additionalProperties": {
                         "$ref": "#/definitions/errorgroups.v1.DiffReleaseInfo"
                     }
+                },
+                "source": {
+                    "type": "string"
                 }
             }
         },
@@ -1751,13 +1757,16 @@
                         "$ref": "#/definitions/errorgroups.v1.Group"
                     }
                 },
-                "new_groups": {
+                "groups_new": {
                     "type": "array",
                     "items": {
                         "type": "integer"
                     }
                 },
                 "total": {
+                    "type": "integer"
+                },
+                "total_new": {
                     "type": "integer"
                 }
             }
