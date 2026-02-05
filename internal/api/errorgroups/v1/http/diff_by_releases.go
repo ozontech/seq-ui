@@ -24,6 +24,7 @@ type diffByReleasesRequest struct {
 	Service   string   `json:"service"`
 	Releases  []string `json:"releases"`
 	Env       *string  `json:"env,omitempty"`
+	Source    *string  `json:"source,omitempty"`
 	Limit     uint32   `json:"limit"`
 	Offset    uint32   `json:"offset"`
 	Order     order    `json:"order"`
@@ -38,10 +39,12 @@ type diffByReleasesResponse struct {
 
 // nolint: unused
 type diffGroup struct {
-	Hash         string                     `json:"hash" format:"uint64"`
-	Message      string                     `json:"message"`
-	FirstSeenAt  time.Time                  `json:"first_seen_at" format:"date-time"`
-	LastSeenAt   time.Time                  `json:"last_seen_at" format:"date-time"`
+	Hash        string    `json:"hash" format:"uint64"`
+	Message     string    `json:"message"`
+	FirstSeenAt time.Time `json:"first_seen_at" format:"date-time"`
+	LastSeenAt  time.Time `json:"last_seen_at" format:"date-time"`
+	Source      string    `json:"source"`
+
 	ReleaseInfos map[string]diffReleaseInfo `json:"release_infos"`
 } //	@name	errorgroups.v1.DiffGroup
 

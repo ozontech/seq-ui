@@ -37,7 +37,8 @@ message GetGroupsRequest {
 message GetGroupsResponse {
   uint64 total = 1;
   repeated Group groups = 2;
-  repeated uint64 new_groups = 3;
+  uint64 total_new = 3;
+  repeated uint64 groups_new = 4;
 }
 
 message Group {
@@ -121,10 +122,11 @@ message DiffByReleasesRequest {
   string service = 1;
   repeated string releases = 2;
   optional string env = 3;
-  uint32 limit = 4;
-  uint32 offset = 5;
-  Order order = 6;
-  bool with_total = 7;
+  optional string source = 4;
+  uint32 limit = 5;
+  uint32 offset = 6;
+  Order order = 7;
+  bool with_total = 8;
 }
 
 message DiffByReleasesResponse {
