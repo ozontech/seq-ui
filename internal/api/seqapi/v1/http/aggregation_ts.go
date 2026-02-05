@@ -9,6 +9,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/api_error"
+	aggregationts "github.com/ozontech/seq-ui/internal/pkg/client/aggregationts"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 	"go.opentelemetry.io/otel/attribute"
@@ -64,7 +65,6 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	aggIntervals := make([]string, 0, len(httpReq.Aggregations))
 	for _, agg := range httpReq.Aggregations {
 		if err := api_error.CheckAggregationTsInterval(agg.Interval, httpReq.From, httpReq.To,
 			a.config.MaxBucketsPerAggregationTs,
@@ -72,13 +72,6 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 			wr.Error(err, http.StatusBadRequest)
 			return
 		}
-
-		if agg.Func != afCount {
-			aggIntervals = append(aggIntervals, "")
-			continue
-		}
-
-		aggIntervals = append(aggIntervals, agg.Interval)
 	}
 
 	resp, err := a.seqDB.GetAggregation(ctx, httpReq.toProto())
@@ -87,24 +80,10 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for i, agg := range resp.Aggregations {
-		if agg == nil || agg.Buckets == nil || aggIntervals[i] == "" {
-			continue
-		}
-
-		interval, err := time.ParseDuration(aggIntervals[i])
-		if err != nil {
-			wr.Error(fmt.Errorf("failed to parse aggregation interval: %w", err), http.StatusBadRequest)
-			return
-		}
-
-		for _, bucket := range agg.Buckets {
-			if bucket == nil || bucket.Value == nil {
-				continue
-			}
-
-			*bucket.Value /= interval.Seconds()
-		}
+	aggIntervals := aggregationts.GetIntervals(httpReq.Aggregations.toProto())
+	if err = aggregationts.NormalizeBucketValues(resp.Aggregations, aggIntervals); err != nil {
+		wr.Error(fmt.Errorf("failed to get аggregation ts: %w", err), http.StatusBadRequest)
+		return
 	}
 
 	wr.WriteJson(getAggregationTsResponseFromProto(resp, httpReq.Aggregations))

@@ -3,9 +3,9 @@ package grpc
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/api_error"
+	"github.com/ozontech/seq-ui/internal/pkg/client/aggregationts"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 	"go.opentelemetry.io/otel/attribute"
@@ -73,25 +73,13 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	aggIntervals := make([]*string, 0, len(req.Aggregations))
 	fromRaw, toRaw := req.From.AsTime(), req.To.AsTime()
 	for _, agg := range req.Aggregations {
-		if agg.Interval == nil {
-			aggIntervals = append(aggIntervals, nil)
-			continue
-		}
 		if err := api_error.CheckAggregationTsInterval(*agg.Interval, fromRaw, toRaw,
 			a.config.MaxBucketsPerAggregationTs,
 		); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-
-		if agg.Func != seqapi.AggFunc_AGG_FUNC_COUNT {
-			aggIntervals = append(aggIntervals, nil)
-			continue
-		}
-
-		aggIntervals = append(aggIntervals, agg.Interval)
 	}
 
 	resp, err := a.seqDB.Search(ctx, req)
@@ -112,23 +100,9 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 		}
 	}
 
-	for i, agg := range resp.Aggregations {
-		if agg == nil || agg.Buckets == nil || aggIntervals[i] == nil {
-			continue
-		}
-
-		interval, err := time.ParseDuration(*aggIntervals[i])
-		if err != nil {
-			return nil, err
-		}
-
-		for _, bucket := range agg.Buckets {
-			if bucket == nil || bucket.Value == nil {
-				continue
-			}
-
-			*bucket.Value /= interval.Seconds()
-		}
+	aggIntervals := aggregationts.GetIntervals(req.Aggregations)
+	if err := aggregationts.NormalizeBucketValues(resp.Aggregations, aggIntervals); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return resp, nil
