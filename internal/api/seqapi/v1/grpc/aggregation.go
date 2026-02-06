@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/api_error"
+	"github.com/ozontech/seq-ui/internal/pkg/client/aggregationts"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 	"go.opentelemetry.io/otel/attribute"
@@ -88,6 +89,11 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 				}
 			}
 		}
+	}
+
+	aggIntervals := aggregationts.GetIntervals(req.Aggregations)
+	if err := aggregationts.NormalizeBucketValues(resp.Aggregations, aggIntervals, nil); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return resp, nil

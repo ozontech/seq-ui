@@ -2031,6 +2031,11 @@
                         }
                     ]
                 },
+                "bucket_quantity": {
+                    "type": "string",
+                    "format": "duration",
+                    "example": "1m"
+                },
                 "field": {
                     "type": "string"
                 },
