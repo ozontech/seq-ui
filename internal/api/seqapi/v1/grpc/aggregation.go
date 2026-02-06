@@ -92,7 +92,7 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 	}
 
 	aggIntervals := aggregationts.GetIntervals(req.Aggregations)
-	if err := aggregationts.NormalizeBucketValues(resp.Aggregations, aggIntervals); err != nil {
+	if err := aggregationts.NormalizeBucketValues(resp.Aggregations, aggIntervals, nil); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 

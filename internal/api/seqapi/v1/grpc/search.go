@@ -103,7 +103,7 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 	}
 
 	aggIntervals := aggregationts.GetIntervals(req.Aggregations)
-	if err := aggregationts.NormalizeBucketValues(resp.Aggregations, aggIntervals); err != nil {
+	if err := aggregationts.NormalizeBucketValues(resp.Aggregations, aggIntervals, nil); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 

@@ -80,7 +80,8 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	aggIntervals := aggregationts.GetIntervals(httpReq.Aggregations.toProto())
-	if err = aggregationts.NormalizeBucketValues(resp.Aggregations, aggIntervals); err != nil {
+	bucketQuantities := GetBucketQuantities(httpReq.Aggregations)
+	if err = aggregationts.NormalizeBucketValues(resp.Aggregations, aggIntervals, bucketQuantities); err != nil {
 		wr.Error(fmt.Errorf("failed to get аggregation ts: %w", err), http.StatusBadRequest)
 		return
 	}
@@ -88,9 +89,23 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 	wr.WriteJson(getAggregationTsResponseFromProto(resp, httpReq.Aggregations))
 }
 
+func GetBucketQuantities(aggregations aggregationTsQueries) []*string {
+	bucketQuantities := make([]*string, 0, len(aggregations))
+	for _, agg := range aggregations {
+		if agg.Func != afCount || agg.BucketQuantity == "" {
+			bucketQuantities = append(bucketQuantities, nil)
+			continue
+		}
+		bucketQuantities = append(bucketQuantities, &agg.BucketQuantity)
+	}
+
+	return bucketQuantities
+}
+
 type aggregationTsQuery struct {
 	aggregationQuery
-	Interval string `json:"interval,omitempty" format:"duration" example:"1m"`
+	Interval       string `json:"interval,omitempty" format:"duration" example:"1m"`
+	BucketQuantity string `json:"bucket_quantity,omitempty" format:"duration" example:"1m"`
 } //	@name	seqapi.v1.AggregationTsQuery
 
 func (aq aggregationTsQuery) toProto() *seqapi.AggregationQuery {
