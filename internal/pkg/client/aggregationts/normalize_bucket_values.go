@@ -19,7 +19,7 @@ func NormalizeBucketValues(aggregations []*seqapi.Aggregation, aggIntervals, buc
 		}
 
 		bucketQuantity := time.Second
-		if bucketQuantities != nil && bucketQuantities[i] != nil {
+		if i < len(bucketQuantities) && bucketQuantities[i] != nil {
 			bucketQuantity, err = time.ParseDuration(*bucketQuantities[i])
 			if err != nil {
 				return fmt.Errorf("failed to parse bucket quantity: %w", err)
@@ -30,7 +30,6 @@ func NormalizeBucketValues(aggregations []*seqapi.Aggregation, aggIntervals, buc
 			if bucket == nil || bucket.Value == nil {
 				continue
 			}
-
 			*bucket.Value = *bucket.Value * float64(bucketQuantity) / float64(interval)
 		}
 	}
