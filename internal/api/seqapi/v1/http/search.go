@@ -20,6 +20,7 @@ import (
 //	@Router		/seqapi/v1/search [post]
 //	@ID			seqapi_v1_search
 //	@Tags		seqapi_v1
+//	@Param		env		query		string			true	"Environment"
 //	@Param		body	body		searchRequest	true	"Request body"
 //	@Success	200		{object}	searchResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error	"An unexpected error response"
@@ -122,7 +123,7 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 	wr.WriteJson(searchResp)
 }
 
-type order string // @name seqapi.v1.Order
+type order string //	@name	seqapi.v1.Order
 
 const (
 	oDESC order = "desc"
@@ -150,7 +151,7 @@ type searchRequest struct {
 		Interval string `json:"interval"`
 	} `json:"histogram"`
 	Order order `json:"order" default:"desc"`
-} // @name seqapi.v1.SearchRequest
+} //	@name	seqapi.v1.SearchRequest
 
 func (r searchRequest) toProto() *seqapi.SearchRequest {
 	req := &seqapi.SearchRequest{
@@ -178,7 +179,7 @@ type searchResponse struct {
 	Total           string       `json:"total,omitempty" format:"int64"`
 	Error           apiError     `json:"error"`
 	PartialResponse bool         `json:"partialResponse"`
-} // @name seqapi.v1.SearchResponse
+} //	@name	seqapi.v1.SearchResponse
 
 func searchResponseFromProto(proto *seqapi.SearchResponse, withTotal bool) searchResponse {
 	sr := searchResponse{

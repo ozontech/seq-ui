@@ -19,6 +19,7 @@ import (
 //	@Router		/seqapi/v1/histogram [post]
 //	@ID			seqapi_v1_getHistogram
 //	@Tags		seqapi_v1
+//	@Param		env		query		string					true	"Environment"
 //	@Param		body	body		getHistogramRequest		true	"Request body"
 //	@Success	200		{object}	getHistogramResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error			"An unexpected error response"
@@ -68,7 +69,7 @@ type getHistogramRequest struct {
 	From     time.Time `json:"from" format:"date-time"`
 	To       time.Time `json:"to" format:"date-time"`
 	Interval string    `json:"interval"`
-} // @name seqapi.v1.GetHistogramRequest
+} //	@name	seqapi.v1.GetHistogramRequest
 
 func (r getHistogramRequest) toProto() *seqapi.GetHistogramRequest {
 	return &seqapi.GetHistogramRequest{
@@ -82,7 +83,7 @@ func (r getHistogramRequest) toProto() *seqapi.GetHistogramRequest {
 type histogramBucket struct {
 	Key      string `json:"key" format:"uint64"`
 	DocCount string `json:"docCount" format:"uint64"`
-} // @name seqapi.v1.HistogramBucket
+} //	@name	seqapi.v1.HistogramBucket
 
 func histogramBucketFromProto(proto *seqapi.Histogram_Bucket) histogramBucket {
 	return histogramBucket{
@@ -103,7 +104,7 @@ func histogramBucketsFromProto(proto []*seqapi.Histogram_Bucket) histogramBucket
 
 type histogram struct {
 	Buckets histogramBuckets `json:"buckets"`
-} // @name seqapi.v1.Histogram
+} //	@name	seqapi.v1.Histogram
 
 func histogramFromProto(proto *seqapi.Histogram, alwaysCreate bool) *histogram {
 	if proto == nil && !alwaysCreate {
@@ -118,7 +119,7 @@ type getHistogramResponse struct {
 	Histogram       histogram `json:"histogram"`
 	Error           apiError  `json:"error"`
 	PartialResponse bool      `json:"partialResponse"`
-} // @name seqapi.v1.GetHistogramResponse
+} //	@name	seqapi.v1.GetHistogramResponse
 
 func getHistogramResponseFromProto(proto *seqapi.GetHistogramResponse) getHistogramResponse {
 	return getHistogramResponse{

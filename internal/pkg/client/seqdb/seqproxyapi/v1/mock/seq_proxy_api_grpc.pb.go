@@ -23,7 +23,6 @@ import (
 type MockSeqProxyApiClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockSeqProxyApiClientMockRecorder
-	isgomock struct{}
 }
 
 // MockSeqProxyApiClientMockRecorder is the mock recorder for MockSeqProxyApiClient.
@@ -307,7 +306,6 @@ func (mr *MockSeqProxyApiClientMockRecorder) Status(ctx, in any, opts ...any) *g
 type MockSeqProxyApi_FetchClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockSeqProxyApi_FetchClientMockRecorder
-	isgomock struct{}
 }
 
 // MockSeqProxyApi_FetchClientMockRecorder is the mock recorder for MockSeqProxyApi_FetchClient.
@@ -431,7 +429,6 @@ func (mr *MockSeqProxyApi_FetchClientMockRecorder) Trailer() *gomock.Call {
 type MockSeqProxyApi_ExportClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockSeqProxyApi_ExportClientMockRecorder
-	isgomock struct{}
 }
 
 // MockSeqProxyApi_ExportClientMockRecorder is the mock recorder for MockSeqProxyApi_ExportClient.
@@ -555,7 +552,6 @@ func (mr *MockSeqProxyApi_ExportClientMockRecorder) Trailer() *gomock.Call {
 type MockSeqProxyApiServer struct {
 	ctrl     *gomock.Controller
 	recorder *MockSeqProxyApiServerMockRecorder
-	isgomock struct{}
 }
 
 // MockSeqProxyApiServerMockRecorder is the mock recorder for MockSeqProxyApiServer.
@@ -772,7 +768,6 @@ func (mr *MockSeqProxyApiServerMockRecorder) Status(arg0, arg1 any) *gomock.Call
 type MockUnsafeSeqProxyApiServer struct {
 	ctrl     *gomock.Controller
 	recorder *MockUnsafeSeqProxyApiServerMockRecorder
-	isgomock struct{}
 }
 
 // MockUnsafeSeqProxyApiServerMockRecorder is the mock recorder for MockUnsafeSeqProxyApiServer.
@@ -808,7 +803,6 @@ func (mr *MockUnsafeSeqProxyApiServerMockRecorder) mustEmbedUnimplementedSeqProx
 type MockSeqProxyApi_FetchServer struct {
 	ctrl     *gomock.Controller
 	recorder *MockSeqProxyApi_FetchServerMockRecorder
-	isgomock struct{}
 }
 
 // MockSeqProxyApi_FetchServerMockRecorder is the mock recorder for MockSeqProxyApi_FetchServer.
@@ -928,7 +922,6 @@ func (mr *MockSeqProxyApi_FetchServerMockRecorder) SetTrailer(arg0 any) *gomock.
 type MockSeqProxyApi_ExportServer struct {
 	ctrl     *gomock.Controller
 	recorder *MockSeqProxyApi_ExportServerMockRecorder
-	isgomock struct{}
 }
 
 // MockSeqProxyApi_ExportServerMockRecorder is the mock recorder for MockSeqProxyApi_ExportServer.

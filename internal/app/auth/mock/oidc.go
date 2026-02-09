@@ -21,7 +21,6 @@ import (
 type MockOIDCProvider struct {
 	ctrl     *gomock.Controller
 	recorder *MockOIDCProviderMockRecorder
-	isgomock struct{}
 }
 
 // MockOIDCProviderMockRecorder is the mock recorder for MockOIDCProvider.

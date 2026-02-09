@@ -103,8 +103,8 @@ type startRequest struct {
 	To     time.Time `json:"to" format:"date-time"`
 	Window string    `json:"window"`
 	Name   string    `json:"name"`
-} // @name massexport.v1.StartRequest
+} //	@name	massexport.v1.StartRequest
 
 type startResponse struct {
 	SessionID string `json:"session_id"`
-} // @name massexport.v1.StartResponse
+} //	@name	massexport.v1.StartResponse

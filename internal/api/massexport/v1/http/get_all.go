@@ -37,4 +37,4 @@ func (a *API) serveJobs(w http.ResponseWriter, r *http.Request) {
 
 type getAllResponse struct {
 	Exports []checkResponse `json:"exports"`
-} // @name massexport.v1.GetAllResponse
+} //	@name	massexport.v1.GetAllResponse

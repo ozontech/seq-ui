@@ -19,6 +19,7 @@ import (
 //	@Router		/seqapi/v1/events/{id} [get]
 //	@ID			seqapi_v1_getEvent
 //	@Tags		seqapi_v1
+//	@Param		env		query		string				true	"Environment"
 //	@Param		id		path		string				true	"Event ID"
 //	@Success	200		{object}	getEventResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
@@ -74,7 +75,7 @@ type event struct {
 	ID   string            `json:"id"`
 	Data map[string]string `json:"data" swaggertype:"object,string"`
 	Time time.Time         `json:"time" format:"date-time"`
-} // @name seqapi.v1.Event
+} //	@name	seqapi.v1.Event
 
 func eventFromProto(p *seqapi.Event) event {
 	data := p.GetData()
@@ -100,7 +101,7 @@ func eventsFromProto(p []*seqapi.Event) events {
 
 type getEventResponse struct {
 	Event event `json:"event"`
-} // @name seqapi.v1.GetEventResponse
+} //	@name	seqapi.v1.GetEventResponse
 
 func getEventResponseFromProto(p *seqapi.GetEventResponse) getEventResponse {
 	return getEventResponse{

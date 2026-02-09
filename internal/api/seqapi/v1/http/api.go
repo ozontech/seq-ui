@@ -73,6 +73,8 @@ func New(
 func (a *API) Router() chi.Router {
 	mux := chi.NewMux()
 
+	mux.Use(a.envMiddleware)
+
 	mux.Post("/aggregation", a.serveGetAggregation)
 	mux.Post("/aggregation_ts", a.serveGetAggregationTs)
 	mux.Get("/events/{id}", a.serveGetEvent)
@@ -84,6 +86,7 @@ func (a *API) Router() chi.Router {
 	mux.Post("/search", a.serveSearch)
 	mux.Get("/status", a.serveStatus)
 	mux.Get("/logs_lifespan", a.serveGetLogsLifespan)
+	mux.Get("/envs", a.serveGetEnvs)
 
 	// async searches
 	mux.Post("/async_search/start", a.serveStartAsyncSearch)
@@ -106,7 +109,7 @@ func parsePinnedFields(fields []config.PinnedField) []field {
 	return res
 }
 
-type apiErrorCode string //	@name seqapi.v1.ErrorCode
+type apiErrorCode string //	@name	seqapi.v1.ErrorCode
 
 const (
 	aecNo                  apiErrorCode = "ERROR_CODE_NO"
@@ -131,7 +134,7 @@ func apiErrorCodeFromProto(proto seqapi.ErrorCode) apiErrorCode {
 type apiError struct {
 	Code    apiErrorCode `json:"code" default:"ERROR_CODE_NO"`
 	Message string       `json:"message,omitempty"`
-} // @name seqapi.v1.Error
+} //	@name	seqapi.v1.Error
 
 func apiErrorFromProto(proto *seqapi.Error) apiError {
 	return apiError{
@@ -160,7 +163,7 @@ func (c *fieldsCache) setFields(rawFields []byte) {
 	c.ts = time.Now()
 }
 
-type asyncSearchStatus string // @name seqapi.v1.AsyncSearchStatus
+type asyncSearchStatus string //	@name	seqapi.v1.AsyncSearchStatus
 
 const (
 	AsyncSearchStatusInProgress asyncSearchStatus = "in_progress"

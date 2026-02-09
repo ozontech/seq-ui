@@ -17,6 +17,7 @@ import (
 //	@Router		/seqapi/v1/fields [get]
 //	@ID			seqapi_v1_getFields
 //	@Tags		seqapi_v1
+//	@Param		env		query		string				true	"Environment"
 //	@Success	200		{object}	getFieldsResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
 func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
@@ -76,6 +77,7 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 //	@Router		/seqapi/v1/fields/pinned [get]
 //	@ID			seqapi_v1_getPinnedFields
 //	@Tags		seqapi_v1
+//	@Param		env		query		string				true	"Environment"
 //	@Success	200		{object}	getFieldsResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
 func (a *API) serveGetPinnedFields(w http.ResponseWriter, _ *http.Request) {
@@ -87,7 +89,7 @@ func (a *API) serveGetPinnedFields(w http.ResponseWriter, _ *http.Request) {
 type field struct {
 	Name string `json:"name"`
 	Type string `json:"type" default:"unknown" enums:"unknown,keyword,text"`
-} // @name seqapi.v1.Field
+} //	@name	seqapi.v1.Field
 
 func fieldFromProto(proto *seqapi.Field) field {
 	return field{
@@ -108,7 +110,7 @@ func fieldsFromProto(proto []*seqapi.Field) fields {
 
 type getFieldsResponse struct {
 	Fields fields `json:"fields"`
-} // @name seqapi.v1.GetFieldsResponse
+} //	@name	seqapi.v1.GetFieldsResponse
 
 func getFieldsResponseFromProto(proto *seqapi.GetFieldsResponse) getFieldsResponse {
 	return getFieldsResponse{

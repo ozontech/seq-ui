@@ -15,6 +15,7 @@ import (
 //	@Router		/seqapi/v1/status [get]
 //	@ID			seqapi_v1_status
 //	@Tags		seqapi_v1
+//	@Param		env		query		string			true	"Environment"
 //	@Success	200		{object}	statusResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error	"An unexpected error response"
 func (a *API) serveStatus(w http.ResponseWriter, r *http.Request) {

@@ -22,6 +22,7 @@ import (
 //	@Tags		seqapi_v1
 //	@Accept		json
 //	@Produce	json
+//	@Param		env		query		string						true	"Environment"
 //	@Param		body	body		getAggregationTsRequest		true	"Request body"
 //	@Success	200		{object}	getAggregationTsResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error				"An unexpected error response"

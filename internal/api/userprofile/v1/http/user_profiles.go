@@ -108,7 +108,7 @@ type userProfile struct {
 	Timezone          string   `json:"timezone"`
 	OnboardingVersion string   `json:"onboardingVersion"`
 	LogColumns        []string `json:"log_columns"`
-} // @name userprofile.v1.UserProfile
+} //	@name	userprofile.v1.UserProfile
 
 func newUserProfile(t types.UserProfile) userProfile {
 	return userProfile{
@@ -124,7 +124,7 @@ type updateUserProfileRequest struct {
 	LogColumns        *struct {
 		Columns []string `json:"columns"`
 	} `json:"log_columns"`
-} // @name userprofile.v1.UpdateUserProfileRequest
+} //	@name	userprofile.v1.UpdateUserProfileRequest
 
 func (r updateUserProfileRequest) GetTimezone() string {
 	if r.Timezone != nil {

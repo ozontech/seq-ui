@@ -20,6 +20,7 @@ import (
 //	@Router		/seqapi/v1/async_search/fetch [post]
 //	@ID			seqapi_v1_fetch_async_search_result
 //	@Tags		seqapi_v1
+//	@Param		env		query		string							true	"Environment"
 //	@Param		body	body		fetchAsyncSearchResultRequest	true	"Request body"
 //	@Success	200		{object}	fetchAsyncSearchResultResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error					"An unexpected error response"
@@ -115,7 +116,7 @@ type asyncSearchResponse struct {
 	Total           string         `json:"total,omitempty" format:"int64"`
 	Error           apiError       `json:"error"`
 	PartialResponse bool           `json:"partialResponse"`
-} // @name seqapi.v1.AsyncSearchResponse
+} //	@name	seqapi.v1.AsyncSearchResponse
 
 func fetchAsyncSearchResultResponseFromProto(resp *seqapi.FetchAsyncSearchResultResponse) fetchAsyncSearchResultResponse {
 	var canceledAt *time.Time

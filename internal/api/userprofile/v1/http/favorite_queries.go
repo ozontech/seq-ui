@@ -165,7 +165,7 @@ type favoriteQuery struct {
 	Query        string `json:"query"`
 	Name         string `json:"name,omitempty"`
 	RelativeFrom string `json:"relativeFrom,omitempty" format:"uint64"`
-} // @name userprofile.v1.FavoriteQuery
+} //	@name	userprofile.v1.FavoriteQuery
 
 func newFavoriteQuery(t types.FavoriteQuery) favoriteQuery {
 	fq := favoriteQuery{
@@ -191,13 +191,13 @@ func newFavoriteQueries(t types.FavoriteQueries) favoriteQueries {
 
 type getFavoriteQueriesResponse struct {
 	Queries favoriteQueries `json:"queries"`
-} // @name userprofile.v1.GetFavoriteQueriesResponse
+} //	@name	userprofile.v1.GetFavoriteQueriesResponse
 
 type createFavoriteQueryRequest struct {
 	Query        string  `json:"query"`
 	Name         *string `json:"name"`
 	RelativeFrom *string `json:"relativeFrom" format:"uint64"`
-} // @name userprofile.v1.CreateFavoriteQueryRequest
+} //	@name	userprofile.v1.CreateFavoriteQueryRequest
 
 func (r createFavoriteQueryRequest) GetName() string {
 	if r.Name != nil {
@@ -215,4 +215,4 @@ func (r createFavoriteQueryRequest) GetRelativeFrom() string {
 
 type createFavoriteQueryResponse struct {
 	ID string `json:"id" format:"int64"`
-} // @name userprofile.v1.CreateFavoriteQueryResponse
+} //	@name	userprofile.v1.CreateFavoriteQueryResponse

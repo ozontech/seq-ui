@@ -653,6 +653,13 @@
                 "operationId": "seqapi_v1_getAggregation",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
                         "description": "Request body",
                         "name": "body",
                         "in": "body",
@@ -697,6 +704,13 @@
                 "operationId": "seqapi_v1_getAggregationTs",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
                         "description": "Request body",
                         "name": "body",
                         "in": "body",
@@ -734,6 +748,13 @@
                 ],
                 "operationId": "seqapi_v1_fetch_async_search_result",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query",
+                        "required": true
+                    },
                     {
                         "description": "Request body",
                         "name": "body",
@@ -773,6 +794,13 @@
                 "operationId": "seqapi_v1_get_async_searches_list",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
                         "description": "Request body",
                         "name": "body",
                         "in": "body",
@@ -810,6 +838,13 @@
                 ],
                 "operationId": "seqapi_v1_start_async_search",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query",
+                        "required": true
+                    },
                     {
                         "description": "Request body",
                         "name": "body",
@@ -850,6 +885,13 @@
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "search id",
                         "name": "id",
                         "in": "path",
@@ -883,6 +925,13 @@
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "search id",
                         "name": "id",
                         "in": "path",
@@ -892,6 +941,36 @@
                 "responses": {
                     "200": {
                         "description": "A successful response"
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/seqapi/v1/envs": {
+            "get": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "seqapi_v1"
+                ],
+                "operationId": "seqapi_v1_get_envs",
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/getEnvsResponse"
+                        }
                     },
                     "default": {
                         "description": "An unexpected error response",
@@ -914,6 +993,13 @@
                 ],
                 "operationId": "seqapi_v1_getEvent",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "Event ID",
@@ -951,6 +1037,13 @@
                 "operationId": "seqapi_v1_export",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
                         "description": "Request body",
                         "name": "body",
                         "in": "body",
@@ -982,6 +1075,15 @@
                     "seqapi_v1"
                 ],
                 "operationId": "seqapi_v1_getFields",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "A successful response",
@@ -1004,6 +1106,15 @@
                     "seqapi_v1"
                 ],
                 "operationId": "seqapi_v1_getPinnedFields",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "A successful response",
@@ -1032,6 +1143,13 @@
                 ],
                 "operationId": "seqapi_v1_getHistogram",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query",
+                        "required": true
+                    },
                     {
                         "description": "Request body",
                         "name": "body",
@@ -1064,6 +1182,15 @@
                     "seqapi_v1"
                 ],
                 "operationId": "seqapi_v1_getLimits",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "A successful response",
@@ -1086,6 +1213,15 @@
                     "seqapi_v1"
                 ],
                 "operationId": "seqapi_v1_get_logs_lifespan",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "A successful response",
@@ -1114,6 +1250,13 @@
                 ],
                 "operationId": "seqapi_v1_search",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query",
+                        "required": true
+                    },
                     {
                         "description": "Request body",
                         "name": "body",
@@ -1146,6 +1289,15 @@
                     "seqapi_v1"
                 ],
                 "operationId": "seqapi_v1_status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "A successful response",
@@ -1768,11 +1920,36 @@
                 "OrderOldest"
             ]
         },
+        "getEnvsResponse": {
+            "type": "object",
+            "properties": {
+                "envs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/http.EnvInfo"
+                    }
+                }
+            }
+        },
         "http.AsyncSearchRequestHistogram": {
             "type": "object",
             "properties": {
                 "interval": {
                     "type": "string"
+                }
+            }
+        },
+        "http.EnvInfo": {
+            "type": "object",
+            "properties": {
+                "env": {
+                    "type": "string"
+                },
+                "max_export_limit": {
+                    "type": "integer"
+                },
+                "max_search_limit": {
+                    "type": "integer"
                 }
             }
         },

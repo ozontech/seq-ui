@@ -35,6 +35,8 @@ service SeqAPIService {
   rpc CancelAsyncSearch(CancelAsyncSearchRequest) returns (CancelAsyncSearchResponse) {}
 
   rpc DeleteAsyncSearch(DeleteAsyncSearchRequest) returns (DeleteAsyncSearchResponse) {}
+
+  rpc GetEnvs(GetEnvsRequest) returns (GetEnvsResponse) {}
 }
 
 enum ErrorCode {
@@ -318,3 +320,15 @@ message DeleteAsyncSearchRequest {
 }
 
 message DeleteAsyncSearchResponse {}
+
+message EnvInfo {
+    optional string env = 1;
+    uint32 max_search_limit = 2;
+    uint32 max_export_limit = 3;
+}
+
+message GetEnvsRequest {}
+
+message GetEnvsResponse {
+    repeated EnvInfo envs = 1;
+}

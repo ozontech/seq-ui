@@ -47,4 +47,4 @@ func (a *API) serveCancel(w http.ResponseWriter, r *http.Request) {
 
 type cancelRequest struct {
 	SessionID string `json:"session_id"`
-} // @name massexport.v1.CancelRequest
+} //	@name	massexport.v1.CancelRequest
