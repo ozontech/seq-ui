@@ -73,7 +73,7 @@ func New(
 func (a *API) Router() chi.Router {
 	mux := chi.NewMux()
 
-	mux.Use(a.envMiddleware)
+	mux.Use(a.envInterceptor)
 
 	mux.Post("/aggregation", a.serveGetAggregation)
 	mux.Post("/aggregation_ts", a.serveGetAggregationTs)

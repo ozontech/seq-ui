@@ -11,7 +11,7 @@ import (
 //	@Router		/seqapi/v1/limits [get]
 //	@ID			seqapi_v1_getLimits
 //	@Tags		seqapi_v1
-//	@Param		env		query		string				true	"Environment"
+//	@Param		env		query		string				false	"Environment"
 //	@Success	200		{object}	getLimitsResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
 func (a *API) serveGetLimits(w http.ResponseWriter, _ *http.Request) {

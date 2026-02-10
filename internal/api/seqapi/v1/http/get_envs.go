@@ -14,29 +14,22 @@ import (
 //	@Produce	json
 //	@Success	200		{object}	getEnvsResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error	"An unexpected error response"
-//	@Security	bearer
 func (a *API) serveGetEnvs(w http.ResponseWriter, r *http.Request) {
 	wr := httputil.NewWriter(w)
-
-	// Заглушка, чтобы линтер не ругался (type getEnvsResponse is unused)
-	envs := []EnvInfo{
-		{
-			Env:            "Окружение балдежа",
-			MaxSearchLimit: 1,
-			MaxExportLimit: 1,
-		},
-	}
-
-	response := getEnvsResponse{Envs: envs}
-	wr.WriteJson(response)
+	wr.WriteJson(getEnvsResponse{})
 }
 
+//nolint:unused
 type getEnvsResponse struct {
-	Envs []EnvInfo `json:"envs"`
-} //	@name	getEnvsResponse
+	Envs []envInfo `json:"envs"`
+} // @name seqapi.v1.GetEnvsResponse
 
-type EnvInfo struct {
-	Env            string `json:"env"`
-	MaxSearchLimit uint32 `json:"max_search_limit"`
-	MaxExportLimit uint32 `json:"max_export_limit"`
-}
+//nolint:unused
+type envInfo struct {
+	Env                       string `json:"env"`
+	MaxSearchLimit            uint32 `json:"max_search_limit"`
+	MaxExportLimit            uint32 `json:"max_export_limit"`
+	MaxParallelExportRequests uint32 `json:"max_parallel_export_requests"`
+	MaxAggregationsPerRequest uint32 `json:"max_aggregations_per_request"`
+	SeqCliMaxSearchLimit      uint32 `json:"seq_cli_max_search_limit"`
+} // @name seqapi.v1.EnvInfo

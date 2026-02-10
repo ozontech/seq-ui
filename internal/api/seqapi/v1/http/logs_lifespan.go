@@ -20,7 +20,7 @@ import (
 //	@Router		/seqapi/v1/logs_lifespan [get]
 //	@ID			seqapi_v1_get_logs_lifespan
 //	@Tags		seqapi_v1
-//	@Param		env		query		string					true	"Environment"
+//	@Param		env		query		string					false	"Environment"
 //	@Success	200		{object}	getLogsLifespanResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error			"An unexpected error response"
 func (a *API) serveGetLogsLifespan(w http.ResponseWriter, r *http.Request) {

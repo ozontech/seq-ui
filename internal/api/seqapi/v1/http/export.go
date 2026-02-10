@@ -21,7 +21,7 @@ import (
 //	@Router		/seqapi/v1/export [post]
 //	@ID			seqapi_v1_export
 //	@Tags		seqapi_v1
-//	@Param		env		query		string			true	"Environment"
+//	@Param		env		query		string			false	"Environment"
 //	@Param		body	body		exportRequest	true	"Request body"
 //	@Success	200		{object}	exportResponse	"A successful streaming responses"
 //	@Failure	default	{object}	httputil.Error	"An unexpected error response"

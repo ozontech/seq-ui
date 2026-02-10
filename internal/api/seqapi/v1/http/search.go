@@ -20,7 +20,7 @@ import (
 //	@Router		/seqapi/v1/search [post]
 //	@ID			seqapi_v1_search
 //	@Tags		seqapi_v1
-//	@Param		env		query		string			true	"Environment"
+//	@Param		env		query		string			false	"Environment"
 //	@Param		body	body		searchRequest	true	"Request body"
 //	@Success	200		{object}	searchResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error	"An unexpected error response"

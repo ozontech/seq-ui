@@ -656,8 +656,7 @@
                         "type": "string",
                         "description": "Environment",
                         "name": "env",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "description": "Request body",
@@ -707,8 +706,7 @@
                         "type": "string",
                         "description": "Environment",
                         "name": "env",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "description": "Request body",
@@ -752,8 +750,7 @@
                         "type": "string",
                         "description": "Environment",
                         "name": "env",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "description": "Request body",
@@ -797,8 +794,7 @@
                         "type": "string",
                         "description": "Environment",
                         "name": "env",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "description": "Request body",
@@ -842,8 +838,7 @@
                         "type": "string",
                         "description": "Environment",
                         "name": "env",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "description": "Request body",
@@ -887,8 +882,7 @@
                         "type": "string",
                         "description": "Environment",
                         "name": "env",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
@@ -927,8 +921,7 @@
                         "type": "string",
                         "description": "Environment",
                         "name": "env",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
@@ -953,11 +946,6 @@
         },
         "/seqapi/v1/envs": {
             "get": {
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -969,7 +957,7 @@
                     "200": {
                         "description": "A successful response",
                         "schema": {
-                            "$ref": "#/definitions/getEnvsResponse"
+                            "$ref": "#/definitions/seqapi.v1.GetEnvsResponse"
                         }
                     },
                     "default": {
@@ -997,8 +985,7 @@
                         "type": "string",
                         "description": "Environment",
                         "name": "env",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
@@ -1040,8 +1027,7 @@
                         "type": "string",
                         "description": "Environment",
                         "name": "env",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "description": "Request body",
@@ -1080,8 +1066,7 @@
                         "type": "string",
                         "description": "Environment",
                         "name": "env",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1111,8 +1096,7 @@
                         "type": "string",
                         "description": "Environment",
                         "name": "env",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1147,8 +1131,7 @@
                         "type": "string",
                         "description": "Environment",
                         "name": "env",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "description": "Request body",
@@ -1187,8 +1170,7 @@
                         "type": "string",
                         "description": "Environment",
                         "name": "env",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1218,8 +1200,7 @@
                         "type": "string",
                         "description": "Environment",
                         "name": "env",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1254,8 +1235,7 @@
                         "type": "string",
                         "description": "Environment",
                         "name": "env",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "description": "Request body",
@@ -1294,8 +1274,7 @@
                         "type": "string",
                         "description": "Environment",
                         "name": "env",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1920,36 +1899,11 @@
                 "OrderOldest"
             ]
         },
-        "getEnvsResponse": {
-            "type": "object",
-            "properties": {
-                "envs": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/http.EnvInfo"
-                    }
-                }
-            }
-        },
         "http.AsyncSearchRequestHistogram": {
             "type": "object",
             "properties": {
                 "interval": {
                     "type": "string"
-                }
-            }
-        },
-        "http.EnvInfo": {
-            "type": "object",
-            "properties": {
-                "env": {
-                    "type": "string"
-                },
-                "max_export_limit": {
-                    "type": "integer"
-                },
-                "max_search_limit": {
-                    "type": "integer"
                 }
             }
         },
@@ -2318,6 +2272,29 @@
                 }
             }
         },
+        "seqapi.v1.EnvInfo": {
+            "type": "object",
+            "properties": {
+                "env": {
+                    "type": "string"
+                },
+                "max_aggregations_per_request": {
+                    "type": "integer"
+                },
+                "max_export_limit": {
+                    "type": "integer"
+                },
+                "max_parallel_export_requests": {
+                    "type": "integer"
+                },
+                "max_search_limit": {
+                    "type": "integer"
+                },
+                "seq_cli_max_search_limit": {
+                    "type": "integer"
+                }
+            }
+        },
         "seqapi.v1.Error": {
             "type": "object",
             "properties": {
@@ -2605,6 +2582,17 @@
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/seqapi.v1.AsyncSearchesListItem"
+                    }
+                }
+            }
+        },
+        "seqapi.v1.GetEnvsResponse": {
+            "type": "object",
+            "properties": {
+                "envs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seqapi.v1.EnvInfo"
                     }
                 }
             }

@@ -19,7 +19,7 @@ import (
 //	@Router		/seqapi/v1/events/{id} [get]
 //	@ID			seqapi_v1_getEvent
 //	@Tags		seqapi_v1
-//	@Param		env		query		string				true	"Environment"
+//	@Param		env		query		string				false	"Environment"
 //	@Param		id		path		string				true	"Event ID"
 //	@Success	200		{object}	getEventResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"

@@ -21,7 +21,7 @@ import (
 //	@Tags		seqapi_v1
 //	@Accept		json
 //	@Produce	json
-//	@Param		env		query		string					true	"Environment"
+//	@Param		env		query		string					false	"Environment"
 //	@Param		body	body		getAggregationRequest	true	"Request body"
 //	@Success	200		{object}	getAggregationResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error			"An unexpected error response"

@@ -19,7 +19,7 @@ import (
 //	@Router		/seqapi/v1/histogram [post]
 //	@ID			seqapi_v1_getHistogram
 //	@Tags		seqapi_v1
-//	@Param		env		query		string					true	"Environment"
+//	@Param		env		query		string					false	"Environment"
 //	@Param		body	body		getHistogramRequest		true	"Request body"
 //	@Success	200		{object}	getHistogramResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error			"An unexpected error response"

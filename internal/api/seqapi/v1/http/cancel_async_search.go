@@ -18,7 +18,7 @@ import (
 //	@Router		/seqapi/v1/async_search/{id}/cancel [post]
 //	@ID			seqapi_v1_cancel_async_search
 //	@Tags		seqapi_v1
-//	@Param		env		query		string			true	"Environment"
+//	@Param		env		query		string			false	"Environment"
 //	@Param		id		path		string			true	"search id"
 //	@Success	200		{object}	nil				"A successful response"
 //	@Failure	default	{object}	httputil.Error	"An unexpected error response"
