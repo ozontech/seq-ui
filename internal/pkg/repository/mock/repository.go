@@ -21,6 +21,7 @@ import (
 type MockUserProfiles struct {
 	ctrl     *gomock.Controller
 	recorder *MockUserProfilesMockRecorder
+	isgomock struct{}
 }
 
 // MockUserProfilesMockRecorder is the mock recorder for MockUserProfiles.
@@ -73,6 +74,7 @@ func (mr *MockUserProfilesMockRecorder) Update(arg0, arg1 any) *gomock.Call {
 type MockFavoriteQueries struct {
 	ctrl     *gomock.Controller
 	recorder *MockFavoriteQueriesMockRecorder
+	isgomock struct{}
 }
 
 // MockFavoriteQueriesMockRecorder is the mock recorder for MockFavoriteQueries.
@@ -140,6 +142,7 @@ func (mr *MockFavoriteQueriesMockRecorder) GetOrCreate(arg0, arg1 any) *gomock.C
 type MockDashboards struct {
 	ctrl     *gomock.Controller
 	recorder *MockDashboardsMockRecorder
+	isgomock struct{}
 }
 
 // MockDashboardsMockRecorder is the mock recorder for MockDashboards.
@@ -266,6 +269,7 @@ func (mr *MockDashboardsMockRecorder) Update(arg0, arg1 any) *gomock.Call {
 type MockAsyncSearches struct {
 	ctrl     *gomock.Controller
 	recorder *MockAsyncSearchesMockRecorder
+	isgomock struct{}
 }
 
 // MockAsyncSearchesMockRecorder is the mock recorder for MockAsyncSearches.

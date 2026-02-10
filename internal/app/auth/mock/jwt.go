@@ -20,6 +20,7 @@ import (
 type MockJWTProvider struct {
 	ctrl     *gomock.Controller
 	recorder *MockJWTProviderMockRecorder
+	isgomock struct{}
 }
 
 // MockJWTProviderMockRecorder is the mock recorder for MockJWTProvider.
