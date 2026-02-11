@@ -67,7 +67,9 @@ func TestGetAggregation(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest: 3,
+				SeqAPIOptions: config.SeqAPIOptions{
+					MaxAggregationsPerRequest: 3,
+				},
 			},
 		},
 		{
@@ -80,7 +82,9 @@ func TestGetAggregation(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest: 2,
+				SeqAPIOptions: config.SeqAPIOptions{
+					MaxAggregationsPerRequest: 2,
+				},
 			},
 			apiErr: true,
 		},

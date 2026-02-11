@@ -372,6 +372,7 @@ clients:
   initial_retry_backoff:
   max_retry_backoff:
   grpc_keepalive_params:
+  seq_db:
 ```
 
 **`seq_db_addrs`** *`[]string`* *`required`*
@@ -431,6 +432,27 @@ clients:
 + **`permit_without_stream`** *`bool`* *`default=false`*
 
   Если установлено значение `true`, клиент отправляет запросы даже при отсутствии активных RPC. В противном случае, когда активных RPC нет, значения `time` и `timeout` будут проигнорированы, и запросы отправлены не будут.
+
+**`SeqDB`** *`[]SeqDBClient`* *`required`*
+
+Список конфигураций клиентов SeqDB.
+
+Поля `SeqDB`:
+
++ **`id`** *`string`* *`required`*
+
+  Уникальный идентификатор клиента.
+
++ **`addrs`** *`[]string`* *`optional`*
++ **`timeout`** *`string`* *`optional`*
++ **`avg_doc_size`** *`int`* *`optional`*
++ **`request_retries`** *`int`* *`optional`*
++ **`initial_retry_backoff`** *`string`* *`optional`*
++ **`max_retry_backoff`** *`string`* *`optional`*
++ **`proxy_client_mode`** *`string`* *`optional`*
++ **`grpc_keepalive_params`** *`GRPCKeepaliveParams`* *`optional`*
+
+Все перечисленные выше поля полностью соответствуют одноименным глобальным параметрам секции clients и переопределяют их значения для конкретного клиента.
 
 ## Handlers
 
@@ -605,6 +627,20 @@ handlers:
   + **`values`** *`[]string`* *`required`*
 
     Список значений поля события для фильтрации.
+  
++ **`envs`** *`map[string]SeqAPIEnv`* *`optional`*
+
+  Конфигурация для различных окружений.
+
+  Поля `SeqAPIEnv`:
+
+  + **`seq_db`** *`string`* *`required`*
+  
+    Идентификатор клиента SeqDB из секции `clients.seq_db`.
+
+  + **`options`** *`SeqAPIOptions`* *`optional`*
+  
+    Специфичные для окружения параметры SeqAPI. Эти параметры полностью замещают соответствующие глобальные настройки из корневой секции `seq_api`.
 
 ### Error groups
 

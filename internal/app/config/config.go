@@ -205,6 +205,18 @@ type GRPCKeepaliveParams struct {
 	PermitWithoutStream bool `yaml:"permit_without_stream"`
 }
 
+type SeqDBClient struct {
+	ID                  string               `yaml:"id"`
+	Timeout             time.Duration        `yaml:"timeout"`
+	AvgDocSize          int                  `yaml:"avg_doc_size"`
+	Addrs               []string             `yaml:"addrs"`
+	RequestRetries      int                  `yaml:"request_retries"`
+	InitialRetryBackoff time.Duration        `yaml:"initial_retry_backoff"`
+	MaxRetryBackoff     time.Duration        `yaml:"max_retry_backoff"`
+	ProxyClientMode     string               `yaml:"proxy_client_mode"`
+	GRPCKeepaliveParams *GRPCKeepaliveParams `yaml:"grpc_keepalive_params"`
+}
+
 type Clients struct {
 	SeqDBTimeout        time.Duration        `yaml:"seq_db_timeout"`
 	SeqDBAvgDocSize     int                  `yaml:"seq_db_avg_doc_size"`
@@ -214,6 +226,7 @@ type Clients struct {
 	MaxRetryBackoff     time.Duration        `yaml:"max_retry_backoff"`
 	ProxyClientMode     string               `yaml:"proxy_client_mode"`
 	GRPCKeepaliveParams *GRPCKeepaliveParams `yaml:"grpc_keepalive_params"`
+	SeqDB               []SeqDBClient        `yaml:"seq_db"`
 }
 
 type Handlers struct {
@@ -229,20 +242,30 @@ type PinnedField struct {
 }
 
 type SeqAPI struct {
-	MaxSearchLimit             int32         `yaml:"max_search_limit"`
-	MaxSearchTotalLimit        int64         `yaml:"max_search_total_limit"`
-	MaxSearchOffsetLimit       int32         `yaml:"max_search_offset_limit"`
-	MaxExportLimit             int32         `yaml:"max_export_limit"`
-	SeqCLIMaxSearchLimit       int           `yaml:"seq_cli_max_search_limit"`
-	MaxParallelExportRequests  int           `yaml:"max_parallel_export_requests"`
-	MaxAggregationsPerRequest  int           `yaml:"max_aggregations_per_request"`
-	MaxBucketsPerAggregationTs int           `yaml:"max_buckets_per_aggregation_ts"`
-	EventsCacheTTL             time.Duration `yaml:"events_cache_ttl"`
-	PinnedFields               []PinnedField `yaml:"pinned_fields"`
-	LogsLifespanCacheKey       string        `yaml:"logs_lifespan_cache_key"`
-	LogsLifespanCacheTTL       time.Duration `yaml:"logs_lifespan_cache_ttl"`
-	FieldsCacheTTL             time.Duration `yaml:"fields_cache_ttl"`
-	Masking                    *Masking      `yaml:"masking"`
+	SeqAPIOptions `yaml:",inline"`
+	Envs          map[string]SeqAPIEnv `yaml:"envs,omitempty"`
+}
+
+type SeqAPIEnv struct {
+	SeqDB   string         `yaml:"seq_db"`
+	Options *SeqAPIOptions `yaml:"options,omitempty"`
+}
+
+type SeqAPIOptions struct {
+	MaxSearchLimit             int32         `yaml:"max_search_limit,omitempty"`
+	MaxSearchTotalLimit        int64         `yaml:"max_search_total_limit,omitempty"`
+	MaxSearchOffsetLimit       int32         `yaml:"max_search_offset_limit,omitempty"`
+	MaxExportLimit             int32         `yaml:"max_export_limit,omitempty"`
+	SeqCLIMaxSearchLimit       int           `yaml:"seq_cli_max_search_limit,omitempty"`
+	MaxParallelExportRequests  int           `yaml:"max_parallel_export_requests,omitempty"`
+	MaxAggregationsPerRequest  int           `yaml:"max_aggregations_per_request,omitempty"`
+	MaxBucketsPerAggregationTs int           `yaml:"max_buckets_per_aggregation_ts,omitempty"`
+	EventsCacheTTL             time.Duration `yaml:"events_cache_ttl,omitempty"`
+	PinnedFields               []PinnedField `yaml:"pinned_fields,omitempty"`
+	LogsLifespanCacheKey       string        `yaml:"logs_lifespan_cache_key,omitempty"`
+	LogsLifespanCacheTTL       time.Duration `yaml:"logs_lifespan_cache_ttl,omitempty"`
+	FieldsCacheTTL             time.Duration `yaml:"fields_cache_ttl,omitempty"`
+	Masking                    *Masking      `yaml:"masking,omitempty"`
 }
 
 type Masking struct {

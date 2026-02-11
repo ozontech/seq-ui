@@ -73,7 +73,9 @@ func TestServeGetAggregation(t *testing.T) {
 			wantRespBody: `{"aggregation":{"buckets":[{"key":"test1","value":1},{"key":"test2","value":2}]},"aggregations":[{"buckets":[{"key":"test1","value":1},{"key":"test2","value":2}]}],"error":{"code":"ERROR_CODE_NO"},"partialResponse":false}`,
 			wantStatus:   http.StatusOK,
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest: 3,
+				SeqAPIOptions: config.SeqAPIOptions{
+					MaxAggregationsPerRequest: 3,
+				},
 			},
 		},
 		{
@@ -105,7 +107,9 @@ func TestServeGetAggregation(t *testing.T) {
 			wantRespBody: `{"aggregation":{"buckets":[{"key":"test1","value":1},{"key":"test2","value":2},{"key":"test3","value":3}]},"aggregations":[{"buckets":[{"key":"test1","value":1},{"key":"test2","value":2},{"key":"test3","value":3}]},{"buckets":[{"key":"test1","value":1},{"key":"test2","value":2},{"key":"test3","value":3}]}],"error":{"code":"ERROR_CODE_NO"},"partialResponse":false}`,
 			wantStatus:   http.StatusOK,
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest: 3,
+				SeqAPIOptions: config.SeqAPIOptions{
+					MaxAggregationsPerRequest: 3,
+				},
 			},
 		},
 
@@ -150,7 +154,9 @@ func TestServeGetAggregation(t *testing.T) {
 			wantRespBody: `{"aggregation":{"buckets":[{"key":"test1","value":1,"not_exists":10,"quantiles":[100,150]},{"key":"test2","value":2,"not_exists":10,"quantiles":[100,150]},{"key":"test3","value":3,"not_exists":10,"quantiles":[100,150]}]},"aggregations":[{"buckets":[{"key":"test1","value":1,"not_exists":10,"quantiles":[100,150]},{"key":"test2","value":2,"not_exists":10,"quantiles":[100,150]},{"key":"test3","value":3,"not_exists":10,"quantiles":[100,150]}]},{"buckets":[{"key":"test1","value":1,"not_exists":10,"quantiles":[100,150]},{"key":"test2","value":2,"not_exists":10,"quantiles":[100,150]},{"key":"test3","value":3,"not_exists":10,"quantiles":[100,150]}]}],"error":{"code":"ERROR_CODE_NO"},"partialResponse":false}`,
 			wantStatus:   http.StatusOK,
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest: 3,
+				SeqAPIOptions: config.SeqAPIOptions{
+					MaxAggregationsPerRequest: 3,
+				},
 			},
 		},
 		{
@@ -174,7 +180,9 @@ func TestServeGetAggregation(t *testing.T) {
 			wantRespBody: `{"aggregation":{"buckets":[]},"aggregations":[],"error":{"code":"ERROR_CODE_PARTIAL_RESPONSE","message":"partial response"},"partialResponse":true}`,
 			wantStatus:   http.StatusOK,
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest: 3,
+				SeqAPIOptions: config.SeqAPIOptions{
+					MaxAggregationsPerRequest: 3,
+				},
 			},
 		},
 		{
@@ -187,7 +195,9 @@ func TestServeGetAggregation(t *testing.T) {
 			reqBody:    formatReqBody("", aggregationQueries{{}, {}, {}}),
 			wantStatus: http.StatusBadRequest,
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest: 2,
+				SeqAPIOptions: config.SeqAPIOptions{
+					MaxAggregationsPerRequest: 2,
+				},
 			},
 		},
 		{
@@ -204,7 +214,9 @@ func TestServeGetAggregation(t *testing.T) {
 			},
 			wantStatus: http.StatusInternalServerError,
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest: 3,
+				SeqAPIOptions: config.SeqAPIOptions{
+					MaxAggregationsPerRequest: 3,
+				},
 			},
 		},
 	}

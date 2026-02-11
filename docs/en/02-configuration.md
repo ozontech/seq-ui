@@ -372,6 +372,7 @@ clients:
   initial_retry_backoff:
   max_retry_backoff:
   grpc_keepalive_params:
+  seq_db:
 ```
 
 **`seq_db_addrs`** *`[]string`* *`required`*
@@ -431,6 +432,27 @@ If gRPC keepalive params are not set, no keepalive params are applied to gRPC cl
 + **`permit_without_stream`** *`bool`* *`default=false`*
 
   If set to `true`, client sends keepalive pings even with no active RPCs. Otherwise, when there are no active RPCs, `time` and `timeout` will be ignored and no keepalive pings will be sent.
+
+**`SeqDB`** *`[]SeqDBClient`* *`required`*
+
+List of SeqDB client configurations.
+
+`SeqDB` fields:
+
++ **`id`** *`string`* *`required`*
+
+  Unique client identifier.
+
++ **`addrs`** *`[]string`* *`optional`*
++ **`timeout`** *`string`* *`optional`*
++ **`avg_doc_size`** *`int`* *`optional`*
++ **`request_retries`** *`int`* *`optional`*
++ **`initial_retry_backoff`** *`string`* *`optional`*
++ **`max_retry_backoff`** *`string`* *`optional`*
++ **`proxy_client_mode`** *`string`* *`optional`*
++ **`grpc_keepalive_params`** *`GRPCKeepaliveParams`* *`optional`*
+
+Client-specific configuration overrides the corresponding global setting. If parameter is omitted for client, the global value is used.
 
 ## Handlers
 
@@ -605,6 +627,21 @@ Config for `/seqapi` API handlers.
   + **`values`** *`[]string`* *`required`*
 
     List of event field values to filter.
+  
+  
++ **`envs`** *`map[string]SeqAPIEnv`* *`optional`*
+
+  Environment-specific configurations
+
+  `SeqAPIEnv` fields:
+
+  + **`seq_db`** *`string`* *`required`*
+  
+    SeqDB client identifier from `clients.seq_db` configuration.
+
+  + **`options`** *`SeqAPIOptions`* *`optional`*
+  
+  Environment-specific API parameters. These settings override the corresponding global values defined in the root `seq_api` section.
 
 ### Error groups
 
