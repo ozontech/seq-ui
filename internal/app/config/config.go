@@ -205,6 +205,18 @@ type GRPCKeepaliveParams struct {
 	PermitWithoutStream bool `yaml:"permit_without_stream"`
 }
 
+type SeqDBClient struct {
+	ID                  string               `yaml:"id"`
+	Timeout             time.Duration        `yaml:"timeout"`
+	AvgDocSize          int                  `yaml:"avg_doc_size"`
+	Addrs               []string             `yaml:"addrs"`
+	RequestRetries      int                  `yaml:"request_retries"`
+	InitialRetryBackoff time.Duration        `yaml:"initial_retry_backoff"`
+	MaxRetryBackoff     time.Duration        `yaml:"max_retry_backoff"`
+	ClientMode          string               `yaml:"client_mode"`
+	GRPCKeepaliveParams *GRPCKeepaliveParams `yaml:"grpc_keepalive_params"`
+}
+
 type Clients struct {
 	SeqDBTimeout        time.Duration        `yaml:"seq_db_timeout"`
 	SeqDBAvgDocSize     int                  `yaml:"seq_db_avg_doc_size"`
@@ -214,6 +226,7 @@ type Clients struct {
 	MaxRetryBackoff     time.Duration        `yaml:"max_retry_backoff"`
 	ProxyClientMode     string               `yaml:"proxy_client_mode"`
 	GRPCKeepaliveParams *GRPCKeepaliveParams `yaml:"grpc_keepalive_params"`
+	SeqDB               []SeqDBClient        `yaml:"seq_db"`
 }
 
 type Handlers struct {
@@ -229,6 +242,16 @@ type PinnedField struct {
 }
 
 type SeqAPI struct {
+	SeqAPIOptions `yaml:",inline"`
+	Envs          map[string]SeqAPIEnv `yaml:"envs"`
+}
+
+type SeqAPIEnv struct {
+	SeqDB   string         `yaml:"seq_db_id"`
+	Options *SeqAPIOptions `yaml:"options"`
+}
+
+type SeqAPIOptions struct {
 	MaxSearchLimit             int32         `yaml:"max_search_limit"`
 	MaxSearchTotalLimit        int64         `yaml:"max_search_total_limit"`
 	MaxSearchOffsetLimit       int32         `yaml:"max_search_offset_limit"`

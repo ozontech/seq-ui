@@ -101,8 +101,10 @@ func TestServeGetAggregationTs(t *testing.T) {
 			wantRespBody: `{"aggregations":[{"data":{"result":[{"metric":{"test_count1":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count1":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count1":"test3"},"values":[{"timestamp":1695637233,"value":3}]}]}},{"data":{"result":[{"metric":{"test_count2":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count2":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count2":"test3"},"values":[{"timestamp":1695637233,"value":3}]}]}}],"error":{"code":"ERROR_CODE_NO"}}`,
 			wantStatus:   http.StatusOK,
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest:  3,
-				MaxBucketsPerAggregationTs: 100,
+				SeqAPIOptions: config.SeqAPIOptions{
+					MaxAggregationsPerRequest:  3,
+					MaxBucketsPerAggregationTs: 100,
+				},
 			},
 		},
 		{
@@ -158,8 +160,10 @@ func TestServeGetAggregationTs(t *testing.T) {
 			wantRespBody: `{"aggregations":[{"data":{"result":[{"metric":{"quantile":"p95","service":"test1"},"values":[{"timestamp":1695637231,"value":100}]},{"metric":{"quantile":"p99","service":"test1"},"values":[{"timestamp":1695637231,"value":150}]},{"metric":{"quantile":"p95","service":"test2"},"values":[{"timestamp":1695637232,"value":100}]},{"metric":{"quantile":"p99","service":"test2"},"values":[{"timestamp":1695637232,"value":150}]},{"metric":{"quantile":"p95","service":"test3"},"values":[{"timestamp":1695637233,"value":100}]},{"metric":{"quantile":"p99","service":"test3"},"values":[{"timestamp":1695637233,"value":150}]}]}}],"error":{"code":"ERROR_CODE_NO"}}`,
 			wantStatus:   http.StatusOK,
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest:  3,
-				MaxBucketsPerAggregationTs: 100,
+				SeqAPIOptions: config.SeqAPIOptions{
+					MaxAggregationsPerRequest:  3,
+					MaxBucketsPerAggregationTs: 100,
+				},
 			},
 		},
 		{
@@ -182,8 +186,10 @@ func TestServeGetAggregationTs(t *testing.T) {
 			wantRespBody: `{"aggregations":null,"error":{"code":"ERROR_CODE_PARTIAL_RESPONSE","message":"partial response"}}`,
 			wantStatus:   http.StatusOK,
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest:  3,
-				MaxBucketsPerAggregationTs: 100,
+				SeqAPIOptions: config.SeqAPIOptions{
+					MaxAggregationsPerRequest:  3,
+					MaxBucketsPerAggregationTs: 100,
+				},
 			},
 		},
 		{
@@ -196,8 +202,10 @@ func TestServeGetAggregationTs(t *testing.T) {
 			reqBody:    formatReqBody(aggregationTsQueries{{}, {}, {}}),
 			wantStatus: http.StatusBadRequest,
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest:  2,
-				MaxBucketsPerAggregationTs: 100,
+				SeqAPIOptions: config.SeqAPIOptions{
+					MaxAggregationsPerRequest:  2,
+					MaxBucketsPerAggregationTs: 100,
+				},
 			},
 		},
 		{
@@ -209,8 +217,10 @@ func TestServeGetAggregationTs(t *testing.T) {
 			}),
 			wantStatus: http.StatusBadRequest,
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest:  3,
-				MaxBucketsPerAggregationTs: 8,
+				SeqAPIOptions: config.SeqAPIOptions{
+					MaxAggregationsPerRequest:  3,
+					MaxBucketsPerAggregationTs: 8,
+				},
 			},
 		},
 		{
@@ -226,7 +236,9 @@ func TestServeGetAggregationTs(t *testing.T) {
 			},
 			wantStatus: http.StatusInternalServerError,
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest: 3,
+				SeqAPIOptions: config.SeqAPIOptions{
+					MaxAggregationsPerRequest: 3,
+				},
 			},
 		},
 	}

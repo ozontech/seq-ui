@@ -47,4 +47,4 @@ func (a *API) serveRestore(w http.ResponseWriter, r *http.Request) {
 
 type restoreRequest struct {
 	SessionID string `json:"session_id"`
-} // @name massexport.v1.RestoreRequest
+} //	@name	massexport.v1.RestoreRequest
