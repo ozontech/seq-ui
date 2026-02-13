@@ -193,17 +193,33 @@ func (s *Service) DiffByReleases(
 	if len(req.Releases) < 2 {
 		return nil, 0, types.NewErrInvalidRequestField("length of'releases' must be at least 2")
 	}
-	for _, r := range req.Releases {
-		if r == "" {
-			return nil, 0, types.NewErrInvalidRequestField("each element in 'releases' must be non-empty")
-		}
+	if slices.Contains(req.Releases, "") {
+		return nil, 0, types.NewErrInvalidRequestField("each element in 'releases' must be non-empty")
 	}
 
 	if req.Limit == 0 {
 		req.Limit = defaultLimit
 	}
 
-	diffGroups, total, err := s.repo.DiffByReleases(ctx, req)
+	eg, ctx := errgroup.WithContext(ctx)
+
+	var diffGroups []types.DiffGroup
+	eg.Go(func() error {
+		var err error
+		diffGroups, err = s.repo.DiffByReleases(ctx, req)
+		return err
+	})
+
+	var total uint64
+	if req.WithTotal {
+		eg.Go(func() error {
+			var err error
+			total, err = s.repo.DiffByReleasesTotal(ctx, req)
+			return err
+		})
+	}
+
+	err := eg.Wait()
 	if err != nil {
 		return nil, 0, fmt.Errorf("diff by releases failed: %w", err)
 	}

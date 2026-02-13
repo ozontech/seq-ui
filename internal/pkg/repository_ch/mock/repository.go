@@ -42,19 +42,33 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 }
 
 // DiffByReleases mocks base method.
-func (m *MockRepository) DiffByReleases(arg0 context.Context, arg1 types.DiffByReleasesRequest) ([]types.DiffGroup, uint64, error) {
+func (m *MockRepository) DiffByReleases(arg0 context.Context, arg1 types.DiffByReleasesRequest) ([]types.DiffGroup, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DiffByReleases", arg0, arg1)
 	ret0, _ := ret[0].([]types.DiffGroup)
-	ret1, _ := ret[1].(uint64)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // DiffByReleases indicates an expected call of DiffByReleases.
 func (mr *MockRepositoryMockRecorder) DiffByReleases(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiffByReleases", reflect.TypeOf((*MockRepository)(nil).DiffByReleases), arg0, arg1)
+}
+
+// DiffByReleasesTotal mocks base method.
+func (m *MockRepository) DiffByReleasesTotal(arg0 context.Context, arg1 types.DiffByReleasesRequest) (uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DiffByReleasesTotal", arg0, arg1)
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DiffByReleasesTotal indicates an expected call of DiffByReleasesTotal.
+func (mr *MockRepositoryMockRecorder) DiffByReleasesTotal(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiffByReleasesTotal", reflect.TypeOf((*MockRepository)(nil).DiffByReleasesTotal), arg0, arg1)
 }
 
 // GetErrorCounts mocks base method.
