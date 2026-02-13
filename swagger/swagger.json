@@ -1760,7 +1760,8 @@
                 "groups_new": {
                     "type": "array",
                     "items": {
-                        "type": "integer"
+                        "type": "string",
+                        "format": "uint64"
                     }
                 },
                 "total": {

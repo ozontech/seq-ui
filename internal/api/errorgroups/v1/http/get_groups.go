@@ -123,7 +123,7 @@ type getGroupsResponse struct {
 	Groups []group `json:"groups"`
 
 	TotalNew  uint64   `json:"total_new"`
-	GroupsNew []uint64 `json:"groups_new"`
+	GroupsNew []string `json:"groups_new" format:"uint64"`
 } //	@name	errorgroups.v1.GetGroupsResponse
 
 type group struct {
