@@ -171,7 +171,71 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 					Meta:     meta,
 				},
 			},
-			wantRespBody: `{"status":"done","request":{"retention":"seconds:60","query":"message:error","from":"2025-08-06T17:37:12.000000123Z","to":"2025-08-06T17:52:12.000000123Z","aggregations":[{"field":"x","group_by":"level","agg_func":"avg","quantiles":[0.9,0.5]},{"field":"y","group_by":"level","agg_func":"sum","interval":"30s"}],"histogram":{"interval":"1s"},"with_docs":true,"size":100},"response":{"events":[{"id":"017a854298010000-850287cfa326a7fc","data":{"level":"3","message":"some error","x":"2"},"time":"2025-08-06T17:51:12.000000123Z"},{"id":"017a854298010000-8502fe7f2aa33df3","data":{"level":"2","message":"some error 2","x":"8"},"time":"2025-08-06T17:50:12.000000123Z"}],"histogram":{"buckets":[{"key":"1","docCount":"7"},{"key":"2","docCount":"9"}]},"aggregations":[{"buckets":[{"key":"3","value":2,"quantiles":[2,1]},{"key":"2","value":8,"not_exists":1,"quantiles":[7,4]}]}],"aggregations_ts":[{"data":{"result":[{"metric":{"level":"33"},"values":[{"timestamp":1754502702,"value":2},{"timestamp":1754502732,"value":5}]},{"metric":{"level":"22"},"values":[{"timestamp":1754502672,"value":8}]}]}}],"total":"2","error":{"code":"ERROR_CODE_NO","message":"some error"},"partialResponse":false},"started_at":"2025-08-06T17:51:42.000000123Z","expires_at":"2025-08-06T17:52:42.000000123Z","progress":1,"disk_usage":"512","meta":"{\"some\":\"meta\"}"}`,
+			wantRespBody: `{"status":"done","request":{"retention":"seconds:60","query":"message:error","from":"2025-08-06T17:37:12.000000123Z","to":"2025-08-06T17:52:12.000000123Z","aggregations":[{"field":"x","group_by":"level","agg_func":"avg","quantiles":[0.9,0.5]},{"field":"y","group_by":"level","agg_func":"sum","interval":"30s"}],"histogram":{"interval":"1s"},"with_docs":true,"size":100},"response":{"events":[{"id":"017a854298010000-850287cfa326a7fc","data":{"level":"3","message":"some error","x":"2"},"time":"2025-08-06T17:51:12.000000123Z"},{"id":"017a854298010000-8502fe7f2aa33df3","data":{"level":"2","message":"some error 2","x":"8"},"time":"2025-08-06T17:50:12.000000123Z"}],"histogram":{"buckets":[{"key":"1","docCount":"7"},{"key":"2","docCount":"9"}]},"aggregations":[{"buckets":[{"key":"3","value":2,"quantiles":[2,1]},{"key":"2","value":8,"not_exists":1,"quantiles":[7,4]}]}],"aggregations_ts":[{"data":{"result":[{"metric":{"level":"33"},"values":[{"timestamp":1754502702,"value":2},{"timestamp":1754502732,"value":5}]},{"metric":{"level":"22"},"values":[{"timestamp":1754502672,"value":8}]}]}}],"total":"2","error":{"code":"ERROR_CODE_NO","message":"some error"}},"started_at":"2025-08-06T17:51:42.000000123Z","expires_at":"2025-08-06T17:52:42.000000123Z","progress":1,"disk_usage":"512","meta":"{\"some\":\"meta\"}","error":{"code":"ERROR_CODE_NO"}}`,
+			wantStatus:   http.StatusOK,
+		},
+		{
+			name:    "partial_response",
+			reqBody: `{"search_id":"c9a34cf8-4c66-484e-9cc2-42979d848656","limit":2,"offset":10,"order":"desc"}`,
+			mockArgs: &mockArgs{
+				proxyReq: &seqapi.FetchAsyncSearchResultRequest{
+					SearchId: mockSearchID,
+					Limit:    2,
+					Offset:   10,
+					Order:    seqapi.Order_ORDER_DESC,
+				},
+				proxyResp: &seqapi.FetchAsyncSearchResultResponse{
+					Status: seqapi.AsyncSearchStatus_ASYNC_SEARCH_STATUS_DONE,
+					Request: &seqapi.StartAsyncSearchRequest{
+						Retention: durationpb.New(60 * time.Second),
+						Query:     "message:error",
+						From:      timestamppb.New(mockTime.Add(-15 * time.Minute)),
+						To:        timestamppb.New(mockTime),
+						WithDocs:  true,
+						Size:      100,
+					},
+					Response: &seqapi.SearchResponse{
+						Events: []*seqapi.Event{
+							{
+								Id: "017a854298010000-850287cfa326a7fc",
+								Data: map[string]string{
+									"level":   "3",
+									"message": "some error",
+									"x":       "2",
+								},
+								Time: timestamppb.New(mockTime.Add(-1 * time.Minute)),
+							},
+							{
+								Id: "017a854298010000-8502fe7f2aa33df3",
+								Data: map[string]string{
+									"level":   "2",
+									"message": "some error 2",
+									"x":       "8",
+								},
+								Time: timestamppb.New(mockTime.Add(-2 * time.Minute)),
+							},
+						},
+						Total: 2,
+						Error: &seqapi.Error{
+							Code:    seqapi.ErrorCode_ERROR_CODE_NO,
+							Message: "some error",
+						},
+					},
+					StartedAt: timestamppb.New(mockTime.Add(-30 * time.Second)),
+					ExpiresAt: timestamppb.New(mockTime.Add(30 * time.Second)),
+					Progress:  1,
+					DiskUsage: 512,
+					Error: &seqapi.Error{
+						Code:    seqapi.ErrorCode_ERROR_CODE_PARTIAL_RESPONSE,
+						Message: "partial response",
+					},
+				},
+				repoResp: types.AsyncSearchInfo{
+					SearchID: mockSearchID,
+					Meta:     meta,
+				},
+			},
+			wantRespBody: `{"status":"done","request":{"retention":"seconds:60","query":"message:error","from":"2025-08-06T17:37:12.000000123Z","to":"2025-08-06T17:52:12.000000123Z","with_docs":true,"size":100},"response":{"events":[{"id":"017a854298010000-850287cfa326a7fc","data":{"level":"3","message":"some error","x":"2"},"time":"2025-08-06T17:51:12.000000123Z"},{"id":"017a854298010000-8502fe7f2aa33df3","data":{"level":"2","message":"some error 2","x":"8"},"time":"2025-08-06T17:50:12.000000123Z"}],"total":"2","error":{"code":"ERROR_CODE_NO","message":"some error"}},"started_at":"2025-08-06T17:51:42.000000123Z","expires_at":"2025-08-06T17:52:42.000000123Z","progress":1,"disk_usage":"512","meta":"{\"some\":\"meta\"}","error":{"code":"ERROR_CODE_PARTIAL_RESPONSE","message":"partial response"}}`,
 			wantStatus:   http.StatusOK,
 		},
 		{

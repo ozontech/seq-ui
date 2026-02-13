@@ -105,16 +105,16 @@ type fetchAsyncSearchResultResponse struct {
 	Progress   float64                 `json:"progress"`
 	DiskUsage  string                  `json:"disk_usage" format:"int64"`
 	Meta       string                  `json:"meta"`
+	Error      apiError                `json:"error"`
 } //	@name	seqapi.v1.FetchAsyncSearchResultResponse
 
 type asyncSearchResponse struct {
-	Events          events         `json:"events"`
-	Histogram       *histogram     `json:"histogram,omitempty"`
-	Aggregations    aggregations   `json:"aggregations,omitempty"`
-	AggregationsTs  aggregationsTs `json:"aggregations_ts,omitempty"`
-	Total           string         `json:"total,omitempty" format:"int64"`
-	Error           apiError       `json:"error"`
-	PartialResponse bool           `json:"partialResponse"`
+	Events         events         `json:"events"`
+	Histogram      *histogram     `json:"histogram,omitempty"`
+	Aggregations   aggregations   `json:"aggregations,omitempty"`
+	AggregationsTs aggregationsTs `json:"aggregations_ts,omitempty"`
+	Total          string         `json:"total,omitempty" format:"int64"`
+	Error          apiError       `json:"error"`
 } // @name seqapi.v1.AsyncSearchResponse
 
 func fetchAsyncSearchResultResponseFromProto(resp *seqapi.FetchAsyncSearchResultResponse) fetchAsyncSearchResultResponse {
@@ -134,16 +134,16 @@ func fetchAsyncSearchResultResponseFromProto(resp *seqapi.FetchAsyncSearchResult
 		Progress:   resp.Progress,
 		DiskUsage:  strconv.FormatUint(resp.DiskUsage, 10),
 		Meta:       resp.Meta,
+		Error:      apiErrorFromProto(resp.GetError()),
 	}
 }
 
 func asyncSearchResponseFromProto(proto *seqapi.SearchResponse, reqAggs []*seqapi.AggregationQuery) asyncSearchResponse {
 	sr := asyncSearchResponse{
-		Events:          eventsFromProto(proto.GetEvents()),
-		Histogram:       histogramFromProto(proto.GetHistogram(), false),
-		Error:           apiErrorFromProto(proto.GetError()),
-		PartialResponse: proto.GetPartialResponse(),
-		Total:           strconv.FormatInt(proto.GetTotal(), 10),
+		Events:    eventsFromProto(proto.GetEvents()),
+		Histogram: histogramFromProto(proto.GetHistogram(), false),
+		Error:     apiErrorFromProto(proto.GetError()),
+		Total:     strconv.FormatInt(proto.GetTotal(), 10),
 	}
 
 	// split aggs and aggs with timeseries
