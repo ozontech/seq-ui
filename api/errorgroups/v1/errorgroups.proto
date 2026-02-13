@@ -135,11 +135,12 @@ message DiffByReleasesResponse {
   }
 
   message Group {
-    uint64 group_hash = 1;
+    uint64 hash = 1;
     string message = 2;
     google.protobuf.Timestamp first_seen_at = 3;
     google.protobuf.Timestamp last_seen_at = 4;
-    map<string, ReleaseInfo> release_infos = 5;
+    string source = 5;
+    map<string, ReleaseInfo> release_infos = 6;
   }
 
   uint64 total = 1;

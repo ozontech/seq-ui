@@ -13,6 +13,10 @@ import (
 	repositorych "github.com/ozontech/seq-ui/internal/pkg/repository_ch"
 )
 
+const (
+	defaultLimit uint32 = 25
+)
+
 type Service struct {
 	repo           repositorych.Repository
 	logTagsMapping config.LogTagsMapping
@@ -33,7 +37,6 @@ func (s *Service) GetErrorGroups(
 		return nil, 0, types.NewErrInvalidRequestField("'service' must not be empty")
 	}
 
-	const defaultLimit uint32 = 25
 	if req.Limit == 0 {
 		req.Limit = defaultLimit
 	}
@@ -174,5 +177,36 @@ func (s *Service) GetServices(
 	ctx context.Context,
 	req types.GetServicesRequest,
 ) ([]string, error) {
+	if req.Limit == 0 {
+		req.Limit = defaultLimit
+	}
 	return s.repo.GetServices(ctx, req)
+}
+
+func (s *Service) DiffByReleases(
+	ctx context.Context,
+	req types.DiffByReleasesRequest,
+) ([]types.DiffGroup, uint64, error) {
+	if req.Service == "" {
+		return nil, 0, types.NewErrInvalidRequestField("'service' must be non-empty")
+	}
+	if len(req.Releases) < 2 {
+		return nil, 0, types.NewErrInvalidRequestField("length of'releases' must be at least 2")
+	}
+	for _, r := range req.Releases {
+		if r == "" {
+			return nil, 0, types.NewErrInvalidRequestField("each element in 'releases' must be non-empty")
+		}
+	}
+
+	if req.Limit == 0 {
+		req.Limit = defaultLimit
+	}
+
+	diffGroups, total, err := s.repo.DiffByReleases(ctx, req)
+	if err != nil {
+		return nil, 0, fmt.Errorf("diff by releases failed: %w", err)
+	}
+
+	return diffGroups, total, err
 }

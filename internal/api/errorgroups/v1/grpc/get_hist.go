@@ -15,7 +15,7 @@ import (
 )
 
 func (a *API) GetHist(ctx context.Context, req *errorgroups.GetHistRequest) (*errorgroups.GetHistResponse, error) {
-	ctx, span := tracing.StartSpan(ctx, "errorgroups_v1_get_groups")
+	ctx, span := tracing.StartSpan(ctx, "errorgroups_v1_get_hist")
 	defer span.End()
 
 	attributes := []attribute.KeyValue{

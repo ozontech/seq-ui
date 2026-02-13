@@ -100,3 +100,27 @@ type GetServicesRequest struct {
 	Limit  uint32
 	Offset uint32
 }
+
+type DiffByReleasesRequest struct {
+	Service   string
+	Releases  []string
+	Env       *string
+	Source    *string
+	Limit     uint32
+	Offset    uint32
+	Order     ErrorGroupsOrder
+	WithTotal bool
+}
+
+type DiffReleaseInfo struct {
+	SeenTotal uint64
+}
+
+type DiffGroup struct {
+	Hash         uint64
+	Message      string
+	FirstSeenAt  time.Time
+	LastSeenAt   time.Time
+	Source       string
+	ReleaseInfos map[string]DiffReleaseInfo
+}

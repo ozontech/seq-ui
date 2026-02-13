@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
@@ -22,6 +24,7 @@ type Repository interface {
 	GetErrorCounts(context.Context, types.GetErrorGroupDetailsRequest) (types.ErrorGroupCounts, error)
 	GetErrorReleases(context.Context, types.GetErrorGroupReleasesRequest) ([]string, error)
 	GetServices(context.Context, types.GetServicesRequest) ([]string, error)
+	DiffByReleases(context.Context, types.DiffByReleasesRequest) ([]types.DiffGroup, uint64, error)
 }
 
 type repository struct {
@@ -407,7 +410,9 @@ func (r *repository) GetServices(
 		From("services").
 		Where("startsWith(service, ?)", req.Query).
 		Where(sq.NotEq{"service": ""}).
-		OrderBy("service")
+		OrderBy("service").
+		Limit(uint64(req.Limit)).
+		Offset(uint64(req.Offset))
 
 	for col, val := range r.queryFilter {
 		q = q.Where(sq.Eq{col: val})
@@ -415,13 +420,6 @@ func (r *repository) GetServices(
 
 	if req.Env != nil && *req.Env != "" {
 		q = q.Where(sq.Eq{"env": req.Env})
-	}
-
-	if req.Limit > 0 {
-		q = q.Limit(uint64(req.Limit))
-	}
-	if req.Offset > 0 {
-		q = q.Offset(uint64(req.Offset))
 	}
 
 	query, args := q.MustSql()
@@ -442,6 +440,136 @@ func (r *repository) GetServices(
 	}
 
 	return services, nil
+}
+
+func (r *repository) DiffByReleases(
+	ctx context.Context,
+	req types.DiffByReleasesRequest,
+) ([]types.DiffGroup, uint64, error) {
+	where := sq.Eq{
+		"service": req.Service,
+		"release": req.Releases,
+	}
+	for col, val := range r.queryFilter {
+		where[col] = val
+	}
+	if req.Env != nil && *req.Env != "" {
+		where["env"] = *req.Env
+	}
+	if req.Source != nil && *req.Source != "" {
+		where["source"] = *req.Source
+	}
+
+	groupsQ := sqlb.
+		Select(
+			"_group_hash",
+			"source",
+			"any(message) as message",
+			"minMerge(first_seen_at) as first_seen_at",
+			"maxMerge(last_seen_at) as last_seen_at",
+		).
+		From("error_groups").
+		Where(where).
+		GroupBy("_group_hash", "source")
+
+	metricLabels := []string{"error_groups", "SELECT"}
+
+	var total uint64
+	if req.WithTotal {
+		totalQ := sqlb.Select("count()").FromSelect(groupsQ, "groupsQ")
+
+		totalQuery, args := totalQ.MustSql()
+		row := r.conn.QueryRow(ctx, metricLabels, totalQuery, args...)
+
+		if err := row.Scan(&total); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, 0, nil
+			}
+			incErrorMetric(err, metricLabels)
+			return nil, 0, fmt.Errorf("failed to get groups total count: %w", err)
+		}
+	}
+
+	switch req.Order {
+	case types.OrderFrequent:
+		groupsQ = groupsQ.OrderBy("countMerge(seen_total) DESC")
+	case types.OrderLatest:
+		groupsQ = groupsQ.OrderBy("last_seen_at DESC")
+	case types.OrderOldest:
+		groupsQ = groupsQ.OrderBy("first_seen_at")
+	}
+
+	groupsQ = groupsQ.
+		Limit(uint64(req.Limit)).
+		Offset(uint64(req.Offset))
+
+	groupsQuery, args := groupsQ.MustSql()
+	rows, err := r.conn.Query(ctx, metricLabels, groupsQuery, args...)
+	if err != nil {
+		incErrorMetric(err, metricLabels)
+		return nil, 0, fmt.Errorf("failed to get error groups: %w", err)
+	}
+
+	var (
+		diffGroups []types.DiffGroup
+		idxByHash  map[uint64]int
+	)
+	for rows.Next() {
+		group := types.DiffGroup{
+			ReleaseInfos: make(map[string]types.DiffReleaseInfo),
+		}
+
+		err = rows.Scan(
+			&group.Hash,
+			&group.Source,
+			&group.Message,
+			&group.FirstSeenAt,
+			&group.LastSeenAt,
+		)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to scan row: %w", err)
+		}
+
+		diffGroups = append(diffGroups, group)
+		idxByHash[group.Hash] = len(diffGroups) - 1
+	}
+
+	where["_group_hash"] = slices.Collect(maps.Keys(idxByHash))
+
+	q := sqlb.
+		Select(
+			"_group_hash",
+			"release",
+			"countMerge(seen_total) as seen_total",
+		).
+		From("error_groups").
+		Where(where).
+		GroupBy("_group_hash", "release")
+
+	query, args := q.MustSql()
+	rows, err = r.conn.Query(ctx, metricLabels, query, args...)
+	if err != nil {
+		incErrorMetric(err, metricLabels)
+		return nil, 0, fmt.Errorf("failed to get error groups by release: %w", err)
+	}
+
+	for rows.Next() {
+		var (
+			hash, seenTotal uint64
+			release         string
+		)
+		if err := rows.Scan(&hash, &release, &seenTotal); err != nil {
+			return nil, 0, fmt.Errorf("failed to scan row: %w", err)
+		}
+
+		if idx, ok := idxByHash[hash]; ok {
+			diffGroups[idx].ReleaseInfos[release] = types.DiffReleaseInfo{
+				SeenTotal: seenTotal,
+			}
+		}
+	}
+
+	return diffGroups, total, nil
 }
 
 func orderBy(q sq.SelectBuilder, o types.ErrorGroupsOrder, sub bool) sq.SelectBuilder {
