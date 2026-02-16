@@ -411,9 +411,7 @@ func (r *repository) GetServices(
 		From("services").
 		Where("startsWith(service, ?)", req.Query).
 		Where(sq.NotEq{"service": ""}).
-		OrderBy("service").
-		Limit(uint64(req.Limit)).
-		Offset(uint64(req.Offset))
+		OrderBy("service")
 
 	for col, val := range r.queryFilter {
 		q = q.Where(sq.Eq{col: val})
@@ -421,6 +419,13 @@ func (r *repository) GetServices(
 
 	if req.Env != nil && *req.Env != "" {
 		q = q.Where(sq.Eq{"env": req.Env})
+	}
+
+	if req.Limit > 0 {
+		q = q.Limit(uint64(req.Limit))
+	}
+	if req.Offset > 0 {
+		q = q.Offset(uint64(req.Offset))
 	}
 
 	query, args := q.MustSql()

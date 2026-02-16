@@ -177,9 +177,6 @@ func (s *Service) GetServices(
 	ctx context.Context,
 	req types.GetServicesRequest,
 ) ([]string, error) {
-	if req.Limit == 0 {
-		req.Limit = defaultLimit
-	}
 	return s.repo.GetServices(ctx, req)
 }
 
