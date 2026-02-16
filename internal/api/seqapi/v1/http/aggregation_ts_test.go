@@ -27,7 +27,7 @@ func TestServeGetAggregationTs(t *testing.T) {
 	to := from.Add(5 * time.Second)
 	interval := "1s"
 	interval2 := "3000ms"
-	bucketQuantity := "2000ms"
+	BucketUnit := "2000ms"
 
 	formatReqBody := func(aggQueries aggregationTsQueries) string {
 		aggQueriesRaw, err := json.Marshal(aggQueries)
@@ -122,8 +122,8 @@ func TestServeGetAggregationTs(t *testing.T) {
 						Field: "test_count2",
 						Func:  afCount,
 					},
-					Interval:       interval2,
-					BucketQuantity: bucketQuantity,
+					Interval:   interval2,
+					BucketUnit: BucketUnit,
 				},
 			}),
 			mockArgs: &mockArgs{

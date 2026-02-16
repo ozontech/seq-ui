@@ -107,6 +107,7 @@ message AggregationQuery {
   AggFunc func = 4;
   repeated double quantiles = 5;
   optional string interval = 6;
+  optional string bucket_unit = 7;
 }
 
 message SearchRequest {

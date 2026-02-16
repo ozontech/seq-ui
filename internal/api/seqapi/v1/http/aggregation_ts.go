@@ -80,8 +80,8 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	aggIntervals := aggregationts.GetIntervals(httpReq.Aggregations.toProto())
-	bucketQuantities := GetBucketQuantities(httpReq.Aggregations)
-	if err = aggregationts.NormalizeBucketValues(resp.Aggregations, aggIntervals, bucketQuantities); err != nil {
+	bucketUnits := GetbucketUnits(httpReq.Aggregations)
+	if err = aggregationts.NormalizeBucketValues(resp.Aggregations, aggIntervals, bucketUnits); err != nil {
 		wr.Error(fmt.Errorf("failed to get аggregation ts: %w", err), http.StatusBadRequest)
 		return
 	}
@@ -89,23 +89,23 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 	wr.WriteJson(getAggregationTsResponseFromProto(resp, httpReq.Aggregations))
 }
 
-func GetBucketQuantities(aggregations aggregationTsQueries) []*string {
-	bucketQuantities := make([]*string, 0, len(aggregations))
+func GetbucketUnits(aggregations aggregationTsQueries) []*string {
+	bucketUnits := make([]*string, 0, len(aggregations))
 	for _, agg := range aggregations {
-		if agg.Func != afCount || agg.BucketQuantity == "" {
-			bucketQuantities = append(bucketQuantities, nil)
+		if agg.Func != afCount || agg.BucketUnit == "" {
+			bucketUnits = append(bucketUnits, nil)
 			continue
 		}
-		bucketQuantities = append(bucketQuantities, &agg.BucketQuantity)
+		bucketUnits = append(bucketUnits, &agg.BucketUnit)
 	}
 
-	return bucketQuantities
+	return bucketUnits
 }
 
 type aggregationTsQuery struct {
 	aggregationQuery
-	Interval       string `json:"interval,omitempty" format:"duration" example:"1m"`
-	BucketQuantity string `json:"bucket_quantity,omitempty" format:"duration" example:"1m"`
+	Interval   string `json:"interval,omitempty" format:"duration" example:"1m"`
+	BucketUnit string `json:"bucket_unit,omitempty" format:"duration" example:"10s"`
 } //	@name	seqapi.v1.AggregationTsQuery
 
 func (aq aggregationTsQuery) toProto() *seqapi.AggregationQuery {
@@ -114,6 +114,11 @@ func (aq aggregationTsQuery) toProto() *seqapi.AggregationQuery {
 	if aq.Interval != "" {
 		q.Interval = new(string)
 		*q.Interval = aq.Interval
+	}
+
+	if aq.BucketUnit != "" {
+		q.BucketUnit = new(string)
+		*q.BucketUnit = aq.BucketUnit
 	}
 
 	return q

@@ -2031,10 +2031,10 @@
                         }
                     ]
                 },
-                "bucket_quantity": {
+                "bucket_unit": {
                     "type": "string",
                     "format": "duration",
-                    "example": "1m"
+                    "example": "10s"
                 },
                 "field": {
                     "type": "string"
