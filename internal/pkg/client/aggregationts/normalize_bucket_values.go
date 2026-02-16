@@ -23,6 +23,8 @@ func NormalizeBucketValues(aggregations []*seqapi.Aggregation, aggIntervals, buc
 
 		BucketUnitDenominator := time.Second
 		if i < len(bucketUnits) && bucketUnits[i] != nil {
+			agg.BucketUnit = *bucketUnits[i]
+
 			BucketUnitDenominator, err = parseBucketUnitDenominator(bucketUnits[i])
 			if err != nil {
 				return fmt.Errorf("failed to parse bucket unit: %w", err)

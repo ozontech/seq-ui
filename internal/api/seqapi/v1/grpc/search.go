@@ -108,7 +108,5 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	aggregationts.SetBucketUnits(resp.Aggregations, bucketUnits)
-
 	return resp, nil
 }

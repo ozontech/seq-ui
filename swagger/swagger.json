@@ -1979,9 +1979,6 @@
         "seqapi.v1.AggregationSeries": {
             "type": "object",
             "properties": {
-                "bucket_unit": {
-                    "type": "string"
-                },
                 "metric": {
                     "type": "object",
                     "additionalProperties": {
@@ -2002,6 +1999,9 @@
                 "data": {
                     "type": "object",
                     "properties": {
+                        "bucket_unit": {
+                            "type": "string"
+                        },
                         "result": {
                             "type": "array",
                             "items": {

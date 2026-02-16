@@ -74,8 +74,7 @@ type MakeAggOpts struct {
 
 func MakeAggregation(bucketCount int, opts *MakeAggOpts) *seqapi.Aggregation {
 	agg := &seqapi.Aggregation{
-		Buckets:    make([]*seqapi.Aggregation_Bucket, 0, bucketCount),
-		BucketUnit: "count/s",
+		Buckets: make([]*seqapi.Aggregation_Bucket, 0, bucketCount),
 	}
 	if opts != nil && opts.BucketUnit != "" {
 		agg.BucketUnit = opts.BucketUnit

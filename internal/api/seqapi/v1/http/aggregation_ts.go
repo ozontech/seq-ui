@@ -91,9 +91,14 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 
 func GetbucketUnits(aggregations aggregationTsQueries) []*string {
 	bucketUnits := make([]*string, 0, len(aggregations))
+	defaultBucketUnit := "count/1s"
 	for _, agg := range aggregations {
-		if agg.Func != afCount || agg.BucketUnit == "" {
+		if agg.Func != afCount {
 			bucketUnits = append(bucketUnits, nil)
+			continue
+		}
+		if agg.BucketUnit == "" {
+			bucketUnits = append(bucketUnits, &defaultBucketUnit)
 			continue
 		}
 		bucketUnits = append(bucketUnits, &agg.BucketUnit)
@@ -159,9 +164,8 @@ type aggregationTsBucket struct {
 } //	@name	seqapi.v1.AggregationTsBucket
 
 type aggregationSeries struct {
-	Labels     map[string]string     `json:"metric"`
-	Buckets    []aggregationTsBucket `json:"values"`
-	BucketUnit string                `json:"bucket_unit"`
+	Labels  map[string]string     `json:"metric"`
+	Buckets []aggregationTsBucket `json:"values"`
 } //	@name	seqapi.v1.AggregationSeries
 
 type aggregationsSeries []aggregationSeries
@@ -178,15 +182,10 @@ func aggregationsSeriesFromProto(proto []*seqapi.Aggregation_Bucket, reqAgg aggr
 		idx, ok := keyToIdx[labelsHash]
 		if !ok {
 			res = append(res, aggregationSeries{
-				Labels:     labels,
-				BucketUnit: "count/s",
+				Labels: labels,
 			})
 			idx = len(res) - 1
 			keyToIdx[labelsHash] = idx
-
-			if reqAgg.BucketUnit != "" {
-				res[idx].BucketUnit = reqAgg.BucketUnit
-			}
 		}
 
 		res[idx].Buckets = append(res[idx].Buckets, aggregationTsBucket{
@@ -234,13 +233,15 @@ func aggregationsSeriesFromProto(proto []*seqapi.Aggregation_Bucket, reqAgg aggr
 
 type aggregationTs struct {
 	Data struct {
-		Series aggregationsSeries `json:"result"`
+		Series     aggregationsSeries `json:"result"`
+		BucketUnit string             `json:"bucket_unit,omitempty"`
 	} `json:"data"`
 } //	@name	seqapi.v1.AggregationTs
 
 func aggregationTsFromProto(proto *seqapi.Aggregation, reqAgg aggregationTsQuery) aggregationTs {
 	a := aggregationTs{}
 	a.Data.Series = aggregationsSeriesFromProto(proto.Buckets, reqAgg)
+	a.Data.BucketUnit = proto.BucketUnit
 	return a
 }
 
