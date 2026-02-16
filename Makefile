@@ -1,10 +1,6 @@
-# IMAGE ?= ghcr.io/ozontech/seq-ui
-# VERSION ?= $(shell git describe --abbrev=4 --dirty --always --tags)
-# TIME := $(shell date '+%Y-%m-%d_%H:%M:%S')
-
-# IMAGE ?= ghcr.io/ozontech/seq-ui
-IMAGE ?= gitlab-registry.ozon.ru/sre/images/seq-ui-server
-VERSION ?= v0.48.1-8-g69cf #$(shell git describe --abbrev=4 --dirty --always --tags)
+IMAGE ?= ghcr.io/ozontech/seq-ui
+VERSION ?= $(shell git describe --abbrev=4 --dirty --always --tags)
+TIME := $(shell date '+%Y-%m-%d_%H:%M:%S')
 
 MIGRATION_DSN ?= postgresql://localhost/postgres?sslmode=disable&user=postgres&password=postgres
 MIGRATION_DSN_CLICKHOUSE ?= tcp://default@localhost:9000/seq_ui_server
