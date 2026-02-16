@@ -2,10 +2,14 @@
 
 > Despite the fact that there are a huge number of parameters in the configuration, not all of them are supported by UI at the moment. As the UI evolves, more and more of the parameters will be relevant.
 
-The configuration is set via a `yaml`-file and consists of three sections:
+The configuration is set via a `yaml`-file and environment variables.
+`yaml`-file consists of three sections:
 - [server](#server) - seq-ui server configutarion
 - [clients](#clients) - seq-db clients configuration
 - [handlers](#handlers) - seq-ui api handlers configuration
+
+Sections configurable via environment variables:
+- [tracing](#tracing) - seq-ui tracing configuration
 
 You can specify your config file when running seq-ui by providing it with flag `--config`:
 ```shell
@@ -716,3 +720,32 @@ Config for `/massexport` API handlers.
   Max retry backoff if previous query was rate-limited. If it's less than `initial_retry_backoff`, then `initial_retry_backoff` value will be reset to `max_retry_backoff`
 
   > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+
+## Tracing
+
+The tracing configuration is set through environment variables.
+
+```bash
+export TRACING_AGENT_HOST=localhost
+export TRACING_AGENT_PORT=6831
+export TRACING_SAMPLER_PARAM=0.1
+export TRACING_SERVICE_NAME=seq-ui
+```
+
+### Field Details
+
++ **`TRACING_SERVICE_NAME`**  *`string`* *`required`*
+
+  Identifies the service name in tracing systems.
+
++ **`TRACING_AGENT_HOST`** *`string`* *`required`*
+  
+  Defines the host address of the tracing agent (e.g., Jaeger). 
+
++ **`TRACING_AGENT_PORT`** *`string`* *`required`*
+  
+  Port of the tracing agent.
+
++ **`TRACING_SAMPLER_PARAM`** *`float64`* *`required`*
+  
+  Sampling rate parameter. Determines the fraction of requests that will be traced. Must be value between 0.0 and 1.0. For instance, use 0.1 to sample 10% of requests.
