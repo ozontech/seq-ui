@@ -97,5 +97,7 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	aggregationts.SetBucketUnits(resp.Aggregations, bucketUnits)
+
 	return resp, nil
 }

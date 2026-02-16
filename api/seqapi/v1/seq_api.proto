@@ -88,6 +88,7 @@ message Aggregation {
 
   repeated Bucket buckets = 1;
   int64 not_exists = 2;
+  string bucket_unit = 3;
 }
 
 enum AggFunc {

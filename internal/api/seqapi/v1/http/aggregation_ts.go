@@ -159,8 +159,9 @@ type aggregationTsBucket struct {
 } //	@name	seqapi.v1.AggregationTsBucket
 
 type aggregationSeries struct {
-	Labels  map[string]string     `json:"metric"`
-	Buckets []aggregationTsBucket `json:"values"`
+	Labels     map[string]string     `json:"metric"`
+	Buckets    []aggregationTsBucket `json:"values"`
+	BucketUnit string                `json:"bucket_unit"`
 } //	@name	seqapi.v1.AggregationSeries
 
 type aggregationsSeries []aggregationSeries
@@ -177,7 +178,8 @@ func aggregationsSeriesFromProto(proto []*seqapi.Aggregation_Bucket, reqAgg aggr
 		idx, ok := keyToIdx[labelsHash]
 		if !ok {
 			res = append(res, aggregationSeries{
-				Labels: labels,
+				Labels:     labels,
+				BucketUnit: reqAgg.BucketUnit,
 			})
 			idx = len(res) - 1
 			keyToIdx[labelsHash] = idx
