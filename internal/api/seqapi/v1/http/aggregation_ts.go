@@ -179,10 +179,14 @@ func aggregationsSeriesFromProto(proto []*seqapi.Aggregation_Bucket, reqAgg aggr
 		if !ok {
 			res = append(res, aggregationSeries{
 				Labels:     labels,
-				BucketUnit: reqAgg.BucketUnit,
+				BucketUnit: "count/s",
 			})
 			idx = len(res) - 1
 			keyToIdx[labelsHash] = idx
+
+			if reqAgg.BucketUnit != "" {
+				res[idx].BucketUnit = reqAgg.BucketUnit
+			}
 		}
 
 		res[idx].Buckets = append(res[idx].Buckets, aggregationTsBucket{

@@ -20,6 +20,7 @@ func TestGetAggregation(t *testing.T) {
 	query := "message:error"
 	from := time.Now()
 	to := from.Add(time.Second)
+	bucketUnit := "count/3s"
 
 	tests := []struct {
 		name string
@@ -44,8 +45,30 @@ func TestGetAggregation(t *testing.T) {
 				},
 			},
 			resp: &seqapi.GetAggregationResponse{
-				Aggregation:  test.MakeAggregation(3, nil),
 				Aggregations: test.MakeAggregations(2, 3, nil),
+				Error: &seqapi.Error{
+					Code: seqapi.ErrorCode_ERROR_CODE_NO,
+				},
+			},
+			cfg: config.SeqAPI{
+				MaxAggregationsPerRequest: 3,
+			},
+		},
+		{
+			name: "ok_normalize_count",
+			req: &seqapi.GetAggregationRequest{
+				Query: query,
+				From:  timestamppb.New(from),
+				To:    timestamppb.New(to),
+				Aggregations: []*seqapi.AggregationQuery{
+					{Field: "test1", Func: seqapi.AggFunc_AGG_FUNC_COUNT, BucketUnit: &bucketUnit},
+					{Field: "test2", Func: seqapi.AggFunc_AGG_FUNC_COUNT, BucketUnit: &bucketUnit},
+				},
+			},
+			resp: &seqapi.GetAggregationResponse{
+				Aggregations: test.MakeAggregations(2, 3, &test.MakeAggOpts{
+					BucketUnit: bucketUnit,
+				}),
 				Error: &seqapi.Error{
 					Code: seqapi.ErrorCode_ERROR_CODE_NO,
 				},
