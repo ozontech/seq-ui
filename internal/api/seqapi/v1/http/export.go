@@ -13,6 +13,7 @@ import (
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 	"go.opentelemetry.io/otel/attribute"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -21,6 +22,7 @@ import (
 //	@Router		/seqapi/v1/export [post]
 //	@ID			seqapi_v1_export
 //	@Tags		seqapi_v1
+//	@Param		env		query		string			false	"Environment"
 //	@Param		body	body		exportRequest	true	"Request body"
 //	@Success	200		{object}	exportResponse	"A successful streaming responses"
 //	@Failure	default	{object}	httputil.Error	"An unexpected error response"
@@ -30,6 +32,18 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+
+	env := getEnvFromContext(ctx)
+	client, options, err := a.GetClientFromEnv(env)
+	if err != nil {
+		wr.Error(err, http.StatusInternalServerError)
+		return
+	}
+
+	md := metadata.New(map[string]string{
+		"env": env,
+	})
+	grpcCtx := metadata.NewOutgoingContext(ctx, md)
 
 	userStr := "_"
 	if userName, err := types.GetUserKey(ctx); err == nil {
@@ -75,6 +89,10 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 			Key:   "fields",
 			Value: attribute.StringSliceValue(httpReq.Fields),
 		},
+		attribute.KeyValue{
+			Key:   "env",
+			Value: attribute.StringValue(env),
+		},
 	)
 
 	if a.exportLimiter.Limited(userStr) {
@@ -84,9 +102,9 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 	}
 	defer a.exportLimiter.Fill(userStr)
 
-	if httpReq.Limit > a.config.MaxExportLimit {
+	if httpReq.Limit > options.MaxExportLimit {
 		wr.Error(fmt.Errorf("too many events are requested: count=%d, max=%d",
-			httpReq.Limit, a.config.MaxExportLimit),
+			httpReq.Limit, options.MaxExportLimit),
 			http.StatusBadRequest)
 		return
 	}
@@ -102,7 +120,7 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = a.seqDB.Export(ctx, httpReq.toProto(), cw)
+	err = client.Export(grpcCtx, httpReq.toProto(), cw)
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return
@@ -111,7 +129,7 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 	wr.WriteHeader(http.StatusOK)
 }
 
-type exportFormat string //	@name seqapi.v1.ExportFormat
+type exportFormat string //	@name	seqapi.v1.ExportFormat
 
 const (
 	efJSONL exportFormat = "jsonl"
@@ -135,7 +153,7 @@ type exportRequest struct {
 	Offset int32        `json:"offset" format:"int32"`
 	Format exportFormat `json:"format" default:"jsonl"`
 	Fields []string     `json:"fields,omitempty"`
-} // @name seqapi.v1.ExportRequest
+} //	@name	seqapi.v1.ExportRequest
 
 func (r exportRequest) toProto() *seqapi.ExportRequest {
 	return &seqapi.ExportRequest{
@@ -151,8 +169,8 @@ func (r exportRequest) toProto() *seqapi.ExportRequest {
 
 // nolint:unused
 //
-// @Description Export response in one of the following formats:<br>
-// @Description - JSONL: {"id":"some-id","data":{"field1":"value1","field2":"value2"},"time":"2024-12-31T10:20:30.0004Z"}<br>
-// @Description - CSV: value1,value2,value3
+//	@Description	Export response in one of the following formats:<br>
+//	@Description	- JSONL: {"id":"some-id","data":{"field1":"value1","field2":"value2"},"time":"2024-12-31T10:20:30.0004Z"}<br>
+//	@Description	- CSV: value1,value2,value3
 type exportResponse struct {
-} // @name seqapi.v1.ExportResponse
+} //	@name	seqapi.v1.ExportResponse

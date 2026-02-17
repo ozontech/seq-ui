@@ -115,7 +115,7 @@ type asyncSearchResponse struct {
 	Total           string         `json:"total,omitempty" format:"int64"`
 	Error           apiError       `json:"error"`
 	PartialResponse bool           `json:"partialResponse"`
-} // @name seqapi.v1.AsyncSearchResponse
+} //	@name	seqapi.v1.AsyncSearchResponse
 
 func fetchAsyncSearchResultResponseFromProto(resp *seqapi.FetchAsyncSearchResultResponse) fetchAsyncSearchResultResponse {
 	var canceledAt *time.Time

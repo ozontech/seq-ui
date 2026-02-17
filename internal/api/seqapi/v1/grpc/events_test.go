@@ -101,7 +101,11 @@ func TestGetEvent(t *testing.T) {
 			t.Parallel()
 
 			seqData := test.APITestData{
-				Cfg: config.SeqAPI{EventsCacheTTL: cacheTTL},
+				Cfg: config.SeqAPI{
+					SeqAPIOptions: config.SeqAPIOptions{
+						EventsCacheTTL: cacheTTL,
+					},
+				},
 			}
 			ctrl := gomock.NewController(t)
 
@@ -357,8 +361,10 @@ func TestGetEventWithMasking(t *testing.T) {
 
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					EventsCacheTTL: cacheTTL,
-					Masking:        tt.maskingCfg,
+					SeqAPIOptions: config.SeqAPIOptions{
+						EventsCacheTTL: cacheTTL,
+						Masking:        tt.maskingCfg,
+					},
 				},
 			}
 			ctrl := gomock.NewController(t)

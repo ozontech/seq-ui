@@ -18,6 +18,16 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 
 	aggregations, _ := json.Marshal(req.Aggregations)
 
+	env, err := a.GetEnvFromContext(ctx)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	client, options, err := a.GetClientFromEnv(env)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	span.SetAttributes(
 		attribute.KeyValue{
 			Key:   "query",
@@ -39,9 +49,13 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 			Key:   "aggregations",
 			Value: attribute.StringValue(string(aggregations)),
 		},
+		attribute.KeyValue{
+			Key:   "env",
+			Value: attribute.StringValue(env),
+		},
 	)
 
-	if err := api_error.CheckAggregationsCount(len(req.Aggregations), a.config.MaxAggregationsPerRequest); err != nil {
+	if err := api_error.CheckAggregationsCount(len(req.Aggregations), options.MaxAggregationsPerRequest); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -51,13 +65,13 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 			continue
 		}
 		if err := api_error.CheckAggregationTsInterval(*agg.Interval, fromRaw, toRaw,
-			a.config.MaxBucketsPerAggregationTs,
+			options.MaxBucketsPerAggregationTs,
 		); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
 
-	resp, err := a.seqDB.GetAggregation(ctx, req)
+	resp, err := client.GetAggregation(ctx, req)
 	if err != nil {
 		return nil, err
 	}

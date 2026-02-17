@@ -16,6 +16,15 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_search")
 	defer span.End()
 
+	env, err := a.GetEnvFromContext(ctx)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	client, options, err := a.GetClientFromEnv(env)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	spanAttributes := []attribute.KeyValue{
 		{
 			Key:   "query",
@@ -45,7 +54,12 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 			Key:   "order",
 			Value: attribute.StringValue(req.GetOrder().String()),
 		},
+		{
+			Key:   "env",
+			Value: attribute.StringValue(env),
+		},
 	}
+
 	if req.Histogram != nil && req.Histogram.Interval != "" {
 		spanAttributes = append(spanAttributes, attribute.KeyValue{
 			Key:   "histogram_interval",
@@ -62,13 +76,13 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 
 	span.SetAttributes(spanAttributes...)
 
-	if err := api_error.CheckSearchLimit(req.Limit, a.config.MaxSearchLimit); err != nil {
+	if err := api_error.CheckSearchLimit(req.Limit, options.MaxSearchLimit); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if err := api_error.CheckAggregationsCount(len(req.Aggregations), a.config.MaxAggregationsPerRequest); err != nil {
+	if err := api_error.CheckAggregationsCount(len(req.Aggregations), options.MaxAggregationsPerRequest); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if err := api_error.CheckSearchOffsetLimit(req.Offset, a.config.MaxSearchOffsetLimit); err != nil {
+	if err := api_error.CheckSearchOffsetLimit(req.Offset, options.MaxSearchOffsetLimit); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	fromRaw, toRaw := req.From.AsTime(), req.To.AsTime()
@@ -77,18 +91,18 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 			continue
 		}
 		if err := api_error.CheckAggregationTsInterval(*agg.Interval, fromRaw, toRaw,
-			a.config.MaxBucketsPerAggregationTs,
+			options.MaxBucketsPerAggregationTs,
 		); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
 
-	resp, err := a.seqDB.Search(ctx, req)
+	resp, err := client.Search(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	if resp.Total > a.config.MaxSearchTotalLimit {
+	if resp.Total > options.MaxSearchTotalLimit {
 		resp.Error = &seqapi.Error{
 			Code:    seqapi.ErrorCode_ERROR_CODE_QUERY_TOO_HEAVY,
 			Message: api_error.ErrQueryTooHeavy.Error(),

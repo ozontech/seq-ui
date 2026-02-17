@@ -205,6 +205,18 @@ type GRPCKeepaliveParams struct {
 	PermitWithoutStream bool `yaml:"permit_without_stream"`
 }
 
+type SeqDBClient struct {
+	ID                  string               `yaml:"id"`
+	Timeout             time.Duration        `yaml:"timeout"`
+	AvgDocSize          int                  `yaml:"avg_doc_size"`
+	Addrs               []string             `yaml:"addrs"`
+	RequestRetries      int                  `yaml:"request_retries"`
+	InitialRetryBackoff time.Duration        `yaml:"initial_retry_backoff"`
+	MaxRetryBackoff     time.Duration        `yaml:"max_retry_backoff"`
+	ClientMode          string               `yaml:"client_mode"`
+	GRPCKeepaliveParams *GRPCKeepaliveParams `yaml:"grpc_keepalive_params"`
+}
+
 type Clients struct {
 	SeqDBTimeout        time.Duration        `yaml:"seq_db_timeout"`
 	SeqDBAvgDocSize     int                  `yaml:"seq_db_avg_doc_size"`
@@ -214,6 +226,7 @@ type Clients struct {
 	MaxRetryBackoff     time.Duration        `yaml:"max_retry_backoff"`
 	ProxyClientMode     string               `yaml:"proxy_client_mode"`
 	GRPCKeepaliveParams *GRPCKeepaliveParams `yaml:"grpc_keepalive_params"`
+	SeqDB               []SeqDBClient        `yaml:"seq_db"`
 }
 
 type Handlers struct {
@@ -229,6 +242,17 @@ type PinnedField struct {
 }
 
 type SeqAPI struct {
+	SeqAPIOptions `yaml:",inline"`
+	Envs          map[string]SeqAPIEnv `yaml:"envs"`
+	DefaultEnv    string               `yaml:"default_env"`
+}
+
+type SeqAPIEnv struct {
+	SeqDB   string         `yaml:"seq_db_id"`
+	Options *SeqAPIOptions `yaml:"options"`
+}
+
+type SeqAPIOptions struct {
 	MaxSearchLimit             int32         `yaml:"max_search_limit"`
 	MaxSearchTotalLimit        int64         `yaml:"max_search_total_limit"`
 	MaxSearchOffsetLimit       int32         `yaml:"max_search_offset_limit"`
@@ -310,6 +334,16 @@ func FromFile(cfgPath string) (Config, error) {
 		)
 	}
 
+	if cfg.Handlers.SeqAPI.DefaultEnv == "" {
+		return Config{}, fmt.Errorf("default_env must be specified in seq_api configuration")
+	}
+	if _, exists := cfg.Handlers.SeqAPI.Envs[cfg.Handlers.SeqAPI.DefaultEnv]; !exists {
+		return Config{}, fmt.Errorf(
+			"default_env '%s' not found in seq_api.envs",
+			cfg.Handlers.SeqAPI.DefaultEnv,
+		)
+	}
+
 	if cfg.Handlers.SeqAPI.MaxAggregationsPerRequest <= 0 {
 		cfg.Handlers.SeqAPI.MaxAggregationsPerRequest = defaultMaxAggregationsPerRequest
 	}
@@ -367,6 +401,62 @@ func FromFile(cfgPath string) (Config, error) {
 		cfg.Server.Cache.Inmemory.BufferItems = defaultInmemCacheBufferItems
 	}
 
+	if cfg.Handlers.SeqAPI.Envs != nil {
+		globalOpts := cfg.Handlers.SeqAPI.SeqAPIOptions
+
+		for envName, envConfig := range cfg.Handlers.SeqAPI.Envs {
+			envCfg := envConfig
+			if envCfg.Options == nil {
+				envCfg.Options = &globalOpts
+			} else {
+				opts := *envCfg.Options
+				if opts.MaxSearchLimit == 0 {
+					opts.MaxSearchLimit = globalOpts.MaxSearchLimit
+				}
+				if opts.MaxSearchTotalLimit == 0 {
+					opts.MaxSearchTotalLimit = globalOpts.MaxSearchTotalLimit
+				}
+				if opts.MaxSearchOffsetLimit == 0 {
+					opts.MaxSearchOffsetLimit = globalOpts.MaxSearchOffsetLimit
+				}
+				if opts.MaxExportLimit == 0 {
+					opts.MaxExportLimit = globalOpts.MaxExportLimit
+				}
+				if opts.SeqCLIMaxSearchLimit == 0 {
+					opts.SeqCLIMaxSearchLimit = globalOpts.SeqCLIMaxSearchLimit
+				}
+				if opts.MaxParallelExportRequests == 0 {
+					opts.MaxParallelExportRequests = globalOpts.MaxParallelExportRequests
+				}
+				if opts.MaxAggregationsPerRequest == 0 {
+					opts.MaxAggregationsPerRequest = globalOpts.MaxAggregationsPerRequest
+				}
+				if opts.MaxBucketsPerAggregationTs == 0 {
+					opts.MaxBucketsPerAggregationTs = globalOpts.MaxBucketsPerAggregationTs
+				}
+				if opts.EventsCacheTTL == 0 {
+					opts.EventsCacheTTL = globalOpts.EventsCacheTTL
+				}
+				if opts.LogsLifespanCacheTTL == 0 {
+					opts.LogsLifespanCacheTTL = globalOpts.LogsLifespanCacheTTL
+				}
+				if opts.FieldsCacheTTL == 0 {
+					opts.FieldsCacheTTL = globalOpts.FieldsCacheTTL
+				}
+				if opts.LogsLifespanCacheKey == "" {
+					opts.LogsLifespanCacheKey = globalOpts.LogsLifespanCacheKey
+				}
+				if opts.PinnedFields == nil {
+					opts.PinnedFields = globalOpts.PinnedFields
+				}
+				if opts.Masking == nil {
+					opts.Masking = globalOpts.Masking
+				}
+				envCfg.Options = &opts
+			}
+			cfg.Handlers.SeqAPI.Envs[envName] = envCfg
+		}
+	}
 	return cfg, nil
 }
 

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -21,7 +22,7 @@ import (
 
 type API struct {
 	config              config.SeqAPI
-	seqDB               seqdb.Client
+	seqDBСlients        map[string]seqdb.Client
 	inmemWithRedisCache cache.Cache
 	redisCache          cache.Cache
 	nowFn               func() time.Time
@@ -35,7 +36,7 @@ type API struct {
 
 func New(
 	cfg config.SeqAPI,
-	seqDB seqdb.Client,
+	seqDBСlients map[string]seqdb.Client,
 	inmemWithRedisCache cache.Cache,
 	redisCache cache.Cache,
 	asyncSearches *asyncsearches.Service,
@@ -52,12 +53,15 @@ func New(
 	}
 	// for export
 	if masker != nil {
-		seqDB.WithMasking(masker)
+		for env, client := range seqDBСlients {
+			client.WithMasking(masker)
+			seqDBСlients[env] = client
+		}
 	}
 
 	return &API{
 		config:              cfg,
-		seqDB:               seqDB,
+		seqDBСlients:        seqDBСlients,
 		inmemWithRedisCache: inmemWithRedisCache,
 		redisCache:          redisCache,
 		nowFn:               time.Now,
@@ -73,6 +77,8 @@ func New(
 func (a *API) Router() chi.Router {
 	mux := chi.NewMux()
 
+	mux.Use(a.envInterceptor)
+
 	mux.Post("/aggregation", a.serveGetAggregation)
 	mux.Post("/aggregation_ts", a.serveGetAggregationTs)
 	mux.Get("/events/{id}", a.serveGetEvent)
@@ -84,6 +90,7 @@ func (a *API) Router() chi.Router {
 	mux.Post("/search", a.serveSearch)
 	mux.Get("/status", a.serveStatus)
 	mux.Get("/logs_lifespan", a.serveGetLogsLifespan)
+	mux.Get("/envs", a.serveGetEnvs)
 
 	// async searches
 	mux.Post("/async_search/start", a.serveStartAsyncSearch)
@@ -106,7 +113,7 @@ func parsePinnedFields(fields []config.PinnedField) []field {
 	return res
 }
 
-type apiErrorCode string //	@name seqapi.v1.ErrorCode
+type apiErrorCode string //	@name	seqapi.v1.ErrorCode
 
 const (
 	aecNo                  apiErrorCode = "ERROR_CODE_NO"
@@ -114,6 +121,22 @@ const (
 	aecQueryTooHeavy       apiErrorCode = "ERROR_CODE_QUERY_TOO_HEAVY"
 	aecTooManyFractionsHit apiErrorCode = "ERROR_CODE_TOO_MANY_FRACTIONS_HIT"
 )
+
+func (a *API) GetClientFromEnv(env string) (seqdb.Client, *config.SeqAPIOptions, error) {
+	envConfig, exists := a.config.Envs[env]
+	if !exists {
+		return nil, nil, fmt.Errorf("env '%s' not found in configuration", env)
+	}
+
+	client, exists := a.seqDBСlients[envConfig.SeqDB]
+	if !exists {
+		return nil, nil, fmt.Errorf("seqdb client '%s' not found for env '%s'", envConfig.SeqDB, env)
+	}
+
+	options := envConfig.Options
+
+	return client, options, nil
+}
 
 func apiErrorCodeFromProto(proto seqapi.ErrorCode) apiErrorCode {
 	switch proto {
@@ -131,7 +154,7 @@ func apiErrorCodeFromProto(proto seqapi.ErrorCode) apiErrorCode {
 type apiError struct {
 	Code    apiErrorCode `json:"code" default:"ERROR_CODE_NO"`
 	Message string       `json:"message,omitempty"`
-} // @name seqapi.v1.Error
+} //	@name	seqapi.v1.Error
 
 func apiErrorFromProto(proto *seqapi.Error) apiError {
 	return apiError{
@@ -160,7 +183,7 @@ func (c *fieldsCache) setFields(rawFields []byte) {
 	c.ts = time.Now()
 }
 
-type asyncSearchStatus string // @name seqapi.v1.AsyncSearchStatus
+type asyncSearchStatus string //	@name	seqapi.v1.AsyncSearchStatus
 
 const (
 	AsyncSearchStatusInProgress asyncSearchStatus = "in_progress"

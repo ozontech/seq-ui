@@ -68,8 +68,8 @@ func (a *API) serveGetMy(w http.ResponseWriter, r *http.Request) {
 type getMyRequest struct {
 	Limit  int `json:"limit"`
 	Offset int `json:"offset"`
-} // @name dashboards.v1.GetMyRequest
+} //	@name	dashboards.v1.GetMyRequest
 
 type getMyResponse struct {
 	Dashboards infos `json:"dashboards"`
-} // @name dashboards.v1.GetMyResponse
+} //	@name	dashboards.v1.GetMyResponse

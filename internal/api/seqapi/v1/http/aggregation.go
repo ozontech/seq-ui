@@ -11,6 +11,7 @@ import (
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 	"go.opentelemetry.io/otel/attribute"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -21,6 +22,7 @@ import (
 //	@Tags		seqapi_v1
 //	@Accept		json
 //	@Produce	json
+//	@Param		env		query		string					false	"Environment"
 //	@Param		body	body		getAggregationRequest	true	"Request body"
 //	@Success	200		{object}	getAggregationResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error			"An unexpected error response"
@@ -38,7 +40,12 @@ func (a *API) serveGetAggregation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	aggsRaw, _ := json.Marshal(httpReq.Aggregations)
-
+	env := getEnvFromContext(ctx)
+	client, options, err := a.GetClientFromEnv(env)
+	if err != nil {
+		wr.Error(err, http.StatusInternalServerError)
+		return
+	}
 	span.SetAttributes(
 		attribute.KeyValue{
 			Key:   "query",
@@ -60,14 +67,21 @@ func (a *API) serveGetAggregation(w http.ResponseWriter, r *http.Request) {
 			Key:   "aggregations",
 			Value: attribute.StringValue(string(aggsRaw)),
 		},
+		attribute.KeyValue{
+			Key:   "env",
+			Value: attribute.StringValue(env),
+		},
 	)
 
-	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), a.config.MaxAggregationsPerRequest); err != nil {
+	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), options.MaxAggregationsPerRequest); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
-
-	resp, err := a.seqDB.GetAggregation(ctx, httpReq.toProto())
+	md := metadata.New(map[string]string{
+		"env": env,
+	})
+	grpcCtx := metadata.NewOutgoingContext(ctx, md)
+	resp, err := client.GetAggregation(grpcCtx, httpReq.toProto())
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return
@@ -100,7 +114,7 @@ func (a *API) serveGetAggregation(w http.ResponseWriter, r *http.Request) {
 	wr.WriteJson(getAggResp)
 }
 
-type aggregationFunc string // @name seqapi.v1.AggregationFunc
+type aggregationFunc string //	@name	seqapi.v1.AggregationFunc
 
 const (
 	afCount    aggregationFunc = "count"
@@ -157,7 +171,7 @@ type aggregationQuery struct {
 	GroupBy   string          `json:"group_by"`
 	Func      aggregationFunc `json:"agg_func" default:"count"`
 	Quantiles []float64       `json:"quantiles,omitempty"`
-} // @name seqapi.v1.AggregationQuery
+} //	@name	seqapi.v1.AggregationQuery
 
 func (aq aggregationQuery) toProto() *seqapi.AggregationQuery {
 	return &seqapi.AggregationQuery{
@@ -187,7 +201,7 @@ type getAggregationRequest struct {
 	To           time.Time          `json:"to" format:"date-time"`
 	AggField     string             `json:"aggField"`
 	Aggregations aggregationQueries `json:"aggregations"`
-} // @name seqapi.v1.GetAggregationRequest
+} //	@name	seqapi.v1.GetAggregationRequest
 
 func (r getAggregationRequest) toProto() *seqapi.GetAggregationRequest {
 	return &seqapi.GetAggregationRequest{
@@ -204,7 +218,7 @@ type aggregationBucket struct {
 	Value     *float64  `json:"value"`
 	NotExists int64     `json:"not_exists,omitempty"`
 	Quantiles []float64 `json:"quantiles,omitempty"`
-} // @name seqapi.v1.AggregationBucket
+} //	@name	seqapi.v1.AggregationBucket
 
 func aggregationBucketFromProto(proto *seqapi.Aggregation_Bucket) aggregationBucket {
 	return aggregationBucket{
@@ -228,7 +242,7 @@ func aggregationBucketsFromProto(proto []*seqapi.Aggregation_Bucket) aggregation
 type aggregation struct {
 	Buckets   aggregationBuckets `json:"buckets"`
 	NotExists int64              `json:"not_exists,omitempty"`
-} // @name seqapi.v1.Aggregation
+} //	@name	seqapi.v1.Aggregation
 
 func aggregationFromProto(proto *seqapi.Aggregation) aggregation {
 	return aggregation{
@@ -255,7 +269,7 @@ type getAggregationResponse struct {
 	Aggregations    aggregations `json:"aggregations"`
 	Error           apiError     `json:"error"`
 	PartialResponse bool         `json:"partialResponse"`
-} // @name seqapi.v1.GetAggregationResponse
+} //	@name	seqapi.v1.GetAggregationResponse
 
 func getAggregationResponseFromProto(proto *seqapi.GetAggregationResponse) getAggregationResponse {
 	return getAggregationResponse{

@@ -78,7 +78,7 @@ message GetDetailsResponse {
         string value = 1;
         uint64 percent = 2;
     }
-    
+
     message Distributions {
         repeated Distribution by_env = 1;
         repeated Distribution by_release = 2;

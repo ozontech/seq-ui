@@ -1,9 +1,12 @@
 package grpc
 
 import (
+	"context"
+	"fmt"
 	"time"
 
 	"go.uber.org/zap"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/ozontech/seq-ui/internal/api/profiles"
 	"github.com/ozontech/seq-ui/internal/app/config"
@@ -20,7 +23,8 @@ type API struct {
 	seqapi.UnimplementedSeqAPIServiceServer
 
 	config              config.SeqAPI
-	seqDB               seqdb.Client
+	seqDBСlients        map[string]seqdb.Client
+	defaultEnv          string
 	inmemWithRedisCache cache.Cache
 	redisCache          cache.Cache
 	nowFn               func() time.Time
@@ -33,7 +37,7 @@ type API struct {
 
 func New(
 	cfg config.SeqAPI,
-	seqDB seqdb.Client,
+	seqDBСlients map[string]seqdb.Client,
 	inmemWithRedisCache cache.Cache,
 	redisCache cache.Cache,
 	asyncSearches *asyncsearches.Service,
@@ -51,7 +55,8 @@ func New(
 
 	return &API{
 		config:              cfg,
-		seqDB:               seqDB,
+		seqDBСlients:        seqDBСlients,
+		defaultEnv:          cfg.DefaultEnv,
 		inmemWithRedisCache: inmemWithRedisCache,
 		redisCache:          redisCache,
 		nowFn:               time.Now,
@@ -72,6 +77,31 @@ func parsePinnedFields(fields []config.PinnedField) []*seqapi.Field {
 		}
 	}
 	return res
+}
+
+func (a *API) GetEnvFromContext(ctx context.Context) (string, error) {
+	md, _ := metadata.FromIncomingContext(ctx)
+	envValues := md.Get("env")
+	if _, exists := a.config.Envs[envValues[0]]; !exists {
+		return "", fmt.Errorf("env '%s' not found in configuration", envValues[0])
+	}
+	return envValues[0], nil
+}
+
+func (a *API) GetClientFromEnv(env string) (seqdb.Client, *config.SeqAPIOptions, error) {
+	envConfig, exists := a.config.Envs[env]
+	if !exists {
+		return nil, nil, fmt.Errorf("env '%s' not found in configuration", env)
+	}
+
+	client, exists := a.seqDBСlients[envConfig.SeqDB]
+	if !exists {
+		return nil, nil, fmt.Errorf("seqdb client '%s' not found for env '%s'", envConfig.SeqDB, env)
+	}
+
+	options := envConfig.Options
+
+	return client, options, nil
 }
 
 type fieldsCache struct {

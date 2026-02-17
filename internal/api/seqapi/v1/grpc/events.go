@@ -8,6 +8,8 @@ import (
 	"github.com/ozontech/seq-ui/tracing"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -15,9 +17,25 @@ func (a *API) GetEvent(ctx context.Context, req *seqapi.GetEventRequest) (*seqap
 	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_get_event")
 	defer span.End()
 
-	span.SetAttributes(attribute.KeyValue{
-		Key: "id", Value: attribute.StringValue(req.GetId()),
-	})
+	env, err := a.GetEnvFromContext(ctx)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	client, options, err := a.GetClientFromEnv(env)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	span.SetAttributes(
+		attribute.KeyValue{
+			Key:   "id",
+			Value: attribute.StringValue(req.GetId()),
+		},
+		attribute.KeyValue{
+			Key:   "env",
+			Value: attribute.StringValue(env),
+		},
+	)
 
 	if cached, err := a.inmemWithRedisCache.Get(ctx, req.Id); err == nil {
 		event := &seqapi.Event{}
@@ -29,7 +47,7 @@ func (a *API) GetEvent(ctx context.Context, req *seqapi.GetEventRequest) (*seqap
 		}
 		logger.Error("failed to unmarshal cached event proto", zap.String("id", req.Id), zap.Error(err))
 	}
-	resp, err := a.seqDB.GetEvent(ctx, req)
+	resp, err := client.GetEvent(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +57,7 @@ func (a *API) GetEvent(ctx context.Context, req *seqapi.GetEventRequest) (*seqap
 	}
 
 	if data, err := proto.Marshal(resp.Event); err == nil {
-		_ = a.inmemWithRedisCache.SetWithTTL(ctx, req.Id, string(data), a.config.EventsCacheTTL)
+		_ = a.inmemWithRedisCache.SetWithTTL(ctx, req.Id, string(data), options.EventsCacheTTL)
 	} else {
 		logger.Error("failed to marshal event proto for caching", zap.String("id", req.Id), zap.Error(err))
 	}

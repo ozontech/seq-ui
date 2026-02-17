@@ -10,6 +10,7 @@ import (
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/metadata"
 )
 
 // serveGetFields go doc.
@@ -17,6 +18,7 @@ import (
 //	@Router		/seqapi/v1/fields [get]
 //	@ID			seqapi_v1_getFields
 //	@Tags		seqapi_v1
+//	@Param		env		query		string				false	"Environment"
 //	@Success	200		{object}	getFieldsResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
 func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
@@ -25,8 +27,20 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 
 	wr := httputil.NewWriter(w)
 
+	env := getEnvFromContext(ctx)
+	client, _, err := a.GetClientFromEnv(env)
+	if err != nil {
+		wr.Error(err, http.StatusInternalServerError)
+		return
+	}
+
+	md := metadata.New(map[string]string{
+		"env": env,
+	})
+	grpcCtx := metadata.NewOutgoingContext(ctx, md)
+
 	if a.fieldsCache == nil {
-		resp, err := a.seqDB.GetFields(ctx, &seqapi.GetFieldsRequest{})
+		resp, err := client.GetFields(grpcCtx, &seqapi.GetFieldsRequest{})
 		if err != nil {
 			wr.Error(err, http.StatusInternalServerError)
 			return
@@ -42,7 +56,7 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := a.seqDB.GetFields(ctx, &seqapi.GetFieldsRequest{})
+	resp, err := client.GetFields(grpcCtx, &seqapi.GetFieldsRequest{})
 	if err != nil {
 		if cached {
 			logger.Error("can't get fields; use cached fields", zap.Error(err))
@@ -76,6 +90,7 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 //	@Router		/seqapi/v1/fields/pinned [get]
 //	@ID			seqapi_v1_getPinnedFields
 //	@Tags		seqapi_v1
+//	@Param		env		query		string				false	"Environment"
 //	@Success	200		{object}	getFieldsResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
 func (a *API) serveGetPinnedFields(w http.ResponseWriter, _ *http.Request) {
@@ -87,7 +102,7 @@ func (a *API) serveGetPinnedFields(w http.ResponseWriter, _ *http.Request) {
 type field struct {
 	Name string `json:"name"`
 	Type string `json:"type" default:"unknown" enums:"unknown,keyword,text"`
-} // @name seqapi.v1.Field
+} //	@name	seqapi.v1.Field
 
 func fieldFromProto(proto *seqapi.Field) field {
 	return field{
@@ -108,7 +123,7 @@ func fieldsFromProto(proto []*seqapi.Field) fields {
 
 type getFieldsResponse struct {
 	Fields fields `json:"fields"`
-} // @name seqapi.v1.GetFieldsResponse
+} //	@name	seqapi.v1.GetFieldsResponse
 
 func getFieldsResponseFromProto(proto *seqapi.GetFieldsResponse) getFieldsResponse {
 	return getFieldsResponse{

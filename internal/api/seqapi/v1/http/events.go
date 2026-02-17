@@ -11,6 +11,7 @@ import (
 	"github.com/ozontech/seq-ui/tracing"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -19,6 +20,7 @@ import (
 //	@Router		/seqapi/v1/events/{id} [get]
 //	@ID			seqapi_v1_getEvent
 //	@Tags		seqapi_v1
+//	@Param		env		query		string				false	"Environment"
 //	@Param		id		path		string				true	"Event ID"
 //	@Success	200		{object}	getEventResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
@@ -31,9 +33,28 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 
 	id := chi.URLParam(r, "id")
 
-	span.SetAttributes(attribute.KeyValue{
-		Key: "id", Value: attribute.StringValue(id),
+	env := getEnvFromContext(ctx)
+	client, options, err := a.GetClientFromEnv(env)
+	if err != nil {
+		wr.Error(err, http.StatusInternalServerError)
+		return
+	}
+
+	md := metadata.New(map[string]string{
+		"env": env,
 	})
+	grpcCtx := metadata.NewOutgoingContext(ctx, md)
+
+	span.SetAttributes(
+		attribute.KeyValue{
+			Key:   "id",
+			Value: attribute.StringValue(id),
+		},
+		attribute.KeyValue{
+			Key:   "env",
+			Value: attribute.StringValue(env),
+		},
+	)
 
 	if cached, err := a.inmemWithRedisCache.Get(ctx, id); err == nil {
 		e := &seqapi.Event{}
@@ -47,7 +68,7 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 		logger.Error("failed to unmarshal cached event proto", zap.String("id", id), zap.Error(err))
 	}
 
-	resp, err := a.seqDB.GetEvent(ctx, &seqapi.GetEventRequest{
+	resp, err := client.GetEvent(grpcCtx, &seqapi.GetEventRequest{
 		Id: id,
 	})
 	if err != nil {
@@ -60,7 +81,7 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if data, err := proto.Marshal(resp.Event); err == nil {
-		_ = a.inmemWithRedisCache.SetWithTTL(ctx, id, string(data), a.config.EventsCacheTTL)
+		_ = a.inmemWithRedisCache.SetWithTTL(ctx, id, string(data), options.EventsCacheTTL)
 	} else {
 		logger.Error("failed to marshal event proto for caching", zap.String("id", id), zap.Error(err))
 	}
@@ -74,7 +95,7 @@ type event struct {
 	ID   string            `json:"id"`
 	Data map[string]string `json:"data" swaggertype:"object,string"`
 	Time time.Time         `json:"time" format:"date-time"`
-} // @name seqapi.v1.Event
+} //	@name	seqapi.v1.Event
 
 func eventFromProto(p *seqapi.Event) event {
 	data := p.GetData()
@@ -100,7 +121,7 @@ func eventsFromProto(p []*seqapi.Event) events {
 
 type getEventResponse struct {
 	Event event `json:"event"`
-} // @name seqapi.v1.GetEventResponse
+} //	@name	seqapi.v1.GetEventResponse
 
 func getEventResponseFromProto(p *seqapi.GetEventResponse) getEventResponse {
 	return getEventResponse{

@@ -88,7 +88,15 @@ func TestServeSearch(t *testing.T) {
 			wantRespBody: `{"events":[{"id":"test1","data":{"field1":"val1"},"time":"2023-09-25T10:20:30.001Z"},{"id":"test2","data":{"field1":"val1","field2":"val2"},"time":"2023-09-25T10:20:30.001Z"},{"id":"test3","data":{"field1":"val1","field2":"val2","field3":"val3"},"time":"2023-09-25T10:20:30.001Z"}],"error":{"code":"ERROR_CODE_NO"},"partialResponse":false}`,
 			wantStatus:   http.StatusOK,
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				MaxSearchLimit: 5,
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit: 5,
+						},
+					},
+				},
+				DefaultEnv: "test",
 			}),
 		},
 		{
@@ -114,7 +122,15 @@ func TestServeSearch(t *testing.T) {
 			wantRespBody: `{"events":[{"id":"test1","data":{"field1":"val1"},"time":"2023-09-25T10:20:30.001Z"},{"id":"test2","data":{"field1":"val1","field2":"val2"},"time":"2023-09-25T10:20:30.001Z"},{"id":"test3","data":{"field1":"val1","field2":"val2","field3":"val3"},"time":"2023-09-25T10:20:30.001Z"}],"total":"10","error":{"code":"ERROR_CODE_NO"},"partialResponse":false}`,
 			wantStatus:   http.StatusOK,
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				MaxSearchLimit: 5,
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit: 5,
+						},
+					},
+				},
+				DefaultEnv: "test",
 			}),
 		},
 		{
@@ -139,7 +155,15 @@ func TestServeSearch(t *testing.T) {
 			wantRespBody: `{"events":[{"id":"test1","data":{"field1":"val1"},"time":"2023-09-25T10:20:30.001Z"},{"id":"test2","data":{"field1":"val1","field2":"val2"},"time":"2023-09-25T10:20:30.001Z"},{"id":"test3","data":{"field1":"val1","field2":"val2","field3":"val3"},"time":"2023-09-25T10:20:30.001Z"}],"error":{"code":"ERROR_CODE_NO"},"partialResponse":false}`,
 			wantStatus:   http.StatusOK,
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				MaxSearchLimit: 5,
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit: 5,
+						},
+					},
+				},
+				DefaultEnv: "test",
 			}),
 		},
 		{
@@ -167,7 +191,15 @@ func TestServeSearch(t *testing.T) {
 			wantRespBody: `{"events":[{"id":"test1","data":{"field1":"val1"},"time":"2023-09-25T10:20:30.001Z"},{"id":"test2","data":{"field1":"val1","field2":"val2"},"time":"2023-09-25T10:20:30.001Z"},{"id":"test3","data":{"field1":"val1","field2":"val2","field3":"val3"},"time":"2023-09-25T10:20:30.001Z"}],"histogram":{"buckets":[{"key":"0","docCount":"1"},{"key":"100","docCount":"2"}]},"error":{"code":"ERROR_CODE_NO"},"partialResponse":false}`,
 			wantStatus:   http.StatusOK,
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				MaxSearchLimit: 5,
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit: 5,
+						},
+					},
+				},
+				DefaultEnv: "test",
 			}),
 		},
 		{
@@ -207,8 +239,15 @@ func TestServeSearch(t *testing.T) {
 			wantRespBody: `{"events":[{"id":"test1","data":{"field1":"val1"},"time":"2023-09-25T10:20:30.001Z"},{"id":"test2","data":{"field1":"val1","field2":"val2"},"time":"2023-09-25T10:20:30.001Z"},{"id":"test3","data":{"field1":"val1","field2":"val2","field3":"val3"},"time":"2023-09-25T10:20:30.001Z"}],"aggregations":[{"buckets":[{"key":"test1","value":1,"not_exists":5},{"key":"test2","value":2,"not_exists":5},{"key":"test3","value":3,"not_exists":5}]},{"buckets":[{"key":"test1","value":1,"not_exists":5},{"key":"test2","value":2,"not_exists":5},{"key":"test3","value":3,"not_exists":5}]}],"error":{"code":"ERROR_CODE_NO"},"partialResponse":false}`,
 			wantStatus:   http.StatusOK,
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				MaxSearchLimit:            5,
-				MaxAggregationsPerRequest: 5,
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit: 5,
+						},
+					},
+				},
+				DefaultEnv: "test",
 			}),
 		},
 		{
@@ -232,7 +271,15 @@ func TestServeSearch(t *testing.T) {
 			wantRespBody: `{"events":[],"error":{"code":"ERROR_CODE_NO"},"partialResponse":false}`,
 			wantStatus:   http.StatusOK,
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				MaxSearchLimit: 5,
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit: 5,
+						},
+					},
+				},
+				DefaultEnv: "test",
 			}),
 		},
 		{
@@ -258,7 +305,15 @@ func TestServeSearch(t *testing.T) {
 			wantRespBody: `{"events":[{"id":"test1","data":{"field1":"val1"},"time":"2023-09-25T10:20:30.001Z"}],"error":{"code":"ERROR_CODE_PARTIAL_RESPONSE","message":"partial response"},"partialResponse":true}`,
 			wantStatus:   http.StatusOK,
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				MaxSearchLimit: 5,
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit: 5,
+						},
+					},
+				},
+				DefaultEnv: "test",
 			}),
 		},
 		{
@@ -276,7 +331,15 @@ func TestServeSearch(t *testing.T) {
 			reqBody:    formatReqBody(10, 0, false, "", nil, ""),
 			wantStatus: http.StatusBadRequest,
 			cfg: config.SeqAPI{
-				MaxSearchLimit: 5,
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit: 5,
+						},
+					},
+				},
+				DefaultEnv: "test",
 			},
 		},
 		{
@@ -284,16 +347,26 @@ func TestServeSearch(t *testing.T) {
 			reqBody:    formatReqBody(3, 0, false, "", aggregationQueries{{}, {}, {}}, ""),
 			wantStatus: http.StatusBadRequest,
 			cfg: config.SeqAPI{
-				MaxSearchLimit:            5,
-				MaxAggregationsPerRequest: 2,
+				SeqAPIOptions: config.SeqAPIOptions{
+					MaxSearchLimit:            5,
+					MaxAggregationsPerRequest: 2,
+				},
 			},
 		}, {
 			name:       "err_offset_too_high",
 			reqBody:    formatReqBody(3, 11, false, "", nil, ""),
 			wantStatus: http.StatusBadRequest,
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				MaxSearchLimit:       5,
-				MaxSearchOffsetLimit: 10,
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit:       5,
+							MaxSearchOffsetLimit: 10,
+						},
+					},
+				},
+				DefaultEnv: "test",
 			}),
 		},
 		{
@@ -320,8 +393,16 @@ func TestServeSearch(t *testing.T) {
 			wantRespBody: fmt.Sprintf(`{"events":[{"id":"test1","data":{"field1":"val1"},"time":"2023-09-25T10:20:30.001Z"}],"total":"11","error":{"code":"ERROR_CODE_QUERY_TOO_HEAVY","message":%q},"partialResponse":false}`, api_error.ErrQueryTooHeavy.Error()),
 			wantStatus:   http.StatusOK,
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				MaxSearchLimit:      5,
-				MaxSearchTotalLimit: 10,
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit:       5,
+							MaxSearchOffsetLimit: 10,
+						},
+					},
+				},
+				DefaultEnv: "test",
 			}),
 		},
 		{
@@ -339,7 +420,15 @@ func TestServeSearch(t *testing.T) {
 			},
 			wantStatus: http.StatusInternalServerError,
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				MaxSearchLimit: 5,
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit: 5,
+						},
+					},
+				},
+				DefaultEnv: "test",
 			}),
 		},
 	}
@@ -363,7 +452,7 @@ func TestServeSearch(t *testing.T) {
 			}
 
 			api := initTestAPI(seqData)
-			req := httptest.NewRequest(http.MethodPost, "/seqapi/v1/search", strings.NewReader(tt.reqBody))
+			req := httptest.NewRequest(http.MethodPost, "/seqapi/v1/search?env=test", strings.NewReader(tt.reqBody))
 
 			httputil.DoTestHTTP(t, httputil.TestDataHTTP{
 				Req:          req,
