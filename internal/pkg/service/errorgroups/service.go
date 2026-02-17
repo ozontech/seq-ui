@@ -33,6 +33,30 @@ func (s *Service) GetErrorGroups(
 	ctx context.Context,
 	req types.GetErrorGroupsRequest,
 ) ([]types.ErrorGroup, uint64, error) {
+	return getErrorGroups(ctx, req, s.repo.GetErrorGroups, s.repo.GetErrorGroupsCount)
+}
+
+func (s *Service) GetNewErrorGroups(
+	ctx context.Context,
+	req types.GetErrorGroupsRequest,
+) ([]types.ErrorGroup, uint64, error) {
+	// If the release and duration are not specified,
+	// then we are looking for errors for all time and releases.
+	// In this case, we believe that there are no new errors.
+	if (req.Release == nil || *req.Release == "") &&
+		(req.Duration == nil || *req.Duration == 0) {
+		return nil, 0, nil
+	}
+
+	return getErrorGroups(ctx, req, s.repo.GetNewErrorGroups, s.repo.GetNewErrorGroupsCount)
+}
+
+func getErrorGroups(
+	ctx context.Context,
+	req types.GetErrorGroupsRequest,
+	groupsFn func(ctx context.Context, req types.GetErrorGroupsRequest) ([]types.ErrorGroup, error),
+	countFn func(ctx context.Context, req types.GetErrorGroupsRequest) (uint64, error),
+) ([]types.ErrorGroup, uint64, error) {
 	if req.Service == "" {
 		return nil, 0, types.NewErrInvalidRequestField("'service' must not be empty")
 	}
@@ -41,25 +65,25 @@ func (s *Service) GetErrorGroups(
 		req.Limit = defaultLimit
 	}
 
-	group, groupCtx := errgroup.WithContext(ctx)
+	eg, ctx := errgroup.WithContext(ctx)
 
 	var groups []types.ErrorGroup
-	group.Go(func() error {
+	eg.Go(func() error {
 		var err error
-		groups, err = s.repo.GetErrorGroups(groupCtx, req)
+		groups, err = groupsFn(ctx, req)
 		return err
 	})
 
 	var total uint64
 	if req.WithTotal {
-		group.Go(func() error {
+		eg.Go(func() error {
 			var err error
-			total, err = s.repo.GetErrorGroupsCount(groupCtx, req)
+			total, err = countFn(ctx, req)
 			return err
 		})
 	}
 
-	err := group.Wait()
+	err := eg.Wait()
 	if err != nil {
 		return nil, 0, fmt.Errorf("get error groups failed: %w", err)
 	}

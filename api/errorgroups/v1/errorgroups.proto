@@ -23,6 +23,10 @@ enum Order {
 }
 
 message GetGroupsRequest {
+  message Filter {
+    bool is_new = 1;
+  }
+
   string service = 1;
   optional string env = 2;
   optional string release = 3;
@@ -32,13 +36,12 @@ message GetGroupsRequest {
   Order order = 7;
   bool with_total = 8;
   optional string source = 9;
+  optional Filter filter = 10;
 }
 
 message GetGroupsResponse {
   uint64 total = 1;
   repeated Group groups = 2;
-  uint64 total_new = 3;
-  repeated uint64 groups_new = 4;
 }
 
 message Group {

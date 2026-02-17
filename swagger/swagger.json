@@ -1725,6 +1725,9 @@
                 "env": {
                     "type": "string"
                 },
+                "filter": {
+                    "$ref": "#/definitions/errorgroups.v1.GroupsFilter"
+                },
                 "limit": {
                     "type": "integer"
                 },
@@ -1757,17 +1760,7 @@
                         "$ref": "#/definitions/errorgroups.v1.Group"
                     }
                 },
-                "groups_new": {
-                    "type": "array",
-                    "items": {
-                        "type": "string",
-                        "format": "uint64"
-                    }
-                },
                 "total": {
-                    "type": "integer"
-                },
-                "total_new": {
                     "type": "integer"
                 }
             }
@@ -1883,6 +1876,14 @@
                 },
                 "source": {
                     "type": "string"
+                }
+            }
+        },
+        "errorgroups.v1.GroupsFilter": {
+            "type": "object",
+            "properties": {
+                "is_new": {
+                    "type": "boolean"
                 }
             }
         },
