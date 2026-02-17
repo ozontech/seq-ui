@@ -22,7 +22,7 @@ import (
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
 //	@Security	bearer
 func (a *API) serveGetServices(w http.ResponseWriter, r *http.Request) {
-	ctx, span := tracing.StartSpan(r.Context(), "errorgroups_v1_get_releases")
+	ctx, span := tracing.StartSpan(r.Context(), "errorgroups_v1_get_services")
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
