@@ -20,7 +20,6 @@ import (
 //	@Router		/seqapi/v1/async_search/fetch [post]
 //	@ID			seqapi_v1_fetch_async_search_result
 //	@Tags		seqapi_v1
-//	@Param		env		query		string							false	"Environment"
 //	@Param		body	body		fetchAsyncSearchResultRequest	true	"Request body"
 //	@Success	200		{object}	fetchAsyncSearchResultResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error					"An unexpected error response"

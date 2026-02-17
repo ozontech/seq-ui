@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -21,7 +22,7 @@ import (
 
 type API struct {
 	config              config.SeqAPI
-	seqDB               seqdb.Client
+	seqDBСlients        map[string]seqdb.Client
 	inmemWithRedisCache cache.Cache
 	redisCache          cache.Cache
 	nowFn               func() time.Time
@@ -35,7 +36,7 @@ type API struct {
 
 func New(
 	cfg config.SeqAPI,
-	seqDB seqdb.Client,
+	seqDBСlients map[string]seqdb.Client,
 	inmemWithRedisCache cache.Cache,
 	redisCache cache.Cache,
 	asyncSearches *asyncsearches.Service,
@@ -52,12 +53,15 @@ func New(
 	}
 	// for export
 	if masker != nil {
-		seqDB.WithMasking(masker)
+		for env, client := range seqDBСlients {
+			client.WithMasking(masker)
+			seqDBСlients[env] = client
+		}
 	}
 
 	return &API{
 		config:              cfg,
-		seqDB:               seqDB,
+		seqDBСlients:        seqDBСlients,
 		inmemWithRedisCache: inmemWithRedisCache,
 		redisCache:          redisCache,
 		nowFn:               time.Now,
@@ -117,6 +121,22 @@ const (
 	aecQueryTooHeavy       apiErrorCode = "ERROR_CODE_QUERY_TOO_HEAVY"
 	aecTooManyFractionsHit apiErrorCode = "ERROR_CODE_TOO_MANY_FRACTIONS_HIT"
 )
+
+func (a *API) GetClientFromEnv(env string) (seqdb.Client, *config.SeqAPIOptions, error) {
+	envConfig, exists := a.config.Envs[env]
+	if !exists {
+		return nil, nil, fmt.Errorf("env '%s' not found in configuration", env)
+	}
+
+	client, exists := a.seqDBСlients[envConfig.SeqDB]
+	if !exists {
+		return nil, nil, fmt.Errorf("seqdb client '%s' not found for env '%s'", envConfig.SeqDB, env)
+	}
+
+	options := envConfig.Options
+
+	return client, options, nil
+}
 
 func apiErrorCodeFromProto(proto seqapi.ErrorCode) apiErrorCode {
 	switch proto {

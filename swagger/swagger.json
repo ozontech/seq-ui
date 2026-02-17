@@ -747,12 +747,6 @@
                 "operationId": "seqapi_v1_fetch_async_search_result",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Environment",
-                        "name": "env",
-                        "in": "query"
-                    },
-                    {
                         "description": "Request body",
                         "name": "body",
                         "in": "body",
@@ -791,12 +785,6 @@
                 "operationId": "seqapi_v1_get_async_searches_list",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Environment",
-                        "name": "env",
-                        "in": "query"
-                    },
-                    {
                         "description": "Request body",
                         "name": "body",
                         "in": "body",
@@ -834,12 +822,6 @@
                 ],
                 "operationId": "seqapi_v1_start_async_search",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Environment",
-                        "name": "env",
-                        "in": "query"
-                    },
                     {
                         "description": "Request body",
                         "name": "body",
@@ -880,12 +862,6 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Environment",
-                        "name": "env",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
                         "description": "search id",
                         "name": "id",
                         "in": "path",
@@ -917,12 +893,6 @@
                 ],
                 "operationId": "seqapi_v1_cancel_async_search",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Environment",
-                        "name": "env",
-                        "in": "query"
-                    },
                     {
                         "type": "string",
                         "description": "search id",

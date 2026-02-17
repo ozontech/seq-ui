@@ -13,6 +13,7 @@ import (
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 	"go.opentelemetry.io/otel/attribute"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -31,6 +32,18 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+
+	env := getEnvFromContext(ctx)
+	client, options, err := a.GetClientFromEnv(env)
+	if err != nil {
+		wr.Error(err, http.StatusInternalServerError)
+		return
+	}
+
+	md := metadata.New(map[string]string{
+		"env": env,
+	})
+	grpcCtx := metadata.NewOutgoingContext(ctx, md)
 
 	userStr := "_"
 	if userName, err := types.GetUserKey(ctx); err == nil {
@@ -76,6 +89,10 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 			Key:   "fields",
 			Value: attribute.StringSliceValue(httpReq.Fields),
 		},
+		attribute.KeyValue{
+			Key:   "env",
+			Value: attribute.StringValue(env),
+		},
 	)
 
 	if a.exportLimiter.Limited(userStr) {
@@ -85,9 +102,9 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 	}
 	defer a.exportLimiter.Fill(userStr)
 
-	if httpReq.Limit > a.config.MaxExportLimit {
+	if httpReq.Limit > options.MaxExportLimit {
 		wr.Error(fmt.Errorf("too many events are requested: count=%d, max=%d",
-			httpReq.Limit, a.config.MaxExportLimit),
+			httpReq.Limit, options.MaxExportLimit),
 			http.StatusBadRequest)
 		return
 	}
@@ -103,7 +120,7 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = a.seqDB.Export(ctx, httpReq.toProto(), cw)
+	err = client.Export(grpcCtx, httpReq.toProto(), cw)
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return

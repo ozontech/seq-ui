@@ -12,13 +12,14 @@ import (
 
 func TestServeGetLimits(t *testing.T) {
 	tests := []struct {
-		name string
-
+		name         string
+		env          string
 		cfg          config.SeqAPI
 		wantRespBody string
 	}{
 		{
 			name: "ok",
+			env:  "prod",
 			cfg: config.SeqAPI{
 				SeqAPIOptions: config.SeqAPIOptions{
 					MaxSearchLimit:            100,
@@ -32,6 +33,7 @@ func TestServeGetLimits(t *testing.T) {
 		},
 		{
 			name:         "empty",
+			env:          "prod",
 			wantRespBody: `{"maxSearchLimit":0,"maxExportLimit":0,"maxParallelExportRequests":0,"maxAggregationsPerRequest":0,"seqCliMaxSearchLimit":0}`,
 		},
 	}

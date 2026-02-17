@@ -13,6 +13,7 @@ import (
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/metadata"
 )
 
 // serveGetLogsLifespan go doc.
@@ -28,7 +29,20 @@ func (a *API) serveGetLogsLifespan(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
-	cacheKey := a.config.LogsLifespanCacheKey
+
+	env := getEnvFromContext(ctx)
+	client, options, err := a.GetClientFromEnv(env)
+	if err != nil {
+		wr.Error(err, http.StatusInternalServerError)
+		return
+	}
+
+	md := metadata.New(map[string]string{
+		"env": env,
+	})
+	grpcCtx := metadata.NewOutgoingContext(ctx, md)
+
+	cacheKey := options.LogsLifespanCacheKey
 
 	if resStr, err := a.redisCache.Get(ctx, cacheKey); err == nil {
 		res := 0
@@ -44,20 +58,20 @@ func (a *API) serveGetLogsLifespan(w http.ResponseWriter, r *http.Request) {
 		logger.Error("can't get logs lifespan from cache", zap.Error(err))
 	}
 
-	status, err := a.seqDB.Status(ctx, &seqapi.StatusRequest{})
+	clientStatus, err := client.Status(grpcCtx, &seqapi.StatusRequest{})
 	if err != nil {
 		wr.Error(fmt.Errorf("get status: %w", err), http.StatusInternalServerError)
 		return
 	}
 
-	if status.OldestStorageTime == nil {
+	if clientStatus.OldestStorageTime == nil {
 		wr.Error(errors.New("oldest timestamp is nil"), http.StatusInternalServerError)
 		return
 	}
 
-	res := int(a.nowFn().Sub(status.OldestStorageTime.AsTime()) / lifespan.MeasureUnit)
+	res := int(a.nowFn().Sub(clientStatus.OldestStorageTime.AsTime()) / lifespan.MeasureUnit)
 
-	err = a.redisCache.SetWithTTL(ctx, cacheKey, strconv.Itoa(res), a.config.LogsLifespanCacheTTL)
+	err = a.redisCache.SetWithTTL(ctx, cacheKey, strconv.Itoa(res), options.LogsLifespanCacheTTL)
 	if err != nil {
 		logger.Error("can't set logs lifespan to cache", zap.Error(err))
 	}

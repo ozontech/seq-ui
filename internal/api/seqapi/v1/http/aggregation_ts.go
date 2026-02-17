@@ -12,6 +12,7 @@ import (
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 	"go.opentelemetry.io/otel/attribute"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -32,7 +33,12 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
-
+	env := getEnvFromContext(ctx)
+	client, options, err := a.GetClientFromEnv(env)
+	if err != nil {
+		wr.Error(err, http.StatusInternalServerError)
+		return
+	}
 	var httpReq getAggregationTsRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
 		wr.Error(fmt.Errorf("failed to parse getAggregationTs request: %w", err), http.StatusBadRequest)
@@ -58,22 +64,31 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 			Key:   "aggregations",
 			Value: attribute.StringValue(string(aggsRaw)),
 		},
+		attribute.KeyValue{
+			Key:   "env",
+			Value: attribute.StringValue(env),
+		},
 	)
 
-	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), a.config.MaxAggregationsPerRequest); err != nil {
+	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), options.MaxAggregationsPerRequest); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
 	for _, agg := range httpReq.Aggregations {
 		if err := api_error.CheckAggregationTsInterval(agg.Interval, httpReq.From, httpReq.To,
-			a.config.MaxBucketsPerAggregationTs,
+			options.MaxBucketsPerAggregationTs,
 		); err != nil {
 			wr.Error(err, http.StatusBadRequest)
 			return
 		}
 	}
 
-	resp, err := a.seqDB.GetAggregation(ctx, httpReq.toProto())
+	md := metadata.New(map[string]string{
+		"env": env,
+	})
+	grpcCtx := metadata.NewOutgoingContext(ctx, md)
+
+	resp, err := client.GetAggregation(grpcCtx, httpReq.toProto())
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return

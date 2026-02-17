@@ -244,6 +244,7 @@ type PinnedField struct {
 type SeqAPI struct {
 	SeqAPIOptions `yaml:",inline"`
 	Envs          map[string]SeqAPIEnv `yaml:"envs"`
+	DefaultEnv    string               `yaml:"default_env"`
 }
 
 type SeqAPIEnv struct {
@@ -333,6 +334,16 @@ func FromFile(cfgPath string) (Config, error) {
 		)
 	}
 
+	if cfg.Handlers.SeqAPI.DefaultEnv == "" {
+		return Config{}, fmt.Errorf("default_env must be specified in seq_api configuration")
+	}
+	if _, exists := cfg.Handlers.SeqAPI.Envs[cfg.Handlers.SeqAPI.DefaultEnv]; !exists {
+		return Config{}, fmt.Errorf(
+			"default_env '%s' not found in seq_api.envs",
+			cfg.Handlers.SeqAPI.DefaultEnv,
+		)
+	}
+
 	if cfg.Handlers.SeqAPI.MaxAggregationsPerRequest <= 0 {
 		cfg.Handlers.SeqAPI.MaxAggregationsPerRequest = defaultMaxAggregationsPerRequest
 	}
@@ -390,6 +401,62 @@ func FromFile(cfgPath string) (Config, error) {
 		cfg.Server.Cache.Inmemory.BufferItems = defaultInmemCacheBufferItems
 	}
 
+	if cfg.Handlers.SeqAPI.Envs != nil {
+		globalOpts := cfg.Handlers.SeqAPI.SeqAPIOptions
+
+		for envName, envConfig := range cfg.Handlers.SeqAPI.Envs {
+			envCfg := envConfig
+			if envCfg.Options == nil {
+				envCfg.Options = &globalOpts
+			} else {
+				opts := *envCfg.Options
+				if opts.MaxSearchLimit == 0 {
+					opts.MaxSearchLimit = globalOpts.MaxSearchLimit
+				}
+				if opts.MaxSearchTotalLimit == 0 {
+					opts.MaxSearchTotalLimit = globalOpts.MaxSearchTotalLimit
+				}
+				if opts.MaxSearchOffsetLimit == 0 {
+					opts.MaxSearchOffsetLimit = globalOpts.MaxSearchOffsetLimit
+				}
+				if opts.MaxExportLimit == 0 {
+					opts.MaxExportLimit = globalOpts.MaxExportLimit
+				}
+				if opts.SeqCLIMaxSearchLimit == 0 {
+					opts.SeqCLIMaxSearchLimit = globalOpts.SeqCLIMaxSearchLimit
+				}
+				if opts.MaxParallelExportRequests == 0 {
+					opts.MaxParallelExportRequests = globalOpts.MaxParallelExportRequests
+				}
+				if opts.MaxAggregationsPerRequest == 0 {
+					opts.MaxAggregationsPerRequest = globalOpts.MaxAggregationsPerRequest
+				}
+				if opts.MaxBucketsPerAggregationTs == 0 {
+					opts.MaxBucketsPerAggregationTs = globalOpts.MaxBucketsPerAggregationTs
+				}
+				if opts.EventsCacheTTL == 0 {
+					opts.EventsCacheTTL = globalOpts.EventsCacheTTL
+				}
+				if opts.LogsLifespanCacheTTL == 0 {
+					opts.LogsLifespanCacheTTL = globalOpts.LogsLifespanCacheTTL
+				}
+				if opts.FieldsCacheTTL == 0 {
+					opts.FieldsCacheTTL = globalOpts.FieldsCacheTTL
+				}
+				if opts.LogsLifespanCacheKey == "" {
+					opts.LogsLifespanCacheKey = globalOpts.LogsLifespanCacheKey
+				}
+				if opts.PinnedFields == nil {
+					opts.PinnedFields = globalOpts.PinnedFields
+				}
+				if opts.Masking == nil {
+					opts.Masking = globalOpts.Masking
+				}
+				envCfg.Options = &opts
+			}
+			cfg.Handlers.SeqAPI.Envs[envName] = envCfg
+		}
+	}
 	return cfg, nil
 }
 

@@ -7,6 +7,8 @@ import (
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
+	"go.opentelemetry.io/otel/attribute"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -24,7 +26,26 @@ func (a *API) serveStatus(w http.ResponseWriter, r *http.Request) {
 
 	wr := httputil.NewWriter(w)
 
-	resp, err := a.seqDB.Status(ctx, &seqapi.StatusRequest{})
+	env := getEnvFromContext(ctx)
+	client, _, err := a.GetClientFromEnv(env)
+	if err != nil {
+		wr.Error(err, http.StatusInternalServerError)
+		return
+	}
+
+	span.SetAttributes(
+		attribute.KeyValue{
+			Key:   "env",
+			Value: attribute.StringValue(env),
+		},
+	)
+
+	md := metadata.New(map[string]string{
+		"env": env,
+	})
+	grpcCtx := metadata.NewOutgoingContext(ctx, md)
+
+	resp, err := client.Status(grpcCtx, &seqapi.StatusRequest{})
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return

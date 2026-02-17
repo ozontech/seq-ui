@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
+	"github.com/ozontech/seq-ui/tracing"
 )
 
 // serveGetLimits go doc.
@@ -14,13 +15,30 @@ import (
 //	@Param		env		query		string				false	"Environment"
 //	@Success	200		{object}	getLimitsResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
-func (a *API) serveGetLimits(w http.ResponseWriter, _ *http.Request) {
+func (a *API) serveGetLimits(w http.ResponseWriter, r *http.Request) {
+	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_get_limits")
+	defer span.End()
+
+	wr := httputil.NewWriter(w)
+	env := getEnvFromContext(ctx)
+
+	_, options, err := a.GetClientFromEnv(env)
+	if err != nil {
+		wr.Error(err, http.StatusInternalServerError)
+		return
+	}
+	// Тут делема, как нам связать grpc get_limits и http get_limits, бизнес-логику продумывать?
+	// md := metadata.New(map[string]string{
+	// 	"env": env,
+	// })
+	// grpcCtx := metadata.NewOutgoingContext(ctx, md)
+
 	httputil.NewWriter(w).WriteJson(getLimitsResponse{
-		MaxSearchLimit:            a.config.MaxSearchLimit,
-		MaxExportLimit:            a.config.MaxExportLimit,
-		MaxParallelExportRequests: int32(a.config.MaxParallelExportRequests),
-		MaxAggregationsPerRequest: int32(a.config.MaxAggregationsPerRequest),
-		SeqCliMaxSearchLimit:      int32(a.config.SeqCLIMaxSearchLimit),
+		MaxSearchLimit:            options.MaxSearchLimit,
+		MaxExportLimit:            options.MaxExportLimit,
+		MaxParallelExportRequests: int32(options.MaxParallelExportRequests),
+		MaxAggregationsPerRequest: int32(options.MaxAggregationsPerRequest),
+		SeqCliMaxSearchLimit:      int32(options.SeqCLIMaxSearchLimit),
 	})
 }
 

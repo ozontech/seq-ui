@@ -11,6 +11,7 @@ import (
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 	"go.opentelemetry.io/otel/attribute"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -29,6 +30,18 @@ func (a *API) serveGetHistogram(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+
+	env := getEnvFromContext(ctx)
+	client, _, err := a.GetClientFromEnv(env)
+	if err != nil {
+		wr.Error(err, http.StatusInternalServerError)
+		return
+	}
+
+	md := metadata.New(map[string]string{
+		"env": env,
+	})
+	grpcCtx := metadata.NewOutgoingContext(ctx, md)
 
 	var httpReq getHistogramRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
@@ -53,9 +66,13 @@ func (a *API) serveGetHistogram(w http.ResponseWriter, r *http.Request) {
 			Key:   "interval",
 			Value: attribute.StringValue(httpReq.Interval),
 		},
+		attribute.KeyValue{
+			Key:   "env",
+			Value: attribute.StringValue(env),
+		},
 	)
 
-	resp, err := a.seqDB.GetHistogram(ctx, httpReq.toProto())
+	resp, err := client.GetHistogram(grpcCtx, httpReq.toProto())
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return

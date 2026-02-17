@@ -10,6 +10,7 @@ import (
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/metadata"
 )
 
 // serveGetFields go doc.
@@ -26,8 +27,20 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 
 	wr := httputil.NewWriter(w)
 
+	env := getEnvFromContext(ctx)
+	client, _, err := a.GetClientFromEnv(env)
+	if err != nil {
+		wr.Error(err, http.StatusInternalServerError)
+		return
+	}
+
+	md := metadata.New(map[string]string{
+		"env": env,
+	})
+	grpcCtx := metadata.NewOutgoingContext(ctx, md)
+
 	if a.fieldsCache == nil {
-		resp, err := a.seqDB.GetFields(ctx, &seqapi.GetFieldsRequest{})
+		resp, err := client.GetFields(grpcCtx, &seqapi.GetFieldsRequest{})
 		if err != nil {
 			wr.Error(err, http.StatusInternalServerError)
 			return
@@ -43,7 +56,7 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := a.seqDB.GetFields(ctx, &seqapi.GetFieldsRequest{})
+	resp, err := client.GetFields(grpcCtx, &seqapi.GetFieldsRequest{})
 	if err != nil {
 		if cached {
 			logger.Error("can't get fields; use cached fields", zap.Error(err))

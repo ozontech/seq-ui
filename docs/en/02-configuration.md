@@ -516,6 +516,10 @@ Config for `/seqapi` API handlers.
 
 `SeqAPI` fields:
 
++ **`default_env`** *`string`* *`required`*
+
+  Environment name used by default to process requests when no explicit environment is specified.
+ 
 + **`max_search_limit`** *`int`* *`default=0`*
 
   Max value for `limit` field in search requests.

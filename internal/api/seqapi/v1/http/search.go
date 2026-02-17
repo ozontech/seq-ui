@@ -12,6 +12,7 @@ import (
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 	"go.opentelemetry.io/otel/attribute"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -30,6 +31,18 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+
+	env := getEnvFromContext(ctx)
+	client, options, err := a.GetClientFromEnv(env)
+	if err != nil {
+		wr.Error(err, http.StatusInternalServerError)
+		return
+	}
+
+	md := metadata.New(map[string]string{
+		"env": env,
+	})
+	grpcCtx := metadata.NewOutgoingContext(ctx, md)
 
 	var httpReq searchRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
@@ -70,6 +83,10 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 			Key:   "order",
 			Value: attribute.StringValue(string(httpReq.Order)),
 		},
+		{
+			Key:   "env",
+			Value: attribute.StringValue(env),
+		},
 	}
 	if httpReq.Histogram.Interval != "" {
 		spanAttributes = append(spanAttributes, attribute.KeyValue{
@@ -87,26 +104,26 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 
 	span.SetAttributes(spanAttributes...)
 
-	if err := api_error.CheckSearchLimit(httpReq.Limit, a.config.MaxSearchLimit); err != nil {
+	if err := api_error.CheckSearchLimit(httpReq.Limit, options.MaxSearchLimit); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
-	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), a.config.MaxAggregationsPerRequest); err != nil {
+	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), options.MaxAggregationsPerRequest); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
-	if err := api_error.CheckSearchOffsetLimit(httpReq.Offset, a.config.MaxSearchOffsetLimit); err != nil {
+	if err := api_error.CheckSearchOffsetLimit(httpReq.Offset, options.MaxSearchOffsetLimit); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
 
-	resp, err := a.seqDB.Search(ctx, httpReq.toProto())
+	resp, err := client.Search(grpcCtx, httpReq.toProto())
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return
 	}
 
-	if resp.Total > a.config.MaxSearchTotalLimit {
+	if resp.Total > options.MaxSearchTotalLimit {
 		resp.Error = &seqapi.Error{
 			Code:    seqapi.ErrorCode_ERROR_CODE_QUERY_TOO_HEAVY,
 			Message: api_error.ErrQueryTooHeavy.Error(),
