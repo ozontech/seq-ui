@@ -138,6 +138,56 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 			},
 		},
 		{
+			name: "partial_response",
+			req: &seqapi.FetchAsyncSearchResultRequest{
+				SearchId: mockSearchID,
+				Limit:    2,
+				Offset:   10,
+				Order:    seqapi.Order_ORDER_DESC,
+			},
+			resp: &seqapi.FetchAsyncSearchResultResponse{
+				Status: seqapi.AsyncSearchStatus_ASYNC_SEARCH_STATUS_DONE,
+				Request: &seqapi.StartAsyncSearchRequest{
+					Retention: durationpb.New(60 * time.Second),
+					Query:     "message:error",
+					From:      timestamppb.New(mockTime.Add(-15 * time.Minute)),
+					To:        timestamppb.New(mockTime),
+					WithDocs:  true,
+					Size:      100,
+				},
+				Response: &seqapi.SearchResponse{
+					Events: []*seqapi.Event{
+						{
+							Id: "017a854298010000-850287cfa326a7fc",
+							Data: map[string]string{
+								"level":   "3",
+								"message": "some error",
+								"x":       "2",
+							},
+							Time: timestamppb.New(mockTime.Add(-1 * time.Minute)),
+						},
+					},
+					Total: 1,
+					Error: &seqapi.Error{
+						Code: seqapi.ErrorCode_ERROR_CODE_NO,
+					},
+				},
+				StartedAt: timestamppb.New(mockTime.Add(-30 * time.Second)),
+				ExpiresAt: timestamppb.New(mockTime.Add(30 * time.Second)),
+				Progress:  1,
+				DiskUsage: 512,
+				Meta:      meta,
+				Error: &seqapi.Error{
+					Code:    seqapi.ErrorCode_ERROR_CODE_PARTIAL_RESPONSE,
+					Message: "partial response",
+				},
+			},
+			repoResp: types.AsyncSearchInfo{
+				SearchID: mockSearchID,
+				Meta:     meta,
+			},
+		},
+		{
 			name: "invalid id",
 			req: &seqapi.FetchAsyncSearchResultRequest{
 				SearchId: "some_invalid_id",
