@@ -7,10 +7,12 @@ import (
 	"time"
 
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
+	"github.com/ozontech/seq-ui/internal/app/config"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -63,14 +65,28 @@ func TestStatus(t *testing.T) {
 			seqDbMock.EXPECT().Status(gomock.Any(), nil).
 				Return(proto.Clone(tt.resp), tt.clientErr).Times(1)
 
+			cfg := config.SeqAPI{
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB:   "test",
+						Options: &config.SeqAPIOptions{},
+					},
+				},
+				DefaultEnv: "test",
+			}
+
 			seqData := test.APITestData{
+				Cfg: cfg,
 				Mocks: test.Mocks{
 					SeqDB: seqDbMock,
 				},
 			}
 			s := initTestAPI(seqData)
 
-			resp, err := s.Status(context.Background(), nil)
+			md := metadata.New(map[string]string{"env": "test"})
+			ctx := metadata.NewIncomingContext(context.Background(), md)
+
+			resp, err := s.Status(ctx, nil)
 
 			require.Equal(t, tt.clientErr, err)
 			require.True(t, proto.Equal(tt.resp, resp))

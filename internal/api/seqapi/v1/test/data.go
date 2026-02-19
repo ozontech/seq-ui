@@ -104,17 +104,23 @@ func MakeAggregations(aggCount, bucketCount int, opts *MakeAggOpts) []*seqapi.Ag
 }
 
 func SetCfgDefaults(cfg config.SeqAPI) config.SeqAPI {
-	if cfg.MaxAggregationsPerRequest <= 0 {
-		cfg.MaxAggregationsPerRequest = 1
-	}
-	if cfg.MaxParallelExportRequests <= 0 {
-		cfg.MaxParallelExportRequests = 1
-	}
-	if cfg.MaxSearchTotalLimit <= 0 {
-		cfg.MaxSearchTotalLimit = 1000000
-	}
-	if cfg.MaxSearchOffsetLimit <= 0 {
-		cfg.MaxSearchOffsetLimit = 1000000
+	for envName, envConfig := range cfg.Envs {
+		opts := *envConfig.Options
+		if opts.MaxAggregationsPerRequest <= 0 {
+			opts.MaxAggregationsPerRequest = 1
+		}
+		if opts.MaxParallelExportRequests <= 0 {
+			opts.MaxParallelExportRequests = 1
+		}
+		if opts.MaxSearchTotalLimit <= 0 {
+			opts.MaxSearchTotalLimit = 1000000
+		}
+		if opts.MaxSearchOffsetLimit <= 0 {
+			opts.MaxSearchOffsetLimit = 1000000
+		}
+
+		envConfig.Options = &opts
+		cfg.Envs[envName] = envConfig
 	}
 	return cfg
 }

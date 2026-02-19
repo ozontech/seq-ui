@@ -12,6 +12,7 @@ import (
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -53,14 +54,29 @@ func TestGetFields(t *testing.T) {
 			seqDbMock.EXPECT().GetFields(gomock.Any(), nil).
 				Return(proto.Clone(tt.resp), tt.clientErr).Times(1)
 
+			cfg := config.SeqAPI{
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB:   "test",
+						Options: &config.SeqAPIOptions{},
+					},
+				},
+				DefaultEnv: "test",
+			}
+
 			seqData := test.APITestData{
+				Cfg: cfg,
 				Mocks: test.Mocks{
 					SeqDB: seqDbMock,
 				},
 			}
+
 			s := initTestAPI(seqData)
 
-			resp, err := s.GetFields(context.Background(), nil)
+			md := metadata.New(map[string]string{"env": "test"})
+			ctx := metadata.NewIncomingContext(context.Background(), md)
+
+			resp, err := s.GetFields(ctx, nil)
 
 			require.Equal(t, tt.clientErr, err)
 			require.True(t, proto.Equal(tt.resp, resp))
@@ -104,6 +120,13 @@ func TestGetFieldsCached(t *testing.T) {
 
 	seqData := test.APITestData{
 		Cfg: config.SeqAPI{
+			Envs: map[string]config.SeqAPIEnv{
+				"test": {
+					SeqDB:   "test",
+					Options: &config.SeqAPIOptions{},
+				},
+			},
+			DefaultEnv: "test",
 			SeqAPIOptions: config.SeqAPIOptions{
 				FieldsCacheTTL: ttl,
 			},
@@ -114,7 +137,8 @@ func TestGetFieldsCached(t *testing.T) {
 	}
 	s := initTestAPI(seqData)
 
-	ctx := context.Background()
+	md := metadata.New(map[string]string{"env": "test"})
+	ctx := metadata.NewIncomingContext(context.Background(), md)
 
 	for _, r := range responses {
 		resp, err := s.GetFields(ctx, nil)

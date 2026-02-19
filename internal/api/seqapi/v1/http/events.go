@@ -11,7 +11,6 @@ import (
 	"github.com/ozontech/seq-ui/tracing"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -40,11 +39,6 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	md := metadata.New(map[string]string{
-		"env": env,
-	})
-	grpcCtx := metadata.NewOutgoingContext(ctx, md)
-
 	span.SetAttributes(
 		attribute.KeyValue{
 			Key:   "id",
@@ -68,7 +62,7 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 		logger.Error("failed to unmarshal cached event proto", zap.String("id", id), zap.Error(err))
 	}
 
-	resp, err := client.GetEvent(grpcCtx, &seqapi.GetEventRequest{
+	resp, err := client.GetEvent(ctx, &seqapi.GetEventRequest{
 		Id: id,
 	})
 	if err != nil {

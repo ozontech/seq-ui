@@ -10,6 +10,8 @@ import (
 )
 
 const (
+	DefaultSeqDBClientID = "default"
+
 	ProxyClientModeGRPC = "grpc"
 
 	MaskModeMask    = "mask"
@@ -334,16 +336,6 @@ func FromFile(cfgPath string) (Config, error) {
 		)
 	}
 
-	if cfg.Handlers.SeqAPI.DefaultEnv == "" {
-		return Config{}, fmt.Errorf("default_env must be specified in seq_api configuration")
-	}
-	if _, exists := cfg.Handlers.SeqAPI.Envs[cfg.Handlers.SeqAPI.DefaultEnv]; !exists {
-		return Config{}, fmt.Errorf(
-			"default_env '%s' not found in seq_api.envs",
-			cfg.Handlers.SeqAPI.DefaultEnv,
-		)
-	}
-
 	if cfg.Handlers.SeqAPI.MaxAggregationsPerRequest <= 0 {
 		cfg.Handlers.SeqAPI.MaxAggregationsPerRequest = defaultMaxAggregationsPerRequest
 	}
@@ -401,62 +393,73 @@ func FromFile(cfgPath string) (Config, error) {
 		cfg.Server.Cache.Inmemory.BufferItems = defaultInmemCacheBufferItems
 	}
 
-	if cfg.Handlers.SeqAPI.Envs != nil {
-		globalOpts := cfg.Handlers.SeqAPI.SeqAPIOptions
+	if len(cfg.Handlers.SeqAPI.Envs) == 0 {
+		cfg.Handlers.SeqAPI.Envs = map[string]SeqAPIEnv{
+			DefaultSeqDBClientID: {
+				SeqDB:   DefaultSeqDBClientID,
+				Options: &cfg.Handlers.SeqAPI.SeqAPIOptions,
+			},
+		}
+		cfg.Handlers.SeqAPI.DefaultEnv = DefaultSeqDBClientID
+	}
+
+	if len(cfg.Clients.SeqDB) == 0 {
+		defaultClient := SeqDBClient{
+			ID:                  DefaultSeqDBClientID,
+			Timeout:             cfg.Clients.SeqDBTimeout,
+			AvgDocSize:          cfg.Clients.SeqDBAvgDocSize,
+			Addrs:               cfg.Clients.SeqDBAddrs,
+			RequestRetries:      cfg.Clients.RequestRetries,
+			InitialRetryBackoff: cfg.Clients.InitialRetryBackoff,
+			MaxRetryBackoff:     cfg.Clients.MaxRetryBackoff,
+			ClientMode:          cfg.Clients.ProxyClientMode,
+			GRPCKeepaliveParams: cfg.Clients.GRPCKeepaliveParams,
+		}
+		cfg.Clients.SeqDB = []SeqDBClient{defaultClient}
+	}
+
+	clientIDs := make(map[string]bool)
+	for _, client := range cfg.Clients.SeqDB {
+		if client.ID == "" {
+			return Config{}, fmt.Errorf("seq_db client ID cannot be empty")
+		}
+		if clientIDs[client.ID] {
+			return Config{}, fmt.Errorf("duplicate seq_db client ID: %s", client.ID)
+		}
+		clientIDs[client.ID] = true
+	}
+
+	if len(cfg.Handlers.SeqAPI.Envs) > 0 {
+		for envName, envConfig := range cfg.Handlers.SeqAPI.Envs {
+			clientExists := false
+			for _, client := range cfg.Clients.SeqDB {
+				if client.ID == envConfig.SeqDB {
+					clientExists = true
+					break
+				}
+			}
+			if !clientExists {
+				return Config{}, fmt.Errorf("client '%s' for env '%s' not found", envConfig.SeqDB, envName)
+			}
+		}
+
+		if cfg.Handlers.SeqAPI.DefaultEnv == "" {
+			return Config{}, fmt.Errorf("default_env must be specified when using envs")
+		}
+
+		if _, exists := cfg.Handlers.SeqAPI.Envs[cfg.Handlers.SeqAPI.DefaultEnv]; !exists {
+			return Config{}, fmt.Errorf("default_env '%s' not found in seq_api.envs", cfg.Handlers.SeqAPI.DefaultEnv)
+		}
 
 		for envName, envConfig := range cfg.Handlers.SeqAPI.Envs {
-			envCfg := envConfig
-			if envCfg.Options == nil {
-				envCfg.Options = &globalOpts
-			} else {
-				opts := *envCfg.Options
-				if opts.MaxSearchLimit == 0 {
-					opts.MaxSearchLimit = globalOpts.MaxSearchLimit
-				}
-				if opts.MaxSearchTotalLimit == 0 {
-					opts.MaxSearchTotalLimit = globalOpts.MaxSearchTotalLimit
-				}
-				if opts.MaxSearchOffsetLimit == 0 {
-					opts.MaxSearchOffsetLimit = globalOpts.MaxSearchOffsetLimit
-				}
-				if opts.MaxExportLimit == 0 {
-					opts.MaxExportLimit = globalOpts.MaxExportLimit
-				}
-				if opts.SeqCLIMaxSearchLimit == 0 {
-					opts.SeqCLIMaxSearchLimit = globalOpts.SeqCLIMaxSearchLimit
-				}
-				if opts.MaxParallelExportRequests == 0 {
-					opts.MaxParallelExportRequests = globalOpts.MaxParallelExportRequests
-				}
-				if opts.MaxAggregationsPerRequest == 0 {
-					opts.MaxAggregationsPerRequest = globalOpts.MaxAggregationsPerRequest
-				}
-				if opts.MaxBucketsPerAggregationTs == 0 {
-					opts.MaxBucketsPerAggregationTs = globalOpts.MaxBucketsPerAggregationTs
-				}
-				if opts.EventsCacheTTL == 0 {
-					opts.EventsCacheTTL = globalOpts.EventsCacheTTL
-				}
-				if opts.LogsLifespanCacheTTL == 0 {
-					opts.LogsLifespanCacheTTL = globalOpts.LogsLifespanCacheTTL
-				}
-				if opts.FieldsCacheTTL == 0 {
-					opts.FieldsCacheTTL = globalOpts.FieldsCacheTTL
-				}
-				if opts.LogsLifespanCacheKey == "" {
-					opts.LogsLifespanCacheKey = globalOpts.LogsLifespanCacheKey
-				}
-				if opts.PinnedFields == nil {
-					opts.PinnedFields = globalOpts.PinnedFields
-				}
-				if opts.Masking == nil {
-					opts.Masking = globalOpts.Masking
-				}
-				envCfg.Options = &opts
+			if envConfig.Options == nil {
+				opts := cfg.Handlers.SeqAPI.SeqAPIOptions
+				envConfig.Options = &opts
+				cfg.Handlers.SeqAPI.Envs[envName] = envConfig
 			}
-			cfg.Handlers.SeqAPI.Envs[envName] = envCfg
 		}
 	}
+
 	return cfg, nil
 }
 

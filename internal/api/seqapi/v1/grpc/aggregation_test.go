@@ -12,6 +12,7 @@ import (
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -47,6 +48,17 @@ func TestGetAggregation(t *testing.T) {
 					Code: seqapi.ErrorCode_ERROR_CODE_NO,
 				},
 			},
+			cfg: config.SeqAPI{
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxAggregationsPerRequest: 4,
+						},
+					},
+				},
+				DefaultEnv: "test",
+			},
 		},
 		{
 			name: "ok_multi_agg",
@@ -67,9 +79,15 @@ func TestGetAggregation(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: config.SeqAPIOptions{
-					MaxAggregationsPerRequest: 3,
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxAggregationsPerRequest: 3,
+						},
+					},
 				},
+				DefaultEnv: "test",
 			},
 		},
 		{
@@ -82,9 +100,15 @@ func TestGetAggregation(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: config.SeqAPIOptions{
-					MaxAggregationsPerRequest: 2,
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxAggregationsPerRequest: 2,
+						},
+					},
 				},
+				DefaultEnv: "test",
 			},
 			apiErr: true,
 		},
@@ -95,6 +119,17 @@ func TestGetAggregation(t *testing.T) {
 				From:     timestamppb.New(from),
 				To:       timestamppb.New(to),
 				AggField: "test2",
+			},
+			cfg: config.SeqAPI{
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxAggregationsPerRequest: 1,
+						},
+					},
+				},
+				DefaultEnv: "test",
 			},
 			clientErr: errors.New("client error"),
 		},
@@ -120,7 +155,10 @@ func TestGetAggregation(t *testing.T) {
 
 			s := initTestAPI(seqData)
 
-			resp, err := s.GetAggregation(context.Background(), tt.req)
+			md := metadata.New(map[string]string{"env": "test"})
+			ctx := metadata.NewIncomingContext(context.Background(), md)
+
+			resp, err := s.GetAggregation(ctx, tt.req)
 			if tt.apiErr {
 				require.True(t, err != nil)
 				return

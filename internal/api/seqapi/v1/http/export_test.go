@@ -72,10 +72,16 @@ func TestServeExport(t *testing.T) {
 			},
 			wantStatus: http.StatusOK,
 			cfg: config.SeqAPI{
-				SeqAPIOptions: config.SeqAPIOptions{
-					MaxExportLimit:            100,
-					MaxParallelExportRequests: 1,
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxExportLimit:            100,
+							MaxParallelExportRequests: 1,
+						},
+					},
 				},
+				DefaultEnv: "test",
 			},
 		},
 		{
@@ -94,10 +100,16 @@ func TestServeExport(t *testing.T) {
 			},
 			wantStatus: http.StatusOK,
 			cfg: config.SeqAPI{
-				SeqAPIOptions: config.SeqAPIOptions{
-					MaxExportLimit:            100,
-					MaxParallelExportRequests: 1,
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxExportLimit:            100,
+							MaxParallelExportRequests: 1,
+						},
+					},
 				},
+				DefaultEnv: "test",
 			},
 		},
 		{
@@ -110,9 +122,15 @@ func TestServeExport(t *testing.T) {
 			reqBody:    formatReqBody(0, "", nil),
 			wantStatus: http.StatusTooManyRequests,
 			cfg: config.SeqAPI{
-				SeqAPIOptions: config.SeqAPIOptions{
-					MaxParallelExportRequests: 0,
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxParallelExportRequests: 0,
+						},
+					},
 				},
+				DefaultEnv: "test",
 			},
 		},
 		{
@@ -120,10 +138,16 @@ func TestServeExport(t *testing.T) {
 			reqBody:    formatReqBody(10, "", nil),
 			wantStatus: http.StatusBadRequest,
 			cfg: config.SeqAPI{
-				SeqAPIOptions: config.SeqAPIOptions{
-					MaxExportLimit:            5,
-					MaxParallelExportRequests: 1,
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxExportLimit:            5,
+							MaxParallelExportRequests: 1,
+						},
+					},
 				},
+				DefaultEnv: "test",
 			},
 		},
 		{
@@ -131,10 +155,16 @@ func TestServeExport(t *testing.T) {
 			reqBody:    formatReqBody(10, efCSV, nil),
 			wantStatus: http.StatusBadRequest,
 			cfg: config.SeqAPI{
-				SeqAPIOptions: config.SeqAPIOptions{
-					MaxExportLimit:            100,
-					MaxParallelExportRequests: 1,
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxExportLimit:            100,
+							MaxParallelExportRequests: 1,
+						},
+					},
 				},
+				DefaultEnv: "test",
 			},
 		},
 		{
@@ -152,10 +182,16 @@ func TestServeExport(t *testing.T) {
 			},
 			wantStatus: http.StatusInternalServerError,
 			cfg: config.SeqAPI{
-				SeqAPIOptions: config.SeqAPIOptions{
-					MaxExportLimit:            100,
-					MaxParallelExportRequests: 1,
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxExportLimit:            100,
+							MaxParallelExportRequests: 1,
+						},
+					},
 				},
+				DefaultEnv: "test",
 			},
 		},
 	}

@@ -33,6 +33,7 @@ type API struct {
 	asyncSearches       *asyncsearches.Service
 	profiles            *profiles.Profiles
 	masker              *mask.Masker
+	envsResponse        *seqapi.GetEnvsResponse
 }
 
 func New(
@@ -65,6 +66,7 @@ func New(
 		asyncSearches:       asyncSearches,
 		profiles:            p,
 		masker:              masker,
+		envsResponse:        parseEnvs(cfg),
 	}
 }
 
@@ -77,6 +79,24 @@ func parsePinnedFields(fields []config.PinnedField) []*seqapi.Field {
 		}
 	}
 	return res
+}
+
+func parseEnvs(cfg config.SeqAPI) *seqapi.GetEnvsResponse {
+	envs := make([]*seqapi.GetEnvsResponse_Env, 0, len(cfg.Envs))
+	for envName, envConfig := range cfg.Envs {
+		env := &seqapi.GetEnvsResponse_Env{
+			Env:                       envName,
+			MaxSearchLimit:            uint32(envConfig.Options.MaxSearchLimit),
+			MaxExportLimit:            uint32(envConfig.Options.MaxExportLimit),
+			MaxParallelExportRequests: uint32(envConfig.Options.MaxParallelExportRequests),
+			MaxAggregationsPerRequest: uint32(envConfig.Options.MaxAggregationsPerRequest),
+			SeqCliMaxSearchLimit:      uint32(envConfig.Options.SeqCLIMaxSearchLimit),
+		}
+		envs = append(envs, env)
+	}
+	return &seqapi.GetEnvsResponse{
+		Envs: envs,
+	}
 }
 
 func (a *API) GetEnvFromContext(ctx context.Context) (string, error) {

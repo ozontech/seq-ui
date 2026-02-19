@@ -103,8 +103,8 @@ func run(ctx context.Context) {
 }
 
 func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
-	logger.Info("initializing seq-db client")
-	seqDBClients, err := initSeqDBClient(ctx, cfg)
+	logger.Info("initializing seq-db clients")
+	seqDBClients, err := initSeqDBClients(ctx, cfg)
 	if err != nil {
 		logger.Fatal("failed to init seq-db client", zap.Error(err))
 	}
@@ -176,7 +176,7 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 	return api.NewRegistrar(seqApiV1, userProfileV1, dashboardsV1, massExportV1, errorGroupsV1)
 }
 
-func initSeqDBClient(ctx context.Context, cfg config.Config) (map[string]seqdb.Client, error) {
+func initSeqDBClients(ctx context.Context, cfg config.Config) (map[string]seqdb.Client, error) {
 	clients := make(map[string]seqdb.Client)
 	for _, clientCfg := range cfg.Clients.SeqDB {
 		client, err := createSeqBDClient(ctx, clientCfg, cfg.Handlers.SeqAPI)
@@ -184,24 +184,6 @@ func initSeqDBClient(ctx context.Context, cfg config.Config) (map[string]seqdb.C
 			return nil, fmt.Errorf("failed to create seq_db client %s: %w", clientCfg.ID, err)
 		}
 		clients[clientCfg.ID] = client
-	}
-
-	if len(clients) == 0 && len(cfg.Clients.SeqDBAddrs) > 0 {
-		client, err := createSeqBDClient(ctx, config.SeqDBClient{
-			ID:                  "testID",
-			Timeout:             cfg.Clients.SeqDBTimeout,
-			AvgDocSize:          cfg.Clients.SeqDBAvgDocSize,
-			Addrs:               cfg.Clients.SeqDBAddrs,
-			RequestRetries:      cfg.Clients.RequestRetries,
-			InitialRetryBackoff: cfg.Clients.InitialRetryBackoff,
-			MaxRetryBackoff:     cfg.Clients.MaxRetryBackoff,
-			ClientMode:          cfg.Clients.ProxyClientMode,
-			GRPCKeepaliveParams: cfg.Clients.GRPCKeepaliveParams,
-		}, cfg.Handlers.SeqAPI)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create seq_db client %s: %w", "test", err)
-		}
-		clients["testID"] = client
 	}
 
 	return clients, nil

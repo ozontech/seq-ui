@@ -13,8 +13,8 @@ import (
 
 func initTestAPI(data test.APITestData) *API {
 	seqDBClients := make(map[string]seqdb.Client)
-	for envName := range data.Cfg.Envs {
-		seqDBClients[envName] = data.Mocks.SeqDB
+	for _, envConfig := range data.Cfg.Envs {
+		seqDBClients[envConfig.SeqDB] = data.Mocks.SeqDB
 	}
 	return New(data.Cfg, seqDBClients, data.Mocks.Cache, data.Mocks.Cache, nil, nil)
 }

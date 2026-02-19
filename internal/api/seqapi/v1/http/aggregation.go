@@ -11,7 +11,6 @@ import (
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 	"go.opentelemetry.io/otel/attribute"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -77,11 +76,8 @@ func (a *API) serveGetAggregation(w http.ResponseWriter, r *http.Request) {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
-	md := metadata.New(map[string]string{
-		"env": env,
-	})
-	grpcCtx := metadata.NewOutgoingContext(ctx, md)
-	resp, err := client.GetAggregation(grpcCtx, httpReq.toProto())
+
+	resp, err := client.GetAggregation(ctx, httpReq.toProto())
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return

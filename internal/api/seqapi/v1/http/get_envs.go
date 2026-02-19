@@ -15,20 +15,7 @@ import (
 //	@Success	200		{object}	getEnvsResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error	"An unexpected error response"
 func (a *API) serveGetEnvs(w http.ResponseWriter, r *http.Request) {
-	envs := make([]envInfo, 0, len(a.config.Envs))
-	for envName, envConfig := range a.config.Envs {
-		envs = append(envs, envInfo{
-			Env:                       envName,
-			MaxSearchLimit:            uint32(envConfig.Options.MaxSearchLimit),
-			MaxExportLimit:            uint32(envConfig.Options.MaxExportLimit),
-			MaxParallelExportRequests: uint32(envConfig.Options.MaxParallelExportRequests),
-			MaxAggregationsPerRequest: uint32(envConfig.Options.MaxAggregationsPerRequest),
-			SeqCliMaxSearchLimit:      uint32(envConfig.Options.SeqCLIMaxSearchLimit),
-		})
-	}
-	httputil.NewWriter(w).WriteJson(getEnvsResponse{
-		Envs: envs,
-	})
+	httputil.NewWriter(w).WriteJson(a.envsResponse)
 }
 
 type getEnvsResponse struct {

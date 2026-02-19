@@ -27,11 +27,6 @@ func (a *API) serveGetLimits(w http.ResponseWriter, r *http.Request) {
 		wr.Error(err, http.StatusInternalServerError)
 		return
 	}
-	// Тут делема, как нам связать grpc get_limits и http get_limits, бизнес-логику продумывать?
-	// md := metadata.New(map[string]string{
-	// 	"env": env,
-	// })
-	// grpcCtx := metadata.NewOutgoingContext(ctx, md)
 
 	httputil.NewWriter(w).WriteJson(getLimitsResponse{
 		MaxSearchLimit:            options.MaxSearchLimit,

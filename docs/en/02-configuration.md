@@ -515,10 +515,6 @@ handlers:
 Config for `/seqapi` API handlers.
 
 `SeqAPI` fields:
-
-+ **`default_env`** *`string`* *`required`*
-
-  Environment name used by default to process requests when no explicit environment is specified.
  
 + **`max_search_limit`** *`int`* *`default=0`*
 
@@ -677,6 +673,9 @@ Config for `/seqapi` API handlers.
 
     List of event field values to filter.
   
+  + **`default_env`** *`string`* *`optional`*
+
+    Environment name used by default to process requests when no explicit environment is specified.
   
 + **`envs`** *`map[string]SeqAPIEnv`* *`optional`*
 

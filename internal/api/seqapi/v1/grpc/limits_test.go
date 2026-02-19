@@ -8,6 +8,7 @@ import (
 	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -20,13 +21,19 @@ func TestGetLimits(t *testing.T) {
 		{
 			name: "ok",
 			cfg: config.SeqAPI{
-				SeqAPIOptions: config.SeqAPIOptions{
-					MaxSearchLimit:            100,
-					MaxExportLimit:            200,
-					MaxParallelExportRequests: 2,
-					MaxAggregationsPerRequest: 5,
-					SeqCLIMaxSearchLimit:      10000,
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB: "test",
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit:            100,
+							MaxExportLimit:            200,
+							MaxParallelExportRequests: 2,
+							MaxAggregationsPerRequest: 5,
+							SeqCLIMaxSearchLimit:      10000,
+						},
+					},
 				},
+				DefaultEnv: "test",
 			},
 			want: &seqapi.GetLimitsResponse{
 				MaxSearchLimit:            100,
@@ -38,6 +45,15 @@ func TestGetLimits(t *testing.T) {
 		},
 		{
 			name: "empty",
+			cfg: config.SeqAPI{
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						SeqDB:   "test",
+						Options: &config.SeqAPIOptions{},
+					},
+				},
+				DefaultEnv: "test",
+			},
 			want: &seqapi.GetLimitsResponse{},
 		},
 	}
@@ -51,7 +67,10 @@ func TestGetLimits(t *testing.T) {
 			}
 			s := initTestAPI(seqData)
 
-			resp, err := s.GetLimits(context.TODO(), nil)
+			md := metadata.New(map[string]string{"env": "test"})
+			ctx := metadata.NewIncomingContext(context.Background(), md)
+
+			resp, err := s.GetLimits(ctx, nil)
 
 			require.NoError(t, err)
 			require.True(t, proto.Equal(tt.want, resp))

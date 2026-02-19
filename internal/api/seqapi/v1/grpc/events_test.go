@@ -14,6 +14,7 @@ import (
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -102,9 +103,15 @@ func TestGetEvent(t *testing.T) {
 
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					SeqAPIOptions: config.SeqAPIOptions{
-						EventsCacheTTL: cacheTTL,
+					Envs: map[string]config.SeqAPIEnv{
+						"test": {
+							SeqDB: "test",
+							Options: &config.SeqAPIOptions{
+								EventsCacheTTL: cacheTTL,
+							},
+						},
 					},
+					DefaultEnv: "test",
 				},
 			}
 			ctrl := gomock.NewController(t)
@@ -128,7 +135,10 @@ func TestGetEvent(t *testing.T) {
 
 			s := initTestAPI(seqData)
 
-			resp, err := s.GetEvent(context.Background(), tt.req)
+			md := metadata.New(map[string]string{"env": "test"})
+			ctx := metadata.NewIncomingContext(context.Background(), md)
+
+			resp, err := s.GetEvent(ctx, tt.req)
 
 			require.Equal(t, tt.clientErr, err)
 			if tt.clientErr != nil {
@@ -361,10 +371,15 @@ func TestGetEventWithMasking(t *testing.T) {
 
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					SeqAPIOptions: config.SeqAPIOptions{
-						EventsCacheTTL: cacheTTL,
-						Masking:        tt.maskingCfg,
+					Envs: map[string]config.SeqAPIEnv{
+						"test": {
+							SeqDB: "test",
+							Options: &config.SeqAPIOptions{
+								EventsCacheTTL: cacheTTL,
+							},
+						},
 					},
+					DefaultEnv: "test",
 				},
 			}
 			ctrl := gomock.NewController(t)
@@ -398,7 +413,11 @@ func TestGetEventWithMasking(t *testing.T) {
 			s := initTestAPI(seqData)
 
 			req := &seqapi.GetEventRequest{Id: curEID}
-			resp, err := s.GetEvent(context.Background(), req)
+
+			md := metadata.New(map[string]string{"env": "test"})
+			ctx := metadata.NewIncomingContext(context.Background(), md)
+
+			resp, err := s.GetEvent(ctx, req)
 
 			require.Equal(t, tt.wantErr, err)
 			if tt.wantErr != nil {

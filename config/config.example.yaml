@@ -6,9 +6,21 @@ clients:
   seq_db_addrs:
     - "seq-db-proxy:9004"
   seq_db_timeout: 15s
+  seq_db:
+    - id: "default"
+      addrs:
+        - "seq-db-proxy:9004"
+      timeout: 15s
+    - id: "test-seq_db"
+      addrs:
+        - "seq-db-proxy:9005"
+      timeout: 15s
+
 handlers:
   seq_api:
     max_search_limit: 100
+    max_export_limit: 100
+    max_parallel_export_requests: 10
     pinned_fields:
       - name: level
         type: keyword

@@ -32,6 +32,7 @@ type API struct {
 	asyncSearches       *asyncsearches.Service
 	profiles            *profiles.Profiles
 	masker              *mask.Masker
+	envsResponse        getEnvsResponse
 }
 
 func New(
@@ -71,6 +72,7 @@ func New(
 		asyncSearches:       asyncSearches,
 		profiles:            p,
 		masker:              masker,
+		envsResponse:        parseEnvs(cfg),
 	}
 }
 
@@ -113,6 +115,24 @@ func parsePinnedFields(fields []config.PinnedField) []field {
 	return res
 }
 
+func parseEnvs(cfg config.SeqAPI) getEnvsResponse {
+	envs := make([]envInfo, 0, len(cfg.Envs))
+	for envName, envConfig := range cfg.Envs {
+		env := envInfo{
+			Env:                       envName,
+			MaxSearchLimit:            uint32(envConfig.Options.MaxSearchLimit),
+			MaxExportLimit:            uint32(envConfig.Options.MaxExportLimit),
+			MaxParallelExportRequests: uint32(envConfig.Options.MaxParallelExportRequests),
+			MaxAggregationsPerRequest: uint32(envConfig.Options.MaxAggregationsPerRequest),
+			SeqCliMaxSearchLimit:      uint32(envConfig.Options.SeqCLIMaxSearchLimit),
+		}
+		envs = append(envs, env)
+	}
+	return getEnvsResponse{
+		Envs: envs,
+	}
+}
+
 type apiErrorCode string //	@name	seqapi.v1.ErrorCode
 
 const (
@@ -123,6 +143,9 @@ const (
 )
 
 func (a *API) GetClientFromEnv(env string) (seqdb.Client, *config.SeqAPIOptions, error) {
+	if env == "" {
+		env = a.config.DefaultEnv
+	}
 	envConfig, exists := a.config.Envs[env]
 	if !exists {
 		return nil, nil, fmt.Errorf("env '%s' not found in configuration", env)
