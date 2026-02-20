@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
+	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/aggregation_ts"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/api_error"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
@@ -78,12 +79,48 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	aggIntervals, err := aggregation_ts.GetIntervals(httpReq.Aggregations.toProto())
+	if err != nil {
+		wr.Error(fmt.Errorf("failed to get аggregation intervals: %w", err), http.StatusBadRequest)
+		return
+	}
+	bucketUnits, err := GetbucketUnits(httpReq.Aggregations, a.config.DefaultBucketUnit)
+	if err != nil {
+		wr.Error(fmt.Errorf("failed to get аggregation bucket units: %w", err), http.StatusBadRequest)
+		return
+	}
+	aggregation_ts.NormalizeBucketValues(resp.Aggregations, aggIntervals, bucketUnits)
+
 	wr.WriteJson(getAggregationTsResponseFromProto(resp, httpReq.Aggregations))
+}
+
+func GetbucketUnits(aggregations aggregationTsQueries, defaultBucketUnit time.Duration) ([]time.Duration, error) {
+	bucketUnits := make([]time.Duration, 0, len(aggregations))
+	for _, agg := range aggregations {
+		if agg.Func != afCount {
+			bucketUnits = append(bucketUnits, 0)
+			continue
+		}
+		if agg.BucketUnit == "" {
+			bucketUnits = append(bucketUnits, defaultBucketUnit)
+			continue
+		}
+
+		bucketUnit, err := time.ParseDuration(agg.BucketUnit)
+		if err != nil {
+			return nil, err
+		}
+
+		bucketUnits = append(bucketUnits, bucketUnit)
+	}
+
+	return bucketUnits, nil
 }
 
 type aggregationTsQuery struct {
 	aggregationQuery
-	Interval string `json:"interval,omitempty" format:"duration" example:"1m"`
+	Interval   string `json:"interval,omitempty" format:"duration" example:"1m"`
+	BucketUnit string `json:"bucket_unit,omitempty" format:"duration" example:"10s"`
 } //	@name	seqapi.v1.AggregationTsQuery
 
 func (aq aggregationTsQuery) toProto() *seqapi.AggregationQuery {
@@ -92,6 +129,11 @@ func (aq aggregationTsQuery) toProto() *seqapi.AggregationQuery {
 	if aq.Interval != "" {
 		q.Interval = new(string)
 		*q.Interval = aq.Interval
+	}
+
+	if aq.BucketUnit != "" {
+		q.BucketUnit = new(string)
+		*q.BucketUnit = aq.BucketUnit
 	}
 
 	return q
@@ -201,13 +243,15 @@ func aggregationsSeriesFromProto(proto []*seqapi.Aggregation_Bucket, reqAgg aggr
 
 type aggregationTs struct {
 	Data struct {
-		Series aggregationsSeries `json:"result"`
+		Series     aggregationsSeries `json:"result"`
+		BucketUnit string             `json:"bucket_unit,omitempty"`
 	} `json:"data"`
 } //	@name	seqapi.v1.AggregationTs
 
 func aggregationTsFromProto(proto *seqapi.Aggregation, reqAgg aggregationTsQuery) aggregationTs {
 	a := aggregationTs{}
 	a.Data.Series = aggregationsSeriesFromProto(proto.Buckets, reqAgg)
+	a.Data.BucketUnit = proto.BucketUnit
 	return a
 }
 

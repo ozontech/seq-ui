@@ -33,6 +33,7 @@ const (
 	defaultMaxAggregationsPerRequest  = 1
 	defaultMaxBucketsPerAggregationTs = 200
 	defaultMaxParallelExportRequests  = 1
+	builtInDefaultBucketUnit          = time.Second
 
 	defaultInmemCacheNumCounters = 10000000
 	defaultInmemCacheMaxCost     = 1000000
@@ -243,6 +244,7 @@ type SeqAPI struct {
 	LogsLifespanCacheTTL       time.Duration `yaml:"logs_lifespan_cache_ttl"`
 	FieldsCacheTTL             time.Duration `yaml:"fields_cache_ttl"`
 	Masking                    *Masking      `yaml:"masking"`
+	DefaultBucketUnit          time.Duration `yaml:"default_bucket_unit"`
 }
 
 type Masking struct {
@@ -333,6 +335,9 @@ func FromFile(cfgPath string) (Config, error) {
 	}
 	if cfg.Handlers.SeqAPI.LogsLifespanCacheTTL <= 0 {
 		cfg.Handlers.SeqAPI.LogsLifespanCacheTTL = defaultLogsLifespanCacheTTL
+	}
+	if cfg.Handlers.SeqAPI.DefaultBucketUnit <= 0 {
+		cfg.Handlers.SeqAPI.DefaultBucketUnit = builtInDefaultBucketUnit
 	}
 
 	if cfg.Server.DB != nil && cfg.Server.DB.UsePreparedStatements == nil {

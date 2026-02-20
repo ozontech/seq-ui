@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/aggregation_ts"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/api_error"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
@@ -100,6 +101,16 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 			a.masker.Mask(e.Data)
 		}
 	}
+
+	aggIntervals, err := aggregation_ts.GetIntervals(req.Aggregations)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	bucketUnits, err := aggregation_ts.GetBucketUnits(req.Aggregations, a.config.DefaultBucketUnit)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	aggregation_ts.NormalizeBucketValues(resp.Aggregations, aggIntervals, bucketUnits)
 
 	return resp, nil
 }
