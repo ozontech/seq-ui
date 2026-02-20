@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
+	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/aggregation_ts"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/api_error"
-	aggregationts "github.com/ozontech/seq-ui/internal/pkg/client/aggregationts"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 	"go.opentelemetry.io/otel/attribute"
@@ -79,32 +79,42 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	aggIntervals := aggregationts.GetIntervals(httpReq.Aggregations.toProto())
-	bucketUnits := GetbucketUnits(httpReq.Aggregations)
-	if err = aggregationts.NormalizeBucketValues(resp.Aggregations, aggIntervals, bucketUnits); err != nil {
-		wr.Error(fmt.Errorf("failed to get аggregation ts: %w", err), http.StatusBadRequest)
+	aggIntervals, err := aggregation_ts.GetIntervals(httpReq.Aggregations.toProto())
+	if err != nil {
+		wr.Error(fmt.Errorf("failed to get аggregation intervals: %w", err), http.StatusBadRequest)
 		return
 	}
+	bucketUnits, err := GetbucketUnits(httpReq.Aggregations, a.config.DefaultBucketUnit)
+	if err != nil {
+		wr.Error(fmt.Errorf("failed to get аggregation bucket units: %w", err), http.StatusBadRequest)
+		return
+	}
+	aggregation_ts.NormalizeBucketValues(resp.Aggregations, aggIntervals, bucketUnits)
 
 	wr.WriteJson(getAggregationTsResponseFromProto(resp, httpReq.Aggregations))
 }
 
-func GetbucketUnits(aggregations aggregationTsQueries) []*string {
-	bucketUnits := make([]*string, 0, len(aggregations))
-	defaultBucketUnit := "count/1s"
+func GetbucketUnits(aggregations aggregationTsQueries, defaultBucketUnit time.Duration) ([]time.Duration, error) {
+	bucketUnits := make([]time.Duration, 0, len(aggregations))
 	for _, agg := range aggregations {
 		if agg.Func != afCount {
-			bucketUnits = append(bucketUnits, nil)
+			bucketUnits = append(bucketUnits, 0)
 			continue
 		}
 		if agg.BucketUnit == "" {
-			bucketUnits = append(bucketUnits, &defaultBucketUnit)
+			bucketUnits = append(bucketUnits, defaultBucketUnit)
 			continue
 		}
-		bucketUnits = append(bucketUnits, &agg.BucketUnit)
+
+		bucketUnit, err := time.ParseDuration(agg.BucketUnit)
+		if err != nil {
+			return nil, err
+		}
+
+		bucketUnits = append(bucketUnits, bucketUnit)
 	}
 
-	return bucketUnits
+	return bucketUnits, nil
 }
 
 type aggregationTsQuery struct {
