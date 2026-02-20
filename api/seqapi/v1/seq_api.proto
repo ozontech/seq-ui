@@ -283,6 +283,7 @@ message FetchAsyncSearchResultResponse {
   double progress = 7;
   uint64 disk_usage = 8;
   string meta = 9;
+  Error error = 10;
 }
 
 message GetAsyncSearchesListRequest {
@@ -307,6 +308,7 @@ message GetAsyncSearchesListResponse {
   }
 
   repeated ListItem searches = 1;
+  Error error = 2;
 }
 
 message CancelAsyncSearchRequest {

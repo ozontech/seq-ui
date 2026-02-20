@@ -163,6 +163,46 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 			},
 		},
 		{
+			name: "partial_response",
+			req:  &seqapi.GetAsyncSearchesListRequest{},
+			resp: &seqapi.GetAsyncSearchesListResponse{
+				Searches: []*seqapi.GetAsyncSearchesListResponse_ListItem{
+					{
+						SearchId: mockSearchID1,
+						Status:   seqapi.AsyncSearchStatus_ASYNC_SEARCH_STATUS_DONE,
+						Request: &seqapi.StartAsyncSearchRequest{
+							Retention: durationpb.New(60 * time.Second),
+							Query:     "message:error",
+							From:      timestamppb.New(mockTime.Add(-15 * time.Minute)),
+							To:        timestamppb.New(mockTime),
+							WithDocs:  true,
+							Size:      100,
+						},
+						StartedAt: timestamppb.New(mockTime.Add(-30 * time.Second)),
+						ExpiresAt: timestamppb.New(mockTime.Add(30 * time.Second)),
+						Progress:  1,
+						DiskUsage: 512,
+						OwnerName: mockUserName1,
+					},
+				},
+				Error: &seqapi.Error{
+					Code:    seqapi.ErrorCode_ERROR_CODE_PARTIAL_RESPONSE,
+					Message: "partial response",
+				},
+			},
+			mockArgs: &mockArgs{
+				repoReq: types.GetAsyncSearchesListRequest{},
+				repoResp: []types.AsyncSearchInfo{
+					{
+						SearchID:  mockSearchID1,
+						OwnerID:   mockProfileID1,
+						OwnerName: mockUserName1,
+					},
+				},
+				searchIDs: []string{mockSearchID1},
+			},
+		},
+		{
 			name: "err_limit",
 			req: &seqapi.GetAsyncSearchesListRequest{
 				Limit:  -10,
