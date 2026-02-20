@@ -13,6 +13,10 @@ func GetIntervals(aggregations []*seqapi.AggregationQuery) ([]time.Duration, err
 			aggIntervals = append(aggIntervals, 0)
 			continue
 		}
+		if agg.Interval == nil {
+			aggIntervals = append(aggIntervals, time.Second)
+			continue
+		}
 
 		interval, err := time.ParseDuration(*agg.Interval)
 		if err != nil {

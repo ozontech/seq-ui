@@ -15,6 +15,7 @@ func NormalizeBucketValues(aggregations []*seqapi.Aggregation, aggIntervals, buc
 		bucketUnitDenominator := time.Second
 		if bucketUnits[i] != 0 {
 			bucketUnitDenominator = bucketUnits[i]
+			agg.BucketUnit = bucketUnits[i].String()
 		}
 
 		for _, bucket := range agg.Buckets {

@@ -20,7 +20,6 @@ func TestGetAggregation(t *testing.T) {
 	query := "message:error"
 	from := time.Now()
 	to := from.Add(time.Second)
-	bucketUnit := "count/3s"
 
 	tests := []struct {
 		name string
@@ -46,29 +45,6 @@ func TestGetAggregation(t *testing.T) {
 			},
 			resp: &seqapi.GetAggregationResponse{
 				Aggregations: test.MakeAggregations(2, 3, nil),
-				Error: &seqapi.Error{
-					Code: seqapi.ErrorCode_ERROR_CODE_NO,
-				},
-			},
-			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest: 3,
-			},
-		},
-		{
-			name: "ok_normalize_count",
-			req: &seqapi.GetAggregationRequest{
-				Query: query,
-				From:  timestamppb.New(from),
-				To:    timestamppb.New(to),
-				Aggregations: []*seqapi.AggregationQuery{
-					{Field: "test1", Func: seqapi.AggFunc_AGG_FUNC_COUNT, BucketUnit: &bucketUnit},
-					{Field: "test2", Func: seqapi.AggFunc_AGG_FUNC_COUNT, BucketUnit: &bucketUnit},
-				},
-			},
-			resp: &seqapi.GetAggregationResponse{
-				Aggregations: test.MakeAggregations(2, 3, &test.MakeAggOpts{
-					BucketUnit: bucketUnit,
-				}),
 				Error: &seqapi.Error{
 					Code: seqapi.ErrorCode_ERROR_CODE_NO,
 				},
@@ -136,6 +112,130 @@ func TestGetAggregation(t *testing.T) {
 
 			require.Equal(t, tt.clientErr, err)
 			require.True(t, proto.Equal(resp, tt.resp))
+		})
+	}
+}
+
+func TestGetAggregationWithNormalization(t *testing.T) {
+	query := "message:error"
+	from := time.Now()
+	to := from.Add(time.Second)
+	bucketUnit := "3s"
+
+	tests := []struct {
+		name string
+
+		req             *seqapi.GetAggregationRequest
+		resp            *seqapi.GetAggregationResponse
+		normalized_resp *seqapi.GetAggregationResponse
+
+		apiErr    bool
+		clientErr error
+
+		cfg config.SeqAPI
+	}{
+		{
+			name: "ok_normalize",
+			req: &seqapi.GetAggregationRequest{
+				Query: query,
+				From:  timestamppb.New(from),
+				To:    timestamppb.New(to),
+				Aggregations: []*seqapi.AggregationQuery{
+					{Field: "test1", Func: seqapi.AggFunc_AGG_FUNC_COUNT, BucketUnit: &bucketUnit},
+					{Field: "test2", Func: seqapi.AggFunc_AGG_FUNC_COUNT, BucketUnit: &bucketUnit},
+				},
+			},
+			resp: &seqapi.GetAggregationResponse{
+				Aggregations: test.MakeAggregations(2, 3, &test.MakeAggOpts{
+					BucketUnit: bucketUnit,
+				}),
+				Error: &seqapi.Error{
+					Code: seqapi.ErrorCode_ERROR_CODE_NO,
+				},
+			},
+			normalized_resp: &seqapi.GetAggregationResponse{
+				Aggregations: test.MakeAggregations(2, 3, &test.MakeAggOpts{
+					BucketUnit: bucketUnit,
+					Values: []float64{
+						3,
+						6,
+						9,
+					},
+				}),
+				Error: &seqapi.Error{
+					Code: seqapi.ErrorCode_ERROR_CODE_NO,
+				},
+			},
+			cfg: config.SeqAPI{
+				MaxAggregationsPerRequest: 3,
+				DefaultBucketUnit:         time.Second,
+			},
+		},
+		{
+			name: "ok_normalize_default_bucket_unit",
+			req: &seqapi.GetAggregationRequest{
+				Query: query,
+				From:  timestamppb.New(from),
+				To:    timestamppb.New(to),
+				Aggregations: []*seqapi.AggregationQuery{
+					{Field: "test1", Func: seqapi.AggFunc_AGG_FUNC_COUNT},
+					{Field: "test2", Func: seqapi.AggFunc_AGG_FUNC_COUNT},
+				},
+			},
+			resp: &seqapi.GetAggregationResponse{
+				Aggregations: test.MakeAggregations(2, 3, nil),
+				Error: &seqapi.Error{
+					Code: seqapi.ErrorCode_ERROR_CODE_NO,
+				},
+			},
+			normalized_resp: &seqapi.GetAggregationResponse{
+				Aggregations: test.MakeAggregations(2, 3, &test.MakeAggOpts{
+					BucketUnit: "4s",
+					Values: []float64{
+						4,
+						8,
+						12,
+					},
+				}),
+				Error: &seqapi.Error{
+					Code: seqapi.ErrorCode_ERROR_CODE_NO,
+				},
+			},
+			cfg: config.SeqAPI{
+				MaxAggregationsPerRequest: 3,
+				DefaultBucketUnit:         4 * time.Second,
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			seqData := test.APITestData{
+				Cfg: tt.cfg,
+			}
+
+			if !tt.apiErr {
+				ctrl := gomock.NewController(t)
+
+				seqDbMock := mock_seqdb.NewMockClient(ctrl)
+				seqDbMock.EXPECT().GetAggregation(gomock.Any(), proto.Clone(tt.req)).
+					Return(proto.Clone(tt.resp), tt.clientErr).Times(1)
+
+				seqData.Mocks.SeqDB = seqDbMock
+			}
+
+			s := initTestAPI(seqData)
+
+			resp, err := s.GetAggregation(context.Background(), tt.req)
+			if tt.apiErr {
+				require.True(t, err != nil)
+				return
+			}
+
+			require.Equal(t, tt.clientErr, err)
+			require.True(t, proto.Equal(resp, tt.normalized_resp))
 		})
 	}
 }
