@@ -20,18 +20,24 @@ import (
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
 
+type envParam struct {
+	client        seqdb.Client
+	options       config.SeqAPIOptions
+	fieldsCache   *fieldsCache
+	masker        *mask.Masker
+	pinnedFields  fields
+	exportLimiter *tokenlimiter.Limiter
+}
+
 type API struct {
 	config              config.SeqAPI
 	seqDBСlients        map[string]seqdb.Client
+	envParams           map[string]envParam
 	inmemWithRedisCache cache.Cache
 	redisCache          cache.Cache
 	nowFn               func() time.Time
-	fieldsCache         *fieldsCache
-	pinnedFields        fields
-	exportLimiter       *tokenlimiter.Limiter
 	asyncSearches       *asyncsearches.Service
 	profiles            *profiles.Profiles
-	masker              *mask.Masker
 	envsResponse        getEnvsResponse
 }
 
@@ -43,35 +49,91 @@ func New(
 	asyncSearches *asyncsearches.Service,
 	p *profiles.Profiles,
 ) *API {
-	var fCache *fieldsCache
+	var globalfCache *fieldsCache
 	if cfg.FieldsCacheTTL > 0 {
-		fCache = newFieldsCache(cfg.FieldsCacheTTL)
+		globalfCache = newFieldsCache(cfg.FieldsCacheTTL)
 	}
 
-	masker, err := mask.New(cfg.Masking)
+	globalMasker, err := mask.New(cfg.Masking)
 	if err != nil {
 		logger.Fatal("failed to init masking", zap.Error(err))
 	}
+
+	globalPinnedFields := parsePinnedFields(cfg.PinnedFields)
+	globalExportLimiter := tokenlimiter.New(cfg.MaxParallelExportRequests)
+
+	envParams := make(map[string]envParam)
+	if len(cfg.Envs) > 0 {
+		for envName, envConfig := range cfg.Envs {
+			client, exists := seqDBСlients[envConfig.SeqDB]
+			if !exists {
+				logger.Fatal("client not found for environment",
+					zap.String("env", envName),
+					zap.String("clientID", envConfig.SeqDB))
+			}
+
+			options := envConfig.Options
+			if options == nil {
+				options = cfg.SeqAPIOptions
+			}
+
+			var envfCache *fieldsCache
+			if options.FieldsCacheTTL > 0 {
+				envfCache = newFieldsCache(options.FieldsCacheTTL)
+			}
+
+			var envMasker, err = mask.New(options.Masking)
+			if err != nil {
+				logger.Fatal("failed to init env masking", zap.Error(err))
+			}
+
+			envPinnedFields := parsePinnedFields(options.PinnedFields)
+			envExportLimiter := tokenlimiter.New(options.MaxParallelExportRequests)
+
+			envParams[envName] = envParam{
+				client:        client,
+				options:       *options,
+				fieldsCache:   envfCache,
+				masker:        envMasker,
+				pinnedFields:  envPinnedFields,
+				exportLimiter: envExportLimiter,
+			}
+		}
+	} else {
+		client, exists := seqDBСlients[config.DefaultSeqDBClientID]
+		if !exists {
+			logger.Fatal("default client not found",
+				zap.String("clientID", config.DefaultSeqDBClientID))
+		}
+
+		envParams["default"] = envParam{
+			client:        client,
+			options:       *cfg.SeqAPIOptions,
+			fieldsCache:   globalfCache,
+			masker:        globalMasker,
+			pinnedFields:  globalPinnedFields,
+			exportLimiter: globalExportLimiter,
+		}
+	}
 	// for export
-	if masker != nil {
-		for env, client := range seqDBСlients {
-			client.WithMasking(masker)
-			seqDBСlients[env] = client
+	for envName := range seqDBСlients {
+		envParams := envParams[envName]
+		if envParams.masker != nil {
+			client := seqDBСlients[envName]
+			client.WithMasking(envParams.masker)
+			seqDBСlients[envName] = client
 		}
 	}
 
 	return &API{
 		config:              cfg,
 		seqDBСlients:        seqDBСlients,
+		envParams:           envParams,
 		inmemWithRedisCache: inmemWithRedisCache,
 		redisCache:          redisCache,
 		nowFn:               time.Now,
-		fieldsCache:         fCache,
-		pinnedFields:        parsePinnedFields(cfg.PinnedFields),
-		exportLimiter:       tokenlimiter.New(cfg.MaxParallelExportRequests),
 		asyncSearches:       asyncSearches,
 		profiles:            p,
-		masker:              masker,
 		envsResponse:        parseEnvs(cfg),
 	}
 }
@@ -116,21 +178,16 @@ func parsePinnedFields(fields []config.PinnedField) []field {
 }
 
 func parseEnvs(cfg config.SeqAPI) getEnvsResponse {
-	envs := make([]envInfo, 0, len(cfg.Envs))
-	for envName, envConfig := range cfg.Envs {
-		env := envInfo{
-			Env:                       envName,
-			MaxSearchLimit:            uint32(envConfig.Options.MaxSearchLimit),
-			MaxExportLimit:            uint32(envConfig.Options.MaxExportLimit),
-			MaxParallelExportRequests: uint32(envConfig.Options.MaxParallelExportRequests),
-			MaxAggregationsPerRequest: uint32(envConfig.Options.MaxAggregationsPerRequest),
-			SeqCliMaxSearchLimit:      uint32(envConfig.Options.SeqCLIMaxSearchLimit),
+	var envs []envInfo
+	if len(cfg.Envs) > 0 {
+		envs = make([]envInfo, 0, len(cfg.Envs))
+		for envName, envConfig := range cfg.Envs {
+			envs = append(envs, createEnvInfo(envName, envConfig.Options))
 		}
-		envs = append(envs, env)
+	} else {
+		envs = []envInfo{createEnvInfo("default", cfg.SeqAPIOptions)}
 	}
-	return getEnvsResponse{
-		Envs: envs,
-	}
+	return getEnvsResponse{Envs: envs}
 }
 
 type apiErrorCode string //	@name	seqapi.v1.ErrorCode
@@ -142,23 +199,21 @@ const (
 	aecTooManyFractionsHit apiErrorCode = "ERROR_CODE_TOO_MANY_FRACTIONS_HIT"
 )
 
-func (a *API) GetClientFromEnv(env string) (seqdb.Client, *config.SeqAPIOptions, error) {
+func (a *API) GetEnvParams(env string) (envParam, error) {
 	if env == "" {
-		env = a.config.DefaultEnv
+		if len(a.config.Envs) == 0 {
+			env = "default"
+		} else {
+			env = a.config.DefaultEnv
+		}
 	}
-	envConfig, exists := a.config.Envs[env]
+
+	params, exists := a.envParams[env]
 	if !exists {
-		return nil, nil, fmt.Errorf("env '%s' not found in configuration", env)
+		return envParam{}, fmt.Errorf("env '%s' not found", env)
 	}
 
-	client, exists := a.seqDBСlients[envConfig.SeqDB]
-	if !exists {
-		return nil, nil, fmt.Errorf("seqdb client '%s' not found for env '%s'", envConfig.SeqDB, env)
-	}
-
-	options := envConfig.Options
-
-	return client, options, nil
+	return params, nil
 }
 
 func apiErrorCodeFromProto(proto seqapi.ErrorCode) apiErrorCode {
@@ -260,4 +315,22 @@ func checkLimitOffset(limit, offset int32) error {
 		return types.NewErrInvalidRequestField("'offset' must be non-negative")
 	}
 	return nil
+}
+
+func createEnvInfo(envName string, opts *config.SeqAPIOptions) envInfo {
+	return envInfo{
+		Env:                       envName,
+		MaxSearchLimit:            uint32(opts.MaxSearchLimit),
+		MaxExportLimit:            uint32(opts.MaxExportLimit),
+		MaxParallelExportRequests: uint32(opts.MaxParallelExportRequests),
+		MaxAggregationsPerRequest: uint32(opts.MaxAggregationsPerRequest),
+		SeqCliMaxSearchLimit:      uint32(opts.SeqCLIMaxSearchLimit),
+	}
+}
+
+func checkEnv(env string) string {
+	if env == "" {
+		return "default"
+	}
+	return env
 }

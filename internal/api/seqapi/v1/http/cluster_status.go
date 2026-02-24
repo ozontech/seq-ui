@@ -26,7 +26,7 @@ func (a *API) serveStatus(w http.ResponseWriter, r *http.Request) {
 	wr := httputil.NewWriter(w)
 
 	env := getEnvFromContext(ctx)
-	client, _, err := a.GetClientFromEnv(env)
+	params, err := a.GetEnvParams(env)
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return
@@ -35,11 +35,11 @@ func (a *API) serveStatus(w http.ResponseWriter, r *http.Request) {
 	span.SetAttributes(
 		attribute.KeyValue{
 			Key:   "env",
-			Value: attribute.StringValue(env),
+			Value: attribute.StringValue(checkEnv(env)),
 		},
 	)
 
-	resp, err := client.Status(ctx, &seqapi.StatusRequest{})
+	resp, err := params.client.Status(ctx, &seqapi.StatusRequest{})
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return

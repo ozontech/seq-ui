@@ -22,7 +22,6 @@ type getEnvsResponse struct {
 	Envs []envInfo `json:"envs"`
 } // @name seqapi.v1.GetEnvsResponse
 
-//nolint:unused
 type envInfo struct {
 	Env                       string `json:"env"`
 	MaxSearchLimit            uint32 `json:"max_search_limit"`

@@ -20,27 +20,27 @@ func (a *API) GetFields(ctx context.Context, req *seqapi.GetFieldsRequest) (*seq
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	client, _, err := a.GetClientFromEnv(env)
+	params, err := a.GetEnvParams(env)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	span.SetAttributes(attribute.KeyValue{
 		Key:   "env",
-		Value: attribute.StringValue(env),
+		Value: attribute.StringValue(checkEnv(env)),
 	})
 
-	if a.fieldsCache == nil {
-		return client.GetFields(ctx, req)
+	if params.fieldsCache == nil {
+		return params.client.GetFields(ctx, req)
 	}
 
-	fields, cached, isActual := a.fieldsCache.getFields()
+	fields, cached, isActual := params.fieldsCache.getFields()
 	if cached && isActual {
 		return &seqapi.GetFieldsResponse{
 			Fields: fields,
 		}, nil
 	}
 
-	resp, err := client.GetFields(ctx, req)
+	resp, err := params.client.GetFields(ctx, req)
 	if err != nil {
 		if cached {
 			logger.Error("can't get fields; use cached fields", zap.Error(err))
@@ -50,12 +50,28 @@ func (a *API) GetFields(ctx context.Context, req *seqapi.GetFieldsRequest) (*seq
 		return nil, err
 	}
 
-	a.fieldsCache.setFields(resp.GetFields())
+	params.fieldsCache.setFields(resp.GetFields())
 	return resp, nil
 }
 
-func (a *API) GetPinnedFields(_ context.Context, _ *seqapi.GetFieldsRequest) (*seqapi.GetFieldsResponse, error) {
+func (a *API) GetPinnedFields(ctx context.Context, _ *seqapi.GetFieldsRequest) (*seqapi.GetFieldsResponse, error) {
+	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_get_fields")
+	defer span.End()
+
+	env, err := a.GetEnvFromContext(ctx)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	params, err := a.GetEnvParams(env)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	span.SetAttributes(attribute.KeyValue{
+		Key:   "env",
+		Value: attribute.StringValue(checkEnv(env)),
+	})
+
 	return &seqapi.GetFieldsResponse{
-		Fields: a.pinnedFields,
+		Fields: params.pinnedFields,
 	}, nil
 }

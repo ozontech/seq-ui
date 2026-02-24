@@ -103,15 +103,9 @@ func TestGetEvent(t *testing.T) {
 
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					Envs: map[string]config.SeqAPIEnv{
-						"test": {
-							SeqDB: "test",
-							Options: &config.SeqAPIOptions{
-								EventsCacheTTL: cacheTTL,
-							},
-						},
+					SeqAPIOptions: &config.SeqAPIOptions{
+						EventsCacheTTL: cacheTTL,
 					},
-					DefaultEnv: "test",
 				},
 			}
 			ctrl := gomock.NewController(t)
@@ -371,15 +365,9 @@ func TestGetEventWithMasking(t *testing.T) {
 
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					Envs: map[string]config.SeqAPIEnv{
-						"test": {
-							SeqDB: "test",
-							Options: &config.SeqAPIOptions{
-								EventsCacheTTL: cacheTTL,
-							},
-						},
+					SeqAPIOptions: &config.SeqAPIOptions{
+						EventsCacheTTL: cacheTTL,
 					},
-					DefaultEnv: "test",
 				},
 			}
 			ctrl := gomock.NewController(t)
@@ -414,10 +402,7 @@ func TestGetEventWithMasking(t *testing.T) {
 
 			req := &seqapi.GetEventRequest{Id: curEID}
 
-			md := metadata.New(map[string]string{"env": "test"})
-			ctx := metadata.NewIncomingContext(context.Background(), md)
-
-			resp, err := s.GetEvent(ctx, req)
+			resp, err := s.GetEvent(context.Background(), req)
 
 			require.Equal(t, tt.wantErr, err)
 			if tt.wantErr != nil {

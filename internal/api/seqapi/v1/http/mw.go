@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"net/http"
+	"strings"
 )
 
 type envContextKey struct{}
@@ -16,7 +17,7 @@ func getEnvFromContext(ctx context.Context) string {
 
 func (a *API) envInterceptor(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/envs" || r.URL.Path == "/async" {
+		if strings.HasPrefix(r.URL.Path, "/envs") || strings.HasPrefix(r.URL.Path, "/async") {
 			next.ServeHTTP(w, r)
 			return
 		}

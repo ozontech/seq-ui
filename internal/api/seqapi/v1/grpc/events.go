@@ -21,7 +21,7 @@ func (a *API) GetEvent(ctx context.Context, req *seqapi.GetEventRequest) (*seqap
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	client, options, err := a.GetClientFromEnv(env)
+	params, err := a.GetEnvParams(env)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -33,31 +33,31 @@ func (a *API) GetEvent(ctx context.Context, req *seqapi.GetEventRequest) (*seqap
 		},
 		attribute.KeyValue{
 			Key:   "env",
-			Value: attribute.StringValue(env),
+			Value: attribute.StringValue(checkEnv(env)),
 		},
 	)
 
 	if cached, err := a.inmemWithRedisCache.Get(ctx, req.Id); err == nil {
 		event := &seqapi.Event{}
 		if err = proto.Unmarshal([]byte(cached), event); err == nil {
-			if a.masker != nil {
-				a.masker.Mask(event.Data)
+			if params.masker != nil {
+				params.masker.Mask(event.Data)
 			}
 			return &seqapi.GetEventResponse{Event: event}, nil
 		}
 		logger.Error("failed to unmarshal cached event proto", zap.String("id", req.Id), zap.Error(err))
 	}
-	resp, err := client.GetEvent(ctx, req)
+	resp, err := params.client.GetEvent(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	if a.masker != nil && resp.Event != nil {
-		a.masker.Mask(resp.Event.Data)
+	if params.masker != nil && resp.Event != nil {
+		params.masker.Mask(resp.Event.Data)
 	}
 
 	if data, err := proto.Marshal(resp.Event); err == nil {
-		_ = a.inmemWithRedisCache.SetWithTTL(ctx, req.Id, string(data), options.EventsCacheTTL)
+		_ = a.inmemWithRedisCache.SetWithTTL(ctx, req.Id, string(data), params.options.EventsCacheTTL)
 	} else {
 		logger.Error("failed to marshal event proto for caching", zap.String("id", req.Id), zap.Error(err))
 	}

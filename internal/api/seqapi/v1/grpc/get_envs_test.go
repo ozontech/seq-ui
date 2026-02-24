@@ -19,23 +19,18 @@ func TestGetEnvs(t *testing.T) {
 		{
 			name: "single_env",
 			cfg: config.SeqAPI{
-				Envs: map[string]config.SeqAPIEnv{
-					"test": {
-						Options: &config.SeqAPIOptions{
-							MaxSearchLimit:            100,
-							MaxExportLimit:            200,
-							MaxParallelExportRequests: 2,
-							MaxAggregationsPerRequest: 5,
-							SeqCLIMaxSearchLimit:      10000,
-						},
-					},
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxSearchLimit:            100,
+					MaxExportLimit:            200,
+					MaxParallelExportRequests: 2,
+					MaxAggregationsPerRequest: 5,
+					SeqCLIMaxSearchLimit:      10000,
 				},
-				DefaultEnv: "test",
 			},
 			want: &seqapi.GetEnvsResponse{
 				Envs: []*seqapi.GetEnvsResponse_Env{
 					{
-						Env:                       "test",
+						Env:                       "default",
 						MaxSearchLimit:            100,
 						MaxExportLimit:            200,
 						MaxParallelExportRequests: 2,

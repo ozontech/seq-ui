@@ -5,6 +5,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/tracing"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // serveGetLimits go doc.
@@ -22,18 +23,25 @@ func (a *API) serveGetLimits(w http.ResponseWriter, r *http.Request) {
 	wr := httputil.NewWriter(w)
 	env := getEnvFromContext(ctx)
 
-	_, options, err := a.GetClientFromEnv(env)
+	params, err := a.GetEnvParams(env)
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return
 	}
 
+	span.SetAttributes(
+		attribute.KeyValue{
+			Key:   "env",
+			Value: attribute.StringValue(checkEnv(env)),
+		},
+	)
+
 	httputil.NewWriter(w).WriteJson(getLimitsResponse{
-		MaxSearchLimit:            options.MaxSearchLimit,
-		MaxExportLimit:            options.MaxExportLimit,
-		MaxParallelExportRequests: int32(options.MaxParallelExportRequests),
-		MaxAggregationsPerRequest: int32(options.MaxAggregationsPerRequest),
-		SeqCliMaxSearchLimit:      int32(options.SeqCLIMaxSearchLimit),
+		MaxSearchLimit:            params.options.MaxSearchLimit,
+		MaxExportLimit:            params.options.MaxExportLimit,
+		MaxParallelExportRequests: int32(params.options.MaxParallelExportRequests),
+		MaxAggregationsPerRequest: int32(params.options.MaxAggregationsPerRequest),
+		SeqCliMaxSearchLimit:      int32(params.options.SeqCLIMaxSearchLimit),
 	})
 }
 

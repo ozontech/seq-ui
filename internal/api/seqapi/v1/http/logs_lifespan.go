@@ -12,6 +12,7 @@ import (
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
 
@@ -30,13 +31,13 @@ func (a *API) serveGetLogsLifespan(w http.ResponseWriter, r *http.Request) {
 	wr := httputil.NewWriter(w)
 
 	env := getEnvFromContext(ctx)
-	client, options, err := a.GetClientFromEnv(env)
+	params, err := a.GetEnvParams(env)
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return
 	}
 
-	cacheKey := options.LogsLifespanCacheKey
+	cacheKey := params.options.LogsLifespanCacheKey
 
 	if resStr, err := a.redisCache.Get(ctx, cacheKey); err == nil {
 		res := 0
@@ -52,7 +53,7 @@ func (a *API) serveGetLogsLifespan(w http.ResponseWriter, r *http.Request) {
 		logger.Error("can't get logs lifespan from cache", zap.Error(err))
 	}
 
-	clientStatus, err := client.Status(ctx, &seqapi.StatusRequest{})
+	clientStatus, err := params.client.Status(ctx, &seqapi.StatusRequest{})
 	if err != nil {
 		wr.Error(fmt.Errorf("get status: %w", err), http.StatusInternalServerError)
 		return
@@ -65,10 +66,17 @@ func (a *API) serveGetLogsLifespan(w http.ResponseWriter, r *http.Request) {
 
 	res := int(a.nowFn().Sub(clientStatus.OldestStorageTime.AsTime()) / lifespan.MeasureUnit)
 
-	err = a.redisCache.SetWithTTL(ctx, cacheKey, strconv.Itoa(res), options.LogsLifespanCacheTTL)
+	err = a.redisCache.SetWithTTL(ctx, cacheKey, strconv.Itoa(res), params.options.LogsLifespanCacheTTL)
 	if err != nil {
 		logger.Error("can't set logs lifespan to cache", zap.Error(err))
 	}
+
+	span.SetAttributes(
+		attribute.KeyValue{
+			Key:   "env",
+			Value: attribute.StringValue(checkEnv(env)),
+		},
+	)
 
 	logger.Debug("got logs lifespan from seq-proxy")
 	wr.WriteJson(getLogsLifespanResponse{Lifespan: int64(res)})

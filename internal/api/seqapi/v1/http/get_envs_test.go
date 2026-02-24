@@ -18,11 +18,34 @@ func TestServeGetEnvs(t *testing.T) {
 		wantEnvs []envInfo
 	}{
 		{
+			name: "single_env",
+			cfg: config.SeqAPI{
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxSearchLimit:            100,
+					MaxExportLimit:            200,
+					MaxParallelExportRequests: 2,
+					MaxAggregationsPerRequest: 5,
+					SeqCLIMaxSearchLimit:      10000,
+				},
+			},
+			wantEnvs: []envInfo{
+				{
+					Env:                       "default",
+					MaxSearchLimit:            100,
+					MaxExportLimit:            200,
+					MaxParallelExportRequests: 2,
+					MaxAggregationsPerRequest: 5,
+					SeqCliMaxSearchLimit:      10000,
+				},
+			},
+		},
+		{
 			name: "ok_multiple_envs",
 			cfg: config.SeqAPI{
+				SeqAPIOptions: &config.SeqAPIOptions{},
 				Envs: map[string]config.SeqAPIEnv{
 					"prod": {
-						SeqDB: "prod",
+						SeqDB: "prod-seqdb",
 						Options: &config.SeqAPIOptions{
 							MaxSearchLimit:            1000,
 							MaxExportLimit:            500,
@@ -32,7 +55,7 @@ func TestServeGetEnvs(t *testing.T) {
 						},
 					},
 					"staging": {
-						SeqDB: "staging",
+						SeqDB: "staging-seqdb",
 						Options: &config.SeqAPIOptions{
 							MaxSearchLimit:            500,
 							MaxExportLimit:            250,
@@ -42,6 +65,7 @@ func TestServeGetEnvs(t *testing.T) {
 						},
 					},
 				},
+				DefaultEnv: "prod",
 			},
 			wantEnvs: []envInfo{
 				{

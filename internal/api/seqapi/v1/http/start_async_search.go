@@ -61,6 +61,7 @@ func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	env := getEnvFromContext(ctx)
 	spanAttributes := []attribute.KeyValue{
 		{
 			Key:   "query",
@@ -85,6 +86,10 @@ func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
 		{
 			Key:   "size",
 			Value: attribute.Int64Value(int64(httpReq.Size)),
+		},
+		{
+			Key:   "env",
+			Value: attribute.StringValue(checkEnv(env)),
 		},
 	}
 	if httpReq.Histogram != nil && httpReq.Histogram.Interval != "" {

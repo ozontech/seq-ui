@@ -32,7 +32,7 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 	wr := httputil.NewWriter(w)
 
 	env := getEnvFromContext(ctx)
-	client, options, err := a.GetClientFromEnv(env)
+	params, err := a.GetEnvParams(env)
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return
@@ -79,7 +79,7 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 		},
 		{
 			Key:   "env",
-			Value: attribute.StringValue(env),
+			Value: attribute.StringValue(checkEnv(env)),
 		},
 	}
 	if httpReq.Histogram.Interval != "" {
@@ -98,26 +98,26 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 
 	span.SetAttributes(spanAttributes...)
 
-	if err := api_error.CheckSearchLimit(httpReq.Limit, options.MaxSearchLimit); err != nil {
+	if err := api_error.CheckSearchLimit(httpReq.Limit, params.options.MaxSearchLimit); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
-	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), options.MaxAggregationsPerRequest); err != nil {
+	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), params.options.MaxAggregationsPerRequest); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
-	if err := api_error.CheckSearchOffsetLimit(httpReq.Offset, options.MaxSearchOffsetLimit); err != nil {
+	if err := api_error.CheckSearchOffsetLimit(httpReq.Offset, params.options.MaxSearchOffsetLimit); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
 
-	resp, err := client.Search(ctx, httpReq.toProto())
+	resp, err := params.client.Search(ctx, httpReq.toProto())
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return
 	}
 
-	if resp.Total > options.MaxSearchTotalLimit {
+	if resp.Total > params.options.MaxSearchTotalLimit {
 		resp.Error = &seqapi.Error{
 			Code:    seqapi.ErrorCode_ERROR_CODE_QUERY_TOO_HEAVY,
 			Message: api_error.ErrQueryTooHeavy.Error(),
@@ -125,9 +125,9 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	searchResp := searchResponseFromProto(resp, httpReq.WithTotal)
-	if a.masker != nil {
+	if params.masker != nil {
 		for i := range searchResp.Events {
-			a.masker.Mask(searchResp.Events[i].Data)
+			params.masker.Mask(searchResp.Events[i].Data)
 		}
 	}
 

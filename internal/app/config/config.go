@@ -244,9 +244,9 @@ type PinnedField struct {
 }
 
 type SeqAPI struct {
-	SeqAPIOptions `yaml:",inline"`
-	Envs          map[string]SeqAPIEnv `yaml:"envs"`
-	DefaultEnv    string               `yaml:"default_env"`
+	*SeqAPIOptions `yaml:",inline"`
+	Envs           map[string]SeqAPIEnv `yaml:"envs"`
+	DefaultEnv     string               `yaml:"default_env"`
 }
 
 type SeqAPIEnv struct {
@@ -393,16 +393,6 @@ func FromFile(cfgPath string) (Config, error) {
 		cfg.Server.Cache.Inmemory.BufferItems = defaultInmemCacheBufferItems
 	}
 
-	if len(cfg.Handlers.SeqAPI.Envs) == 0 {
-		cfg.Handlers.SeqAPI.Envs = map[string]SeqAPIEnv{
-			DefaultSeqDBClientID: {
-				SeqDB:   DefaultSeqDBClientID,
-				Options: &cfg.Handlers.SeqAPI.SeqAPIOptions,
-			},
-		}
-		cfg.Handlers.SeqAPI.DefaultEnv = DefaultSeqDBClientID
-	}
-
 	if len(cfg.Clients.SeqDB) == 0 {
 		defaultClient := SeqDBClient{
 			ID:                  DefaultSeqDBClientID,
@@ -418,27 +408,20 @@ func FromFile(cfgPath string) (Config, error) {
 		cfg.Clients.SeqDB = []SeqDBClient{defaultClient}
 	}
 
-	clientIDs := make(map[string]bool)
+	clientIDs := make(map[string]struct{})
 	for _, client := range cfg.Clients.SeqDB {
 		if client.ID == "" {
 			return Config{}, fmt.Errorf("seq_db client ID cannot be empty")
 		}
-		if clientIDs[client.ID] {
+		if _, ok := clientIDs[client.ID]; ok {
 			return Config{}, fmt.Errorf("duplicate seq_db client ID: %s", client.ID)
 		}
-		clientIDs[client.ID] = true
+		clientIDs[client.ID] = struct{}{}
 	}
 
 	if len(cfg.Handlers.SeqAPI.Envs) > 0 {
 		for envName, envConfig := range cfg.Handlers.SeqAPI.Envs {
-			clientExists := false
-			for _, client := range cfg.Clients.SeqDB {
-				if client.ID == envConfig.SeqDB {
-					clientExists = true
-					break
-				}
-			}
-			if !clientExists {
+			if _, ok := clientIDs[envConfig.SeqDB]; !ok {
 				return Config{}, fmt.Errorf("client '%s' for env '%s' not found", envConfig.SeqDB, envName)
 			}
 		}
@@ -453,8 +436,7 @@ func FromFile(cfgPath string) (Config, error) {
 
 		for envName, envConfig := range cfg.Handlers.SeqAPI.Envs {
 			if envConfig.Options == nil {
-				opts := cfg.Handlers.SeqAPI.SeqAPIOptions
-				envConfig.Options = &opts
+				envConfig.Options = cfg.Handlers.SeqAPI.SeqAPIOptions
 				cfg.Handlers.SeqAPI.Envs[envName] = envConfig
 			}
 		}

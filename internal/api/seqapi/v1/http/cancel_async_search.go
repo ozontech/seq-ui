@@ -33,6 +33,7 @@ func (a *API) serveCancelAsyncSearch(w http.ResponseWriter, r *http.Request) {
 	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_cancel_async_search")
 	defer span.End()
 
+	env := getEnvFromContext(ctx)
 	searchID := chi.URLParam(r, "id")
 
 	if err := checkUUID(searchID); err != nil {
@@ -40,10 +41,16 @@ func (a *API) serveCancelAsyncSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	span.SetAttributes(attribute.KeyValue{
-		Key:   "search_id",
-		Value: attribute.StringValue(searchID),
-	})
+	span.SetAttributes(
+		attribute.KeyValue{
+			Key:   "search_id",
+			Value: attribute.StringValue(searchID),
+		},
+		attribute.KeyValue{
+			Key:   "env",
+			Value: attribute.StringValue(checkEnv(env)),
+		},
+	)
 
 	profileID, err := a.profiles.GeIDFromContext(ctx)
 	if err != nil {

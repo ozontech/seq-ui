@@ -33,7 +33,7 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 
 	wr := httputil.NewWriter(w)
 	env := getEnvFromContext(ctx)
-	client, options, err := a.GetClientFromEnv(env)
+	params, err := a.GetEnvParams(env)
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return
@@ -65,24 +65,24 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 		},
 		attribute.KeyValue{
 			Key:   "env",
-			Value: attribute.StringValue(env),
+			Value: attribute.StringValue(checkEnv(env)),
 		},
 	)
 
-	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), options.MaxAggregationsPerRequest); err != nil {
+	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), params.options.MaxAggregationsPerRequest); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
 	for _, agg := range httpReq.Aggregations {
 		if err := api_error.CheckAggregationTsInterval(agg.Interval, httpReq.From, httpReq.To,
-			options.MaxBucketsPerAggregationTs,
+			params.options.MaxBucketsPerAggregationTs,
 		); err != nil {
 			wr.Error(err, http.StatusBadRequest)
 			return
 		}
 	}
 
-	resp, err := client.GetAggregation(ctx, httpReq.toProto())
+	resp, err := params.client.GetAggregation(ctx, httpReq.toProto())
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return

@@ -18,14 +18,14 @@ func (a *API) Status(ctx context.Context, req *seqapi.StatusRequest) (*seqapi.St
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	client, _, err := a.GetClientFromEnv(env)
+	params, err := a.GetEnvParams(env)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	span.SetAttributes(attribute.KeyValue{
 		Key:   "env",
-		Value: attribute.StringValue(env),
+		Value: attribute.StringValue(checkEnv(env)),
 	})
 
-	return client.Status(ctx, req)
+	return params.client.Status(ctx, req)
 }

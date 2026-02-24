@@ -25,14 +25,25 @@ func (a *API) CancelAsyncSearch(
 	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_cancel_async_search")
 	defer span.End()
 
+	env, err := a.GetEnvFromContext(ctx)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	if _, err := uuid.FromString(req.SearchId); err != nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid search_id")
 	}
 
-	span.SetAttributes(attribute.KeyValue{
-		Key:   "search_id",
-		Value: attribute.StringValue(req.SearchId),
-	})
+	span.SetAttributes(
+		attribute.KeyValue{
+			Key:   "search_id",
+			Value: attribute.StringValue(req.SearchId),
+		},
+		attribute.KeyValue{
+			Key:   "env",
+			Value: attribute.StringValue(checkEnv(env)),
+		},
+	)
 
 	profileID, err := a.profiles.GeIDFromContext(ctx)
 	if err != nil {

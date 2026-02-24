@@ -23,7 +23,7 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	client, options, err := a.GetClientFromEnv(env)
+	params, err := a.GetEnvParams(env)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -51,11 +51,11 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 		},
 		attribute.KeyValue{
 			Key:   "env",
-			Value: attribute.StringValue(env),
+			Value: attribute.StringValue(checkEnv(env)),
 		},
 	)
 
-	if err := api_error.CheckAggregationsCount(len(req.Aggregations), options.MaxAggregationsPerRequest); err != nil {
+	if err := api_error.CheckAggregationsCount(len(req.Aggregations), params.options.MaxAggregationsPerRequest); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -65,18 +65,18 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 			continue
 		}
 		if err := api_error.CheckAggregationTsInterval(*agg.Interval, fromRaw, toRaw,
-			options.MaxBucketsPerAggregationTs,
+			params.options.MaxBucketsPerAggregationTs,
 		); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
 
-	resp, err := client.GetAggregation(ctx, req)
+	resp, err := params.client.GetAggregation(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	if a.masker != nil {
+	if params.masker != nil {
 		buf := make([]string, 0)
 		for i, agg := range resp.Aggregations {
 			if agg == nil {
@@ -94,7 +94,7 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 				field = aggReq.GroupBy
 			}
 
-			buf = a.masker.MaskAgg(field, buf)
+			buf = params.masker.MaskAgg(field, buf)
 
 			for j, key := range buf {
 				if agg.Buckets[j] != nil {

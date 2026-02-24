@@ -28,17 +28,17 @@ func (a *API) GetLogsLifespan(ctx context.Context, _ *seqapi.GetLogsLifespanRequ
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	client, options, err := a.GetClientFromEnv(env)
+	params, err := a.GetEnvParams(env)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	span.SetAttributes(attribute.KeyValue{
 		Key:   "env",
-		Value: attribute.StringValue(env),
+		Value: attribute.StringValue(checkEnv(env)),
 	})
 
-	cacheKey := options.LogsLifespanCacheKey
+	cacheKey := params.options.LogsLifespanCacheKey
 
 	if countStr, err := a.redisCache.Get(ctx, cacheKey); err == nil {
 		count := 0
@@ -54,7 +54,7 @@ func (a *API) GetLogsLifespan(ctx context.Context, _ *seqapi.GetLogsLifespanRequ
 		logger.Error("can't get logs lifespan from cache", zap.Error(err))
 	}
 
-	clientStatus, err := client.Status(ctx, &seqapi.StatusRequest{})
+	clientStatus, err := params.client.Status(ctx, &seqapi.StatusRequest{})
 	if err != nil {
 		return nil, grpcutil.ProcessError(fmt.Errorf("get status: %w", err))
 	}
@@ -66,7 +66,7 @@ func (a *API) GetLogsLifespan(ctx context.Context, _ *seqapi.GetLogsLifespanRequ
 	count := int(a.nowFn().Sub(clientStatus.OldestStorageTime.AsTime()) / lifespan.MeasureUnit)
 	res := time.Duration(count) * lifespan.MeasureUnit
 
-	err = a.redisCache.SetWithTTL(ctx, cacheKey, strconv.Itoa(count), options.LogsLifespanCacheTTL)
+	err = a.redisCache.SetWithTTL(ctx, cacheKey, strconv.Itoa(count), params.options.LogsLifespanCacheTTL)
 	if err != nil {
 		logger.Error("can't set logs lifespan to cache", zap.Error(err))
 	}

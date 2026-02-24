@@ -13,7 +13,6 @@ import (
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -66,16 +65,10 @@ func TestSearch(t *testing.T) {
 				},
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				Envs: map[string]config.SeqAPIEnv{
-					"test": {
-						SeqDB: "test",
-						Options: &config.SeqAPIOptions{
-							MaxSearchLimit:            5,
-							MaxAggregationsPerRequest: 5,
-						},
-					},
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxSearchLimit:            5,
+					MaxAggregationsPerRequest: 5,
 				},
-				DefaultEnv: "test",
 			}),
 		},
 		{
@@ -91,15 +84,9 @@ func TestSearch(t *testing.T) {
 				Limit: 10,
 			},
 			cfg: config.SeqAPI{
-				Envs: map[string]config.SeqAPIEnv{
-					"test": {
-						SeqDB: "test",
-						Options: &config.SeqAPIOptions{
-							MaxSearchLimit: 5,
-						},
-					},
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxSearchLimit: 5,
 				},
-				DefaultEnv: "test",
 			},
 			apiErr: true,
 		},
@@ -114,16 +101,10 @@ func TestSearch(t *testing.T) {
 				},
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				Envs: map[string]config.SeqAPIEnv{
-					"test": {
-						SeqDB: "test",
-						Options: &config.SeqAPIOptions{
-							MaxSearchLimit:            5,
-							MaxAggregationsPerRequest: 2,
-						},
-					},
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxSearchLimit:            5,
+					MaxAggregationsPerRequest: 2,
 				},
-				DefaultEnv: "test",
 			}),
 			apiErr: true,
 		},
@@ -137,16 +118,10 @@ func TestSearch(t *testing.T) {
 				Offset: 11,
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				Envs: map[string]config.SeqAPIEnv{
-					"test": {
-						SeqDB: "test",
-						Options: &config.SeqAPIOptions{
-							MaxSearchLimit:       5,
-							MaxSearchOffsetLimit: 10,
-						},
-					},
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxSearchLimit:       5,
+					MaxSearchOffsetLimit: 10,
 				},
-				DefaultEnv: "test",
 			}),
 			apiErr: true,
 		},
@@ -173,16 +148,10 @@ func TestSearch(t *testing.T) {
 				},
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				Envs: map[string]config.SeqAPIEnv{
-					"test": {
-						SeqDB: "test",
-						Options: &config.SeqAPIOptions{
-							MaxSearchLimit:      5,
-							MaxSearchTotalLimit: int64(limit),
-						},
-					},
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxSearchLimit:      5,
+					MaxSearchTotalLimit: int64(limit),
 				},
-				DefaultEnv: "test",
 			}),
 		},
 		{
@@ -195,15 +164,9 @@ func TestSearch(t *testing.T) {
 				Offset: 0,
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				Envs: map[string]config.SeqAPIEnv{
-					"test": {
-						SeqDB: "test",
-						Options: &config.SeqAPIOptions{
-							MaxSearchLimit: 5,
-						},
-					},
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxSearchLimit: 5,
 				},
-				DefaultEnv: "test",
 			}),
 			clientErr: errors.New("client error"),
 		},
@@ -228,11 +191,7 @@ func TestSearch(t *testing.T) {
 			}
 
 			s := initTestAPI(seqData)
-
-			md := metadata.New(map[string]string{"env": "test"})
-			ctx := metadata.NewIncomingContext(context.Background(), md)
-
-			resp, err := s.Search(ctx, tt.req)
+			resp, err := s.Search(context.Background(), tt.req)
 			if tt.apiErr {
 				require.NotNil(t, err)
 				return

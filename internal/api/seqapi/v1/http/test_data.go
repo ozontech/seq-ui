@@ -5,6 +5,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/profiles"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
+	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	"github.com/ozontech/seq-ui/internal/pkg/repository"
 	"github.com/ozontech/seq-ui/internal/pkg/service"
@@ -12,16 +13,28 @@ import (
 )
 
 func initTestAPI(data test.APITestData) *API {
+	// Для обратной совместимости тестов, чтобы не было ошибки nil pointer derefence,
+	// когда мы не указываем явно конфигурацию в test cases.
+	if data.Cfg.SeqAPIOptions == nil {
+		data.Cfg.SeqAPIOptions = &config.SeqAPIOptions{}
+	}
 	seqDBClients := make(map[string]seqdb.Client)
+	seqDBClients[config.DefaultSeqDBClientID] = data.Mocks.SeqDB
+
 	for _, envConfig := range data.Cfg.Envs {
 		seqDBClients[envConfig.SeqDB] = data.Mocks.SeqDB
 	}
+
 	return New(data.Cfg, seqDBClients, data.Mocks.Cache, data.Mocks.Cache, nil, nil)
 }
 
 func initTestAPIWithAsyncSearches(data test.APITestData) *API {
-	seqDBClients := make(map[string]seqdb.Client)
-	seqDBClients[data.Cfg.DefaultEnv] = data.Mocks.SeqDB
+	if data.Cfg.SeqAPIOptions == nil {
+		data.Cfg.SeqAPIOptions = &config.SeqAPIOptions{}
+	}
+	seqDBClients := map[string]seqdb.Client{
+		config.DefaultSeqDBClientID: data.Mocks.SeqDB,
+	}
 	as := asyncsearches.New(context.Background(), data.Mocks.AsyncSearchesRepo, data.Mocks.SeqDB, []string{})
 	s := service.New(&repository.Repository{
 		UserProfiles: data.Mocks.ProfilesRepo,

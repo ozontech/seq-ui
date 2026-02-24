@@ -14,16 +14,16 @@ func (a *API) GetLimits(ctx context.Context, _ *seqapi.GetLimitsRequest) (*seqap
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	_, options, err := a.GetClientFromEnv(env)
+	params, err := a.GetEnvParams(env)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return &seqapi.GetLimitsResponse{
-		MaxSearchLimit:            options.MaxSearchLimit,
-		MaxExportLimit:            options.MaxExportLimit,
-		MaxParallelExportRequests: int32(options.MaxParallelExportRequests),
-		MaxAggregationsPerRequest: int32(options.MaxAggregationsPerRequest),
-		SeqCliMaxSearchLimit:      int32(options.SeqCLIMaxSearchLimit),
+		MaxSearchLimit:            params.options.MaxSearchLimit,
+		MaxExportLimit:            params.options.MaxExportLimit,
+		MaxParallelExportRequests: int32(params.options.MaxParallelExportRequests),
+		MaxAggregationsPerRequest: int32(params.options.MaxAggregationsPerRequest),
+		SeqCliMaxSearchLimit:      int32(params.options.SeqCLIMaxSearchLimit),
 	}, nil
 }

@@ -18,7 +18,7 @@ func (a *API) GetHistogram(ctx context.Context, req *seqapi.GetHistogramRequest)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	client, _, err := a.GetClientFromEnv(env)
+	params, err := a.GetEnvParams(env)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -42,11 +42,11 @@ func (a *API) GetHistogram(ctx context.Context, req *seqapi.GetHistogramRequest)
 		},
 		attribute.KeyValue{
 			Key:   "env",
-			Value: attribute.StringValue(env),
+			Value: attribute.StringValue(checkEnv(env)),
 		},
 	)
 
-	resp, err := client.GetHistogram(ctx, req)
+	resp, err := params.client.GetHistogram(ctx, req)
 	if err != nil {
 		return nil, err
 	}

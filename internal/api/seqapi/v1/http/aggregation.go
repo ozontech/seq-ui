@@ -40,7 +40,7 @@ func (a *API) serveGetAggregation(w http.ResponseWriter, r *http.Request) {
 
 	aggsRaw, _ := json.Marshal(httpReq.Aggregations)
 	env := getEnvFromContext(ctx)
-	client, options, err := a.GetClientFromEnv(env)
+	params, err := a.GetEnvParams(env)
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return
@@ -68,16 +68,16 @@ func (a *API) serveGetAggregation(w http.ResponseWriter, r *http.Request) {
 		},
 		attribute.KeyValue{
 			Key:   "env",
-			Value: attribute.StringValue(env),
+			Value: attribute.StringValue(checkEnv(env)),
 		},
 	)
 
-	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), options.MaxAggregationsPerRequest); err != nil {
+	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), params.options.MaxAggregationsPerRequest); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
 
-	resp, err := client.GetAggregation(ctx, httpReq.toProto())
+	resp, err := params.client.GetAggregation(ctx, httpReq.toProto())
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return
@@ -85,7 +85,7 @@ func (a *API) serveGetAggregation(w http.ResponseWriter, r *http.Request) {
 
 	getAggResp := getAggregationResponseFromProto(resp)
 
-	if a.masker != nil {
+	if params.masker != nil {
 		buf := make([]string, 0)
 		for i, agg := range getAggResp.Aggregations {
 			buf = buf[:0]
@@ -99,7 +99,7 @@ func (a *API) serveGetAggregation(w http.ResponseWriter, r *http.Request) {
 				field = aggReq.GroupBy
 			}
 
-			buf = a.masker.MaskAgg(field, buf)
+			buf = params.masker.MaskAgg(field, buf)
 
 			for j, key := range buf {
 				getAggResp.Aggregations[i].Buckets[j].Key = key

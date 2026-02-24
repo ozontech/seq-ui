@@ -33,7 +33,7 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 	wr := httputil.NewWriter(w)
 
 	env := getEnvFromContext(ctx)
-	client, options, err := a.GetClientFromEnv(env)
+	params, err := a.GetEnvParams(env)
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return
@@ -85,20 +85,20 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 		},
 		attribute.KeyValue{
 			Key:   "env",
-			Value: attribute.StringValue(env),
+			Value: attribute.StringValue(checkEnv(env)),
 		},
 	)
 
-	if a.exportLimiter.Limited(userStr) {
+	if params.exportLimiter.Limited(userStr) {
 		metric.ServerExportRequestLimits.Inc()
 		wr.Error(errors.New("parallel export limit exceeded"), http.StatusTooManyRequests)
 		return
 	}
-	defer a.exportLimiter.Fill(userStr)
+	defer params.exportLimiter.Fill(userStr)
 
-	if httpReq.Limit > options.MaxExportLimit {
+	if httpReq.Limit > params.options.MaxExportLimit {
 		wr.Error(fmt.Errorf("too many events are requested: count=%d, max=%d",
-			httpReq.Limit, options.MaxExportLimit),
+			httpReq.Limit, params.options.MaxExportLimit),
 			http.StatusBadRequest)
 		return
 	}
@@ -114,7 +114,7 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = client.Export(ctx, httpReq.toProto(), cw)
+	err = params.client.Export(ctx, httpReq.toProto(), cw)
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return

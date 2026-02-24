@@ -15,7 +15,6 @@ import (
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -111,16 +110,10 @@ func TestGetLogsLifespan(t *testing.T) {
 
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					Envs: map[string]config.SeqAPIEnv{
-						"test": {
-							SeqDB: "test",
-							Options: &config.SeqAPIOptions{
-								LogsLifespanCacheKey: cacheKey,
-								LogsLifespanCacheTTL: cacheTTL,
-							},
-						},
+					SeqAPIOptions: &config.SeqAPIOptions{
+						LogsLifespanCacheKey: cacheKey,
+						LogsLifespanCacheTTL: cacheTTL,
 					},
-					DefaultEnv: "test",
 				},
 			}
 			ctrl := gomock.NewController(t)
@@ -142,15 +135,12 @@ func TestGetLogsLifespan(t *testing.T) {
 				}
 			}
 
-			md := metadata.New(map[string]string{"env": "test"})
-			ctx := metadata.NewIncomingContext(context.Background(), md)
-
 			s := initTestAPI(seqData)
 			s.nowFn = func() time.Time {
 				return oldestStorageTime.Add(result)
 			}
 
-			resp, err := s.GetLogsLifespan(ctx, nil)
+			resp, err := s.GetLogsLifespan(context.Background(), nil)
 			if tt.resp == nil {
 				require.Error(t, err)
 				return

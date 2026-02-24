@@ -20,7 +20,7 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	client, options, err := a.GetClientFromEnv(env)
+	params, err := a.GetEnvParams(env)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -56,7 +56,7 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 		},
 		{
 			Key:   "env",
-			Value: attribute.StringValue(env),
+			Value: attribute.StringValue(checkEnv(env)),
 		},
 	}
 
@@ -76,13 +76,13 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 
 	span.SetAttributes(spanAttributes...)
 
-	if err := api_error.CheckSearchLimit(req.Limit, options.MaxSearchLimit); err != nil {
+	if err := api_error.CheckSearchLimit(req.Limit, params.options.MaxSearchLimit); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if err := api_error.CheckAggregationsCount(len(req.Aggregations), options.MaxAggregationsPerRequest); err != nil {
+	if err := api_error.CheckAggregationsCount(len(req.Aggregations), params.options.MaxAggregationsPerRequest); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if err := api_error.CheckSearchOffsetLimit(req.Offset, options.MaxSearchOffsetLimit); err != nil {
+	if err := api_error.CheckSearchOffsetLimit(req.Offset, params.options.MaxSearchOffsetLimit); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	fromRaw, toRaw := req.From.AsTime(), req.To.AsTime()
@@ -91,27 +91,27 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 			continue
 		}
 		if err := api_error.CheckAggregationTsInterval(*agg.Interval, fromRaw, toRaw,
-			options.MaxBucketsPerAggregationTs,
+			params.options.MaxBucketsPerAggregationTs,
 		); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
 
-	resp, err := client.Search(ctx, req)
+	resp, err := params.client.Search(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	if resp.Total > options.MaxSearchTotalLimit {
+	if resp.Total > params.options.MaxSearchTotalLimit {
 		resp.Error = &seqapi.Error{
 			Code:    seqapi.ErrorCode_ERROR_CODE_QUERY_TOO_HEAVY,
 			Message: api_error.ErrQueryTooHeavy.Error(),
 		}
 	}
 
-	if a.masker != nil {
+	if params.masker != nil {
 		for _, e := range resp.Events {
-			a.masker.Mask(e.Data)
+			params.masker.Mask(e.Data)
 		}
 	}
 

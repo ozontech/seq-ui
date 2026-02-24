@@ -133,7 +133,7 @@ func TestServeGetFieldsCached(t *testing.T) {
 
 	seqData := test.APITestData{
 		Cfg: config.SeqAPI{
-			SeqAPIOptions: config.SeqAPIOptions{
+			SeqAPIOptions: &config.SeqAPIOptions{
 				FieldsCacheTTL: ttl,
 			},
 		},
@@ -192,7 +192,7 @@ func TestServeGetPinnedFields(t *testing.T) {
 
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					SeqAPIOptions: config.SeqAPIOptions{
+					SeqAPIOptions: &config.SeqAPIOptions{
 						PinnedFields: tt.fields,
 					},
 				},

@@ -24,6 +24,11 @@ func (a *API) GetAsyncSearchesList(
 	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_get_async_searches_list")
 	defer span.End()
 
+	env, err := a.GetEnvFromContext(ctx)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	spanAttributes := []attribute.KeyValue{
 		{
 			Key:   "offset",
@@ -32,6 +37,10 @@ func (a *API) GetAsyncSearchesList(
 		{
 			Key:   "limit",
 			Value: attribute.IntValue(int(req.Limit)),
+		},
+		{
+			Key:   "env",
+			Value: attribute.StringValue(checkEnv(env)),
 		},
 	}
 	if req.Status != nil {
