@@ -90,8 +90,15 @@ mock:
 		-source=internal/pkg/repository/repository.go \
 		-destination=internal/pkg/repository/mock/repository.go
 	PATH="$(LOCAL_BIN):$(PATH)" mockgen \
-		-source=internal/pkg/repository_ch/repository.go \
-		-destination=internal/pkg/repository_ch/mock/repository.go
+		-destination=internal/pkg/repository_ch/mock/repository_ch.go \
+		-package=mock_repositorych \
+		github.com/ozontech/seq-ui/internal/pkg/repository_ch \
+		Repository
+	PATH="$(LOCAL_BIN):$(PATH)" mockgen \
+		-destination=internal/pkg/repository_ch/mock/ch_driver.go \
+		-package=mock_repositorych \
+		github.com/ClickHouse/clickhouse-go/v2/lib/driver \
+		Conn,Rows,Row
 	PATH="$(LOCAL_BIN):$(PATH)" mockgen \
 		-source=internal/pkg/client/seqdb/client.go \
 		-destination=internal/pkg/client/seqdb/mock/client.go
@@ -102,11 +109,9 @@ mock:
 		-source=internal/pkg/cache/cache.go \
 		-destination=internal/pkg/cache/mock/cache.go
 	PATH="$(LOCAL_BIN):$(PATH)" mockgen \
-		-source=internal/app/auth/oidc.go \
-		-destination=internal/app/auth/mock/oidc.go
-	PATH="$(LOCAL_BIN):$(PATH)" mockgen \
-		-source=internal/app/auth/jwt.go \
-		-destination=internal/app/auth/mock/jwt.go
+		-destination=internal/app/auth/mock/auth.go \
+		github.com/ozontech/seq-ui/internal/app/auth \
+		OIDCProvider,JWTProvider
 
 .PHONY: protoc
 protoc:
