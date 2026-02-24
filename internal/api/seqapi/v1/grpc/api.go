@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"go.uber.org/zap"
@@ -156,9 +157,17 @@ func parsePinnedFields(fields []config.PinnedField) []*seqapi.Field {
 func parseEnvs(cfg config.SeqAPI) *seqapi.GetEnvsResponse {
 	var envs []*seqapi.GetEnvsResponse_Env
 	if len(cfg.Envs) > 0 {
+		// sort environment names to ensure deterministic output
+		names := make([]string, 0, len(cfg.Envs))
+		for name := range cfg.Envs {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+
 		envs = make([]*seqapi.GetEnvsResponse_Env, 0, len(cfg.Envs))
-		for envName, envConfig := range cfg.Envs {
-			envs = append(envs, createEnvInfo(envName, envConfig.Options))
+		for _, name := range names {
+			envConfig := cfg.Envs[name]
+			envs = append(envs, createEnvInfo(name, envConfig.Options))
 		}
 	} else {
 		envs = []*seqapi.GetEnvsResponse_Env{createEnvInfo("default", cfg.SeqAPIOptions)}

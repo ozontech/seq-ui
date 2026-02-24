@@ -13,8 +13,7 @@ import (
 )
 
 func initTestAPI(data test.APITestData) *API {
-	// Для обратной совместимости тестов, чтобы не было ошибки nil pointer derefence,
-	// когда мы не указываем явно конфигурацию в test cases.
+	// when test cases don't explicitly provide configuration
 	if data.Cfg.SeqAPIOptions == nil {
 		data.Cfg.SeqAPIOptions = &config.SeqAPIOptions{}
 	}

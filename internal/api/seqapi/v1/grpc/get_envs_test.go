@@ -68,20 +68,20 @@ func TestGetEnvs(t *testing.T) {
 			want: &seqapi.GetEnvsResponse{
 				Envs: []*seqapi.GetEnvsResponse_Env{
 					{
-						Env:                       "test",
-						MaxSearchLimit:            100,
-						MaxExportLimit:            200,
-						MaxParallelExportRequests: 2,
-						MaxAggregationsPerRequest: 5,
-						SeqCliMaxSearchLimit:      10000,
-					},
-					{
 						Env:                       "prod",
 						MaxSearchLimit:            150,
 						MaxExportLimit:            250,
 						MaxParallelExportRequests: 3,
 						MaxAggregationsPerRequest: 6,
 						SeqCliMaxSearchLimit:      15000,
+					},
+					{
+						Env:                       "test",
+						MaxSearchLimit:            100,
+						MaxExportLimit:            200,
+						MaxParallelExportRequests: 2,
+						MaxAggregationsPerRequest: 5,
+						SeqCliMaxSearchLimit:      10000,
 					},
 				},
 			},
