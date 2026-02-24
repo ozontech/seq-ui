@@ -2209,9 +2209,6 @@
                 "histogram": {
                     "$ref": "#/definitions/seqapi.v1.Histogram"
                 },
-                "partialResponse": {
-                    "type": "boolean"
-                },
                 "total": {
                     "type": "string",
                     "format": "int64"
@@ -2411,6 +2408,9 @@
                     "type": "string",
                     "format": "int64"
                 },
+                "error": {
+                    "$ref": "#/definitions/seqapi.v1.Error"
+                },
                 "expires_at": {
                     "type": "string",
                     "format": "date-time"
@@ -2556,6 +2556,9 @@
         "seqapi.v1.GetAsyncSearchesListResponse": {
             "type": "object",
             "properties": {
+                "error": {
+                    "$ref": "#/definitions/seqapi.v1.Error"
+                },
                 "searches": {
                     "type": "array",
                     "items": {
