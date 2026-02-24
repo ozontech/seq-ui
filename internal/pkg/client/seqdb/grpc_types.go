@@ -393,6 +393,7 @@ func (p *proxyFetchAsyncSearchResultResp) toProto() (*seqapi.FetchAsyncSearchRes
 		CanceledAt: p.CanceledAt,
 		Progress:   p.Progress,
 		DiskUsage:  p.DiskUsage,
+		Error:      (*proxyError)(p.Error).toProto(),
 	}, nil
 }
 
@@ -435,6 +436,7 @@ func (p *proxyGetAsyncSearchesListResp) toProto() *seqapi.GetAsyncSearchesListRe
 
 	return &seqapi.GetAsyncSearchesListResponse{
 		Searches: searches,
+		Error:    (*proxyError)(p.Error).toProto(),
 	}
 }
 

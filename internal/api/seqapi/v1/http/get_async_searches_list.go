@@ -118,6 +118,7 @@ func (r getAsyncSearchesListRequest) toProto() (*seqapi.GetAsyncSearchesListRequ
 
 type getAsyncSearchesListResponse struct {
 	Searches []asyncSearchesListItem `json:"searches"`
+	Error    apiError                `json:"error"`
 } //	@name	seqapi.v1.GetAsyncSearchesListResponse
 
 type asyncSearchesListItem struct {
@@ -159,6 +160,7 @@ func getAsyncSearchesListResponseFromProto(resp *seqapi.GetAsyncSearchesListResp
 
 	return getAsyncSearchesListResponse{
 		Searches: searches,
+		Error:    apiErrorFromProto(resp.GetError()),
 	}
 }
 
