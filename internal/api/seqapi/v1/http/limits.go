@@ -5,7 +5,6 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/tracing"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 // serveGetLimits go doc.
@@ -28,13 +27,6 @@ func (a *API) serveGetLimits(w http.ResponseWriter, r *http.Request) {
 		wr.Error(err, http.StatusInternalServerError)
 		return
 	}
-
-	span.SetAttributes(
-		attribute.KeyValue{
-			Key:   "env",
-			Value: attribute.StringValue(checkEnv(env)),
-		},
-	)
 
 	httputil.NewWriter(w).WriteJson(getLimitsResponse{
 		MaxSearchLimit:            params.options.MaxSearchLimit,

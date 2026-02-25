@@ -17,43 +17,41 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 	defer span.End()
 
 	aggregations, _ := json.Marshal(req.Aggregations)
+	env := a.GetEnvFromContext(ctx)
 
-	env, err := a.GetEnvFromContext(ctx)
+	params, err := a.GetParams(env)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	span.SetAttributes(
-		attribute.KeyValue{
+	attributes := []attribute.KeyValue{
+		{
 			Key:   "query",
 			Value: attribute.StringValue(req.GetQuery()),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "from",
 			Value: tracing.TimestampToStringValue(req.GetFrom()),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "to",
 			Value: tracing.TimestampToStringValue(req.GetTo()),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "agg_field",
 			Value: attribute.StringValue(req.GetAggField()),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "aggregations",
 			Value: attribute.StringValue(string(aggregations)),
 		},
-		attribute.KeyValue{
-			Key:   "env",
-			Value: attribute.StringValue(checkEnv(env)),
-		},
-	)
+	}
+
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+
+	span.SetAttributes(attributes...)
 
 	if err := api_error.CheckAggregationsCount(len(req.Aggregations), params.options.MaxAggregationsPerRequest); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())

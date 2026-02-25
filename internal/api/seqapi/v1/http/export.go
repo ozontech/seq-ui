@@ -54,7 +54,7 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 		httpReq.Format = efJSONL
 	}
 
-	span.SetAttributes(
+	attributes := []attribute.KeyValue{
 		attribute.KeyValue{
 			Key:   "query",
 			Value: attribute.StringValue(httpReq.Query),
@@ -83,11 +83,13 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 			Key:   "fields",
 			Value: attribute.StringSliceValue(httpReq.Fields),
 		},
-		attribute.KeyValue{
-			Key:   "env",
-			Value: attribute.StringValue(checkEnv(env)),
-		},
-	)
+	}
+
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+
+	span.SetAttributes(attributes...)
 
 	if params.exportLimiter.Limited(userStr) {
 		metric.ServerExportRequestLimits.Inc()

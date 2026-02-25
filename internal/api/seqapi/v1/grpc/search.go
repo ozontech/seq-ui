@@ -16,11 +16,8 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_search")
 	defer span.End()
 
-	env, err := a.GetEnvFromContext(ctx)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	params, err := a.GetEnvParams(env)
+	env := a.GetEnvFromContext(ctx)
+	params, err := a.GetParams(env)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -54,11 +51,13 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 			Key:   "order",
 			Value: attribute.StringValue(req.GetOrder().String()),
 		},
-		{
-			Key:   "env",
-			Value: attribute.StringValue(checkEnv(env)),
-		},
 	}
+
+	if env != "" {
+		spanAttributes = append(spanAttributes, attribute.String("env", env))
+	}
+
+	span.SetAttributes(spanAttributes...)
 
 	if req.Histogram != nil && req.Histogram.Interval != "" {
 		spanAttributes = append(spanAttributes, attribute.KeyValue{

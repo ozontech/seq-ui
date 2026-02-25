@@ -420,12 +420,6 @@ func FromFile(cfgPath string) (Config, error) {
 	}
 
 	if len(cfg.Handlers.SeqAPI.Envs) > 0 {
-		for envName, envConfig := range cfg.Handlers.SeqAPI.Envs {
-			if _, ok := clientIDs[envConfig.SeqDB]; !ok {
-				return Config{}, fmt.Errorf("client '%s' for env '%s' not found", envConfig.SeqDB, envName)
-			}
-		}
-
 		if cfg.Handlers.SeqAPI.DefaultEnv == "" {
 			return Config{}, fmt.Errorf("default_env must be specified when using envs")
 		}
@@ -435,6 +429,10 @@ func FromFile(cfgPath string) (Config, error) {
 		}
 
 		for envName, envConfig := range cfg.Handlers.SeqAPI.Envs {
+			if _, ok := clientIDs[envConfig.SeqDB]; !ok {
+				return Config{}, fmt.Errorf("client '%s' for env '%s' not found", envConfig.SeqDB, envName)
+			}
+
 			if envConfig.Options == nil {
 				envConfig.Options = cfg.Handlers.SeqAPI.SeqAPIOptions
 				cfg.Handlers.SeqAPI.Envs[envName] = envConfig

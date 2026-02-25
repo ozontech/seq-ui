@@ -109,24 +109,22 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 		logger.Fatal("failed to init seq-db client", zap.Error(err))
 	}
 
-	var defaultClient seqdb.Client
-
+	defaultClientID := config.DefaultSeqDBClientID
 	if len(cfg.Handlers.SeqAPI.Envs) > 0 {
-		client, exists := seqDBClients[cfg.Handlers.SeqAPI.DefaultEnv]
+		env, exists := cfg.Handlers.SeqAPI.Envs[cfg.Handlers.SeqAPI.DefaultEnv]
 		if !exists {
-			logger.Fatal("client for default environment not found",
+			logger.Fatal("default environment not found in configuration",
 				zap.String("defaultEnv", cfg.Handlers.SeqAPI.DefaultEnv),
 			)
 		}
-		defaultClient = client
-	} else {
-		client, exists := seqDBClients[config.DefaultSeqDBClientID]
-		if !exists {
-			logger.Fatal("default client not found",
-				zap.String("defaultClientID", config.DefaultSeqDBClientID),
-			)
-		}
-		defaultClient = client
+		defaultClientID = env.SeqDB
+	}
+
+	defaultClient, exists := seqDBClients[defaultClientID]
+	if !exists {
+		logger.Fatal("default seq-db client not found",
+			zap.String("clientID", defaultClientID),
+		)
 	}
 
 	var massExportV1 *massexport_v1.MassExport

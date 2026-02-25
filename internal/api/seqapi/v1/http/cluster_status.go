@@ -7,7 +7,6 @@ import (
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
-	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -31,13 +30,6 @@ func (a *API) serveStatus(w http.ResponseWriter, r *http.Request) {
 		wr.Error(err, http.StatusInternalServerError)
 		return
 	}
-
-	span.SetAttributes(
-		attribute.KeyValue{
-			Key:   "env",
-			Value: attribute.StringValue(checkEnv(env)),
-		},
-	)
 
 	resp, err := params.client.Status(ctx, &seqapi.StatusRequest{})
 	if err != nil {

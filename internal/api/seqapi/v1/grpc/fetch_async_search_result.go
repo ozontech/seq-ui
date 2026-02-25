@@ -25,11 +25,6 @@ func (a *API) FetchAsyncSearchResult(
 	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_fetch_async_search_result")
 	defer span.End()
 
-	env, err := a.GetEnvFromContext(ctx)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	spanAttributes := []attribute.KeyValue{
 		{
 			Key:   "search_id",
@@ -46,10 +41,6 @@ func (a *API) FetchAsyncSearchResult(
 		{
 			Key:   "order",
 			Value: attribute.StringValue(string(req.Order)),
-		},
-		{
-			Key:   "env",
-			Value: attribute.StringValue(checkEnv(env)),
 		},
 	}
 	span.SetAttributes(spanAttributes...)

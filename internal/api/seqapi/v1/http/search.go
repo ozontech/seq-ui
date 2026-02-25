@@ -77,11 +77,12 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 			Key:   "order",
 			Value: attribute.StringValue(string(httpReq.Order)),
 		},
-		{
-			Key:   "env",
-			Value: attribute.StringValue(checkEnv(env)),
-		},
 	}
+
+	if env != "" {
+		spanAttributes = append(spanAttributes, attribute.String("env", env))
+	}
+
 	if httpReq.Histogram.Interval != "" {
 		spanAttributes = append(spanAttributes, attribute.KeyValue{
 			Key:   "histogram_interval",

@@ -35,7 +35,6 @@ func (a *API) serveFetchAsyncSearchResult(w http.ResponseWriter, r *http.Request
 	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_fetch_async_search_result")
 	defer span.End()
 
-	env := getEnvFromContext(ctx)
 	var httpReq fetchAsyncSearchResultRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
 		wr.Error(fmt.Errorf("failed to parse search request: %w", err), http.StatusBadRequest)
@@ -58,10 +57,6 @@ func (a *API) serveFetchAsyncSearchResult(w http.ResponseWriter, r *http.Request
 		{
 			Key:   "order",
 			Value: attribute.StringValue(string(httpReq.Order)),
-		},
-		{
-			Key:   "env",
-			Value: attribute.StringValue(checkEnv(env)),
 		},
 	}
 	span.SetAttributes(spanAttributes...)

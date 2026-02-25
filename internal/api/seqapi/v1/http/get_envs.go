@@ -23,7 +23,7 @@ type getEnvsResponse struct {
 } // @name seqapi.v1.GetEnvsResponse
 
 type envInfo struct {
-	Env                       string `json:"env"`
+	Env                       string `json:"env,omitempty"`
 	MaxSearchLimit            uint32 `json:"max_search_limit"`
 	MaxExportLimit            uint32 `json:"max_export_limit"`
 	MaxParallelExportRequests uint32 `json:"max_parallel_export_requests"`

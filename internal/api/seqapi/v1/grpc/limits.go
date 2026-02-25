@@ -9,12 +9,8 @@ import (
 )
 
 func (a *API) GetLimits(ctx context.Context, _ *seqapi.GetLimitsRequest) (*seqapi.GetLimitsResponse, error) {
-	env, err := a.GetEnvFromContext(ctx)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	params, err := a.GetEnvParams(env)
+	env := a.GetEnvFromContext(ctx)
+	params, err := a.GetParams(env)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

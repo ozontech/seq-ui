@@ -25,11 +25,6 @@ func (a *API) StartAsyncSearch(
 	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_start_async_search")
 	defer span.End()
 
-	env, err := a.GetEnvFromContext(ctx)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	spanAttributes := []attribute.KeyValue{
 		{
 			Key:   "query",
@@ -54,10 +49,6 @@ func (a *API) StartAsyncSearch(
 		{
 			Key:   "size",
 			Value: attribute.Int64Value(int64(req.GetSize())),
-		},
-		{
-			Key:   "env",
-			Value: attribute.StringValue(checkEnv(env)),
 		},
 	}
 	if req.Hist != nil && req.Hist.Interval != "" {

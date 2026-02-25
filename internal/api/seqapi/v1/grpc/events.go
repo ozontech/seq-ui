@@ -17,25 +17,24 @@ func (a *API) GetEvent(ctx context.Context, req *seqapi.GetEventRequest) (*seqap
 	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_get_event")
 	defer span.End()
 
-	env, err := a.GetEnvFromContext(ctx)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	params, err := a.GetEnvParams(env)
+	env := a.GetEnvFromContext(ctx)
+	params, err := a.GetParams(env)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	span.SetAttributes(
-		attribute.KeyValue{
+	attributes := []attribute.KeyValue{
+		{
 			Key:   "id",
 			Value: attribute.StringValue(req.GetId()),
 		},
-		attribute.KeyValue{
-			Key:   "env",
-			Value: attribute.StringValue(checkEnv(env)),
-		},
-	)
+	}
+
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+
+	span.SetAttributes(attributes...)
 
 	if cached, err := a.inmemWithRedisCache.Get(ctx, req.Id); err == nil {
 		event := &seqapi.Event{}

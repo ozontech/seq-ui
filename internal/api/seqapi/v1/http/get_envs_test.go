@@ -30,7 +30,7 @@ func TestServeGetEnvs(t *testing.T) {
 			},
 			wantEnvs: []envInfo{
 				{
-					Env:                       "default",
+					Env:                       "",
 					MaxSearchLimit:            100,
 					MaxExportLimit:            200,
 					MaxParallelExportRequests: 2,

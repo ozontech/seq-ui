@@ -12,7 +12,6 @@ import (
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
-	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
 
@@ -70,13 +69,6 @@ func (a *API) serveGetLogsLifespan(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logger.Error("can't set logs lifespan to cache", zap.Error(err))
 	}
-
-	span.SetAttributes(
-		attribute.KeyValue{
-			Key:   "env",
-			Value: attribute.StringValue(checkEnv(env)),
-		},
-	)
 
 	logger.Debug("got logs lifespan from seq-proxy")
 	wr.WriteJson(getLogsLifespanResponse{Lifespan: int64(res)})

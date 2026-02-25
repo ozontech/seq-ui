@@ -35,7 +35,6 @@ func (a *API) serveGetAsyncSearchesList(w http.ResponseWriter, r *http.Request) 
 	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_get_async_searches_list")
 	defer span.End()
 
-	env := getEnvFromContext(ctx)
 	var httpReq getAsyncSearchesListRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
 		wr.Error(fmt.Errorf("failed to parse search request: %w", err), http.StatusBadRequest)
@@ -50,10 +49,6 @@ func (a *API) serveGetAsyncSearchesList(w http.ResponseWriter, r *http.Request) 
 		{
 			Key:   "limit",
 			Value: attribute.IntValue(int(httpReq.Limit)),
-		},
-		{
-			Key:   "env",
-			Value: attribute.StringValue(checkEnv(env)),
 		},
 	}
 	if httpReq.Status != nil {

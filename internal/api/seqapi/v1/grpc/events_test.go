@@ -367,6 +367,7 @@ func TestGetEventWithMasking(t *testing.T) {
 				Cfg: config.SeqAPI{
 					SeqAPIOptions: &config.SeqAPIOptions{
 						EventsCacheTTL: cacheTTL,
+						Masking:        tt.maskingCfg,
 					},
 				},
 			}

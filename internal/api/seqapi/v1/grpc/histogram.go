@@ -14,16 +14,13 @@ func (a *API) GetHistogram(ctx context.Context, req *seqapi.GetHistogramRequest)
 	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_get_histogram")
 	defer span.End()
 
-	env, err := a.GetEnvFromContext(ctx)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	params, err := a.GetEnvParams(env)
+	env := a.GetEnvFromContext(ctx)
+	params, err := a.GetParams(env)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	span.SetAttributes(
+	attributes := []attribute.KeyValue{
 		attribute.KeyValue{
 			Key:   "query",
 			Value: attribute.StringValue(req.GetQuery()),
@@ -40,11 +37,13 @@ func (a *API) GetHistogram(ctx context.Context, req *seqapi.GetHistogramRequest)
 			Key:   "interval",
 			Value: attribute.StringValue(req.GetInterval()),
 		},
-		attribute.KeyValue{
-			Key:   "env",
-			Value: attribute.StringValue(checkEnv(env)),
-		},
-	)
+	}
+
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+
+	span.SetAttributes(attributes...)
 
 	resp, err := params.client.GetHistogram(ctx, req)
 	if err != nil {

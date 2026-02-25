@@ -43,7 +43,7 @@ func (a *API) serveGetHistogram(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	span.SetAttributes(
+	attributes := []attribute.KeyValue{
 		attribute.KeyValue{
 			Key:   "query",
 			Value: attribute.StringValue(httpReq.Query),
@@ -60,11 +60,13 @@ func (a *API) serveGetHistogram(w http.ResponseWriter, r *http.Request) {
 			Key:   "interval",
 			Value: attribute.StringValue(httpReq.Interval),
 		},
-		attribute.KeyValue{
-			Key:   "env",
-			Value: attribute.StringValue(checkEnv(env)),
-		},
-	)
+	}
+
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+
+	span.SetAttributes(attributes...)
 
 	resp, err := params.client.GetHistogram(ctx, httpReq.toProto())
 	if err != nil {
