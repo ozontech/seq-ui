@@ -12,7 +12,7 @@ import (
 )
 
 func (a *API) GetReleases(ctx context.Context, req *errorgroups.GetReleasesRequest) (*errorgroups.GetReleasesResponse, error) {
-	_, span := tracing.StartSpan(ctx, "errorgroups_v1_get_groups")
+	ctx, span := tracing.StartSpan(ctx, "errorgroups_v1_get_releases")
 	defer span.End()
 
 	attributes := []attribute.KeyValue{

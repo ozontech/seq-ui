@@ -12,7 +12,7 @@ import (
 )
 
 func (a *API) GetServices(ctx context.Context, req *errorgroups.GetServicesRequest) (*errorgroups.GetServicesResponse, error) {
-	_, span := tracing.StartSpan(ctx, "errorgroups_v1_get_groups")
+	ctx, span := tracing.StartSpan(ctx, "errorgroups_v1_get_services")
 	defer span.End()
 
 	attributes := []attribute.KeyValue{

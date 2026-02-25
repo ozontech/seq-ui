@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
@@ -17,11 +19,15 @@ import (
 type Repository interface {
 	GetErrorGroups(context.Context, types.GetErrorGroupsRequest) ([]types.ErrorGroup, error)
 	GetErrorGroupsCount(context.Context, types.GetErrorGroupsRequest) (uint64, error)
+	GetNewErrorGroups(context.Context, types.GetErrorGroupsRequest) ([]types.ErrorGroup, error)
+	GetNewErrorGroupsCount(context.Context, types.GetErrorGroupsRequest) (uint64, error)
 	GetErrorHist(context.Context, types.GetErrorHistRequest) ([]types.ErrorHistBucket, error)
 	GetErrorDetails(context.Context, types.GetErrorGroupDetailsRequest) (types.ErrorGroupDetails, error)
 	GetErrorCounts(context.Context, types.GetErrorGroupDetailsRequest) (types.ErrorGroupCounts, error)
 	GetErrorReleases(context.Context, types.GetErrorGroupReleasesRequest) ([]string, error)
 	GetServices(context.Context, types.GetServicesRequest) ([]string, error)
+	DiffByReleases(context.Context, types.DiffByReleasesRequest) ([]types.DiffGroup, error)
+	DiffByReleasesTotal(context.Context, types.DiffByReleasesRequest) (uint64, error)
 }
 
 type repository struct {
@@ -180,6 +186,153 @@ func (r *repository) GetErrorGroupsCount(
 		}
 		incErrorMetric(err, metricLabels)
 		return 0, fmt.Errorf("failed to get error groups count: %w", err)
+	}
+
+	return total, nil
+}
+
+func (r *repository) GetNewErrorGroups(
+	ctx context.Context,
+	req types.GetErrorGroupsRequest,
+) ([]types.ErrorGroup, error) {
+	// we need this subquery to make query faster, see https://github.com/ClickHouse/ClickHouse/issues/7187
+	subQ := sqlb.
+		Select("_group_hash").
+		From("error_groups").
+		Where(sq.Eq{"service": req.Service}).
+		GroupBy("_group_hash", "source").
+		Limit(uint64(req.Limit)).
+		Offset(uint64(req.Offset))
+
+	if r.sharded {
+		subQ = subQ.Distinct()
+	}
+	for col, val := range r.queryFilter {
+		subQ = subQ.Where(sq.Eq{col: val})
+	}
+	if req.Env != nil && *req.Env != "" {
+		subQ = subQ.Where(sq.Eq{"env": req.Env})
+	}
+	if req.Source != nil && *req.Source != "" {
+		subQ = subQ.Where(sq.Eq{"source": req.Source})
+	}
+
+	if req.Release != nil && *req.Release != "" { // new by releases, ignore duration
+		subQ = subQ.Having(sq.Eq{
+			"count()":      1,
+			"any(release)": *req.Release,
+		})
+	} else if req.Duration != nil && *req.Duration != 0 { // new by duration
+		subQ = subQ.Having(sq.GtOrEq{"minMerge(first_seen_at)": time.Now().Add(-req.Duration.Abs())})
+	}
+
+	subQ = orderBy(subQ, req.Order, true)
+
+	subQuery, subArgs := subQ.MustSql()
+
+	in := "IN"
+	if r.sharded {
+		in = "GLOBAL IN"
+	}
+	q := sqlb.
+		Select(
+			"_group_hash as group_hash",
+			"source",
+			"any(message) as message",
+			"countMerge(seen_total) as seen_total",
+			"minMerge(first_seen_at) as first_seen_at",
+			"maxMerge(last_seen_at) as last_seen_at",
+		).
+		From("error_groups").
+		Where(fmt.Sprintf("_group_hash %s (%s)", in, subQuery), subArgs...).
+		GroupBy("_group_hash", "source")
+
+	// using string formatting below because squirrel doesn't support subquery in WHERE clause
+	q = q.Where(fmt.Sprintf("service = '%s'", req.Service))
+
+	for col, val := range r.queryFilter {
+		q = q.Where(fmt.Sprintf("%s = '%s'", col, val))
+	}
+
+	if req.Source != nil && *req.Source != "" {
+		q = q.Where(fmt.Sprintf("source = '%s'", *req.Source))
+	}
+	if req.Env != nil && *req.Env != "" {
+		q = q.Where(fmt.Sprintf("env = '%s'", *req.Env))
+	}
+	q = orderBy(q, req.Order, false)
+
+	query, args := q.MustSql()
+	metricLabels := []string{"error_groups", "SELECT"}
+	rows, err := r.conn.Query(ctx, metricLabels, query, args...)
+	if err != nil {
+		incErrorMetric(err, metricLabels)
+		return nil, fmt.Errorf("failed to get new error groups: %w", err)
+	}
+
+	var errorGroups []types.ErrorGroup
+	for rows.Next() {
+		var group types.ErrorGroup
+		err = rows.Scan(
+			&group.Hash,
+			&group.Source,
+			&group.Message,
+			&group.SeenTotal,
+			&group.FirstSeenAt,
+			&group.LastSeenAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+
+		errorGroups = append(errorGroups, group)
+	}
+
+	return errorGroups, nil
+}
+
+func (r *repository) GetNewErrorGroupsCount(
+	ctx context.Context,
+	req types.GetErrorGroupsRequest,
+) (uint64, error) {
+	subQ := sqlb.
+		Select("_group_hash").
+		From("error_groups").
+		Where(sq.Eq{"service": req.Service}).
+		GroupBy("_group_hash", "source")
+
+	for col, val := range r.queryFilter {
+		subQ = subQ.Where(sq.Eq{col: val})
+	}
+	if req.Env != nil && *req.Env != "" {
+		subQ = subQ.Where(sq.Eq{"env": req.Env})
+	}
+	if req.Source != nil && *req.Source != "" {
+		subQ = subQ.Where(sq.Eq{"source": req.Source})
+	}
+
+	if req.Release != nil && *req.Release != "" { // new by releases, ignore duration
+		subQ = subQ.Having(sq.Eq{
+			"count()":      1,
+			"any(release)": *req.Release,
+		})
+	} else if req.Duration != nil && *req.Duration != 0 { // new by duration
+		subQ = subQ.Having(sq.GtOrEq{"minMerge(first_seen_at)": time.Now().Add(-req.Duration.Abs())})
+	}
+
+	q := sqlb.Select("count()").FromSelect(subQ, "subQ")
+
+	query, args := q.MustSql()
+	metricLabels := []string{"error_groups", "SELECT"}
+	row := r.conn.QueryRow(ctx, metricLabels, query, args...)
+
+	var total uint64
+	if err := row.Scan(&total); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, nil
+		}
+		incErrorMetric(err, metricLabels)
+		return 0, fmt.Errorf("failed to get new error groups count: %w", err)
 	}
 
 	return total, nil
@@ -442,6 +595,158 @@ func (r *repository) GetServices(
 	}
 
 	return services, nil
+}
+
+func (r *repository) DiffByReleases(
+	ctx context.Context,
+	req types.DiffByReleasesRequest,
+) ([]types.DiffGroup, error) {
+	where := sq.Eq{
+		"service": req.Service,
+		"release": req.Releases,
+	}
+	for col, val := range r.queryFilter {
+		where[col] = val
+	}
+	if req.Env != nil && *req.Env != "" {
+		where["env"] = *req.Env
+	}
+	if req.Source != nil && *req.Source != "" {
+		where["source"] = *req.Source
+	}
+
+	groupsQ := sqlb.
+		Select(
+			"_group_hash",
+			"source",
+			"any(message) as message",
+			"minMerge(first_seen_at) as first_seen_at",
+			"maxMerge(last_seen_at) as last_seen_at",
+		).
+		From("error_groups").
+		Where(where).
+		GroupBy("_group_hash", "source").
+		Limit(uint64(req.Limit)).
+		Offset(uint64(req.Offset))
+
+	switch req.Order {
+	case types.OrderFrequent:
+		groupsQ = groupsQ.OrderBy("countMerge(seen_total) DESC")
+	case types.OrderLatest:
+		groupsQ = groupsQ.OrderBy("last_seen_at DESC")
+	case types.OrderOldest:
+		groupsQ = groupsQ.OrderBy("first_seen_at")
+	}
+
+	groupsQuery, args := groupsQ.MustSql()
+	metricLabels := []string{"error_groups", "SELECT"}
+	rows, err := r.conn.Query(ctx, metricLabels, groupsQuery, args...)
+	if err != nil {
+		incErrorMetric(err, metricLabels)
+		return nil, fmt.Errorf("failed to get error groups: %w", err)
+	}
+
+	var (
+		diffGroups []types.DiffGroup
+		idxByHash  = map[uint64]int{}
+	)
+	for rows.Next() {
+		group := types.DiffGroup{
+			ReleaseInfos: make(map[string]types.DiffReleaseInfo),
+		}
+
+		err = rows.Scan(
+			&group.Hash,
+			&group.Source,
+			&group.Message,
+			&group.FirstSeenAt,
+			&group.LastSeenAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+
+		diffGroups = append(diffGroups, group)
+		idxByHash[group.Hash] = len(diffGroups) - 1
+	}
+
+	where["_group_hash"] = slices.Collect(maps.Keys(idxByHash))
+
+	q := sqlb.
+		Select(
+			"_group_hash",
+			"release",
+			"countMerge(seen_total) as seen_total",
+		).
+		From("error_groups").
+		Where(where).
+		GroupBy("_group_hash", "release")
+
+	query, args := q.MustSql()
+	rows, err = r.conn.Query(ctx, metricLabels, query, args...)
+	if err != nil {
+		incErrorMetric(err, metricLabels)
+		return nil, fmt.Errorf("failed to get error groups by release: %w", err)
+	}
+
+	for rows.Next() {
+		var (
+			hash, seenTotal uint64
+			release         string
+		)
+		if err := rows.Scan(&hash, &release, &seenTotal); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+
+		if idx, ok := idxByHash[hash]; ok {
+			diffGroups[idx].ReleaseInfos[release] = types.DiffReleaseInfo{
+				SeenTotal: seenTotal,
+			}
+		}
+	}
+
+	return diffGroups, nil
+}
+
+func (r *repository) DiffByReleasesTotal(
+	ctx context.Context,
+	req types.DiffByReleasesRequest,
+) (uint64, error) {
+	subQ := sqlb.
+		Select("_group_hash").
+		From("error_groups").
+		Where(sq.Eq{
+			"service": req.Service,
+			"release": req.Releases,
+		}).
+		GroupBy("_group_hash")
+
+	for col, val := range r.queryFilter {
+		subQ = subQ.Where(sq.Eq{col: val})
+	}
+	if req.Env != nil && *req.Env != "" {
+		subQ = subQ.Where(sq.Eq{"env": *req.Env})
+	}
+	if req.Source != nil && *req.Source != "" {
+		subQ = subQ.Where(sq.Eq{"source": *req.Source})
+	}
+
+	q := sqlb.Select("count()").FromSelect(subQ, "subQ")
+
+	query, args := q.MustSql()
+	metricLabels := []string{"error_groups", "SELECT"}
+	row := r.conn.QueryRow(ctx, metricLabels, query, args...)
+
+	var total uint64
+	if err := row.Scan(&total); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, nil
+		}
+		incErrorMetric(err, metricLabels)
+		return 0, fmt.Errorf("failed to get error groups count: %w", err)
+	}
+
+	return total, nil
 }
 
 func orderBy(q sq.SelectBuilder, o types.ErrorGroupsOrder, sub bool) sq.SelectBuilder {

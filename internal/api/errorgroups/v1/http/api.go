@@ -27,6 +27,7 @@ func (a *API) Router() chi.Router {
 	mux.Post("/details", a.serveGetDetails)
 	mux.Post("/releases", a.serveGetReleases)
 	mux.Post("/services", a.serveGetServices)
+	mux.Post("/diff_by_releases", a.serveGetDiffByReleases)
 
 	return mux
 }

@@ -46,6 +46,7 @@ func (a *API) serveGetGroups(w http.ResponseWriter, r *http.Request) {
 		{Key: "limit", Value: attribute.IntValue(int(httpReq.Limit))},
 		{Key: "offset", Value: attribute.IntValue(int(httpReq.Offset))},
 		{Key: "order", Value: attribute.StringValue(string(httpReq.Order))},
+		{Key: "with_total", Value: attribute.BoolValue(httpReq.WithTotal)},
 	}
 	if httpReq.Env != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReq.Env)})
@@ -58,6 +59,10 @@ func (a *API) serveGetGroups(w http.ResponseWriter, r *http.Request) {
 	}
 	if httpReq.Source != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "source", Value: attribute.StringValue(*httpReq.Source)})
+	}
+	if httpReq.Filter != nil {
+		filterRaw, _ := json.Marshal(httpReq.Filter)
+		attributes = append(attributes, attribute.KeyValue{Key: "filter", Value: attribute.StringValue(string(filterRaw))})
 	}
 	span.SetAttributes(attributes...)
 
@@ -72,7 +77,17 @@ func (a *API) serveGetGroups(w http.ResponseWriter, r *http.Request) {
 		Order:     httpReq.Order.toDomain(),
 		WithTotal: httpReq.WithTotal,
 	}
-	groups, total, err := a.service.GetErrorGroups(ctx, req)
+
+	var (
+		groups []types.ErrorGroup
+		total  uint64
+	)
+	if httpReq.Filter != nil && httpReq.Filter.IsNew {
+		groups, total, err = a.service.GetNewErrorGroups(ctx, req)
+	} else {
+		groups, total, err = a.service.GetErrorGroups(ctx, req)
+	}
+
 	if err != nil {
 		httputil.ProcessError(wr, err)
 		return
@@ -105,6 +120,10 @@ func (o order) toDomain() types.ErrorGroupsOrder {
 	}
 }
 
+type groupsFilter struct {
+	IsNew bool `json:"is_new"`
+} //	@name	errorgroups.v1.GroupsFilter
+
 type getGroupsRequest struct {
 	Service string  `json:"service"`
 	Env     *string `json:"env,omitempty"`
@@ -116,6 +135,8 @@ type getGroupsRequest struct {
 	Offset    uint32  `json:"offset"`
 	Order     order   `json:"order"`
 	WithTotal bool    `json:"with_total"`
+
+	Filter *groupsFilter `json:"filter,omitempty"`
 } //	@name	errorgroups.v1.GetGroupsRequest
 
 type getGroupsResponse struct {
