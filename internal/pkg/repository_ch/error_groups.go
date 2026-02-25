@@ -623,6 +623,9 @@ func (r *repository) DiffByReleases(
 		group := types.DiffGroup{
 			ReleaseInfos: make(map[string]types.DiffReleaseInfo),
 		}
+		for _, r := range req.Releases {
+			group.ReleaseInfos[r] = types.DiffReleaseInfo{}
+		}
 
 		err = rows.Scan(
 			&group.Hash,
