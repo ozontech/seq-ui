@@ -21,19 +21,19 @@ func (a *API) GetHistogram(ctx context.Context, req *seqapi.GetHistogramRequest)
 	}
 
 	attributes := []attribute.KeyValue{
-		attribute.KeyValue{
+		{
 			Key:   "query",
 			Value: attribute.StringValue(req.GetQuery()),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "from",
 			Value: tracing.TimestampToStringValue(req.GetFrom()),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "to",
 			Value: tracing.TimestampToStringValue(req.GetTo()),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "interval",
 			Value: attribute.StringValue(req.GetInterval()),
 		},

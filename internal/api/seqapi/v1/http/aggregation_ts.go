@@ -47,19 +47,19 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 	aggsRaw, _ := json.Marshal(httpReq.Aggregations)
 
 	attributes := []attribute.KeyValue{
-		attribute.KeyValue{
+		{
 			Key:   "query",
 			Value: attribute.StringValue(httpReq.Query),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "from",
 			Value: attribute.StringValue(httpReq.From.Format(time.DateTime)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "to",
 			Value: attribute.StringValue(httpReq.To.Format(time.DateTime)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "aggregations",
 			Value: attribute.StringValue(string(aggsRaw)),
 		},

@@ -55,31 +55,31 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	attributes := []attribute.KeyValue{
-		attribute.KeyValue{
+		{
 			Key:   "query",
 			Value: attribute.StringValue(httpReq.Query),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "from",
 			Value: attribute.StringValue(httpReq.From.Format(time.DateTime)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "to",
 			Value: attribute.StringValue(httpReq.To.Format(time.DateTime)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "limit",
 			Value: attribute.IntValue(int(httpReq.Limit)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "offset",
 			Value: attribute.IntValue(int(httpReq.Offset)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "format",
 			Value: attribute.StringValue(string(httpReq.Format)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "fields",
 			Value: attribute.StringSliceValue(httpReq.Fields),
 		},

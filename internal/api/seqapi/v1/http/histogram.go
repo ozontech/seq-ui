@@ -44,19 +44,19 @@ func (a *API) serveGetHistogram(w http.ResponseWriter, r *http.Request) {
 	}
 
 	attributes := []attribute.KeyValue{
-		attribute.KeyValue{
+		{
 			Key:   "query",
 			Value: attribute.StringValue(httpReq.Query),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "from",
 			Value: attribute.StringValue(httpReq.From.Format(time.DateTime)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "to",
 			Value: attribute.StringValue(httpReq.To.Format(time.DateTime)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "interval",
 			Value: attribute.StringValue(httpReq.Interval),
 		},
