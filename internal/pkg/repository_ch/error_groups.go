@@ -487,7 +487,7 @@ func (r *repository) GetErrorReleases(
 			sq.Eq{"service": req.Service},
 			sq.NotEq{"release": ""},
 		}).
-		OrderBy("release")
+		OrderBy("ttl DESC")
 
 	for col, val := range r.queryFilters() {
 		q = q.Where(sq.Eq{col: val})

@@ -89,9 +89,8 @@ type ErrorGroupCounts struct {
 }
 
 type GetErrorGroupReleasesRequest struct {
-	Service   string
-	GroupHash *uint64
-	Env       *string
+	Service string
+	Env     *string
 }
 
 type GetServicesRequest struct {
