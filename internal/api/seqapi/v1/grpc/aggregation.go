@@ -91,15 +91,10 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 		}
 	}
 
-	aggIntervals, err := aggregation_ts.GetIntervals(req.Aggregations)
+	err = aggregation_ts.NormalizeBuckets(req.Aggregations, resp.Aggregations, a.config.DefaultAggregationTsBucketUnit)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, err
 	}
-	bucketUnits, err := aggregation_ts.GetBucketUnits(req.Aggregations, a.config.DefaultBucketUnit)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	aggregation_ts.NormalizeBucketValues(resp.Aggregations, aggIntervals, bucketUnits)
 
 	return resp, nil
 }

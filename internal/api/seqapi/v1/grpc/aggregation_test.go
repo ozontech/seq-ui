@@ -167,8 +167,8 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest: 3,
-				DefaultBucketUnit:         time.Second,
+				MaxAggregationsPerRequest:      3,
+				DefaultAggregationTsBucketUnit: time.Second,
 			},
 		},
 		{
@@ -202,8 +202,8 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest: 3,
-				DefaultBucketUnit:         4 * time.Second,
+				MaxAggregationsPerRequest:      3,
+				DefaultAggregationTsBucketUnit: 4 * time.Second,
 			},
 		},
 	}

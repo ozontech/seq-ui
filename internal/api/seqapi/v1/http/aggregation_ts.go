@@ -79,17 +79,11 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	aggIntervals, err := aggregation_ts.GetIntervals(httpReq.Aggregations.toProto())
+	err = aggregation_ts.NormalizeBuckets(httpReq.Aggregations, resp.Aggregations, a.config.DefaultAggregationTsBucketUnit)
 	if err != nil {
-		wr.Error(fmt.Errorf("failed to get аggregation intervals: %w", err), http.StatusBadRequest)
+		wr.Error(fmt.Errorf("failed to noramlize buckets: %w", err), http.StatusBadRequest)
 		return
 	}
-	bucketUnits, err := GetbucketUnits(httpReq.Aggregations, a.config.DefaultBucketUnit)
-	if err != nil {
-		wr.Error(fmt.Errorf("failed to get аggregation bucket units: %w", err), http.StatusBadRequest)
-		return
-	}
-	aggregation_ts.NormalizeBucketValues(resp.Aggregations, aggIntervals, bucketUnits)
 
 	wr.WriteJson(getAggregationTsResponseFromProto(resp, httpReq.Aggregations))
 }
@@ -122,6 +116,18 @@ type aggregationTsQuery struct {
 	Interval   string `json:"interval,omitempty" format:"duration" example:"1m"`
 	BucketUnit string `json:"bucket_unit,omitempty" format:"duration" example:"10s"`
 } //	@name	seqapi.v1.AggregationTsQuery
+
+func (aq aggregationTsQuery) GetFunc() seqapi.AggFunc {
+	return aq.aggregationQuery.Func.toProto()
+}
+
+func (aq aggregationTsQuery) GetInterval() string {
+	return aq.Interval
+}
+
+func (aq aggregationTsQuery) GetBucketUnit() string {
+	return aq.BucketUnit
+}
 
 func (aq aggregationTsQuery) toProto() *seqapi.AggregationQuery {
 	q := aq.aggregationQuery.toProto()

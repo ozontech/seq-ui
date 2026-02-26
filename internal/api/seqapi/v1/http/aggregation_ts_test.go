@@ -103,9 +103,9 @@ func TestServeGetAggregationTs(t *testing.T) {
 			wantRespBody: `{"aggregations":[{"data":{"result":[{"metric":{"test_count1":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count1":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count1":"test3"},"values":[{"timestamp":1695637233,"value":3}]}],"bucket_unit":"1s"}},{"data":{"result":[{"metric":{"test_count2":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count2":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count2":"test3"},"values":[{"timestamp":1695637233,"value":3}]}],"bucket_unit":"1s"}}],"error":{"code":"ERROR_CODE_NO"}}`,
 			wantStatus:   http.StatusOK,
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest:  3,
-				MaxBucketsPerAggregationTs: 100,
-				DefaultBucketUnit:          time.Second,
+				MaxAggregationsPerRequest:      3,
+				MaxBucketsPerAggregationTs:     100,
+				DefaultAggregationTsBucketUnit: time.Second,
 			},
 		},
 		{
@@ -158,9 +158,9 @@ func TestServeGetAggregationTs(t *testing.T) {
 			wantRespBody: `{"aggregations":[{"data":{"result":[{"metric":{"test_count1":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count1":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count1":"test3"},"values":[{"timestamp":1695637233,"value":3}]}],"bucket_unit":"1s"}},{"data":{"result":[{"metric":{"test_count2":"test1"},"values":[{"timestamp":1695637231,"value":2}]},{"metric":{"test_count2":"test2"},"values":[{"timestamp":1695637232,"value":4}]},{"metric":{"test_count2":"test3"},"values":[{"timestamp":1695637233,"value":6}]}],"bucket_unit":"2s"}}],"error":{"code":"ERROR_CODE_NO"}}`,
 			wantStatus:   http.StatusOK,
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest:  3,
-				MaxBucketsPerAggregationTs: 100,
-				DefaultBucketUnit:          time.Second,
+				MaxAggregationsPerRequest:      3,
+				MaxBucketsPerAggregationTs:     100,
+				DefaultAggregationTsBucketUnit: time.Second,
 			},
 		},
 		{
