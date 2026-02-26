@@ -32,7 +32,6 @@ type apiParams struct {
 
 type API struct {
 	config              config.SeqAPI
-	seqDBСlients        map[string]seqdb.Client
 	apiParams           apiParams
 	apiParamsByEnv      map[string]apiParams
 	inmemWithRedisCache cache.Cache
@@ -124,7 +123,6 @@ func New(
 
 	return &API{
 		config:              cfg,
-		seqDBСlients:        seqDBСlients,
 		apiParams:           params,
 		apiParamsByEnv:      paramsByEnv,
 		inmemWithRedisCache: inmemWithRedisCache,
