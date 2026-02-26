@@ -16,25 +16,33 @@ clients:
 
 handlers:
   seq_api:
-    default_env: "production"
-    max_search_limit: 100
-    max_export_limit: 100
-    max_parallel_export_requests: 10
+    max_search_limit: 10
+    max_export_limit: 11
+    max_parallel_export_requests: 12
+    max_aggregations_per_request: 5
+    seq_cli_max_search_limit: 6
     pinned_fields:
       - name: level
         type: keyword
       - name: message
         type: text
-
+    default_env: "production"
     envs:
       production:
         seq_db_id: "default-seq-db"
-        options:
-          max_search_limit: 1000
-          max_export_limit: 500
 
       staging:
         seq_db_id: "test-seq-db"
         options:
-          max_search_limit: 200
-          max_export_limit: 200
+          max_search_limit: 20
+          max_export_limit: 22
+          max_parallel_export_requests: 24
+          max_aggregations_per_request: 10
+          seq_cli_max_search_limit: 12
+          pinned_fields:
+            - name: level
+              type: keyword
+            - name: message
+              type: text
+            - name: service
+              type: keyword

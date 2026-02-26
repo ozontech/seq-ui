@@ -32,8 +32,8 @@ type API struct {
 	seqapi.UnimplementedSeqAPIServiceServer
 
 	config              config.SeqAPI
-	apiParams           apiParams
-	apiParamsByEnv      map[string]apiParams
+	params              apiParams
+	paramsByEnv         map[string]apiParams
 	inmemWithRedisCache cache.Cache
 	redisCache          cache.Cache
 	nowFn               func() time.Time
@@ -109,8 +109,8 @@ func New(
 
 	return &API{
 		config:              cfg,
-		apiParams:           params,
-		apiParamsByEnv:      paramsByEnv,
+		params:              params,
+		paramsByEnv:         paramsByEnv,
 		inmemWithRedisCache: inmemWithRedisCache,
 		redisCache:          redisCache,
 		nowFn:               time.Now,
@@ -163,14 +163,14 @@ func (a *API) GetEnvFromContext(ctx context.Context) string {
 
 func (a *API) GetParams(env string) (apiParams, error) {
 	if len(a.config.Envs) == 0 {
-		return a.apiParams, nil
+		return a.params, nil
 	}
 
 	if env == "" {
 		env = a.config.DefaultEnv
 	}
 
-	params, exists := a.apiParamsByEnv[env]
+	params, exists := a.paramsByEnv[env]
 	if !exists {
 		return apiParams{}, fmt.Errorf("env '%s' not found", env)
 	}

@@ -33,11 +33,6 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 	wr := httputil.NewWriter(w)
 
 	env := getEnvFromContext(ctx)
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		wr.Error(err, http.StatusInternalServerError)
-		return
-	}
 
 	userStr := "_"
 	if userName, err := types.GetUserKey(ctx); err == nil {
@@ -90,6 +85,12 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	span.SetAttributes(attributes...)
+
+	params, err := a.GetEnvParams(env)
+	if err != nil {
+		wr.Error(err, http.StatusInternalServerError)
+		return
+	}
 
 	if params.exportLimiter.Limited(userStr) {
 		metric.ServerExportRequestLimits.Inc()

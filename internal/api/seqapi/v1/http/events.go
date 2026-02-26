@@ -33,11 +33,6 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
 	env := getEnvFromContext(ctx)
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		wr.Error(err, http.StatusInternalServerError)
-		return
-	}
 
 	attributes := []attribute.KeyValue{
 		{
@@ -51,6 +46,12 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	span.SetAttributes(attributes...)
+
+	params, err := a.GetEnvParams(env)
+	if err != nil {
+		wr.Error(err, http.StatusInternalServerError)
+		return
+	}
 
 	if cached, err := a.inmemWithRedisCache.Get(ctx, id); err == nil {
 		e := &seqapi.Event{}

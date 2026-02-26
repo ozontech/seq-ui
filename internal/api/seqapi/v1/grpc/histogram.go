@@ -15,10 +15,6 @@ func (a *API) GetHistogram(ctx context.Context, req *seqapi.GetHistogramRequest)
 	defer span.End()
 
 	env := a.GetEnvFromContext(ctx)
-	params, err := a.GetParams(env)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
 
 	attributes := []attribute.KeyValue{
 		{
@@ -44,6 +40,11 @@ func (a *API) GetHistogram(ctx context.Context, req *seqapi.GetHistogramRequest)
 	}
 
 	span.SetAttributes(attributes...)
+
+	params, err := a.GetParams(env)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 
 	resp, err := params.client.GetHistogram(ctx, req)
 	if err != nil {

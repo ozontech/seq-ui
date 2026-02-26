@@ -32,11 +32,6 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 	wr := httputil.NewWriter(w)
 
 	env := getEnvFromContext(ctx)
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		wr.Error(err, http.StatusInternalServerError)
-		return
-	}
 
 	var httpReq searchRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
@@ -81,6 +76,12 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 
 	if env != "" {
 		spanAttributes = append(spanAttributes, attribute.String("env", env))
+	}
+
+	params, err := a.GetEnvParams(env)
+	if err != nil {
+		wr.Error(err, http.StatusInternalServerError)
+		return
 	}
 
 	if httpReq.Histogram.Interval != "" {

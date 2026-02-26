@@ -17,10 +17,6 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 	defer span.End()
 
 	env := a.GetEnvFromContext(ctx)
-	params, err := a.GetParams(env)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
 
 	spanAttributes := []attribute.KeyValue{
 		{
@@ -58,6 +54,11 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 	}
 
 	span.SetAttributes(spanAttributes...)
+
+	params, err := a.GetParams(env)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 
 	if req.Histogram != nil && req.Histogram.Interval != "" {
 		spanAttributes = append(spanAttributes, attribute.KeyValue{

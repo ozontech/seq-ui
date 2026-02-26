@@ -111,13 +111,9 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 
 	defaultClientID := config.DefaultSeqDBClientID
 	if len(cfg.Handlers.SeqAPI.Envs) > 0 {
-		env, exists := cfg.Handlers.SeqAPI.Envs[cfg.Handlers.SeqAPI.DefaultEnv]
-		if !exists {
-			logger.Fatal("default environment not found in configuration",
-				zap.String("defaultEnv", cfg.Handlers.SeqAPI.DefaultEnv),
-			)
+		if env, exists := cfg.Handlers.SeqAPI.Envs[cfg.Handlers.SeqAPI.DefaultEnv]; exists {
+			defaultClientID = env.SeqDB
 		}
-		defaultClientID = env.SeqDB
 	}
 
 	defaultClient, exists := seqDBClients[defaultClientID]

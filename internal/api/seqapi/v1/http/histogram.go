@@ -31,11 +31,6 @@ func (a *API) serveGetHistogram(w http.ResponseWriter, r *http.Request) {
 	wr := httputil.NewWriter(w)
 
 	env := getEnvFromContext(ctx)
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		wr.Error(err, http.StatusInternalServerError)
-		return
-	}
 
 	var httpReq getHistogramRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
@@ -67,6 +62,12 @@ func (a *API) serveGetHistogram(w http.ResponseWriter, r *http.Request) {
 	}
 
 	span.SetAttributes(attributes...)
+
+	params, err := a.GetEnvParams(env)
+	if err != nil {
+		wr.Error(err, http.StatusInternalServerError)
+		return
+	}
 
 	resp, err := params.client.GetHistogram(ctx, httpReq.toProto())
 	if err != nil {

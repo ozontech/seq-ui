@@ -40,11 +40,7 @@ func (a *API) serveGetAggregation(w http.ResponseWriter, r *http.Request) {
 
 	aggsRaw, _ := json.Marshal(httpReq.Aggregations)
 	env := getEnvFromContext(ctx)
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		wr.Error(err, http.StatusInternalServerError)
-		return
-	}
+
 	attributes := []attribute.KeyValue{
 		{
 			Key:   "query",
@@ -73,6 +69,12 @@ func (a *API) serveGetAggregation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	span.SetAttributes(attributes...)
+
+	params, err := a.GetEnvParams(env)
+	if err != nil {
+		wr.Error(err, http.StatusInternalServerError)
+		return
+	}
 
 	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), params.options.MaxAggregationsPerRequest); err != nil {
 		wr.Error(err, http.StatusBadRequest)
