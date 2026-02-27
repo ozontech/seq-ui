@@ -372,15 +372,20 @@ clients:
   initial_retry_backoff:
   max_retry_backoff:
   grpc_keepalive_params:
+  seq_db:
 ```
 
 **`seq_db_addrs`** *`[]string`* *`required`*
 
 List of seq-db proxy hosts to be used in client calls. If there are more than one host, for each request random host will be chosen.
 
+> Deprecated. Use `seq_db.addrs` instead.
+
 **`proxy_client_mode`** *`string`* *`default="grpc"`* *`options="grpc"`*
 
 Allow choosing how to send requests to seq-db.
+
+> Deprecated. Use `seq_db.client_mode` instead.
 
 **`seq_db_timeout`** *`string`* *`default="0"`*
 
@@ -388,15 +393,21 @@ Timeout for requests made by the client. A zero value means no timeout.
 
 > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
 
+> Deprecated. Use `seq_db.timeout` instead.
+
 **`seq_db_avg_doc_size`** *`int`* *`default=0`*
 
 Specifies the average documents size in `KB` that the client calls returns. It's used in combination with `handlers.seq_api.max_search_limit` to calculate the maximum response size per client request.
 
 > Regardless of `seq_db_avg_doc_size`, the minimum response size per client request is `4MB`.
 
+> Deprecated. Use `seq_db.avg_doc_size` instead.
+
 **`request_retries`** *`int`* *`default=0`*
 
 The number of retries to send a request to client after the first attempt. For each retry, the entire `seq_db_addrs` list will be searched, choosing a random host. A zero value means no retries. If set to negative value, then it will be reset to `default`.
+
+> Deprecated. Use `seq_db.request_retries` instead.
 
 **`initial_retry_backoff`** *`string`* *`default="0"`*
 
@@ -404,15 +415,21 @@ Initial duration interval value to be used in backoff with retries. If set to `0
 
 > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
 
+> Deprecated. Use `seq_db.initial_retry_backoff` instead.
+
 **`max_retry_backoff`** *`string`* *`default="0"`*
 
 Max duration interval value to be used in backoff with retries. If set to `0`, only value from `initial_retry_backoff` is used for calculating backoff and the backoff is not higher than `initial_retry_backoff * 2`.
 
 > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
 
+> Deprecated. Use `seq_db.max_retry_backoff` instead.
+
 **`grpc_keepalive_params`** *`GRPCKeepaliveParams`* *`optional`*
 
 If gRPC keepalive params are not set, no keepalive params are applied to gRPC client.
+
+> Deprecated. Use `seq_db.grpc_keepalive_params` instead.
 
 `GRPCKeepaliveParams` fields:
 
@@ -432,6 +449,56 @@ If gRPC keepalive params are not set, no keepalive params are applied to gRPC cl
 
   If set to `true`, client sends keepalive pings even with no active RPCs. Otherwise, when there are no active RPCs, `time` and `timeout` will be ignored and no keepalive pings will be sent.
 
+**`seq_db`** *`[]SeqDBClient`* *`optional`*
+
+List of SeqDB client configurations.
+
+`SeqDBClient` fields:
+
++ **`id`** *`string`* *`required`*
+
+  Unique client identifier.
+
++ **`addrs`** *`[]string`* *`required`*
+
+  List of seq-db proxy hosts to be used in client calls. If there are more than one host, for each request random host will be chosen.
+
++ **`timeout`** *`string`* *`default="0"`*
+
+  Timeout for requests made by the client. A zero value means no timeout.
+
+  > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+
++ **`avg_doc_size`** *`int`* *`default=0`*
+
+  Specifies the average documents size in `KB` that the client calls returns. It's used in combination with `handlers.seq_api.max_search_limit` to calculate the maximum response size per client request.
+
+  > Regardless of `avg_doc_size`, the minimum response size per client request is `4MB`.
+
++ **`request_retries`** *`int`* *`default=0`*
+
+  The number of retries to send a request to client after the first attempt. For each retry, the entire `addrs` list will be searched, choosing a random host. A zero value means no retries. If set to negative value, then it will be reset to `default`.
+
++ **`initial_retry_backoff`** *`string`* *`default="0"`*
+
+  Initial duration interval value to be used in backoff with retries. If set to `0`, disables backoff.
+
+  > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+
++ **`max_retry_backoff`** *`string`* *`default="0"`*
+
+  Max duration interval value to be used in backoff with retries. If set to `0`, only value from `initial_retry_backoff` is used for calculating backoff and the backoff is not higher than `initial_retry_backoff * 2`.
+
+  > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+
++ **`client_mode`** *`string`* *`default="grpc"`* *`options="grpc"`
+
+  Allow choosing how to send requests to seq-db.
+
++ **`grpc_keepalive_params`** *`GRPCKeepaliveParams`* *`optional`*
+
+  If gRPC keepalive params are not set, no keepalive params are applied to gRPC client.
+
 ## Handlers
 
 ```yaml
@@ -448,7 +515,7 @@ handlers:
 Config for `/seqapi` API handlers.
 
 `SeqAPI` fields:
-
+ 
 + **`max_search_limit`** *`int`* *`default=0`*
 
   Max value for `limit` field in search requests.
@@ -605,6 +672,24 @@ Config for `/seqapi` API handlers.
   + **`values`** *`[]string`* *`required`*
 
     List of event field values to filter.
+  
+  + **`default_env`** *`string`* *`optional`*
+
+    Environment name used by default to process requests when no explicit environment is specified.
+  
++ **`envs`** *`map[string]SeqAPIEnv`* *`optional`*
+
+  Environment-specific configurations
+
+  `SeqAPIEnv` fields:
+
+  + **`seq_db_id`** *`string`* *`required`*
+  
+    SeqDB client identifier from `clients.seq_db` configuration.
+
+  + **`options`** *`SeqAPIOptions`* *`optional`*
+  
+  Environment-specific API parameters. These settings override the corresponding global values defined in the root `seq_api` section.
 
 ### Error groups
 

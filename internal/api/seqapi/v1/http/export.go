@@ -21,6 +21,7 @@ import (
 //	@Router		/seqapi/v1/export [post]
 //	@ID			seqapi_v1_export
 //	@Tags		seqapi_v1
+//	@Param		env		query		string			false	"Environment"
 //	@Param		body	body		exportRequest	true	"Request body"
 //	@Success	200		{object}	exportResponse	"A successful streaming responses"
 //	@Failure	default	{object}	httputil.Error	"An unexpected error response"
@@ -30,6 +31,8 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+
+	env := getEnvFromContext(ctx)
 
 	userStr := "_"
 	if userName, err := types.GetUserKey(ctx); err == nil {
@@ -46,47 +49,59 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 		httpReq.Format = efJSONL
 	}
 
-	span.SetAttributes(
-		attribute.KeyValue{
+	attributes := []attribute.KeyValue{
+		{
 			Key:   "query",
 			Value: attribute.StringValue(httpReq.Query),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "from",
 			Value: attribute.StringValue(httpReq.From.Format(time.DateTime)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "to",
 			Value: attribute.StringValue(httpReq.To.Format(time.DateTime)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "limit",
 			Value: attribute.IntValue(int(httpReq.Limit)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "offset",
 			Value: attribute.IntValue(int(httpReq.Offset)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "format",
 			Value: attribute.StringValue(string(httpReq.Format)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "fields",
 			Value: attribute.StringSliceValue(httpReq.Fields),
 		},
-	)
+	}
 
-	if a.exportLimiter.Limited(userStr) {
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+
+	span.SetAttributes(attributes...)
+
+	params, err := a.GetEnvParams(env)
+	if err != nil {
+		wr.Error(err, http.StatusBadRequest)
+		return
+	}
+
+	if params.exportLimiter.Limited(userStr) {
 		metric.ServerExportRequestLimits.Inc()
 		wr.Error(errors.New("parallel export limit exceeded"), http.StatusTooManyRequests)
 		return
 	}
-	defer a.exportLimiter.Fill(userStr)
+	defer params.exportLimiter.Fill(userStr)
 
-	if httpReq.Limit > a.config.MaxExportLimit {
+	if httpReq.Limit > params.options.MaxExportLimit {
 		wr.Error(fmt.Errorf("too many events are requested: count=%d, max=%d",
-			httpReq.Limit, a.config.MaxExportLimit),
+			httpReq.Limit, params.options.MaxExportLimit),
 			http.StatusBadRequest)
 		return
 	}
@@ -102,7 +117,7 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = a.seqDB.Export(ctx, httpReq.toProto(), cw)
+	err = params.client.Export(ctx, httpReq.toProto(), cw)
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return
@@ -111,7 +126,7 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 	wr.WriteHeader(http.StatusOK)
 }
 
-type exportFormat string //	@name seqapi.v1.ExportFormat
+type exportFormat string //	@name	seqapi.v1.ExportFormat
 
 const (
 	efJSONL exportFormat = "jsonl"
@@ -135,7 +150,7 @@ type exportRequest struct {
 	Offset int32        `json:"offset" format:"int32"`
 	Format exportFormat `json:"format" default:"jsonl"`
 	Fields []string     `json:"fields,omitempty"`
-} // @name seqapi.v1.ExportRequest
+} //	@name	seqapi.v1.ExportRequest
 
 func (r exportRequest) toProto() *seqapi.ExportRequest {
 	return &seqapi.ExportRequest{
@@ -151,8 +166,8 @@ func (r exportRequest) toProto() *seqapi.ExportRequest {
 
 // nolint:unused
 //
-// @Description Export response in one of the following formats:<br>
-// @Description - JSONL: {"id":"some-id","data":{"field1":"value1","field2":"value2"},"time":"2024-12-31T10:20:30.0004Z"}<br>
-// @Description - CSV: value1,value2,value3
+//	@Description	Export response in one of the following formats:<br>
+//	@Description	- JSONL: {"id":"some-id","data":{"field1":"value1","field2":"value2"},"time":"2024-12-31T10:20:30.0004Z"}<br>
+//	@Description	- CSV: value1,value2,value3
 type exportResponse struct {
-} // @name seqapi.v1.ExportResponse
+} //	@name	seqapi.v1.ExportResponse

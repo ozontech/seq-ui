@@ -67,8 +67,8 @@ func (a *API) serveGetAll(w http.ResponseWriter, r *http.Request) {
 type getAllRequest struct {
 	Limit  int `json:"limit"`
 	Offset int `json:"offset"`
-} // @name dashboards.v1.GetAllRequest
+} //	@name	dashboards.v1.GetAllRequest
 
 type getAllResponse struct {
 	Dashboards infosWithOwner `json:"dashboards"`
-} // @name dashboards.v1.GetAllResponse
+} //	@name	dashboards.v1.GetAllResponse

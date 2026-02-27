@@ -1,0 +1,48 @@
+server:
+  http_addr: ":5555"
+  grpc_addr: ":5556"
+  debug_addr: ":5557"
+
+clients:
+  seq_db:
+    - id: "default-seq-db"
+      addrs:
+        - "seq-db-proxy:9004"
+      timeout: 15s
+    - id: "test-seq-db"
+      addrs:
+        - "seq-db-proxy:9005"
+      timeout: 15s
+
+handlers:
+  seq_api:
+    max_search_limit: 10
+    max_export_limit: 11
+    max_parallel_export_requests: 12
+    max_aggregations_per_request: 5
+    seq_cli_max_search_limit: 6
+    pinned_fields:
+      - name: level
+        type: keyword
+      - name: message
+        type: text
+    default_env: "production"
+    envs:
+      production:
+        seq_db_id: "default-seq-db"
+
+      staging:
+        seq_db_id: "test-seq-db"
+        options:
+          max_search_limit: 20
+          max_export_limit: 22
+          max_parallel_export_requests: 24
+          max_aggregations_per_request: 10
+          seq_cli_max_search_limit: 12
+          pinned_fields:
+            - name: level
+              type: keyword
+            - name: message
+              type: text
+            - name: service
+              type: keyword

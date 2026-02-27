@@ -17,31 +17,43 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 	defer span.End()
 
 	aggregations, _ := json.Marshal(req.Aggregations)
+	env := a.GetEnvFromContext(ctx)
 
-	span.SetAttributes(
-		attribute.KeyValue{
+	attributes := []attribute.KeyValue{
+		{
 			Key:   "query",
 			Value: attribute.StringValue(req.GetQuery()),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "from",
 			Value: tracing.TimestampToStringValue(req.GetFrom()),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "to",
 			Value: tracing.TimestampToStringValue(req.GetTo()),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "agg_field",
 			Value: attribute.StringValue(req.GetAggField()),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "aggregations",
 			Value: attribute.StringValue(string(aggregations)),
 		},
-	)
+	}
 
-	if err := api_error.CheckAggregationsCount(len(req.Aggregations), a.config.MaxAggregationsPerRequest); err != nil {
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+
+	span.SetAttributes(attributes...)
+
+	params, err := a.GetParams(env)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if err := api_error.CheckAggregationsCount(len(req.Aggregations), params.options.MaxAggregationsPerRequest); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -51,18 +63,18 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 			continue
 		}
 		if err := api_error.CheckAggregationTsInterval(*agg.Interval, fromRaw, toRaw,
-			a.config.MaxBucketsPerAggregationTs,
+			params.options.MaxBucketsPerAggregationTs,
 		); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
 
-	resp, err := a.seqDB.GetAggregation(ctx, req)
+	resp, err := params.client.GetAggregation(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	if a.masker != nil {
+	if params.masker != nil {
 		buf := make([]string, 0)
 		for i, agg := range resp.Aggregations {
 			if agg == nil {
@@ -80,7 +92,7 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 				field = aggReq.GroupBy
 			}
 
-			buf = a.masker.MaskAgg(field, buf)
+			buf = params.masker.MaskAgg(field, buf)
 
 			for j, key := range buf {
 				if agg.Buckets[j] != nil {

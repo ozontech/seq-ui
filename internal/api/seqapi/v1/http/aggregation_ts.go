@@ -22,6 +22,7 @@ import (
 //	@Tags		seqapi_v1
 //	@Accept		json
 //	@Produce	json
+//	@Param		env		query		string						false	"Environment"
 //	@Param		body	body		getAggregationTsRequest		true	"Request body"
 //	@Success	200		{object}	getAggregationTsResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error				"An unexpected error response"
@@ -31,6 +32,7 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+	env := getEnvFromContext(ctx)
 
 	var httpReq getAggregationTsRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
@@ -40,39 +42,51 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 
 	aggsRaw, _ := json.Marshal(httpReq.Aggregations)
 
-	span.SetAttributes(
-		attribute.KeyValue{
+	attributes := []attribute.KeyValue{
+		{
 			Key:   "query",
 			Value: attribute.StringValue(httpReq.Query),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "from",
 			Value: attribute.StringValue(httpReq.From.Format(time.DateTime)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "to",
 			Value: attribute.StringValue(httpReq.To.Format(time.DateTime)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "aggregations",
 			Value: attribute.StringValue(string(aggsRaw)),
 		},
-	)
+	}
 
-	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), a.config.MaxAggregationsPerRequest); err != nil {
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+
+	span.SetAttributes(attributes...)
+
+	params, err := a.GetEnvParams(env)
+	if err != nil {
+		wr.Error(err, http.StatusBadRequest)
+		return
+	}
+
+	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), params.options.MaxAggregationsPerRequest); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
 	for _, agg := range httpReq.Aggregations {
 		if err := api_error.CheckAggregationTsInterval(agg.Interval, httpReq.From, httpReq.To,
-			a.config.MaxBucketsPerAggregationTs,
+			params.options.MaxBucketsPerAggregationTs,
 		); err != nil {
 			wr.Error(err, http.StatusBadRequest)
 			return
 		}
 	}
 
-	resp, err := a.seqDB.GetAggregation(ctx, httpReq.toProto())
+	resp, err := params.client.GetAggregation(ctx, httpReq.toProto())
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return

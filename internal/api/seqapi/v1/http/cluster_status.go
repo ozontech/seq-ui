@@ -15,6 +15,7 @@ import (
 //	@Router		/seqapi/v1/status [get]
 //	@ID			seqapi_v1_status
 //	@Tags		seqapi_v1
+//	@Param		env		query		string			false	"Environment"
 //	@Success	200		{object}	statusResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error	"An unexpected error response"
 func (a *API) serveStatus(w http.ResponseWriter, r *http.Request) {
@@ -23,7 +24,14 @@ func (a *API) serveStatus(w http.ResponseWriter, r *http.Request) {
 
 	wr := httputil.NewWriter(w)
 
-	resp, err := a.seqDB.Status(ctx, &seqapi.StatusRequest{})
+	env := getEnvFromContext(ctx)
+	params, err := a.GetEnvParams(env)
+	if err != nil {
+		wr.Error(err, http.StatusBadRequest)
+		return
+	}
+
+	resp, err := params.client.Status(ctx, &seqapi.StatusRequest{})
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return

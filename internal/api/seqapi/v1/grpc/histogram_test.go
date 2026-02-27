@@ -66,7 +66,6 @@ func TestGetHistogram(t *testing.T) {
 				Return(proto.Clone(tt.resp), tt.clientErr).Times(1)
 
 			seqData.Mocks.SeqDB = seqDbMock
-
 			s := initTestAPI(seqData)
 
 			resp, err := s.GetHistogram(context.Background(), tt.req)

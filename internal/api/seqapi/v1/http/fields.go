@@ -17,6 +17,7 @@ import (
 //	@Router		/seqapi/v1/fields [get]
 //	@ID			seqapi_v1_getFields
 //	@Tags		seqapi_v1
+//	@Param		env		query		string				false	"Environment"
 //	@Success	200		{object}	getFieldsResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
 func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
@@ -25,8 +26,15 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 
 	wr := httputil.NewWriter(w)
 
-	if a.fieldsCache == nil {
-		resp, err := a.seqDB.GetFields(ctx, &seqapi.GetFieldsRequest{})
+	env := getEnvFromContext(ctx)
+	params, err := a.GetEnvParams(env)
+	if err != nil {
+		wr.Error(err, http.StatusBadRequest)
+		return
+	}
+
+	if params.fieldsCache == nil {
+		resp, err := params.client.GetFields(ctx, &seqapi.GetFieldsRequest{})
 		if err != nil {
 			wr.Error(err, http.StatusInternalServerError)
 			return
@@ -36,13 +44,13 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rawFields, cached, isActual := a.fieldsCache.getFields()
+	rawFields, cached, isActual := params.fieldsCache.getFields()
 	if cached && isActual {
 		_, _ = wr.Write(rawFields)
 		return
 	}
 
-	resp, err := a.seqDB.GetFields(ctx, &seqapi.GetFieldsRequest{})
+	resp, err := params.client.GetFields(ctx, &seqapi.GetFieldsRequest{})
 	if err != nil {
 		if cached {
 			logger.Error("can't get fields; use cached fields", zap.Error(err))
@@ -67,7 +75,7 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.fieldsCache.setFields(resData)
+	params.fieldsCache.setFields(resData)
 	_, _ = wr.Write(resData)
 }
 
@@ -76,18 +84,29 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 //	@Router		/seqapi/v1/fields/pinned [get]
 //	@ID			seqapi_v1_getPinnedFields
 //	@Tags		seqapi_v1
+//	@Param		env		query		string				false	"Environment"
 //	@Success	200		{object}	getFieldsResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
-func (a *API) serveGetPinnedFields(w http.ResponseWriter, _ *http.Request) {
+func (a *API) serveGetPinnedFields(w http.ResponseWriter, r *http.Request) {
+	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_get_pinned_fields")
+	defer span.End()
+
+	env := getEnvFromContext(ctx)
+	params, err := a.GetEnvParams(env)
+	if err != nil {
+		httputil.NewWriter(w).Error(err, http.StatusBadRequest)
+		return
+	}
+
 	httputil.NewWriter(w).WriteJson(getFieldsResponse{
-		Fields: a.pinnedFields,
+		Fields: params.pinnedFields,
 	})
 }
 
 type field struct {
 	Name string `json:"name"`
 	Type string `json:"type" default:"unknown" enums:"unknown,keyword,text"`
-} // @name seqapi.v1.Field
+} //	@name	seqapi.v1.Field
 
 func fieldFromProto(proto *seqapi.Field) field {
 	return field{
@@ -108,7 +127,7 @@ func fieldsFromProto(proto []*seqapi.Field) fields {
 
 type getFieldsResponse struct {
 	Fields fields `json:"fields"`
-} // @name seqapi.v1.GetFieldsResponse
+} //	@name	seqapi.v1.GetFieldsResponse
 
 func getFieldsResponseFromProto(proto *seqapi.GetFieldsResponse) getFieldsResponse {
 	return getFieldsResponse{

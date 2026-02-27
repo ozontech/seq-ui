@@ -49,7 +49,7 @@ func (a *API) serveCheck(w http.ResponseWriter, r *http.Request) {
 
 type checkRequest struct {
 	SessionID string `json:"session_id"`
-} // @name massexport.v1.CheckRequest
+} //	@name	massexport.v1.CheckRequest
 
 type checkResponse struct {
 	ID           string       `json:"id"`
@@ -63,9 +63,9 @@ type checkResponse struct {
 	Error        string       `json:"error"`
 	UnpackedSize int          `json:"unpacked_size"`
 	PackedSize   int          `json:"packed_size"`
-} // @name massexport.v1.CheckResponse
+} //	@name	massexport.v1.CheckResponse
 
-type exportStatus string //	@name massexport.v1.ExportStatus
+type exportStatus string //	@name	massexport.v1.ExportStatus
 
 const (
 	exportStatusUnspecified exportStatus = "UNSPECIFIED"

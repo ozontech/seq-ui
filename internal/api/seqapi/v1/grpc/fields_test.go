@@ -58,9 +58,12 @@ func TestGetFields(t *testing.T) {
 					SeqDB: seqDbMock,
 				},
 			}
+
 			s := initTestAPI(seqData)
 
-			resp, err := s.GetFields(context.Background(), nil)
+			ctx := context.Background()
+
+			resp, err := s.GetFields(ctx, nil)
 
 			require.Equal(t, tt.clientErr, err)
 			require.True(t, proto.Equal(tt.resp, resp))
@@ -104,7 +107,9 @@ func TestGetFieldsCached(t *testing.T) {
 
 	seqData := test.APITestData{
 		Cfg: config.SeqAPI{
-			FieldsCacheTTL: ttl,
+			SeqAPIOptions: &config.SeqAPIOptions{
+				FieldsCacheTTL: ttl,
+			},
 		},
 		Mocks: test.Mocks{
 			SeqDB: seqDbMock,
@@ -112,16 +117,14 @@ func TestGetFieldsCached(t *testing.T) {
 	}
 	s := initTestAPI(seqData)
 
-	ctx := context.Background()
-
 	for _, r := range responses {
-		resp, err := s.GetFields(ctx, nil)
+		resp, err := s.GetFields(context.Background(), nil)
 		require.NoError(t, err)
 		require.True(t, proto.Equal(r, resp))
 
 		time.Sleep(ttl / 2)
 
-		resp, err = s.GetFields(ctx, nil)
+		resp, err = s.GetFields(context.Background(), nil)
 		require.NoError(t, err)
 		require.True(t, proto.Equal(r, resp))
 
@@ -152,7 +155,9 @@ func TestGetPinnedFields(t *testing.T) {
 
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					PinnedFields: tt.fields,
+					SeqAPIOptions: &config.SeqAPIOptions{
+						PinnedFields: tt.fields,
+					},
 				},
 			}
 			s := initTestAPI(seqData)
