@@ -26,6 +26,8 @@ func TestServeGetAggregationTs(t *testing.T) {
 	from := time.Date(2023, time.September, 25, 10, 20, 30, 0, time.UTC)
 	to := from.Add(5 * time.Second)
 	interval := "1s"
+	interval2 := "3000ms"
+	bucketUnit := "2s"
 
 	formatReqBody := func(aggQueries aggregationTsQueries) string {
 		aggQueriesRaw, err := json.Marshal(aggQueries)
@@ -98,11 +100,67 @@ func TestServeGetAggregationTs(t *testing.T) {
 					},
 				},
 			},
-			wantRespBody: `{"aggregations":[{"data":{"result":[{"metric":{"test_count1":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count1":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count1":"test3"},"values":[{"timestamp":1695637233,"value":3}]}]}},{"data":{"result":[{"metric":{"test_count2":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count2":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count2":"test3"},"values":[{"timestamp":1695637233,"value":3}]}]}}],"error":{"code":"ERROR_CODE_NO"}}`,
+			wantRespBody: `{"aggregations":[{"data":{"result":[{"metric":{"test_count1":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count1":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count1":"test3"},"values":[{"timestamp":1695637233,"value":3}]}],"bucket_unit":"1s"}},{"data":{"result":[{"metric":{"test_count2":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count2":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count2":"test3"},"values":[{"timestamp":1695637233,"value":3}]}],"bucket_unit":"1s"}}],"error":{"code":"ERROR_CODE_NO"}}`,
 			wantStatus:   http.StatusOK,
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest:  3,
-				MaxBucketsPerAggregationTs: 100,
+				MaxAggregationsPerRequest:      3,
+				MaxBucketsPerAggregationTs:     100,
+				DefaultAggregationTsBucketUnit: time.Second,
+			},
+		},
+		{
+			name: "ok_normalize_count",
+			reqBody: formatReqBody(aggregationTsQueries{
+				{
+					aggregationQuery: aggregationQuery{
+						Field: "test_count1",
+						Func:  afCount,
+					},
+					Interval: interval2,
+				},
+				{
+					aggregationQuery: aggregationQuery{
+						Field: "test_count2",
+						Func:  afCount,
+					},
+					Interval:   interval2,
+					BucketUnit: bucketUnit,
+				},
+			}),
+			mockArgs: &mockArgs{
+				req: &seqapi.GetAggregationRequest{
+					Query: query,
+					From:  timestamppb.New(from),
+					To:    timestamppb.New(to),
+					Aggregations: []*seqapi.AggregationQuery{
+						{Field: "test_count1", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval2},
+						{Field: "test_count2", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval2, BucketUnit: &bucketUnit},
+					},
+				},
+				resp: &seqapi.GetAggregationResponse{
+					Aggregations: test.MakeAggregations(2, 3, &test.MakeAggOpts{
+						Ts: []*timestamppb.Timestamp{
+							timestamppb.New(from.Add(time.Second)),
+							timestamppb.New(from.Add(2 * time.Second)),
+							timestamppb.New(from.Add(3 * time.Second)),
+						},
+						Values: []float64{
+							3,
+							6,
+							9,
+						},
+					}),
+					Error: &seqapi.Error{
+						Code: seqapi.ErrorCode_ERROR_CODE_NO,
+					},
+				},
+			},
+			wantRespBody: `{"aggregations":[{"data":{"result":[{"metric":{"test_count1":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count1":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count1":"test3"},"values":[{"timestamp":1695637233,"value":3}]}],"bucket_unit":"1s"}},{"data":{"result":[{"metric":{"test_count2":"test1"},"values":[{"timestamp":1695637231,"value":2}]},{"metric":{"test_count2":"test2"},"values":[{"timestamp":1695637232,"value":4}]},{"metric":{"test_count2":"test3"},"values":[{"timestamp":1695637233,"value":6}]}],"bucket_unit":"2s"}}],"error":{"code":"ERROR_CODE_NO"}}`,
+			wantStatus:   http.StatusOK,
+			cfg: config.SeqAPI{
+				MaxAggregationsPerRequest:      3,
+				MaxBucketsPerAggregationTs:     100,
+				DefaultAggregationTsBucketUnit: time.Second,
 			},
 		},
 		{

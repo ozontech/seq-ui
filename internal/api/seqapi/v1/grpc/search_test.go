@@ -59,7 +59,7 @@ func TestSearch(t *testing.T) {
 				Events:       test.MakeEvents(int(limit), eventTime),
 				Total:        int64(limit),
 				Histogram:    test.MakeHistogram(2),
-				Aggregations: test.MakeAggregations(3, 2, nil),
+				Aggregations: test.MakeAggregations(2, 2, nil),
 				Error: &seqapi.Error{
 					Code: seqapi.ErrorCode_ERROR_CODE_NO,
 				},

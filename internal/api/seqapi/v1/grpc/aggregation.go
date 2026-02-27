@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/aggregation_ts"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/api_error"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
@@ -88,6 +89,11 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 				}
 			}
 		}
+	}
+
+	err = aggregation_ts.NormalizeBuckets(req.Aggregations, resp.Aggregations, a.config.DefaultAggregationTsBucketUnit)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return resp, nil

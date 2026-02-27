@@ -1999,6 +1999,9 @@
                 "data": {
                     "type": "object",
                     "properties": {
+                        "bucket_unit": {
+                            "type": "string"
+                        },
                         "result": {
                             "type": "array",
                             "items": {
@@ -2030,6 +2033,11 @@
                             "$ref": "#/definitions/seqapi.v1.AggregationFunc"
                         }
                     ]
+                },
+                "bucket_unit": {
+                    "type": "string",
+                    "format": "duration",
+                    "example": "10s"
                 },
                 "field": {
                     "type": "string"

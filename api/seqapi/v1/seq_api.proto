@@ -88,6 +88,7 @@ message Aggregation {
 
   repeated Bucket buckets = 1;
   int64 not_exists = 2;
+  string bucket_unit = 3;
 }
 
 enum AggFunc {
@@ -107,6 +108,7 @@ message AggregationQuery {
   AggFunc func = 4;
   repeated double quantiles = 5;
   optional string interval = 6;
+  optional string bucket_unit = 7;
 }
 
 message SearchRequest {
