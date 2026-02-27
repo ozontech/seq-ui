@@ -88,29 +88,6 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 	wr.WriteJson(getAggregationTsResponseFromProto(resp, httpReq.Aggregations))
 }
 
-func GetbucketUnits(aggregations aggregationTsQueries, defaultBucketUnit time.Duration) ([]time.Duration, error) {
-	bucketUnits := make([]time.Duration, 0, len(aggregations))
-	for _, agg := range aggregations {
-		if agg.Func != afCount {
-			bucketUnits = append(bucketUnits, 0)
-			continue
-		}
-		if agg.BucketUnit == "" {
-			bucketUnits = append(bucketUnits, defaultBucketUnit)
-			continue
-		}
-
-		bucketUnit, err := time.ParseDuration(agg.BucketUnit)
-		if err != nil {
-			return nil, err
-		}
-
-		bucketUnits = append(bucketUnits, bucketUnit)
-	}
-
-	return bucketUnits, nil
-}
-
 type aggregationTsQuery struct {
 	aggregationQuery
 	Interval   string `json:"interval,omitempty" format:"duration" example:"1m"`
