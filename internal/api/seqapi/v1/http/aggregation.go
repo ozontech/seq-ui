@@ -72,7 +72,7 @@ func (a *API) serveGetAggregation(w http.ResponseWriter, r *http.Request) {
 
 	params, err := a.GetEnvParams(env)
 	if err != nil {
-		wr.Error(err, http.StatusInternalServerError)
+		wr.Error(err, http.StatusBadRequest)
 		return
 	}
 

@@ -111,9 +111,7 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 
 	defaultClientID := config.DefaultSeqDBClientID
 	if len(cfg.Handlers.SeqAPI.Envs) > 0 {
-		if env, exists := cfg.Handlers.SeqAPI.Envs[cfg.Handlers.SeqAPI.DefaultEnv]; exists {
-			defaultClientID = env.SeqDB
-		}
+		defaultClientID = cfg.Handlers.SeqAPI.Envs[cfg.Handlers.SeqAPI.DefaultEnv].SeqDB
 	}
 
 	defaultClient, exists := seqDBClients[defaultClientID]

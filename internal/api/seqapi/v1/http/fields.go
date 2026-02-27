@@ -29,7 +29,7 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 	env := getEnvFromContext(ctx)
 	params, err := a.GetEnvParams(env)
 	if err != nil {
-		wr.Error(err, http.StatusInternalServerError)
+		wr.Error(err, http.StatusBadRequest)
 		return
 	}
 
@@ -94,7 +94,7 @@ func (a *API) serveGetPinnedFields(w http.ResponseWriter, r *http.Request) {
 	env := getEnvFromContext(ctx)
 	params, err := a.GetEnvParams(env)
 	if err != nil {
-		httputil.NewWriter(w).Error(err, http.StatusInternalServerError)
+		httputil.NewWriter(w).Error(err, http.StatusBadRequest)
 		return
 	}
 

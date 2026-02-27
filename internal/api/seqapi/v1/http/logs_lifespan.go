@@ -32,7 +32,7 @@ func (a *API) serveGetLogsLifespan(w http.ResponseWriter, r *http.Request) {
 	env := getEnvFromContext(ctx)
 	params, err := a.GetEnvParams(env)
 	if err != nil {
-		wr.Error(err, http.StatusInternalServerError)
+		wr.Error(err, http.StatusBadRequest)
 		return
 	}
 
