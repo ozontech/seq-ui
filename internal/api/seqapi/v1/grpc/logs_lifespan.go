@@ -14,6 +14,8 @@ import (
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
@@ -21,7 +23,13 @@ func (a *API) GetLogsLifespan(ctx context.Context, _ *seqapi.GetLogsLifespanRequ
 	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_get_logs_lifespan")
 	defer span.End()
 
-	cacheKey := a.config.LogsLifespanCacheKey
+	env := a.GetEnvFromContext(ctx)
+	params, err := a.GetParams(env)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	cacheKey := params.options.LogsLifespanCacheKey
 
 	if countStr, err := a.redisCache.Get(ctx, cacheKey); err == nil {
 		count := 0
@@ -37,19 +45,19 @@ func (a *API) GetLogsLifespan(ctx context.Context, _ *seqapi.GetLogsLifespanRequ
 		logger.Error("can't get logs lifespan from cache", zap.Error(err))
 	}
 
-	status, err := a.seqDB.Status(ctx, &seqapi.StatusRequest{})
+	clientStatus, err := params.client.Status(ctx, &seqapi.StatusRequest{})
 	if err != nil {
 		return nil, grpcutil.ProcessError(fmt.Errorf("get status: %w", err))
 	}
 
-	if status.OldestStorageTime == nil {
+	if clientStatus.OldestStorageTime == nil {
 		return nil, grpcutil.ProcessError(errors.New("oldest timestamp is nil"))
 	}
 
-	count := int(a.nowFn().Sub(status.OldestStorageTime.AsTime()) / lifespan.MeasureUnit)
+	count := int(a.nowFn().Sub(clientStatus.OldestStorageTime.AsTime()) / lifespan.MeasureUnit)
 	res := time.Duration(count) * lifespan.MeasureUnit
 
-	err = a.redisCache.SetWithTTL(ctx, cacheKey, strconv.Itoa(count), a.config.LogsLifespanCacheTTL)
+	err = a.redisCache.SetWithTTL(ctx, cacheKey, strconv.Itoa(count), params.options.LogsLifespanCacheTTL)
 	if err != nil {
 		logger.Error("can't set logs lifespan to cache", zap.Error(err))
 	}

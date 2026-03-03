@@ -20,11 +20,13 @@ func TestGetLimits(t *testing.T) {
 		{
 			name: "ok",
 			cfg: config.SeqAPI{
-				MaxSearchLimit:            100,
-				MaxExportLimit:            200,
-				MaxParallelExportRequests: 2,
-				MaxAggregationsPerRequest: 5,
-				SeqCLIMaxSearchLimit:      10000,
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxSearchLimit:            100,
+					MaxExportLimit:            200,
+					MaxParallelExportRequests: 2,
+					MaxAggregationsPerRequest: 5,
+					SeqCLIMaxSearchLimit:      10000,
+				},
 			},
 			want: &seqapi.GetLimitsResponse{
 				MaxSearchLimit:            100,
@@ -36,6 +38,7 @@ func TestGetLimits(t *testing.T) {
 		},
 		{
 			name: "empty",
+			cfg:  config.SeqAPI{},
 			want: &seqapi.GetLimitsResponse{},
 		},
 	}
@@ -48,8 +51,7 @@ func TestGetLimits(t *testing.T) {
 				Cfg: tt.cfg,
 			}
 			s := initTestAPI(seqData)
-
-			resp, err := s.GetLimits(context.TODO(), nil)
+			resp, err := s.GetLimits(context.Background(), nil)
 
 			require.NoError(t, err)
 			require.True(t, proto.Equal(tt.want, resp))

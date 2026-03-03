@@ -86,15 +86,15 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 
 type searchFilter struct {
 	OwnerName *string `json:"owner_name,omitempty"`
-} // @name dashboards.v1.SearchFilter
+} //	@name	dashboards.v1.SearchFilter
 
 type searchRequest struct {
 	Query  string        `json:"query"`
 	Limit  int           `json:"limit"`
 	Offset int           `json:"offset"`
 	Filter *searchFilter `json:"filter,omitempty"`
-} // @name dashboards.v1.SearchRequest
+} //	@name	dashboards.v1.SearchRequest
 
 type searchResponse struct {
 	Dashboards infosWithOwner `json:"dashboards"`
-} // @name dashboards.v1.SearchResponse
+} //	@name	dashboards.v1.SearchResponse

@@ -40,10 +40,12 @@ func (a *API) serveCancelAsyncSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	span.SetAttributes(attribute.KeyValue{
-		Key:   "search_id",
-		Value: attribute.StringValue(searchID),
-	})
+	span.SetAttributes(
+		attribute.KeyValue{
+			Key:   "search_id",
+			Value: attribute.StringValue(searchID),
+		},
+	)
 
 	profileID, err := a.profiles.GeIDFromContext(ctx)
 	if err != nil {

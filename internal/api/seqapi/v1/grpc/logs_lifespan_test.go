@@ -110,8 +110,10 @@ func TestGetLogsLifespan(t *testing.T) {
 
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					LogsLifespanCacheKey: cacheKey,
-					LogsLifespanCacheTTL: cacheTTL,
+					SeqAPIOptions: &config.SeqAPIOptions{
+						LogsLifespanCacheKey: cacheKey,
+						LogsLifespanCacheTTL: cacheTTL,
+					},
 				},
 			}
 			ctrl := gomock.NewController(t)

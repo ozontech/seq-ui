@@ -10,6 +10,8 @@ import (
 )
 
 const (
+	DefaultSeqDBClientID = "default"
+
 	ProxyClientModeGRPC = "grpc"
 
 	MaskModeMask    = "mask"
@@ -205,6 +207,18 @@ type GRPCKeepaliveParams struct {
 	PermitWithoutStream bool `yaml:"permit_without_stream"`
 }
 
+type SeqDBClient struct {
+	ID                  string               `yaml:"id"`
+	Timeout             time.Duration        `yaml:"timeout"`
+	AvgDocSize          int                  `yaml:"avg_doc_size"`
+	Addrs               []string             `yaml:"addrs"`
+	RequestRetries      int                  `yaml:"request_retries"`
+	InitialRetryBackoff time.Duration        `yaml:"initial_retry_backoff"`
+	MaxRetryBackoff     time.Duration        `yaml:"max_retry_backoff"`
+	ClientMode          string               `yaml:"client_mode"`
+	GRPCKeepaliveParams *GRPCKeepaliveParams `yaml:"grpc_keepalive_params"`
+}
+
 type Clients struct {
 	SeqDBTimeout        time.Duration        `yaml:"seq_db_timeout"`
 	SeqDBAvgDocSize     int                  `yaml:"seq_db_avg_doc_size"`
@@ -214,6 +228,7 @@ type Clients struct {
 	MaxRetryBackoff     time.Duration        `yaml:"max_retry_backoff"`
 	ProxyClientMode     string               `yaml:"proxy_client_mode"`
 	GRPCKeepaliveParams *GRPCKeepaliveParams `yaml:"grpc_keepalive_params"`
+	SeqDB               []SeqDBClient        `yaml:"seq_db"`
 }
 
 type Handlers struct {
@@ -229,6 +244,17 @@ type PinnedField struct {
 }
 
 type SeqAPI struct {
+	*SeqAPIOptions `yaml:",inline"`
+	Envs           map[string]SeqAPIEnv `yaml:"envs"`
+	DefaultEnv     string               `yaml:"default_env"`
+}
+
+type SeqAPIEnv struct {
+	SeqDB   string         `yaml:"seq_db_id"`
+	Options *SeqAPIOptions `yaml:"options"`
+}
+
+type SeqAPIOptions struct {
 	MaxSearchLimit             int32         `yaml:"max_search_limit"`
 	MaxSearchTotalLimit        int64         `yaml:"max_search_total_limit"`
 	MaxSearchOffsetLimit       int32         `yaml:"max_search_offset_limit"`
@@ -365,6 +391,53 @@ func FromFile(cfgPath string) (Config, error) {
 	}
 	if cfg.Server.Cache.Inmemory.BufferItems <= 0 {
 		cfg.Server.Cache.Inmemory.BufferItems = defaultInmemCacheBufferItems
+	}
+
+	if len(cfg.Clients.SeqDB) == 0 {
+		defaultClient := SeqDBClient{
+			ID:                  DefaultSeqDBClientID,
+			Timeout:             cfg.Clients.SeqDBTimeout,
+			AvgDocSize:          cfg.Clients.SeqDBAvgDocSize,
+			Addrs:               cfg.Clients.SeqDBAddrs,
+			RequestRetries:      cfg.Clients.RequestRetries,
+			InitialRetryBackoff: cfg.Clients.InitialRetryBackoff,
+			MaxRetryBackoff:     cfg.Clients.MaxRetryBackoff,
+			ClientMode:          cfg.Clients.ProxyClientMode,
+			GRPCKeepaliveParams: cfg.Clients.GRPCKeepaliveParams,
+		}
+		cfg.Clients.SeqDB = []SeqDBClient{defaultClient}
+	}
+
+	clientIDs := make(map[string]struct{})
+	for _, client := range cfg.Clients.SeqDB {
+		if client.ID == "" {
+			return Config{}, fmt.Errorf("seq_db client ID cannot be empty")
+		}
+		if _, ok := clientIDs[client.ID]; ok {
+			return Config{}, fmt.Errorf("duplicate seq_db client ID: %s", client.ID)
+		}
+		clientIDs[client.ID] = struct{}{}
+	}
+
+	if len(cfg.Handlers.SeqAPI.Envs) > 0 {
+		if cfg.Handlers.SeqAPI.DefaultEnv == "" {
+			return Config{}, fmt.Errorf("default_env must be specified when using envs")
+		}
+
+		if _, exists := cfg.Handlers.SeqAPI.Envs[cfg.Handlers.SeqAPI.DefaultEnv]; !exists {
+			return Config{}, fmt.Errorf("default_env '%s' not found in seq_api.envs", cfg.Handlers.SeqAPI.DefaultEnv)
+		}
+
+		for envName, envConfig := range cfg.Handlers.SeqAPI.Envs {
+			if _, ok := clientIDs[envConfig.SeqDB]; !ok {
+				return Config{}, fmt.Errorf("client '%s' for env '%s' not found", envConfig.SeqDB, envName)
+			}
+
+			if envConfig.Options == nil {
+				envConfig.Options = cfg.Handlers.SeqAPI.SeqAPIOptions
+				cfg.Handlers.SeqAPI.Envs[envName] = envConfig
+			}
+		}
 	}
 
 	return cfg, nil

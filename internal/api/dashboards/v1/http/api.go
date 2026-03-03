@@ -36,7 +36,7 @@ func (a *API) Router() chi.Router {
 type info struct {
 	UUID string `json:"uuid"`
 	Name string `json:"name"`
-} // @name dashboards.v1.Info
+} //	@name	dashboards.v1.Info
 
 func newInfo(t types.DashboardInfo) info {
 	return info{
@@ -58,7 +58,7 @@ func newInfos(t types.DashboardInfos) infos {
 type infoWithOwner struct {
 	info
 	OwnerName string `json:"owner_name"`
-} // @name dashboards.v1.InfoWithOwner
+} //	@name	dashboards.v1.InfoWithOwner
 
 func newInfoWithOwner(t types.DashboardInfoWithOwner) infoWithOwner {
 	return infoWithOwner{
@@ -81,7 +81,7 @@ type dashboard struct {
 	Name      string `json:"name"`
 	Meta      string `json:"meta"`
 	OwnerName string `json:"owner_name"`
-} // @name dashboards.v1.Dashboard
+} //	@name	dashboards.v1.Dashboard
 
 func newDashboard(d types.Dashboard) dashboard {
 	return dashboard{

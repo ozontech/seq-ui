@@ -72,8 +72,10 @@ func TestServeExport(t *testing.T) {
 			},
 			wantStatus: http.StatusOK,
 			cfg: config.SeqAPI{
-				MaxExportLimit:            100,
-				MaxParallelExportRequests: 1,
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxExportLimit:            100,
+					MaxParallelExportRequests: 1,
+				},
 			},
 		},
 		{
@@ -92,8 +94,10 @@ func TestServeExport(t *testing.T) {
 			},
 			wantStatus: http.StatusOK,
 			cfg: config.SeqAPI{
-				MaxExportLimit:            100,
-				MaxParallelExportRequests: 1,
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxExportLimit:            100,
+					MaxParallelExportRequests: 1,
+				},
 			},
 		},
 		{
@@ -106,7 +110,9 @@ func TestServeExport(t *testing.T) {
 			reqBody:    formatReqBody(0, "", nil),
 			wantStatus: http.StatusTooManyRequests,
 			cfg: config.SeqAPI{
-				MaxParallelExportRequests: 0,
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxParallelExportRequests: 0,
+				},
 			},
 		},
 		{
@@ -114,8 +120,10 @@ func TestServeExport(t *testing.T) {
 			reqBody:    formatReqBody(10, "", nil),
 			wantStatus: http.StatusBadRequest,
 			cfg: config.SeqAPI{
-				MaxExportLimit:            5,
-				MaxParallelExportRequests: 1,
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxExportLimit:            5,
+					MaxParallelExportRequests: 1,
+				},
 			},
 		},
 		{
@@ -123,8 +131,10 @@ func TestServeExport(t *testing.T) {
 			reqBody:    formatReqBody(10, efCSV, nil),
 			wantStatus: http.StatusBadRequest,
 			cfg: config.SeqAPI{
-				MaxExportLimit:            100,
-				MaxParallelExportRequests: 1,
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxExportLimit:            100,
+					MaxParallelExportRequests: 1,
+				},
 			},
 		},
 		{
@@ -142,8 +152,10 @@ func TestServeExport(t *testing.T) {
 			},
 			wantStatus: http.StatusInternalServerError,
 			cfg: config.SeqAPI{
-				MaxExportLimit:            100,
-				MaxParallelExportRequests: 1,
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxExportLimit:            100,
+					MaxParallelExportRequests: 1,
+				},
 			},
 		},
 	}

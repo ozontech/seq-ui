@@ -9,7 +9,7 @@ import (
 
 type Error struct {
 	Message string `json:"message"`
-} // @name UnexpectedError
+} //	@name	UnexpectedError
 
 func ProcessError(w *Writer, err error) {
 	switch {

@@ -653,6 +653,12 @@
                 "operationId": "seqapi_v1_getAggregation",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    },
+                    {
                         "description": "Request body",
                         "name": "body",
                         "in": "body",
@@ -696,6 +702,12 @@
                 ],
                 "operationId": "seqapi_v1_getAggregationTs",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    },
                     {
                         "description": "Request body",
                         "name": "body",
@@ -902,6 +914,31 @@
                 }
             }
         },
+        "/seqapi/v1/envs": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "seqapi_v1"
+                ],
+                "operationId": "seqapi_v1_get_envs",
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.GetEnvsResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
         "/seqapi/v1/events/{id}": {
             "get": {
                 "security": [
@@ -914,6 +951,12 @@
                 ],
                 "operationId": "seqapi_v1_getEvent",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    },
                     {
                         "type": "string",
                         "description": "Event ID",
@@ -951,6 +994,12 @@
                 "operationId": "seqapi_v1_export",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    },
+                    {
                         "description": "Request body",
                         "name": "body",
                         "in": "body",
@@ -982,6 +1031,14 @@
                     "seqapi_v1"
                 ],
                 "operationId": "seqapi_v1_getFields",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "A successful response",
@@ -1004,6 +1061,14 @@
                     "seqapi_v1"
                 ],
                 "operationId": "seqapi_v1_getPinnedFields",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "A successful response",
@@ -1032,6 +1097,12 @@
                 ],
                 "operationId": "seqapi_v1_getHistogram",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    },
                     {
                         "description": "Request body",
                         "name": "body",
@@ -1064,6 +1135,14 @@
                     "seqapi_v1"
                 ],
                 "operationId": "seqapi_v1_getLimits",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "A successful response",
@@ -1086,6 +1165,14 @@
                     "seqapi_v1"
                 ],
                 "operationId": "seqapi_v1_get_logs_lifespan",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "A successful response",
@@ -1114,6 +1201,12 @@
                 ],
                 "operationId": "seqapi_v1_search",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    },
                     {
                         "description": "Request body",
                         "name": "body",
@@ -1146,6 +1239,14 @@
                     "seqapi_v1"
                 ],
                 "operationId": "seqapi_v1_status",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "A successful response",
@@ -2138,6 +2239,29 @@
                 }
             }
         },
+        "seqapi.v1.EnvInfo": {
+            "type": "object",
+            "properties": {
+                "env": {
+                    "type": "string"
+                },
+                "max_aggregations_per_request": {
+                    "type": "integer"
+                },
+                "max_export_limit": {
+                    "type": "integer"
+                },
+                "max_parallel_export_requests": {
+                    "type": "integer"
+                },
+                "max_search_limit": {
+                    "type": "integer"
+                },
+                "seq_cli_max_search_limit": {
+                    "type": "integer"
+                }
+            }
+        },
         "seqapi.v1.Error": {
             "type": "object",
             "properties": {
@@ -2431,6 +2555,17 @@
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/seqapi.v1.AsyncSearchesListItem"
+                    }
+                }
+            }
+        },
+        "seqapi.v1.GetEnvsResponse": {
+            "type": "object",
+            "properties": {
+                "envs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seqapi.v1.EnvInfo"
                     }
                 }
             }
