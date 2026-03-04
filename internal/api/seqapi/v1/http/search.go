@@ -20,6 +20,7 @@ import (
 //	@Router		/seqapi/v1/search [post]
 //	@ID			seqapi_v1_search
 //	@Tags		seqapi_v1
+//	@Param		env		query		string			false	"Environment"
 //	@Param		body	body		searchRequest	true	"Request body"
 //	@Success	200		{object}	searchResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error	"An unexpected error response"
@@ -29,6 +30,8 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+
+	env := getEnvFromContext(ctx)
 
 	var httpReq searchRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
@@ -70,6 +73,17 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 			Value: attribute.StringValue(string(httpReq.Order)),
 		},
 	}
+
+	if env != "" {
+		spanAttributes = append(spanAttributes, attribute.String("env", env))
+	}
+
+	params, err := a.GetEnvParams(env)
+	if err != nil {
+		wr.Error(err, http.StatusBadRequest)
+		return
+	}
+
 	if httpReq.Histogram.Interval != "" {
 		spanAttributes = append(spanAttributes, attribute.KeyValue{
 			Key:   "histogram_interval",
@@ -86,26 +100,26 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 
 	span.SetAttributes(spanAttributes...)
 
-	if err := api_error.CheckSearchLimit(httpReq.Limit, a.config.MaxSearchLimit); err != nil {
+	if err := api_error.CheckSearchLimit(httpReq.Limit, params.options.MaxSearchLimit); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
-	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), a.config.MaxAggregationsPerRequest); err != nil {
+	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), params.options.MaxAggregationsPerRequest); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
-	if err := api_error.CheckSearchOffsetLimit(httpReq.Offset, a.config.MaxSearchOffsetLimit); err != nil {
+	if err := api_error.CheckSearchOffsetLimit(httpReq.Offset, params.options.MaxSearchOffsetLimit); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
 
-	resp, err := a.seqDB.Search(ctx, httpReq.toProto())
+	resp, err := params.client.Search(ctx, httpReq.toProto())
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return
 	}
 
-	if resp.Total > a.config.MaxSearchTotalLimit {
+	if resp.Total > params.options.MaxSearchTotalLimit {
 		resp.Error = &seqapi.Error{
 			Code:    seqapi.ErrorCode_ERROR_CODE_QUERY_TOO_HEAVY,
 			Message: api_error.ErrQueryTooHeavy.Error(),
@@ -113,16 +127,16 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	searchResp := searchResponseFromProto(resp, httpReq.WithTotal)
-	if a.masker != nil {
+	if params.masker != nil {
 		for i := range searchResp.Events {
-			a.masker.Mask(searchResp.Events[i].Data)
+			params.masker.Mask(searchResp.Events[i].Data)
 		}
 	}
 
 	wr.WriteJson(searchResp)
 }
 
-type order string // @name seqapi.v1.Order
+type order string //	@name	seqapi.v1.Order
 
 const (
 	oDESC order = "desc"
@@ -150,7 +164,7 @@ type searchRequest struct {
 		Interval string `json:"interval"`
 	} `json:"histogram"`
 	Order order `json:"order" default:"desc"`
-} // @name seqapi.v1.SearchRequest
+} //	@name	seqapi.v1.SearchRequest
 
 func (r searchRequest) toProto() *seqapi.SearchRequest {
 	req := &seqapi.SearchRequest{
@@ -178,7 +192,7 @@ type searchResponse struct {
 	Total           string       `json:"total,omitempty" format:"int64"`
 	Error           apiError     `json:"error"`
 	PartialResponse bool         `json:"partialResponse"`
-} // @name seqapi.v1.SearchResponse
+} //	@name	seqapi.v1.SearchResponse
 
 func searchResponseFromProto(proto *seqapi.SearchResponse, withTotal bool) searchResponse {
 	sr := searchResponse{

@@ -62,8 +62,8 @@ func (a *API) serveCreate(w http.ResponseWriter, r *http.Request) {
 type createRequest struct {
 	Name string `json:"name"`
 	Meta string `json:"meta"`
-} // @name dashboards.v1.CreateRequest
+} //	@name	dashboards.v1.CreateRequest
 
 type createResponse struct {
 	UUID string `json:"uuid"`
-} // @name dashboards.v1.CreateResponse
+} //	@name	dashboards.v1.CreateResponse

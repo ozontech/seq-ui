@@ -103,15 +103,27 @@ func run(ctx context.Context) {
 }
 
 func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
-	logger.Info("initializing seq-db client")
-	seqDBClient, err := initSeqDBClient(ctx, cfg)
+	logger.Info("initializing seq-db clients")
+	seqDBClients, err := initSeqDBClients(ctx, cfg)
 	if err != nil {
 		logger.Fatal("failed to init seq-db client", zap.Error(err))
 	}
 
+	defaultClientID := config.DefaultSeqDBClientID
+	if len(cfg.Handlers.SeqAPI.Envs) > 0 {
+		defaultClientID = cfg.Handlers.SeqAPI.Envs[cfg.Handlers.SeqAPI.DefaultEnv].SeqDB
+	}
+
+	defaultClient, exists := seqDBClients[defaultClientID]
+	if !exists {
+		logger.Fatal("default seq-db client not found",
+			zap.String("clientID", defaultClientID),
+		)
+	}
+
 	var massExportV1 *massexport_v1.MassExport
 	if cfg.Handlers.MassExport != nil {
-		exportServer, err := initExportService(ctx, *cfg.Handlers.MassExport, seqDBClient)
+		exportServer, err := initExportService(ctx, *cfg.Handlers.MassExport, defaultClient)
 		if err != nil {
 			logger.Fatal("can't init export server", zap.Error(err))
 		}
@@ -151,10 +163,10 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 		userProfileV1 = userprofile_v1.New(svc, p)
 		dashboardsV1 = dashboards_v1.New(svc, p)
 
-		asyncSearchesService = asyncsearches.New(ctx, repo, seqDBClient, cfg.Handlers.AsyncSearch.AdminUsers)
+		asyncSearchesService = asyncsearches.New(ctx, repo, defaultClient, cfg.Handlers.AsyncSearch.AdminUsers)
 	}
 
-	seqApiV1 := seqapi_v1.New(cfg.Handlers.SeqAPI, seqDBClient, inmemWithRedisCache, redisCache, asyncSearchesService, p)
+	seqApiV1 := seqapi_v1.New(cfg.Handlers.SeqAPI, seqDBClients, inmemWithRedisCache, redisCache, asyncSearchesService, p)
 
 	logger.Info("initializing clickhouse")
 	ch, err := initClickHouse(ctx, cfg.Server.CH)
@@ -173,25 +185,38 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 	return api.NewRegistrar(seqApiV1, userProfileV1, dashboardsV1, massExportV1, errorGroupsV1)
 }
 
-func initSeqDBClient(ctx context.Context, cfg config.Config) (seqdb.Client, error) {
-	clientMaxRecvMsgSize := cfg.Clients.SeqDBAvgDocSize * 1024 * int(cfg.Handlers.SeqAPI.MaxSearchLimit)
+func initSeqDBClients(ctx context.Context, cfg config.Config) (map[string]seqdb.Client, error) {
+	clients := make(map[string]seqdb.Client)
+	for _, clientCfg := range cfg.Clients.SeqDB {
+		client, err := createSeqBDClient(ctx, clientCfg, cfg.Handlers.SeqAPI)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create seq_db client %s: %w", clientCfg.ID, err)
+		}
+		clients[clientCfg.ID] = client
+	}
+
+	return clients, nil
+}
+
+func createSeqBDClient(ctx context.Context, cfg config.SeqDBClient, seqAPI config.SeqAPI) (seqdb.Client, error) {
+	clientMaxRecvMsgSize := cfg.AvgDocSize * 1024 * int(seqAPI.MaxSearchLimit)
 	if clientMaxRecvMsgSize < defaultClientMaxRecvMsgSize {
 		clientMaxRecvMsgSize = defaultClientMaxRecvMsgSize
 	}
 
 	clientParams := seqdb.ClientParams{
-		Addrs:               cfg.Clients.SeqDBAddrs,
-		Timeout:             cfg.Clients.SeqDBTimeout,
-		MaxRetries:          cfg.Clients.RequestRetries,
-		InitialRetryBackoff: cfg.Clients.InitialRetryBackoff,
-		MaxRetryBackoff:     cfg.Clients.MaxRetryBackoff,
+		Addrs:               cfg.Addrs,
+		Timeout:             cfg.Timeout,
+		MaxRetries:          cfg.RequestRetries,
+		InitialRetryBackoff: cfg.InitialRetryBackoff,
+		MaxRetryBackoff:     cfg.MaxRetryBackoff,
 		MaxRecvMsgSize:      clientMaxRecvMsgSize,
 	}
-	if cfg.Clients.GRPCKeepaliveParams != nil {
+	if cfg.GRPCKeepaliveParams != nil {
 		clientParams.GRPCKeepaliveParams = &seqdb.GRPCKeepaliveParams{
-			Time:                cfg.Clients.GRPCKeepaliveParams.Time,
-			Timeout:             cfg.Clients.GRPCKeepaliveParams.Timeout,
-			PermitWithoutStream: cfg.Clients.GRPCKeepaliveParams.PermitWithoutStream,
+			Time:                cfg.GRPCKeepaliveParams.Time,
+			Timeout:             cfg.GRPCKeepaliveParams.Timeout,
+			PermitWithoutStream: cfg.GRPCKeepaliveParams.PermitWithoutStream,
 		}
 	}
 

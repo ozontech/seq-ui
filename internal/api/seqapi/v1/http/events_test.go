@@ -125,7 +125,11 @@ func TestServeGetEvent(t *testing.T) {
 			ctrl := gomock.NewController(t)
 
 			seqData := test.APITestData{
-				Cfg: config.SeqAPI{EventsCacheTTL: cacheTTL},
+				Cfg: config.SeqAPI{
+					SeqAPIOptions: &config.SeqAPIOptions{
+						EventsCacheTTL: cacheTTL,
+					},
+				},
 			}
 
 			cacheMock := mock_cache.NewMockCache(ctrl)
@@ -390,8 +394,10 @@ func TestGetEventWithMasking(t *testing.T) {
 
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					EventsCacheTTL: cacheTTL,
-					Masking:        tt.maskingCfg,
+					SeqAPIOptions: &config.SeqAPIOptions{
+						EventsCacheTTL: cacheTTL,
+						Masking:        tt.maskingCfg,
+					},
 				},
 			}
 

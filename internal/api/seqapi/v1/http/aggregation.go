@@ -21,6 +21,7 @@ import (
 //	@Tags		seqapi_v1
 //	@Accept		json
 //	@Produce	json
+//	@Param		env		query		string					false	"Environment"
 //	@Param		body	body		getAggregationRequest	true	"Request body"
 //	@Success	200		{object}	getAggregationResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error			"An unexpected error response"
@@ -38,36 +39,49 @@ func (a *API) serveGetAggregation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	aggsRaw, _ := json.Marshal(httpReq.Aggregations)
+	env := getEnvFromContext(ctx)
 
-	span.SetAttributes(
-		attribute.KeyValue{
+	attributes := []attribute.KeyValue{
+		{
 			Key:   "query",
 			Value: attribute.StringValue(httpReq.Query),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "from",
 			Value: attribute.StringValue(httpReq.From.Format(time.DateTime)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "to",
 			Value: attribute.StringValue(httpReq.To.Format(time.DateTime)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "agg_field",
 			Value: attribute.StringValue(httpReq.AggField),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "aggregations",
 			Value: attribute.StringValue(string(aggsRaw)),
 		},
-	)
+	}
 
-	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), a.config.MaxAggregationsPerRequest); err != nil {
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+
+	span.SetAttributes(attributes...)
+
+	params, err := a.GetEnvParams(env)
+	if err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
 
-	resp, err := a.seqDB.GetAggregation(ctx, httpReq.toProto())
+	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), params.options.MaxAggregationsPerRequest); err != nil {
+		wr.Error(err, http.StatusBadRequest)
+		return
+	}
+
+	resp, err := params.client.GetAggregation(ctx, httpReq.toProto())
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return
@@ -75,7 +89,7 @@ func (a *API) serveGetAggregation(w http.ResponseWriter, r *http.Request) {
 
 	getAggResp := getAggregationResponseFromProto(resp)
 
-	if a.masker != nil {
+	if params.masker != nil {
 		buf := make([]string, 0)
 		for i, agg := range getAggResp.Aggregations {
 			buf = buf[:0]
@@ -89,7 +103,7 @@ func (a *API) serveGetAggregation(w http.ResponseWriter, r *http.Request) {
 				field = aggReq.GroupBy
 			}
 
-			buf = a.masker.MaskAgg(field, buf)
+			buf = params.masker.MaskAgg(field, buf)
 
 			for j, key := range buf {
 				getAggResp.Aggregations[i].Buckets[j].Key = key
@@ -100,7 +114,7 @@ func (a *API) serveGetAggregation(w http.ResponseWriter, r *http.Request) {
 	wr.WriteJson(getAggResp)
 }
 
-type aggregationFunc string // @name seqapi.v1.AggregationFunc
+type aggregationFunc string //	@name	seqapi.v1.AggregationFunc
 
 const (
 	afCount    aggregationFunc = "count"
@@ -157,7 +171,7 @@ type aggregationQuery struct {
 	GroupBy   string          `json:"group_by"`
 	Func      aggregationFunc `json:"agg_func" default:"count"`
 	Quantiles []float64       `json:"quantiles,omitempty"`
-} // @name seqapi.v1.AggregationQuery
+} //	@name	seqapi.v1.AggregationQuery
 
 func (aq aggregationQuery) toProto() *seqapi.AggregationQuery {
 	return &seqapi.AggregationQuery{
@@ -187,7 +201,7 @@ type getAggregationRequest struct {
 	To           time.Time          `json:"to" format:"date-time"`
 	AggField     string             `json:"aggField"`
 	Aggregations aggregationQueries `json:"aggregations"`
-} // @name seqapi.v1.GetAggregationRequest
+} //	@name	seqapi.v1.GetAggregationRequest
 
 func (r getAggregationRequest) toProto() *seqapi.GetAggregationRequest {
 	return &seqapi.GetAggregationRequest{
@@ -204,7 +218,7 @@ type aggregationBucket struct {
 	Value     *float64  `json:"value"`
 	NotExists int64     `json:"not_exists,omitempty"`
 	Quantiles []float64 `json:"quantiles,omitempty"`
-} // @name seqapi.v1.AggregationBucket
+} //	@name	seqapi.v1.AggregationBucket
 
 func aggregationBucketFromProto(proto *seqapi.Aggregation_Bucket) aggregationBucket {
 	return aggregationBucket{
@@ -228,7 +242,7 @@ func aggregationBucketsFromProto(proto []*seqapi.Aggregation_Bucket) aggregation
 type aggregation struct {
 	Buckets   aggregationBuckets `json:"buckets"`
 	NotExists int64              `json:"not_exists,omitempty"`
-} // @name seqapi.v1.Aggregation
+} //	@name	seqapi.v1.Aggregation
 
 func aggregationFromProto(proto *seqapi.Aggregation) aggregation {
 	return aggregation{
@@ -255,7 +269,7 @@ type getAggregationResponse struct {
 	Aggregations    aggregations `json:"aggregations"`
 	Error           apiError     `json:"error"`
 	PartialResponse bool         `json:"partialResponse"`
-} // @name seqapi.v1.GetAggregationResponse
+} //	@name	seqapi.v1.GetAggregationResponse
 
 func getAggregationResponseFromProto(proto *seqapi.GetAggregationResponse) getAggregationResponse {
 	return getAggregationResponse{
