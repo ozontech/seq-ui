@@ -642,7 +642,13 @@ func (r *repository) DiffByReleases(
 		idxByHash[group.Hash] = len(diffGroups) - 1
 	}
 
-	where["_group_hash"] = slices.Collect(maps.Keys(idxByHash))
+	if len(diffGroups) == 0 {
+		return nil, nil
+	}
+
+	hashes := slices.Collect(maps.Keys(idxByHash))
+	slices.Sort(hashes)
+	where["_group_hash"] = hashes
 
 	q := sq.
 		Select(
