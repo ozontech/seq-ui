@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -22,6 +23,7 @@ func (a *API) GetGroups(ctx context.Context, req *errorgroups.GetGroupsRequest) 
 		{Key: "limit", Value: attribute.IntValue(int(req.Limit))},
 		{Key: "offset", Value: attribute.IntValue(int(req.Offset))},
 		{Key: "order", Value: attribute.StringValue(string(req.Order))},
+		{Key: "with_total", Value: attribute.BoolValue(req.WithTotal)},
 	}
 	if req.Env != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*req.Env)})
@@ -34,6 +36,10 @@ func (a *API) GetGroups(ctx context.Context, req *errorgroups.GetGroupsRequest) 
 	}
 	if req.Source != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "source", Value: attribute.StringValue(*req.Source)})
+	}
+	if req.Filter != nil {
+		filterRaw, _ := json.Marshal(req.Filter)
+		attributes = append(attributes, attribute.KeyValue{Key: "filter", Value: attribute.StringValue(string(filterRaw))})
 	}
 	span.SetAttributes(attributes...)
 
@@ -54,7 +60,19 @@ func (a *API) GetGroups(ctx context.Context, req *errorgroups.GetGroupsRequest) 
 		Order:     types.ErrorGroupsOrder(req.Order),
 		WithTotal: req.WithTotal,
 	}
-	groups, total, err := a.service.GetErrorGroups(ctx, request)
+
+	var (
+		groups []types.ErrorGroup
+		total  uint64
+		err    error
+	)
+
+	if req.Filter != nil && req.Filter.IsNew {
+		groups, total, err = a.service.GetNewErrorGroups(ctx, request)
+	} else {
+		groups, total, err = a.service.GetErrorGroups(ctx, request)
+	}
+
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}
