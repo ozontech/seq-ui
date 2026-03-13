@@ -198,6 +198,7 @@ type apiErrorCode string //	@name	seqapi.v1.ErrorCode
 
 const (
 	aecNo                  apiErrorCode = "ERROR_CODE_NO"
+	aecUnspecified         apiErrorCode = "ERROR_CODE_UNSPECIFIED"
 	aecPartialResponse     apiErrorCode = "ERROR_CODE_PARTIAL_RESPONSE"
 	aecQueryTooHeavy       apiErrorCode = "ERROR_CODE_QUERY_TOO_HEAVY"
 	aecTooManyFractionsHit apiErrorCode = "ERROR_CODE_TOO_MANY_FRACTIONS_HIT"
@@ -222,6 +223,8 @@ func (a *API) GetEnvParams(env string) (apiParams, error) {
 
 func apiErrorCodeFromProto(proto seqapi.ErrorCode) apiErrorCode {
 	switch proto {
+	case seqapi.ErrorCode_ERROR_CODE_UNSPECIFIED:
+		return aecUnspecified
 	case seqapi.ErrorCode_ERROR_CODE_PARTIAL_RESPONSE:
 		return aecPartialResponse
 	case seqapi.ErrorCode_ERROR_CODE_QUERY_TOO_HEAVY:
