@@ -29,10 +29,12 @@ func (a *API) DeleteAsyncSearch(
 		return nil, status.Error(codes.InvalidArgument, "invalid search_id")
 	}
 
-	span.SetAttributes(attribute.KeyValue{
-		Key:   "search_id",
-		Value: attribute.StringValue(req.SearchId),
-	})
+	span.SetAttributes(
+		attribute.KeyValue{
+			Key:   "search_id",
+			Value: attribute.StringValue(req.SearchId),
+		},
+	)
 
 	profileID, err := a.profiles.GeIDFromContext(ctx)
 	if err != nil {

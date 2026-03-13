@@ -19,6 +19,7 @@ import (
 //	@Router		/seqapi/v1/events/{id} [get]
 //	@ID			seqapi_v1_getEvent
 //	@Tags		seqapi_v1
+//	@Param		env		query		string				false	"Environment"
 //	@Param		id		path		string				true	"Event ID"
 //	@Success	200		{object}	getEventResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
@@ -31,15 +32,32 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 
 	id := chi.URLParam(r, "id")
 
-	span.SetAttributes(attribute.KeyValue{
-		Key: "id", Value: attribute.StringValue(id),
-	})
+	env := getEnvFromContext(ctx)
+
+	attributes := []attribute.KeyValue{
+		{
+			Key:   "id",
+			Value: attribute.StringValue(id),
+		},
+	}
+
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+
+	span.SetAttributes(attributes...)
+
+	params, err := a.GetEnvParams(env)
+	if err != nil {
+		wr.Error(err, http.StatusBadRequest)
+		return
+	}
 
 	if cached, err := a.inmemWithRedisCache.Get(ctx, id); err == nil {
 		e := &seqapi.Event{}
 		if err = proto.Unmarshal([]byte(cached), e); err == nil {
-			if a.masker != nil {
-				a.masker.Mask(e.Data)
+			if params.masker != nil {
+				params.masker.Mask(e.Data)
 			}
 			wr.WriteJson(getEventResponseFromProto(&seqapi.GetEventResponse{Event: e}))
 			return
@@ -47,7 +65,7 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 		logger.Error("failed to unmarshal cached event proto", zap.String("id", id), zap.Error(err))
 	}
 
-	resp, err := a.seqDB.GetEvent(ctx, &seqapi.GetEventRequest{
+	resp, err := params.client.GetEvent(ctx, &seqapi.GetEventRequest{
 		Id: id,
 	})
 	if err != nil {
@@ -55,12 +73,12 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if a.masker != nil && resp.Event != nil {
-		a.masker.Mask(resp.Event.Data)
+	if params.masker != nil && resp.Event != nil {
+		params.masker.Mask(resp.Event.Data)
 	}
 
 	if data, err := proto.Marshal(resp.Event); err == nil {
-		_ = a.inmemWithRedisCache.SetWithTTL(ctx, id, string(data), a.config.EventsCacheTTL)
+		_ = a.inmemWithRedisCache.SetWithTTL(ctx, id, string(data), params.options.EventsCacheTTL)
 	} else {
 		logger.Error("failed to marshal event proto for caching", zap.String("id", id), zap.Error(err))
 	}
@@ -74,7 +92,7 @@ type event struct {
 	ID   string            `json:"id"`
 	Data map[string]string `json:"data" swaggertype:"object,string"`
 	Time time.Time         `json:"time" format:"date-time"`
-} // @name seqapi.v1.Event
+} //	@name	seqapi.v1.Event
 
 func eventFromProto(p *seqapi.Event) event {
 	data := p.GetData()
@@ -100,7 +118,7 @@ func eventsFromProto(p []*seqapi.Event) events {
 
 type getEventResponse struct {
 	Event event `json:"event"`
-} // @name seqapi.v1.GetEventResponse
+} //	@name	seqapi.v1.GetEventResponse
 
 func getEventResponseFromProto(p *seqapi.GetEventResponse) getEventResponse {
 	return getEventResponse{

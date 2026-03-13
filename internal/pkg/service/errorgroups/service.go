@@ -13,6 +13,10 @@ import (
 	repositorych "github.com/ozontech/seq-ui/internal/pkg/repository_ch"
 )
 
+const (
+	defaultLimit uint32 = 25
+)
+
 type Service struct {
 	repo           repositorych.Repository
 	logTagsMapping config.LogTagsMapping
@@ -29,34 +33,57 @@ func (s *Service) GetErrorGroups(
 	ctx context.Context,
 	req types.GetErrorGroupsRequest,
 ) ([]types.ErrorGroup, uint64, error) {
+	return getErrorGroups(ctx, req, s.repo.GetErrorGroups, s.repo.GetErrorGroupsCount)
+}
+
+func (s *Service) GetNewErrorGroups(
+	ctx context.Context,
+	req types.GetErrorGroupsRequest,
+) ([]types.ErrorGroup, uint64, error) {
+	// If the release and duration are not specified,
+	// then we are looking for errors for all time and releases.
+	// In this case, we believe that there are no new errors.
+	if (req.Release == nil || *req.Release == "") &&
+		(req.Duration == nil || *req.Duration == 0) {
+		return nil, 0, nil
+	}
+
+	return getErrorGroups(ctx, req, s.repo.GetNewErrorGroups, s.repo.GetNewErrorGroupsCount)
+}
+
+func getErrorGroups(
+	ctx context.Context,
+	req types.GetErrorGroupsRequest,
+	groupsFn func(ctx context.Context, req types.GetErrorGroupsRequest) ([]types.ErrorGroup, error),
+	countFn func(ctx context.Context, req types.GetErrorGroupsRequest) (uint64, error),
+) ([]types.ErrorGroup, uint64, error) {
 	if req.Service == "" {
 		return nil, 0, types.NewErrInvalidRequestField("'service' must not be empty")
 	}
 
-	const defaultLimit uint32 = 25
 	if req.Limit == 0 {
 		req.Limit = defaultLimit
 	}
 
-	group, groupCtx := errgroup.WithContext(ctx)
+	eg, ctx := errgroup.WithContext(ctx)
 
 	var groups []types.ErrorGroup
-	group.Go(func() error {
+	eg.Go(func() error {
 		var err error
-		groups, err = s.repo.GetErrorGroups(groupCtx, req)
+		groups, err = groupsFn(ctx, req)
 		return err
 	})
 
 	var total uint64
 	if req.WithTotal {
-		group.Go(func() error {
+		eg.Go(func() error {
 			var err error
-			total, err = s.repo.GetErrorGroupsCount(groupCtx, req)
+			total, err = countFn(ctx, req)
 			return err
 		})
 	}
 
-	err := group.Wait()
+	err := eg.Wait()
 	if err != nil {
 		return nil, 0, fmt.Errorf("get error groups failed: %w", err)
 	}
@@ -175,4 +202,48 @@ func (s *Service) GetServices(
 	req types.GetServicesRequest,
 ) ([]string, error) {
 	return s.repo.GetServices(ctx, req)
+}
+
+func (s *Service) DiffByReleases(
+	ctx context.Context,
+	req types.DiffByReleasesRequest,
+) ([]types.DiffGroup, uint64, error) {
+	if req.Service == "" {
+		return nil, 0, types.NewErrInvalidRequestField("'service' must be non-empty")
+	}
+	if len(req.Releases) < 2 {
+		return nil, 0, types.NewErrInvalidRequestField("length of'releases' must be at least 2")
+	}
+	if slices.Contains(req.Releases, "") {
+		return nil, 0, types.NewErrInvalidRequestField("each element in 'releases' must be non-empty")
+	}
+
+	if req.Limit == 0 {
+		req.Limit = defaultLimit
+	}
+
+	eg, ctx := errgroup.WithContext(ctx)
+
+	var diffGroups []types.DiffGroup
+	eg.Go(func() error {
+		var err error
+		diffGroups, err = s.repo.DiffByReleases(ctx, req)
+		return err
+	})
+
+	var total uint64
+	if req.WithTotal {
+		eg.Go(func() error {
+			var err error
+			total, err = s.repo.DiffByReleasesTotal(ctx, req)
+			return err
+		})
+	}
+
+	err := eg.Wait()
+	if err != nil {
+		return nil, 0, fmt.Errorf("diff by releases failed: %w", err)
+	}
+
+	return diffGroups, total, err
 }

@@ -71,7 +71,7 @@ func (a *API) serveUpdate(w http.ResponseWriter, r *http.Request) {
 type updateRequest struct {
 	Name *string `json:"name"`
 	Meta *string `json:"meta"`
-} // @name dashboards.v1.UpdateRequest
+} //	@name	dashboards.v1.UpdateRequest
 
 func (r updateRequest) GetName() string {
 	if r.Name != nil {

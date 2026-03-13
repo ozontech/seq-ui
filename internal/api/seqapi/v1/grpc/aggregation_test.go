@@ -50,7 +50,9 @@ func TestGetAggregation(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest: 3,
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxAggregationsPerRequest: 3,
+				},
 			},
 		},
 		{
@@ -63,7 +65,9 @@ func TestGetAggregation(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest: 2,
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxAggregationsPerRequest: 2,
+				},
 			},
 			apiErr: true,
 		},
@@ -78,7 +82,9 @@ func TestGetAggregation(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest: 1,
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxAggregationsPerRequest: 1,
+				},
 			},
 			clientErr: errors.New("client error"),
 		},
@@ -167,8 +173,10 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest:            3,
-				DefaultAggregationTsTargetBucketRate: time.Second,
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxAggregationsPerRequest:            3,
+					DefaultAggregationTsTargetBucketRate: time.Second,
+				},
 			},
 		},
 		{
@@ -202,8 +210,10 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest:            3,
-				DefaultAggregationTsTargetBucketRate: 4 * time.Second,
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxAggregationsPerRequest:            3,
+					DefaultAggregationTsTargetBucketRate: 4 * time.Second,
+				},
 			},
 		},
 	}

@@ -14,7 +14,7 @@ import (
 )
 
 func (a *API) GetDetails(ctx context.Context, req *errorgroups.GetDetailsRequest) (*errorgroups.GetDetailsResponse, error) {
-	_, span := tracing.StartSpan(ctx, "errorgroups_v1_get_groups")
+	ctx, span := tracing.StartSpan(ctx, "errorgroups_v1_get_details")
 	defer span.End()
 
 	attributes := []attribute.KeyValue{
