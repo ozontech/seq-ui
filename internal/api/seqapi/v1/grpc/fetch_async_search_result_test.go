@@ -122,7 +122,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 						},
 					},
 					Error: &seqapi.Error{
-						Code:    seqapi.ErrorCode_ERROR_CODE_NO,
+						Code:    seqapi.ErrorCode_ERROR_CODE_UNSPECIFIED,
 						Message: "some error",
 					},
 				},

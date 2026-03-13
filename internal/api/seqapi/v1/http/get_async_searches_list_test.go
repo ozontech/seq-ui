@@ -106,6 +106,9 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 							OwnerName:  mockUserName2,
 						},
 					},
+					Error: &seqapi.Error{
+						Code: seqapi.ErrorCode_ERROR_CODE_NO,
+					},
 				},
 				repoReq: types.GetAsyncSearchesListRequest{},
 				repoResp: []types.AsyncSearchInfo{
@@ -154,6 +157,9 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 							DiskUsage: 512,
 							OwnerName: mockUserName1,
 						},
+					},
+					Error: &seqapi.Error{
+						Code: seqapi.ErrorCode_ERROR_CODE_NO,
 					},
 				},
 				repoReq: types.GetAsyncSearchesListRequest{
