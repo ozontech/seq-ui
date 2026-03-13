@@ -65,19 +65,19 @@ func MakeHistogram(bucketCount int) *seqapi.Histogram {
 }
 
 type MakeAggOpts struct {
-	NotExists  int64
-	Quantiles  []float64
-	Ts         []*timestamppb.Timestamp
-	Values     []float64
-	BucketUnit string
+	NotExists        int64
+	Quantiles        []float64
+	Ts               []*timestamppb.Timestamp
+	Values           []float64
+	TargetBucketRate string
 }
 
 func MakeAggregation(bucketCount int, opts *MakeAggOpts) *seqapi.Aggregation {
 	agg := &seqapi.Aggregation{
 		Buckets: make([]*seqapi.Aggregation_Bucket, 0, bucketCount),
 	}
-	if opts != nil && opts.BucketUnit != "" {
-		agg.BucketUnit = opts.BucketUnit
+	if opts != nil && opts.TargetBucketRate != "" {
+		agg.TargetBucketRate = opts.TargetBucketRate
 	}
 	for i := range bucketCount {
 		v := new(float64)

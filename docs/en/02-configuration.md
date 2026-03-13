@@ -481,9 +481,9 @@ Config for `/seqapi` API handlers.
 
   Max allowed buckets per aggregation with timeseries request. The number of buckets is calculated as (`to`-`from`) / `interval`. If set to zero or negative value, then it will be reset to `default`.
 
-+ **`default_bucket_unit`** *`string`* *`default="1s"`*
++ **`default_target_bucket_rate`** *`string`* *`default="1s"`*
 
-  The unit to which bucket values ​​are normalized in aggregation with timeseries request if not specified in the request. The initial bucket unit is `count/interval`; after normalization, it is `count/bucket_unit`. If set to zero or negative value, then it will be reset to `default`.
+  The unit to which bucket values ​​are normalized in aggregation with timeseries request if not specified in the request. The initial bucket unit is `count/interval`; after normalization, it is `count/target_bucket_rate`. If set to zero or negative value, then it will be reset to `default`.
 
   The value must be passed in duration format: `<number>(ms|s|m|h)`.
 

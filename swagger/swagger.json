@@ -1999,14 +1999,14 @@
                 "data": {
                     "type": "object",
                     "properties": {
-                        "bucket_unit": {
-                            "type": "string"
-                        },
                         "result": {
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/seqapi.v1.AggregationSeries"
                             }
+                        },
+                        "target_bucket_rate": {
+                            "type": "string"
                         }
                     }
                 }
@@ -2034,11 +2034,6 @@
                         }
                     ]
                 },
-                "bucket_unit": {
-                    "type": "string",
-                    "format": "duration",
-                    "example": "10s"
-                },
                 "field": {
                     "type": "string"
                 },
@@ -2055,6 +2050,11 @@
                     "items": {
                         "type": "number"
                     }
+                },
+                "target_bucket_rate": {
+                    "type": "string",
+                    "format": "duration",
+                    "example": "10s"
                 }
             }
         },

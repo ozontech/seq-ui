@@ -27,7 +27,7 @@ func TestServeGetAggregationTs(t *testing.T) {
 	to := from.Add(5 * time.Second)
 	interval := "1s"
 	interval2 := "3000ms"
-	bucketUnit := "2s"
+	targetBucketRate := "2s"
 
 	formatReqBody := func(aggQueries aggregationTsQueries) string {
 		aggQueriesRaw, err := json.Marshal(aggQueries)
@@ -100,12 +100,12 @@ func TestServeGetAggregationTs(t *testing.T) {
 					},
 				},
 			},
-			wantRespBody: `{"aggregations":[{"data":{"result":[{"metric":{"test_count1":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count1":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count1":"test3"},"values":[{"timestamp":1695637233,"value":3}]}],"bucket_unit":"1s"}},{"data":{"result":[{"metric":{"test_count2":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count2":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count2":"test3"},"values":[{"timestamp":1695637233,"value":3}]}],"bucket_unit":"1s"}}],"error":{"code":"ERROR_CODE_NO"}}`,
+			wantRespBody: `{"aggregations":[{"data":{"result":[{"metric":{"test_count1":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count1":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count1":"test3"},"values":[{"timestamp":1695637233,"value":3}]}],"target_bucket_rate":"1s"}},{"data":{"result":[{"metric":{"test_count2":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count2":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count2":"test3"},"values":[{"timestamp":1695637233,"value":3}]}],"target_bucket_rate":"1s"}}],"error":{"code":"ERROR_CODE_NO"}}`,
 			wantStatus:   http.StatusOK,
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest:      3,
-				MaxBucketsPerAggregationTs:     100,
-				DefaultAggregationTsBucketUnit: time.Second,
+				MaxAggregationsPerRequest:            3,
+				MaxBucketsPerAggregationTs:           100,
+				DefaultAggregationTsTargetBucketRate: time.Second,
 			},
 		},
 		{
@@ -123,8 +123,8 @@ func TestServeGetAggregationTs(t *testing.T) {
 						Field: "test_count2",
 						Func:  afCount,
 					},
-					Interval:   interval2,
-					BucketUnit: bucketUnit,
+					Interval:         interval2,
+					TargetBucketRate: targetBucketRate,
 				},
 			}),
 			mockArgs: &mockArgs{
@@ -134,7 +134,7 @@ func TestServeGetAggregationTs(t *testing.T) {
 					To:    timestamppb.New(to),
 					Aggregations: []*seqapi.AggregationQuery{
 						{Field: "test_count1", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval2},
-						{Field: "test_count2", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval2, BucketUnit: &bucketUnit},
+						{Field: "test_count2", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval2, TargetBucketRate: &targetBucketRate},
 					},
 				},
 				resp: &seqapi.GetAggregationResponse{
@@ -155,12 +155,12 @@ func TestServeGetAggregationTs(t *testing.T) {
 					},
 				},
 			},
-			wantRespBody: `{"aggregations":[{"data":{"result":[{"metric":{"test_count1":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count1":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count1":"test3"},"values":[{"timestamp":1695637233,"value":3}]}],"bucket_unit":"1s"}},{"data":{"result":[{"metric":{"test_count2":"test1"},"values":[{"timestamp":1695637231,"value":2}]},{"metric":{"test_count2":"test2"},"values":[{"timestamp":1695637232,"value":4}]},{"metric":{"test_count2":"test3"},"values":[{"timestamp":1695637233,"value":6}]}],"bucket_unit":"2s"}}],"error":{"code":"ERROR_CODE_NO"}}`,
+			wantRespBody: `{"aggregations":[{"data":{"result":[{"metric":{"test_count1":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count1":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count1":"test3"},"values":[{"timestamp":1695637233,"value":3}]}],"target_bucket_rate":"1s"}},{"data":{"result":[{"metric":{"test_count2":"test1"},"values":[{"timestamp":1695637231,"value":2}]},{"metric":{"test_count2":"test2"},"values":[{"timestamp":1695637232,"value":4}]},{"metric":{"test_count2":"test3"},"values":[{"timestamp":1695637233,"value":6}]}],"target_bucket_rate":"2s"}}],"error":{"code":"ERROR_CODE_NO"}}`,
 			wantStatus:   http.StatusOK,
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest:      3,
-				MaxBucketsPerAggregationTs:     100,
-				DefaultAggregationTsBucketUnit: time.Second,
+				MaxAggregationsPerRequest:            3,
+				MaxBucketsPerAggregationTs:           100,
+				DefaultAggregationTsTargetBucketRate: time.Second,
 			},
 		},
 		{

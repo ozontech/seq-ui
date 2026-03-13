@@ -120,7 +120,7 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 	query := "message:error"
 	from := time.Now()
 	to := from.Add(time.Second)
-	bucketUnit := "3s"
+	targetBucketRate := "3s"
 
 	tests := []struct {
 		name string
@@ -141,13 +141,13 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 				From:  timestamppb.New(from),
 				To:    timestamppb.New(to),
 				Aggregations: []*seqapi.AggregationQuery{
-					{Field: "test1", Func: seqapi.AggFunc_AGG_FUNC_COUNT, BucketUnit: &bucketUnit},
-					{Field: "test2", Func: seqapi.AggFunc_AGG_FUNC_COUNT, BucketUnit: &bucketUnit},
+					{Field: "test1", Func: seqapi.AggFunc_AGG_FUNC_COUNT, TargetBucketRate: &targetBucketRate},
+					{Field: "test2", Func: seqapi.AggFunc_AGG_FUNC_COUNT, TargetBucketRate: &targetBucketRate},
 				},
 			},
 			resp: &seqapi.GetAggregationResponse{
 				Aggregations: test.MakeAggregations(2, 3, &test.MakeAggOpts{
-					BucketUnit: bucketUnit,
+					TargetBucketRate: targetBucketRate,
 				}),
 				Error: &seqapi.Error{
 					Code: seqapi.ErrorCode_ERROR_CODE_NO,
@@ -155,7 +155,7 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 			},
 			normalized_resp: &seqapi.GetAggregationResponse{
 				Aggregations: test.MakeAggregations(2, 3, &test.MakeAggOpts{
-					BucketUnit: bucketUnit,
+					TargetBucketRate: targetBucketRate,
 					Values: []float64{
 						3,
 						6,
@@ -167,12 +167,12 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest:      3,
-				DefaultAggregationTsBucketUnit: time.Second,
+				MaxAggregationsPerRequest:            3,
+				DefaultAggregationTsTargetBucketRate: time.Second,
 			},
 		},
 		{
-			name: "ok_normalize_default_bucket_unit",
+			name: "ok_normalize_default_target_bucket_rate",
 			req: &seqapi.GetAggregationRequest{
 				Query: query,
 				From:  timestamppb.New(from),
@@ -190,7 +190,7 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 			},
 			normalized_resp: &seqapi.GetAggregationResponse{
 				Aggregations: test.MakeAggregations(2, 3, &test.MakeAggOpts{
-					BucketUnit: "4s",
+					TargetBucketRate: "4s",
 					Values: []float64{
 						4,
 						8,
@@ -202,8 +202,8 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				MaxAggregationsPerRequest:      3,
-				DefaultAggregationTsBucketUnit: 4 * time.Second,
+				MaxAggregationsPerRequest:            3,
+				DefaultAggregationTsTargetBucketRate: 4 * time.Second,
 			},
 		},
 	}

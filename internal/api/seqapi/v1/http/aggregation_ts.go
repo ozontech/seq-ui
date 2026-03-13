@@ -79,7 +79,7 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = aggregation_ts.NormalizeBuckets(httpReq.Aggregations, resp.Aggregations, a.config.DefaultAggregationTsBucketUnit)
+	err = aggregation_ts.NormalizeBuckets(httpReq.Aggregations, resp.Aggregations, a.config.DefaultAggregationTsTargetBucketRate)
 	if err != nil {
 		wr.Error(fmt.Errorf("failed to normalize buckets: %w", err), http.StatusBadRequest)
 		return
@@ -90,8 +90,8 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 
 type aggregationTsQuery struct {
 	aggregationQuery
-	Interval   string `json:"interval,omitempty" format:"duration" example:"1m"`
-	BucketUnit string `json:"bucket_unit,omitempty" format:"duration" example:"10s"`
+	Interval         string `json:"interval,omitempty" format:"duration" example:"1m"`
+	TargetBucketRate string `json:"target_bucket_rate,omitempty" format:"duration" example:"10s"`
 } //	@name	seqapi.v1.AggregationTsQuery
 
 func (aq aggregationTsQuery) GetFunc() seqapi.AggFunc {
@@ -102,8 +102,8 @@ func (aq aggregationTsQuery) GetInterval() string {
 	return aq.Interval
 }
 
-func (aq aggregationTsQuery) GetBucketUnit() string {
-	return aq.BucketUnit
+func (aq aggregationTsQuery) GetTargetBucketRate() string {
+	return aq.TargetBucketRate
 }
 
 func (aq aggregationTsQuery) toProto() *seqapi.AggregationQuery {
@@ -114,9 +114,9 @@ func (aq aggregationTsQuery) toProto() *seqapi.AggregationQuery {
 		*q.Interval = aq.Interval
 	}
 
-	if aq.BucketUnit != "" {
-		q.BucketUnit = new(string)
-		*q.BucketUnit = aq.BucketUnit
+	if aq.TargetBucketRate != "" {
+		q.TargetBucketRate = new(string)
+		*q.TargetBucketRate = aq.TargetBucketRate
 	}
 
 	return q
@@ -226,15 +226,15 @@ func aggregationsSeriesFromProto(proto []*seqapi.Aggregation_Bucket, reqAgg aggr
 
 type aggregationTs struct {
 	Data struct {
-		Series     aggregationsSeries `json:"result"`
-		BucketUnit string             `json:"bucket_unit,omitempty"`
+		Series           aggregationsSeries `json:"result"`
+		TargetBucketRate string             `json:"target_bucket_rate,omitempty"`
 	} `json:"data"`
 } //	@name	seqapi.v1.AggregationTs
 
 func aggregationTsFromProto(proto *seqapi.Aggregation, reqAgg aggregationTsQuery) aggregationTs {
 	a := aggregationTs{}
 	a.Data.Series = aggregationsSeriesFromProto(proto.Buckets, reqAgg)
-	a.Data.BucketUnit = proto.BucketUnit
+	a.Data.TargetBucketRate = proto.TargetBucketRate
 	return a
 }
 

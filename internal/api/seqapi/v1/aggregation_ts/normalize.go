@@ -10,11 +10,11 @@ import (
 type aggQuery interface {
 	GetFunc() seqapi.AggFunc
 	GetInterval() string
-	GetBucketUnit() string
+	GetTargetBucketRate() string
 }
 
-func NormalizeBuckets[T aggQuery](aggQueries []T, aggs []*seqapi.Aggregation, defaultBucketUnit time.Duration) error {
-	bucketUnits, err := getBucketUnits(aggQueries, defaultBucketUnit)
+func NormalizeBuckets[T aggQuery](aggQueries []T, aggs []*seqapi.Aggregation, defaultTargetBucketRate time.Duration) error {
+	targetBucketRates, err := getTargetBucketRates(aggQueries, defaultTargetBucketRate)
 	if err != nil {
 		return fmt.Errorf("failed to get bucket units: %w", err)
 	}
@@ -29,10 +29,10 @@ func NormalizeBuckets[T aggQuery](aggQueries []T, aggs []*seqapi.Aggregation, de
 			continue
 		}
 
-		bucketUnitDenominator := time.Second
-		if bucketUnits[i] != 0 {
-			bucketUnitDenominator = bucketUnits[i]
-			agg.BucketUnit = bucketUnits[i].String()
+		targetBucketRateDenominator := time.Second
+		if targetBucketRates[i] != 0 {
+			targetBucketRateDenominator = targetBucketRates[i]
+			agg.TargetBucketRate = targetBucketRates[i].String()
 		}
 
 		for _, bucket := range agg.Buckets {
@@ -40,35 +40,35 @@ func NormalizeBuckets[T aggQuery](aggQueries []T, aggs []*seqapi.Aggregation, de
 				continue
 			}
 
-			*bucket.Value = *bucket.Value * float64(bucketUnitDenominator) / float64(aggIntervals[i])
+			*bucket.Value = *bucket.Value * float64(targetBucketRateDenominator) / float64(aggIntervals[i])
 		}
 	}
 
 	return nil
 }
 
-func getBucketUnits[T aggQuery](aggQueries []T, defaultBucketUnit time.Duration) ([]time.Duration, error) {
-	aggBucketUnits := make([]time.Duration, 0, len(aggQueries))
+func getTargetBucketRates[T aggQuery](aggQueries []T, defaultTargetBucketRate time.Duration) ([]time.Duration, error) {
+	aggTargetBucketRates := make([]time.Duration, 0, len(aggQueries))
 	for _, agg := range aggQueries {
 		if agg.GetFunc() != seqapi.AggFunc_AGG_FUNC_COUNT {
-			aggBucketUnits = append(aggBucketUnits, 0)
+			aggTargetBucketRates = append(aggTargetBucketRates, 0)
 			continue
 		}
-		bucketUnitRaw := agg.GetBucketUnit()
-		if bucketUnitRaw == "" {
-			aggBucketUnits = append(aggBucketUnits, defaultBucketUnit)
+		targetBucketRateRaw := agg.GetTargetBucketRate()
+		if targetBucketRateRaw == "" {
+			aggTargetBucketRates = append(aggTargetBucketRates, defaultTargetBucketRate)
 			continue
 		}
 
-		bucketUnit, err := time.ParseDuration(bucketUnitRaw)
+		targetBucketRate, err := time.ParseDuration(targetBucketRateRaw)
 		if err != nil {
 			return nil, err
 		}
 
-		aggBucketUnits = append(aggBucketUnits, bucketUnit)
+		aggTargetBucketRates = append(aggTargetBucketRates, targetBucketRate)
 	}
 
-	return aggBucketUnits, nil
+	return aggTargetBucketRates, nil
 }
 
 func getIntervals[T aggQuery](aggQueries []T) ([]time.Duration, error) {
