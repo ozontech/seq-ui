@@ -35,7 +35,7 @@ const (
 	defaultMaxAggregationsPerRequest     = 1
 	defaultMaxBucketsPerAggregationTs    = 200
 	defaultMaxParallelExportRequests     = 1
-	defaultAggregationTsTargetBucketRate = time.Second
+	defaultAggregationTsTargetBucketRate = time.Duration(0)
 
 	defaultInmemCacheNumCounters = 10000000
 	defaultInmemCacheMaxCost     = 1000000
@@ -362,7 +362,7 @@ func FromFile(cfgPath string) (Config, error) {
 	if cfg.Handlers.SeqAPI.LogsLifespanCacheTTL <= 0 {
 		cfg.Handlers.SeqAPI.LogsLifespanCacheTTL = defaultLogsLifespanCacheTTL
 	}
-	if cfg.Handlers.SeqAPI.DefaultAggregationTsTargetBucketRate <= 0 {
+	if cfg.Handlers.SeqAPI.DefaultAggregationTsTargetBucketRate < 0 {
 		cfg.Handlers.SeqAPI.DefaultAggregationTsTargetBucketRate = defaultAggregationTsTargetBucketRate
 	}
 

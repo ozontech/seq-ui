@@ -25,14 +25,8 @@ func NormalizeBuckets[T aggQuery](aggQueries []T, aggs []*seqapi.Aggregation, de
 	}
 
 	for i, agg := range aggs {
-		if agg == nil || agg.Buckets == nil || aggIntervals[i] == 0 {
+		if agg == nil || agg.Buckets == nil || aggIntervals[i] == 0 || targetBucketRates[i] == 0 {
 			continue
-		}
-
-		targetBucketRateDenominator := time.Second
-		if targetBucketRates[i] != 0 {
-			targetBucketRateDenominator = targetBucketRates[i]
-			agg.TargetBucketRate = targetBucketRates[i].String()
 		}
 
 		for _, bucket := range agg.Buckets {
@@ -40,8 +34,9 @@ func NormalizeBuckets[T aggQuery](aggQueries []T, aggs []*seqapi.Aggregation, de
 				continue
 			}
 
-			*bucket.Value = *bucket.Value * float64(targetBucketRateDenominator) / float64(aggIntervals[i])
+			*bucket.Value = *bucket.Value * float64(targetBucketRates[i]) / float64(aggIntervals[i])
 		}
+		agg.TargetBucketRate = targetBucketRates[i].String()
 	}
 
 	return nil
