@@ -127,6 +127,7 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 	from := time.Now()
 	to := from.Add(time.Second)
 	targetBucketRate := "3s"
+	interval := "2s"
 
 	tests := []struct {
 		name string
@@ -141,7 +142,48 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 		cfg config.SeqAPI
 	}{
 		{
-			name: "ok_normalize",
+			name: "ok_count",
+			req: &seqapi.GetAggregationRequest{
+				Query: query,
+				From:  timestamppb.New(from),
+				To:    timestamppb.New(to),
+				Aggregations: []*seqapi.AggregationQuery{
+					{Field: "test1", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval},
+					{Field: "test2", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval},
+				},
+			},
+			resp: &seqapi.GetAggregationResponse{
+				Aggregations: test.MakeAggregations(2, 3, &test.MakeAggOpts{
+					Values: []float64{
+						2,
+						4,
+						6,
+					},
+				}),
+				Error: &seqapi.Error{
+					Code: seqapi.ErrorCode_ERROR_CODE_NO,
+				},
+			},
+			normalized_resp: &seqapi.GetAggregationResponse{
+				Aggregations: test.MakeAggregations(2, 3, &test.MakeAggOpts{
+					Values: []float64{
+						2,
+						4,
+						6,
+					},
+				}),
+				Error: &seqapi.Error{
+					Code: seqapi.ErrorCode_ERROR_CODE_NO,
+				},
+			},
+			cfg: config.SeqAPI{
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxAggregationsPerRequest: 3,
+				},
+			},
+		},
+		{
+			name: "ok_normalize_count",
 			req: &seqapi.GetAggregationRequest{
 				Query: query,
 				From:  timestamppb.New(from),
@@ -154,6 +196,11 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 			resp: &seqapi.GetAggregationResponse{
 				Aggregations: test.MakeAggregations(2, 3, &test.MakeAggOpts{
 					TargetBucketRate: targetBucketRate,
+					Values: []float64{
+						1,
+						2,
+						3,
+					},
 				}),
 				Error: &seqapi.Error{
 					Code: seqapi.ErrorCode_ERROR_CODE_NO,
@@ -186,19 +233,25 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 				From:  timestamppb.New(from),
 				To:    timestamppb.New(to),
 				Aggregations: []*seqapi.AggregationQuery{
-					{Field: "test1", Func: seqapi.AggFunc_AGG_FUNC_COUNT},
-					{Field: "test2", Func: seqapi.AggFunc_AGG_FUNC_COUNT},
+					{Field: "test1", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval},
+					{Field: "test2", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval},
 				},
 			},
 			resp: &seqapi.GetAggregationResponse{
-				Aggregations: test.MakeAggregations(2, 3, nil),
+				Aggregations: test.MakeAggregations(2, 3, &test.MakeAggOpts{
+					Values: []float64{
+						1,
+						2,
+						3,
+					},
+				}),
 				Error: &seqapi.Error{
 					Code: seqapi.ErrorCode_ERROR_CODE_NO,
 				},
 			},
 			normalized_resp: &seqapi.GetAggregationResponse{
 				Aggregations: test.MakeAggregations(2, 3, &test.MakeAggOpts{
-					TargetBucketRate: "4s",
+					TargetBucketRate: "8s",
 					Values: []float64{
 						4,
 						8,
@@ -212,7 +265,7 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 			cfg: config.SeqAPI{
 				SeqAPIOptions: &config.SeqAPIOptions{
 					MaxAggregationsPerRequest:            3,
-					DefaultAggregationTsTargetBucketRate: 4 * time.Second,
+					DefaultAggregationTsTargetBucketRate: 8 * time.Second,
 				},
 			},
 		},

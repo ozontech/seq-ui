@@ -87,6 +87,11 @@ func TestServeGetAggregationTs(t *testing.T) {
 							timestamppb.New(from.Add(2 * time.Second)),
 							timestamppb.New(from.Add(3 * time.Second)),
 						},
+						Values: []float64{
+							1,
+							2,
+							3,
+						},
 					}),
 					Aggregations: test.MakeAggregations(2, 3, &test.MakeAggOpts{
 						Ts: []*timestamppb.Timestamp{
@@ -100,13 +105,12 @@ func TestServeGetAggregationTs(t *testing.T) {
 					},
 				},
 			},
-			wantRespBody: `{"aggregations":[{"data":{"result":[{"metric":{"test_count1":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count1":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count1":"test3"},"values":[{"timestamp":1695637233,"value":3}]}],"target_bucket_rate":"1s"}},{"data":{"result":[{"metric":{"test_count2":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count2":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count2":"test3"},"values":[{"timestamp":1695637233,"value":3}]}],"target_bucket_rate":"1s"}}],"error":{"code":"ERROR_CODE_NO"}}`,
+			wantRespBody: `{"aggregations":[{"data":{"result":[{"metric":{"test_count1":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count1":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count1":"test3"},"values":[{"timestamp":1695637233,"value":3}]}]}},{"data":{"result":[{"metric":{"test_count2":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count2":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count2":"test3"},"values":[{"timestamp":1695637233,"value":3}]}]}}],"error":{"code":"ERROR_CODE_NO"}}`,
 			wantStatus:   http.StatusOK,
 			cfg: config.SeqAPI{
 				SeqAPIOptions: &config.SeqAPIOptions{
-					MaxAggregationsPerRequest:            3,
-					MaxBucketsPerAggregationTs:           100,
-					DefaultAggregationTsTargetBucketRate: time.Second,
+					MaxAggregationsPerRequest:  3,
+					MaxBucketsPerAggregationTs: 100,
 				},
 			},
 		},
