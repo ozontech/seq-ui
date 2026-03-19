@@ -116,7 +116,7 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 		}
 	}
 
-	err = aggregation_ts.NormalizeBuckets(req.Aggregations, resp.Aggregations, a.config.DefaultAggregationTsTargetBucketRate)
+	err = aggregation_ts.NormalizeBuckets(req.Aggregations, resp.Aggregations)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

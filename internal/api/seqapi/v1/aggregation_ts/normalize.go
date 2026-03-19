@@ -13,8 +13,8 @@ type aggQuery interface {
 	GetTargetBucketRate() string
 }
 
-func NormalizeBuckets[T aggQuery](aggQueries []T, aggs []*seqapi.Aggregation, defaultTargetBucketRate time.Duration) error {
-	targetBucketRates, err := getTargetBucketRates(aggQueries, defaultTargetBucketRate)
+func NormalizeBuckets[T aggQuery](aggQueries []T, aggs []*seqapi.Aggregation) error {
+	targetBucketRates, err := getTargetBucketRates(aggQueries)
 	if err != nil {
 		return fmt.Errorf("failed to get bucket units: %w", err)
 	}
@@ -42,16 +42,12 @@ func NormalizeBuckets[T aggQuery](aggQueries []T, aggs []*seqapi.Aggregation, de
 	return nil
 }
 
-func getTargetBucketRates[T aggQuery](aggQueries []T, defaultTargetBucketRate time.Duration) ([]time.Duration, error) {
+func getTargetBucketRates[T aggQuery](aggQueries []T) ([]time.Duration, error) {
 	aggTargetBucketRates := make([]time.Duration, 0, len(aggQueries))
 	for _, agg := range aggQueries {
-		if agg.GetFunc() != seqapi.AggFunc_AGG_FUNC_COUNT {
-			aggTargetBucketRates = append(aggTargetBucketRates, 0)
-			continue
-		}
 		targetBucketRateRaw := agg.GetTargetBucketRate()
-		if targetBucketRateRaw == "" {
-			aggTargetBucketRates = append(aggTargetBucketRates, defaultTargetBucketRate)
+		if agg.GetFunc() != seqapi.AggFunc_AGG_FUNC_COUNT || targetBucketRateRaw == "" {
+			aggTargetBucketRates = append(aggTargetBucketRates, 0)
 			continue
 		}
 

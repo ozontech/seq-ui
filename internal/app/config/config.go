@@ -30,12 +30,11 @@ const (
 	minGRPCKeepaliveTime    = 10 * time.Second
 	minGRPCKeepaliveTimeout = 1 * time.Second
 
-	defaultMaxSearchTotalLimit           = 1000000
-	defaultMaxSearchOffsetLimit          = 1000000
-	defaultMaxAggregationsPerRequest     = 1
-	defaultMaxBucketsPerAggregationTs    = 200
-	defaultMaxParallelExportRequests     = 1
-	defaultAggregationTsTargetBucketRate = time.Duration(0)
+	defaultMaxSearchTotalLimit        = 1000000
+	defaultMaxSearchOffsetLimit       = 1000000
+	defaultMaxAggregationsPerRequest  = 1
+	defaultMaxBucketsPerAggregationTs = 200
+	defaultMaxParallelExportRequests  = 1
 
 	defaultInmemCacheNumCounters = 10000000
 	defaultInmemCacheMaxCost     = 1000000
@@ -256,21 +255,20 @@ type SeqAPIEnv struct {
 }
 
 type SeqAPIOptions struct {
-	MaxSearchLimit                       int32         `yaml:"max_search_limit"`
-	MaxSearchTotalLimit                  int64         `yaml:"max_search_total_limit"`
-	MaxSearchOffsetLimit                 int32         `yaml:"max_search_offset_limit"`
-	MaxExportLimit                       int32         `yaml:"max_export_limit"`
-	SeqCLIMaxSearchLimit                 int           `yaml:"seq_cli_max_search_limit"`
-	MaxParallelExportRequests            int           `yaml:"max_parallel_export_requests"`
-	MaxAggregationsPerRequest            int           `yaml:"max_aggregations_per_request"`
-	MaxBucketsPerAggregationTs           int           `yaml:"max_buckets_per_aggregation_ts"`
-	EventsCacheTTL                       time.Duration `yaml:"events_cache_ttl"`
-	PinnedFields                         []PinnedField `yaml:"pinned_fields"`
-	LogsLifespanCacheKey                 string        `yaml:"logs_lifespan_cache_key"`
-	LogsLifespanCacheTTL                 time.Duration `yaml:"logs_lifespan_cache_ttl"`
-	FieldsCacheTTL                       time.Duration `yaml:"fields_cache_ttl"`
-	Masking                              *Masking      `yaml:"masking"`
-	DefaultAggregationTsTargetBucketRate time.Duration `yaml:"default_aggregation_ts_target_bucket_rate"`
+	MaxSearchLimit             int32         `yaml:"max_search_limit"`
+	MaxSearchTotalLimit        int64         `yaml:"max_search_total_limit"`
+	MaxSearchOffsetLimit       int32         `yaml:"max_search_offset_limit"`
+	MaxExportLimit             int32         `yaml:"max_export_limit"`
+	SeqCLIMaxSearchLimit       int           `yaml:"seq_cli_max_search_limit"`
+	MaxParallelExportRequests  int           `yaml:"max_parallel_export_requests"`
+	MaxAggregationsPerRequest  int           `yaml:"max_aggregations_per_request"`
+	MaxBucketsPerAggregationTs int           `yaml:"max_buckets_per_aggregation_ts"`
+	EventsCacheTTL             time.Duration `yaml:"events_cache_ttl"`
+	PinnedFields               []PinnedField `yaml:"pinned_fields"`
+	LogsLifespanCacheKey       string        `yaml:"logs_lifespan_cache_key"`
+	LogsLifespanCacheTTL       time.Duration `yaml:"logs_lifespan_cache_ttl"`
+	FieldsCacheTTL             time.Duration `yaml:"fields_cache_ttl"`
+	Masking                    *Masking      `yaml:"masking"`
 }
 
 type Masking struct {
@@ -361,9 +359,6 @@ func FromFile(cfgPath string) (Config, error) {
 	}
 	if cfg.Handlers.SeqAPI.LogsLifespanCacheTTL <= 0 {
 		cfg.Handlers.SeqAPI.LogsLifespanCacheTTL = defaultLogsLifespanCacheTTL
-	}
-	if cfg.Handlers.SeqAPI.DefaultAggregationTsTargetBucketRate < 0 {
-		cfg.Handlers.SeqAPI.DefaultAggregationTsTargetBucketRate = defaultAggregationTsTargetBucketRate
 	}
 
 	if cfg.Server.DB != nil && cfg.Server.DB.UsePreparedStatements == nil {

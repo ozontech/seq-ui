@@ -93,7 +93,7 @@ func (a *API) serveGetAggregationTs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = aggregation_ts.NormalizeBuckets(httpReq.Aggregations, resp.Aggregations, a.config.DefaultAggregationTsTargetBucketRate)
+	err = aggregation_ts.NormalizeBuckets(httpReq.Aggregations, resp.Aggregations)
 	if err != nil {
 		wr.Error(fmt.Errorf("failed to normalize buckets: %w", err), http.StatusBadRequest)
 		return
