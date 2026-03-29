@@ -72,6 +72,10 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 			Key:   "order",
 			Value: attribute.StringValue(string(httpReq.Order)),
 		},
+		{
+			Key:   "offset_id",
+			Value: attribute.StringValue(httpReq.OffsetID),
+		},
 	}
 
 	if env != "" {
@@ -108,9 +112,11 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
-	if err := api_error.CheckSearchOffsetLimit(httpReq.Offset, params.options.MaxSearchOffsetLimit); err != nil {
-		wr.Error(err, http.StatusBadRequest)
-		return
+	if httpReq.OffsetID == "" {
+		if err := api_error.CheckSearchOffsetLimit(httpReq.Offset, params.options.MaxSearchOffsetLimit); err != nil {
+			wr.Error(err, http.StatusBadRequest)
+			return
+		}
 	}
 
 	resp, err := params.client.Search(ctx, httpReq.toProto())
@@ -163,7 +169,8 @@ type searchRequest struct {
 	Histogram    struct {
 		Interval string `json:"interval"`
 	} `json:"histogram"`
-	Order order `json:"order" default:"desc"`
+	Order    order  `json:"order" default:"desc"`
+	OffsetID string `json:"offset_id"`
 } //	@name	seqapi.v1.SearchRequest
 
 func (r searchRequest) toProto() *seqapi.SearchRequest {
@@ -172,10 +179,14 @@ func (r searchRequest) toProto() *seqapi.SearchRequest {
 		From:         timestamppb.New(r.From),
 		To:           timestamppb.New(r.To),
 		Limit:        r.Limit,
-		Offset:       r.Offset,
 		WithTotal:    r.WithTotal,
 		Aggregations: r.Aggregations.toProto(),
 		Order:        r.Order.toProto(),
+	}
+	if r.OffsetID == "" {
+		req.Offset = r.Offset
+	} else {
+		req.OffsetId = r.OffsetID
 	}
 	if r.Histogram.Interval != "" {
 		req.Histogram = &seqapi.SearchRequest_Histogram{

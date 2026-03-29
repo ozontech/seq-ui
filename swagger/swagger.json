@@ -2853,6 +2853,9 @@
                     "type": "integer",
                     "format": "int32"
                 },
+                "offset_id": {
+                    "type": "string"
+                },
                 "order": {
                     "default": "desc",
                     "allOf": [
