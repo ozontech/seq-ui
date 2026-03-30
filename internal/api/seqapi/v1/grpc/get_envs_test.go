@@ -62,7 +62,7 @@ func TestGetEnvs(t *testing.T) {
 							SeqCLIMaxSearchLimit:      15000,
 						},
 					},
-					"z22": {
+					"cluster-10": {
 						Options: &config.SeqAPIOptions{
 							MaxSearchLimit:            150,
 							MaxExportLimit:            250,
@@ -71,7 +71,7 @@ func TestGetEnvs(t *testing.T) {
 							SeqCLIMaxSearchLimit:      15000,
 						},
 					},
-					"z132": {
+					"cluster-102": {
 						Options: &config.SeqAPIOptions{
 							MaxSearchLimit:            100,
 							MaxExportLimit:            200,
@@ -80,7 +80,7 @@ func TestGetEnvs(t *testing.T) {
 							SeqCLIMaxSearchLimit:      10000,
 						},
 					},
-					"z221": {
+					"cluster-220": {
 						Options: &config.SeqAPIOptions{
 							MaxSearchLimit:            100,
 							MaxExportLimit:            200,
@@ -95,6 +95,30 @@ func TestGetEnvs(t *testing.T) {
 			want: &seqapi.GetEnvsResponse{
 				Envs: []*seqapi.GetEnvsResponse_Env{
 					{
+						Env:                       "cluster-10",
+						MaxSearchLimit:            150,
+						MaxExportLimit:            250,
+						MaxParallelExportRequests: 3,
+						MaxAggregationsPerRequest: 6,
+						SeqCliMaxSearchLimit:      15000,
+					},
+					{
+						Env:                       "cluster-102",
+						MaxSearchLimit:            100,
+						MaxExportLimit:            200,
+						MaxParallelExportRequests: 2,
+						MaxAggregationsPerRequest: 5,
+						SeqCliMaxSearchLimit:      10000,
+					},
+					{
+						Env:                       "cluster-220",
+						MaxSearchLimit:            100,
+						MaxExportLimit:            200,
+						MaxParallelExportRequests: 2,
+						MaxAggregationsPerRequest: 5,
+						SeqCliMaxSearchLimit:      10000,
+					},
+					{
 						Env:                       "prod",
 						MaxSearchLimit:            150,
 						MaxExportLimit:            250,
@@ -104,30 +128,6 @@ func TestGetEnvs(t *testing.T) {
 					},
 					{
 						Env:                       "test",
-						MaxSearchLimit:            100,
-						MaxExportLimit:            200,
-						MaxParallelExportRequests: 2,
-						MaxAggregationsPerRequest: 5,
-						SeqCliMaxSearchLimit:      10000,
-					},
-					{
-						Env:                       "z22",
-						MaxSearchLimit:            150,
-						MaxExportLimit:            250,
-						MaxParallelExportRequests: 3,
-						MaxAggregationsPerRequest: 6,
-						SeqCliMaxSearchLimit:      15000,
-					},
-					{
-						Env:                       "z132",
-						MaxSearchLimit:            100,
-						MaxExportLimit:            200,
-						MaxParallelExportRequests: 2,
-						MaxAggregationsPerRequest: 5,
-						SeqCliMaxSearchLimit:      10000,
-					},
-					{
-						Env:                       "z221",
 						MaxSearchLimit:            100,
 						MaxExportLimit:            200,
 						MaxParallelExportRequests: 2,
