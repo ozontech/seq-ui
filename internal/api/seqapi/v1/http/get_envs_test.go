@@ -44,7 +44,17 @@ func TestServeGetEnvs(t *testing.T) {
 			cfg: config.SeqAPI{
 				SeqAPIOptions: &config.SeqAPIOptions{},
 				Envs: map[string]config.SeqAPIEnv{
-					"prod": {
+					"z221": {
+						SeqDB: "pro-seqdb",
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit:            1000,
+							MaxExportLimit:            500,
+							MaxParallelExportRequests: 10,
+							MaxAggregationsPerRequest: 5,
+							SeqCLIMaxSearchLimit:      2000,
+						},
+					},
+					"z22": {
 						SeqDB: "prod-seqdb",
 						Options: &config.SeqAPIOptions{
 							MaxSearchLimit:            1000,
@@ -54,7 +64,7 @@ func TestServeGetEnvs(t *testing.T) {
 							SeqCLIMaxSearchLimit:      2000,
 						},
 					},
-					"staging": {
+					"z132": {
 						SeqDB: "staging-seqdb",
 						Options: &config.SeqAPIOptions{
 							MaxSearchLimit:            500,
@@ -64,12 +74,48 @@ func TestServeGetEnvs(t *testing.T) {
 							SeqCLIMaxSearchLimit:      1000,
 						},
 					},
+					"prod": {
+						SeqDB: "stag-seqdb",
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit:            500,
+							MaxExportLimit:            250,
+							MaxParallelExportRequests: 5,
+							MaxAggregationsPerRequest: 3,
+							SeqCLIMaxSearchLimit:      1000,
+						},
+					},
+					"wyanki": {
+						SeqDB: "sta-seqdb",
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit:            500,
+							MaxExportLimit:            250,
+							MaxParallelExportRequests: 5,
+							MaxAggregationsPerRequest: 3,
+							SeqCLIMaxSearchLimit:      1000,
+						},
+					},
 				},
-				DefaultEnv: "prod",
+				DefaultEnv: "z22",
 			},
 			wantEnvs: []envInfo{
 				{
 					Env:                       "prod",
+					MaxSearchLimit:            500,
+					MaxExportLimit:            250,
+					MaxParallelExportRequests: 5,
+					MaxAggregationsPerRequest: 3,
+					SeqCliMaxSearchLimit:      1000,
+				},
+				{
+					Env:                       "wyanki",
+					MaxSearchLimit:            500,
+					MaxExportLimit:            250,
+					MaxParallelExportRequests: 5,
+					MaxAggregationsPerRequest: 3,
+					SeqCliMaxSearchLimit:      1000,
+				},
+				{
+					Env:                       "z22",
 					MaxSearchLimit:            1000,
 					MaxExportLimit:            500,
 					MaxParallelExportRequests: 10,
@@ -77,12 +123,20 @@ func TestServeGetEnvs(t *testing.T) {
 					SeqCliMaxSearchLimit:      2000,
 				},
 				{
-					Env:                       "staging",
+					Env:                       "z132",
 					MaxSearchLimit:            500,
 					MaxExportLimit:            250,
 					MaxParallelExportRequests: 5,
 					MaxAggregationsPerRequest: 3,
 					SeqCliMaxSearchLimit:      1000,
+				},
+				{
+					Env:                       "z221",
+					MaxSearchLimit:            1000,
+					MaxExportLimit:            500,
+					MaxParallelExportRequests: 10,
+					MaxAggregationsPerRequest: 5,
+					SeqCliMaxSearchLimit:      2000,
 				},
 			},
 		},
