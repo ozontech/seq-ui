@@ -276,20 +276,16 @@ func (p *proxyGetHistResp) toProto() *seqapi.GetHistogramResponse {
 }
 
 func newProxySearchReq(req *seqapi.SearchRequest) *seqproxyapi.ComplexSearchRequest {
-	proxyReq := &seqproxyapi.ComplexSearchRequest{
+	return &seqproxyapi.ComplexSearchRequest{
 		Query:     newProxySearchQuery(req),
 		Hist:      newProxyHistQuery(req.Histogram),
 		Aggs:      newProxyAggQuerySlice(req.Aggregations),
 		Size:      int64(req.Limit),
+		Offset:    int64(req.Offset),
+		OffsetId:  req.OffsetId,
 		WithTotal: req.WithTotal,
 		Order:     seqproxyapi.Order(req.Order),
 	}
-	if req.OffsetId == "" {
-		proxyReq.Offset = int64(req.Offset)
-	} else {
-		proxyReq.OffsetId = req.OffsetId
-	}
-	return proxyReq
 }
 
 type proxySearchResp seqproxyapi.ComplexSearchResponse

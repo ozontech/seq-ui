@@ -86,10 +86,8 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 	if err := api_error.CheckAggregationsCount(len(req.Aggregations), params.options.MaxAggregationsPerRequest); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if req.GetOffsetId() == "" {
-		if err := api_error.CheckSearchOffsetLimit(req.Offset, params.options.MaxSearchOffsetLimit); err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
+	if err := api_error.CheckSearchOffsetLimit(req.Offset, params.options.MaxSearchOffsetLimit); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	fromRaw, toRaw := req.From.AsTime(), req.To.AsTime()
 	for _, agg := range req.Aggregations {
