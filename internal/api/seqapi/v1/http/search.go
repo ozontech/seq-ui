@@ -116,6 +116,10 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
+	if err := api_error.CheckForOffsetConflict(httpReq.Offset, httpReq.OffsetID); err != nil {
+		wr.Error(err, http.StatusBadRequest)
+		return
+	}
 
 	resp, err := params.client.Search(ctx, httpReq.toProto())
 	if err != nil {
