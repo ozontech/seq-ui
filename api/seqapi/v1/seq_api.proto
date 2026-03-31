@@ -125,6 +125,7 @@ message SearchRequest {
   bool with_total = 7;
   repeated AggregationQuery aggregations = 8;
   Order order = 9;
+  string offset_id = 10;
 }
 
 message SearchResponse {
