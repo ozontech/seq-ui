@@ -9,6 +9,7 @@ import (
 var (
 	ErrQueryTooHeavy  = errors.New("query too heavy, try decreasing date range or make search query more precise")
 	ErrTooManyBuckets = errors.New("aggregation has too many buckets, try decreasing interval")
+	ErrOffsetConflict = errors.New(`only one of "offset" and "offset_id" must be provided`)
 )
 
 func CheckSearchLimit(limit, maximum int32) error {
@@ -21,6 +22,13 @@ func CheckSearchLimit(limit, maximum int32) error {
 func CheckSearchOffsetLimit(offset, maximum int32) error {
 	if offset > maximum {
 		return ErrQueryTooHeavy
+	}
+	return nil
+}
+
+func CheckForOffsetConflict(offset int32, offsetID string) error {
+	if offset != 0 && offsetID != "" {
+		return ErrOffsetConflict
 	}
 	return nil
 }
