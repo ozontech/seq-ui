@@ -72,6 +72,10 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 			Key:   "order",
 			Value: attribute.StringValue(string(httpReq.Order)),
 		},
+		{
+			Key:   "offset_id",
+			Value: attribute.StringValue(httpReq.OffsetID),
+		},
 	}
 
 	if env != "" {
@@ -105,6 +109,10 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), params.options.MaxAggregationsPerRequest); err != nil {
+		wr.Error(err, http.StatusBadRequest)
+		return
+	}
+	if err := api_error.CheckForOffsetConflict(httpReq.Offset, httpReq.OffsetID); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
@@ -163,7 +171,8 @@ type searchRequest struct {
 	Histogram    struct {
 		Interval string `json:"interval"`
 	} `json:"histogram"`
-	Order order `json:"order" default:"desc"`
+	Order    order  `json:"order" default:"desc"`
+	OffsetID string `json:"offset_id"`
 } //	@name	seqapi.v1.SearchRequest
 
 func (r searchRequest) toProto() *seqapi.SearchRequest {
@@ -173,6 +182,7 @@ func (r searchRequest) toProto() *seqapi.SearchRequest {
 		To:           timestamppb.New(r.To),
 		Limit:        r.Limit,
 		Offset:       r.Offset,
+		OffsetId:     r.OffsetID,
 		WithTotal:    r.WithTotal,
 		Aggregations: r.Aggregations.toProto(),
 		Order:        r.Order.toProto(),
