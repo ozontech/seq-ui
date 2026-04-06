@@ -11,6 +11,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/app/types"
+	"github.com/ozontech/seq-ui/metric"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 )
@@ -111,6 +112,8 @@ func (r getAsyncSearchesListRequest) toProto() (*seqapi.GetAsyncSearchesListRequ
 	}, nil
 }
 
+const asyncSearchListQueryLimit = 1000
+
 type getAsyncSearchesListResponse struct {
 	Searches []asyncSearchesListItem `json:"searches"`
 	Error    apiError                `json:"error"`
@@ -142,7 +145,7 @@ func getAsyncSearchesListResponseFromProto(resp *seqapi.GetAsyncSearchesListResp
 		searches = append(searches, asyncSearchesListItem{
 			SearchID:   s.SearchId,
 			Status:     asyncSearchStatusFromProto(s.Status),
-			Request:    startAsyncSearchRequestFromProto(s.Request),
+			Request:    startAsyncSearchListRequestFromProto(s.Request),
 			StartedAt:  s.StartedAt.AsTime(),
 			ExpiresAt:  s.ExpiresAt.AsTime(),
 			CanceledAt: canceledAt,
@@ -157,6 +160,15 @@ func getAsyncSearchesListResponseFromProto(resp *seqapi.GetAsyncSearchesListResp
 		Searches: searches,
 		Error:    apiErrorFromProto(resp.GetError()),
 	}
+}
+
+func startAsyncSearchListRequestFromProto(r *seqapi.StartAsyncSearchRequest) startAsyncSearchRequest {
+	req := startAsyncSearchRequestFromProto(r)
+	if trimmedQuery, ok := trimQueryToLimit(req.Query); ok {
+		metric.ServerRequestQueryTooLong.Inc()
+		req.Query = trimmedQuery
+	}
+	return req
 }
 
 func startAsyncSearchRequestFromProto(r *seqapi.StartAsyncSearchRequest) startAsyncSearchRequest {
@@ -198,4 +210,15 @@ func aggregationTsQueriesFromProto(aggs []*seqapi.AggregationQuery) aggregationT
 	}
 
 	return result
+}
+
+func trimQueryToLimit(query string) (string, bool) {
+	count := 0
+	for i := range query {
+		if count == asyncSearchListQueryLimit {
+			return query[:i], true
+		}
+		count++
+	}
+	return query, false
 }

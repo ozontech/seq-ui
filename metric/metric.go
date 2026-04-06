@@ -93,6 +93,12 @@ var (
 		Name:      "cache_redis_misses_total",
 		Help:      "",
 	})
+	ServerRequestQueryTooLong = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: seqUINS,
+		Subsystem: serverSubsys,
+		Name:      "requests_query_too_long_total",
+		Help:      "",
+	})
 	// client metrics
 	SeqDBClientRequestSent = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: seqUINS,
