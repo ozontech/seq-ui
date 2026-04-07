@@ -506,6 +506,7 @@ handlers:
   seq_api:
   error_groups:
   mass_export:
+  async_search:
 ```
 
 ### SeqAPI
