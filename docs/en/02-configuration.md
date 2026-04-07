@@ -822,7 +822,6 @@ Configuration for async request.
 
   Maximum length of `request.query` in async searches list responses.
 
-
 ## Tracing
 
 The tracing configuration is set through environment variables.
