@@ -32,6 +32,7 @@ const (
 
 	defaultMaxSearchTotalLimit        = 1000000
 	defaultMaxSearchOffsetLimit       = 1000000
+	defaultAsyncSearchListQueryLimit  = 1000
 	defaultMaxAggregationsPerRequest  = 1
 	defaultMaxBucketsPerAggregationTs = 200
 	defaultMaxParallelExportRequests  = 1
@@ -259,6 +260,7 @@ type SeqAPIOptions struct {
 	MaxSearchTotalLimit        int64         `yaml:"max_search_total_limit"`
 	MaxSearchOffsetLimit       int32         `yaml:"max_search_offset_limit"`
 	MaxExportLimit             int32         `yaml:"max_export_limit"`
+	AsyncSearchListQueryLimit  int           `yaml:"async_search_list_query_limit"`
 	SeqCLIMaxSearchLimit       int           `yaml:"seq_cli_max_search_limit"`
 	MaxParallelExportRequests  int           `yaml:"max_parallel_export_requests"`
 	MaxAggregationsPerRequest  int           `yaml:"max_aggregations_per_request"`
@@ -350,6 +352,9 @@ func FromFile(cfgPath string) (Config, error) {
 	}
 	if cfg.Handlers.SeqAPI.MaxSearchOffsetLimit <= 0 {
 		cfg.Handlers.SeqAPI.MaxSearchOffsetLimit = defaultMaxSearchOffsetLimit
+	}
+	if cfg.Handlers.SeqAPI.AsyncSearchListQueryLimit <= 0 {
+		cfg.Handlers.SeqAPI.AsyncSearchListQueryLimit = defaultAsyncSearchListQueryLimit
 	}
 	if cfg.Handlers.SeqAPI.EventsCacheTTL <= 0 {
 		cfg.Handlers.SeqAPI.EventsCacheTTL = defaultEventsCacheTTL

@@ -84,7 +84,7 @@ func (a *API) serveGetAsyncSearchesList(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	wr.WriteJson(getAsyncSearchesListResponseFromProto(resp))
+	wr.WriteJson(getAsyncSearchesListResponseFromProto(resp, a.config.AsyncSearchListQueryLimit))
 }
 
 type getAsyncSearchesListRequest struct {
@@ -112,8 +112,6 @@ func (r getAsyncSearchesListRequest) toProto() (*seqapi.GetAsyncSearchesListRequ
 	}, nil
 }
 
-const asyncSearchListQueryLimit = 1000
-
 type getAsyncSearchesListResponse struct {
 	Searches []asyncSearchesListItem `json:"searches"`
 	Error    apiError                `json:"error"`
@@ -132,7 +130,7 @@ type asyncSearchesListItem struct {
 	Error      *string                 `json:"error,omitempty"`
 } //	@name	seqapi.v1.AsyncSearchesListItem
 
-func getAsyncSearchesListResponseFromProto(resp *seqapi.GetAsyncSearchesListResponse) getAsyncSearchesListResponse {
+func getAsyncSearchesListResponseFromProto(resp *seqapi.GetAsyncSearchesListResponse, asyncSearchListQueryLimit int) getAsyncSearchesListResponse {
 	searches := make([]asyncSearchesListItem, 0, len(resp.Searches))
 
 	for _, s := range resp.Searches {
@@ -145,7 +143,7 @@ func getAsyncSearchesListResponseFromProto(resp *seqapi.GetAsyncSearchesListResp
 		searches = append(searches, asyncSearchesListItem{
 			SearchID:   s.SearchId,
 			Status:     asyncSearchStatusFromProto(s.Status),
-			Request:    startAsyncSearchListRequestFromProto(s.Request),
+			Request:    startAsyncSearchListRequestFromProto(s.Request, asyncSearchListQueryLimit),
 			StartedAt:  s.StartedAt.AsTime(),
 			ExpiresAt:  s.ExpiresAt.AsTime(),
 			CanceledAt: canceledAt,
@@ -162,11 +160,11 @@ func getAsyncSearchesListResponseFromProto(resp *seqapi.GetAsyncSearchesListResp
 	}
 }
 
-func startAsyncSearchListRequestFromProto(r *seqapi.StartAsyncSearchRequest) startAsyncSearchRequest {
+func startAsyncSearchListRequestFromProto(r *seqapi.StartAsyncSearchRequest, queryLimit int) startAsyncSearchRequest {
 	req := startAsyncSearchRequestFromProto(r)
-	if trimmedQuery, ok := trimQueryToLimit(req.Query); ok {
-		metric.ServerRequestQueryTooLong.Inc()
-		req.Query = trimmedQuery
+	if trimmedQuery, ok := trimQueryToLimit(req.Query, queryLimit); ok {
+		metric.AsyncSearchQueryTooLong.Inc()
+		req.Query = trimmedQuery + "..."
 	}
 	return req
 }
@@ -212,10 +210,10 @@ func aggregationTsQueriesFromProto(aggs []*seqapi.AggregationQuery) aggregationT
 	return result
 }
 
-func trimQueryToLimit(query string) (string, bool) {
+func trimQueryToLimit(query string, limit int) (string, bool) {
 	count := 0
 	for i := range query {
-		if count == asyncSearchListQueryLimit {
+		if count == limit {
 			return query[:i], true
 		}
 		count++

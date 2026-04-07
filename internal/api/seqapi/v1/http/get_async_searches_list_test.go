@@ -13,6 +13,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
+	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
 	mock_repo "github.com/ozontech/seq-ui/internal/pkg/repository/mock"
@@ -48,6 +49,7 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 		name string
 
 		reqBody      string
+		cfg          config.SeqAPI
 		wantRespBody string
 		wantStatus   int
 
@@ -241,6 +243,11 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 		{
 			name:    "query_too_long",
 			reqBody: "{}",
+			cfg: config.SeqAPI{
+				SeqAPIOptions: &config.SeqAPIOptions{
+					AsyncSearchListQueryLimit: 1000,
+				},
+			},
 			mockArgs: &mockArgs{
 				proxyReq: &seqapi.GetAsyncSearchesListRequest{},
 				proxyResp: &seqapi.GetAsyncSearchesListResponse{
@@ -278,7 +285,7 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 				},
 				searchIDs: []string{mockSearchID1},
 			},
-			wantRespBody: `{"searches":[{"search_id":"c9a34cf8-4c66-484e-9cc2-42979d848656","status":"done","request":{"retention":"seconds:60","query":"` + TruncatedQuery + `","from":"2025-08-06T17:37:12.000000123Z","to":"2025-08-06T17:52:12.000000123Z","with_docs":true,"size":100},"started_at":"2025-08-06T17:51:42.000000123Z","expires_at":"2025-08-06T17:52:42.000000123Z","progress":1,"disk_usage":"512","owner_name":"some_user_1"}],"error":{"code":"ERROR_CODE_PARTIAL_RESPONSE","message":"partial response"}}`,
+			wantRespBody: `{"searches":[{"search_id":"c9a34cf8-4c66-484e-9cc2-42979d848656","status":"done","request":{"retention":"seconds:60","query":"` + TruncatedQuery + `...","from":"2025-08-06T17:37:12.000000123Z","to":"2025-08-06T17:52:12.000000123Z","with_docs":true,"size":100},"started_at":"2025-08-06T17:51:42.000000123Z","expires_at":"2025-08-06T17:52:42.000000123Z","progress":1,"disk_usage":"512","owner_name":"some_user_1"}],"error":{"code":"ERROR_CODE_PARTIAL_RESPONSE","message":"partial response"}}`,
 			wantStatus:   http.StatusOK,
 		},
 	}
@@ -286,7 +293,13 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			seqData := test.APITestData{}
+			seqData := test.APITestData{
+				Cfg: config.SeqAPI{
+					SeqAPIOptions: &config.SeqAPIOptions{
+						AsyncSearchListQueryLimit: 1000,
+					},
+				},
+			}
 
 			if tt.mockArgs != nil {
 				ctrl := gomock.NewController(t)

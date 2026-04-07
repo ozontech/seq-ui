@@ -17,6 +17,7 @@ const (
 	repoSubsys        = "repository"
 	clickHouseSubsys  = "clickhouse"
 	massExportSubsys  = "mass_export"
+	asyncSearchSubsys = "async_search"
 
 	componentLabel  = "component"
 	methodLabel     = "method"
@@ -91,12 +92,6 @@ var (
 		Namespace: seqUINS,
 		Subsystem: serverSubsys,
 		Name:      "cache_redis_misses_total",
-		Help:      "",
-	})
-	ServerRequestQueryTooLong = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: seqUINS,
-		Subsystem: serverSubsys,
-		Name:      "requests_query_too_long_total",
 		Help:      "",
 	})
 	// client metrics
@@ -215,6 +210,14 @@ var (
 		Help:      "",
 		Buckets:   defaultBuckets,
 	}, []string{sessionIDLabel})
+
+	// async search metrics
+	AsyncSearchQueryTooLong = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: seqUINS,
+		Subsystem: asyncSearchSubsys,
+		Name:      "requests_query_too_long_total",
+		Help:      "",
+	})
 )
 
 // HandledIncomingRequest handles metrics for processed incoming request.

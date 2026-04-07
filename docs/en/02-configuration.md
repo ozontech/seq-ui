@@ -532,6 +532,10 @@ Config for `/seqapi` API handlers.
 
   Max value for `limit` field in export requests.
 
++ **`async_search_list_query_limit`** *`int`* *`default=1000`*
+
+  Maximum length of `request.query` in async searches list responses.
+
 + **`seq_cli_max_search_limit`** *`int`* *`default=0`*
 
   The maximum number of logs that can be processed by seq-cli in one search command run.
