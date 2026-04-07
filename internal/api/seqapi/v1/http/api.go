@@ -32,7 +32,7 @@ type apiParams struct {
 }
 
 type API struct {
-	config              config.SeqAPI
+	config              config.Handlers
 	params              apiParams
 	paramsByEnv         map[string]apiParams
 	inmemWithRedisCache cache.Cache
@@ -44,7 +44,7 @@ type API struct {
 }
 
 func New(
-	cfg config.SeqAPI,
+	cfg config.Handlers,
 	seqDBСlients map[string]seqdb.Client,
 	inmemWithRedisCache cache.Cache,
 	redisCache cache.Cache,
@@ -52,24 +52,24 @@ func New(
 	p *profiles.Profiles,
 ) *API {
 	var globalfCache *fieldsCache
-	if cfg.FieldsCacheTTL > 0 {
-		globalfCache = newFieldsCache(cfg.FieldsCacheTTL)
+	if cfg.SeqAPI.FieldsCacheTTL > 0 {
+		globalfCache = newFieldsCache(cfg.SeqAPI.FieldsCacheTTL)
 	}
 
-	globalMasker, err := mask.New(cfg.Masking)
+	globalMasker, err := mask.New(cfg.SeqAPI.Masking)
 	if err != nil {
 		logger.Fatal("failed to init masking", zap.Error(err))
 	}
 
-	globalPinnedFields := parsePinnedFields(cfg.PinnedFields)
-	globalExportLimiter := tokenlimiter.New(cfg.MaxParallelExportRequests)
+	globalPinnedFields := parsePinnedFields(cfg.SeqAPI.PinnedFields)
+	globalExportLimiter := tokenlimiter.New(cfg.SeqAPI.MaxParallelExportRequests)
 
 	var params apiParams
 	var paramsByEnv map[string]apiParams
 
-	if len(cfg.Envs) > 0 {
+	if len(cfg.SeqAPI.Envs) > 0 {
 		paramsByEnv = make(map[string]apiParams)
-		for envName, envConfig := range cfg.Envs {
+		for envName, envConfig := range cfg.SeqAPI.Envs {
 			client := seqDBСlients[envConfig.SeqDB]
 			options := envConfig.Options
 
@@ -104,7 +104,7 @@ func New(
 
 		params = apiParams{
 			client:        client,
-			options:       cfg.SeqAPIOptions,
+			options:       cfg.SeqAPI.SeqAPIOptions,
 			fieldsCache:   globalfCache,
 			masker:        globalMasker,
 			pinnedFields:  globalPinnedFields,
@@ -112,7 +112,7 @@ func New(
 		}
 	}
 	// for export
-	if len(cfg.Envs) > 0 {
+	if len(cfg.SeqAPI.Envs) > 0 {
 		for _, param := range paramsByEnv {
 			if param.masker != nil {
 				param.client.WithMasking(param.masker)
@@ -131,7 +131,7 @@ func New(
 		nowFn:               time.Now,
 		asyncSearches:       asyncSearches,
 		profiles:            p,
-		envsResponse:        parseEnvs(cfg),
+		envsResponse:        parseEnvs(cfg.SeqAPI),
 	}
 }
 
@@ -234,12 +234,12 @@ const (
 )
 
 func (a *API) GetEnvParams(env string) (apiParams, error) {
-	if len(a.config.Envs) == 0 {
+	if len(a.config.SeqAPI.Envs) == 0 {
 		return a.params, nil
 	}
 
 	if env == "" {
-		env = a.config.DefaultEnv
+		env = a.config.SeqAPI.DefaultEnv
 	}
 
 	params, exists := a.paramsByEnv[env]

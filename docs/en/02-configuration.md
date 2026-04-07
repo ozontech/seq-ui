@@ -532,10 +532,6 @@ Config for `/seqapi` API handlers.
 
   Max value for `limit` field in export requests.
 
-+ **`async_search_list_query_limit`** *`int`* *`default=1000`*
-
-  Maximum length of `request.query` in async searches list responses.
-
 + **`seq_cli_max_search_limit`** *`int`* *`default=0`*
 
   The maximum number of logs that can be processed by seq-cli in one search command run.
@@ -809,6 +805,23 @@ Config for `/massexport` API handlers.
   Max retry backoff if previous query was rate-limited. If it's less than `initial_retry_backoff`, then `initial_retry_backoff` value will be reset to `max_retry_backoff`
 
   > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+
+### Async Search
+
+Configuration for async request.
+
+**`async_search`** *`AsyncSearch`* *`optional`*
+
+Поля `AsyncSearch`:
+
++ **`admin_users`** *`[]string`* *`optional`*
+
+  List of users allowed to cancel or delete async requests created by other users.
+
++ **`query_length_limit`** *`int`* *`default=1000`*
+
+  Maximum length of `request.query` in async searches list responses.
+
 
 ## Tracing
 

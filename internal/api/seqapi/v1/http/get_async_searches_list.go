@@ -11,7 +11,6 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/app/types"
-	"github.com/ozontech/seq-ui/metric"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 )
@@ -84,7 +83,7 @@ func (a *API) serveGetAsyncSearchesList(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	wr.WriteJson(getAsyncSearchesListResponseFromProto(resp, a.config.AsyncSearchListQueryLimit))
+	wr.WriteJson(getAsyncSearchesListResponseFromProto(resp, a.config.AsyncSearch.QueryLengthLimit))
 }
 
 type getAsyncSearchesListRequest struct {
@@ -163,7 +162,6 @@ func getAsyncSearchesListResponseFromProto(resp *seqapi.GetAsyncSearchesListResp
 func startAsyncSearchListRequestFromProto(r *seqapi.StartAsyncSearchRequest, queryLimit int) startAsyncSearchRequest {
 	req := startAsyncSearchRequestFromProto(r)
 	if trimmedQuery, ok := trimQueryToLimit(req.Query, queryLimit); ok {
-		metric.AsyncSearchQueryTooLong.Inc()
 		req.Query = trimmedQuery + "..."
 	}
 	return req

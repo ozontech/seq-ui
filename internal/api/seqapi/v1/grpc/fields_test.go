@@ -106,9 +106,11 @@ func TestGetFieldsCached(t *testing.T) {
 	const ttl = 20 * time.Millisecond
 
 	seqData := test.APITestData{
-		Cfg: config.SeqAPI{
-			SeqAPIOptions: &config.SeqAPIOptions{
-				FieldsCacheTTL: ttl,
+		Cfg: config.Handlers{
+			SeqAPI: config.SeqAPI{
+				SeqAPIOptions: &config.SeqAPIOptions{
+					FieldsCacheTTL: ttl,
+				},
 			},
 		},
 		Mocks: test.Mocks{
@@ -154,9 +156,11 @@ func TestGetPinnedFields(t *testing.T) {
 			t.Parallel()
 
 			seqData := test.APITestData{
-				Cfg: config.SeqAPI{
-					SeqAPIOptions: &config.SeqAPIOptions{
-						PinnedFields: tt.fields,
+				Cfg: config.Handlers{
+					SeqAPI: config.SeqAPI{
+						SeqAPIOptions: &config.SeqAPIOptions{
+							PinnedFields: tt.fields,
+						},
 					},
 				},
 			}

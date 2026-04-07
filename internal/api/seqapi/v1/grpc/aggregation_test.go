@@ -30,7 +30,7 @@ func TestGetAggregation(t *testing.T) {
 		apiErr    bool
 		clientErr error
 
-		cfg config.SeqAPI
+		cfg config.Handlers
 	}{
 		{
 			name: "ok_single_agg",
@@ -47,9 +47,11 @@ func TestGetAggregation(t *testing.T) {
 					Code: seqapi.ErrorCode_ERROR_CODE_NO,
 				},
 			},
-			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
-					MaxAggregationsPerRequest: 4,
+			cfg: config.Handlers{
+				SeqAPI: config.SeqAPI{
+					SeqAPIOptions: &config.SeqAPIOptions{
+						MaxAggregationsPerRequest: 4,
+					},
 				},
 			},
 		},
@@ -71,9 +73,11 @@ func TestGetAggregation(t *testing.T) {
 					Code: seqapi.ErrorCode_ERROR_CODE_NO,
 				},
 			},
-			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
-					MaxAggregationsPerRequest: 3,
+			cfg: config.Handlers{
+				SeqAPI: config.SeqAPI{
+					SeqAPIOptions: &config.SeqAPIOptions{
+						MaxAggregationsPerRequest: 3,
+					},
 				},
 			},
 		},
@@ -86,9 +90,11 @@ func TestGetAggregation(t *testing.T) {
 					{Field: "test3"},
 				},
 			},
-			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
-					MaxAggregationsPerRequest: 2,
+			cfg: config.Handlers{
+				SeqAPI: config.SeqAPI{
+					SeqAPIOptions: &config.SeqAPIOptions{
+						MaxAggregationsPerRequest: 2,
+					},
 				},
 			},
 			apiErr: true,
@@ -101,9 +107,11 @@ func TestGetAggregation(t *testing.T) {
 				To:       timestamppb.New(to),
 				AggField: "test2",
 			},
-			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
-					MaxAggregationsPerRequest: 1,
+			cfg: config.Handlers{
+				SeqAPI: config.SeqAPI{
+					SeqAPIOptions: &config.SeqAPIOptions{
+						MaxAggregationsPerRequest: 1,
+					},
 				},
 			},
 			clientErr: errors.New("client error"),

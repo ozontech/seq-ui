@@ -506,6 +506,7 @@ handlers:
   seq_api:
   error_groups:
   mass_export:
+  async_search:
 ```
 
 ### SeqAPI
@@ -531,10 +532,6 @@ handlers:
 + **`max_export_limit`** *`int`* *`default=0`*
 
   Максимальное значение для поля `limit` в запросах на экспорт.
-
-+ **`async_search_list_query_limit`** *`int`* *`default=1000`*
-
-  Максимальная длина `request.query` в ответе списка отложенных запросов.
 
 + **`seq_cli_max_search_limit`** *`int`* *`default=0`*
 
@@ -809,6 +806,22 @@ handlers:
   Максимальная задержка между повторными попытками. Если значение меньше, чем `initial_retry_backoff`, то значение `initial_retry_backoff` будет сброшено на `max_retry_backoff`
 
   > Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
+
+### Async Search
+
+**`async_search`** *`AsyncSearch`* *`optional`*
+
+Настройка функциональности отложенных запросов.
+
+Поля `AsyncSearch`:
+
++ **`admin_users`** *`[]string`* *`optional`*
+
+  Список пользователей, которые могут отменять или удалять отложенные поиски других пользователей.
+
++ **`query_length_limit`** *`int`* *`default=1000`*
+
+  Максимальная длина `request.query` в ответе списка отложенных запросов.
 
 ## Tracing
 

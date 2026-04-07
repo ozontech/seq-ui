@@ -27,7 +27,7 @@ type Mocks struct {
 }
 
 type APITestData struct {
-	Cfg   config.SeqAPI
+	Cfg   config.Handlers
 	Mocks Mocks
 }
 
@@ -103,24 +103,24 @@ func MakeAggregations(aggCount, bucketCount int, opts *MakeAggOpts) []*seqapi.Ag
 	return aggs
 }
 
-func SetCfgDefaults(cfg config.SeqAPI) config.SeqAPI {
-	if cfg.MaxAggregationsPerRequest <= 0 {
-		cfg.MaxAggregationsPerRequest = 1
+func SetCfgDefaults(cfg config.Handlers) config.Handlers {
+	if cfg.SeqAPI.MaxAggregationsPerRequest <= 0 {
+		cfg.SeqAPI.MaxAggregationsPerRequest = 1
 	}
-	if cfg.MaxParallelExportRequests <= 0 {
-		cfg.MaxParallelExportRequests = 1
+	if cfg.SeqAPI.MaxParallelExportRequests <= 0 {
+		cfg.SeqAPI.MaxParallelExportRequests = 1
 	}
-	if cfg.MaxSearchTotalLimit <= 0 {
-		cfg.MaxSearchTotalLimit = 1000000
+	if cfg.SeqAPI.MaxSearchTotalLimit <= 0 {
+		cfg.SeqAPI.MaxSearchTotalLimit = 1000000
 	}
-	if cfg.MaxSearchOffsetLimit <= 0 {
-		cfg.MaxSearchOffsetLimit = 1000000
+	if cfg.SeqAPI.MaxSearchOffsetLimit <= 0 {
+		cfg.SeqAPI.MaxSearchOffsetLimit = 1000000
 	}
 
-	for envName, envConfig := range cfg.Envs {
+	for envName, envConfig := range cfg.SeqAPI.Envs {
 		if envConfig.Options == nil {
-			envConfig.Options = cfg.SeqAPIOptions
-			cfg.Envs[envName] = envConfig
+			envConfig.Options = cfg.SeqAPI.SeqAPIOptions
+			cfg.SeqAPI.Envs[envName] = envConfig
 		}
 	}
 

@@ -30,9 +30,10 @@ const (
 	minGRPCKeepaliveTime    = 10 * time.Second
 	minGRPCKeepaliveTimeout = 1 * time.Second
 
+	defaultAsyncSearchQueryLengthLimit = 1000
+
 	defaultMaxSearchTotalLimit        = 1000000
 	defaultMaxSearchOffsetLimit       = 1000000
-	defaultAsyncSearchListQueryLimit  = 1000
 	defaultMaxAggregationsPerRequest  = 1
 	defaultMaxBucketsPerAggregationTs = 200
 	defaultMaxParallelExportRequests  = 1
@@ -260,7 +261,6 @@ type SeqAPIOptions struct {
 	MaxSearchTotalLimit        int64         `yaml:"max_search_total_limit"`
 	MaxSearchOffsetLimit       int32         `yaml:"max_search_offset_limit"`
 	MaxExportLimit             int32         `yaml:"max_export_limit"`
-	AsyncSearchListQueryLimit  int           `yaml:"async_search_list_query_limit"`
 	SeqCLIMaxSearchLimit       int           `yaml:"seq_cli_max_search_limit"`
 	MaxParallelExportRequests  int           `yaml:"max_parallel_export_requests"`
 	MaxAggregationsPerRequest  int           `yaml:"max_aggregations_per_request"`
@@ -313,7 +313,8 @@ type ErrorGroups struct {
 }
 
 type AsyncSearch struct {
-	AdminUsers []string `yaml:"admin_users"`
+	AdminUsers       []string `yaml:"admin_users"`
+	QueryLengthLimit int      `yaml:"query_length_limit"`
 }
 
 // FromFile parse config from config path.
@@ -338,6 +339,9 @@ func FromFile(cfgPath string) (Config, error) {
 		)
 	}
 
+	if cfg.Handlers == nil {
+		return Config{}, fmt.Errorf("invalid config: handlers must be not nil")
+	}
 	if cfg.Handlers.SeqAPI.MaxAggregationsPerRequest <= 0 {
 		cfg.Handlers.SeqAPI.MaxAggregationsPerRequest = defaultMaxAggregationsPerRequest
 	}
@@ -353,8 +357,8 @@ func FromFile(cfgPath string) (Config, error) {
 	if cfg.Handlers.SeqAPI.MaxSearchOffsetLimit <= 0 {
 		cfg.Handlers.SeqAPI.MaxSearchOffsetLimit = defaultMaxSearchOffsetLimit
 	}
-	if cfg.Handlers.SeqAPI.AsyncSearchListQueryLimit <= 0 {
-		cfg.Handlers.SeqAPI.AsyncSearchListQueryLimit = defaultAsyncSearchListQueryLimit
+	if cfg.Handlers.AsyncSearch.QueryLengthLimit <= 0 {
+		cfg.Handlers.AsyncSearch.QueryLengthLimit = defaultAsyncSearchQueryLengthLimit
 	}
 	if cfg.Handlers.SeqAPI.EventsCacheTTL <= 0 {
 		cfg.Handlers.SeqAPI.EventsCacheTTL = defaultEventsCacheTTL

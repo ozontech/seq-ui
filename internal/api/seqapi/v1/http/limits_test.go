@@ -14,19 +14,21 @@ func TestServeGetLimits(t *testing.T) {
 	tests := []struct {
 		name         string
 		env          string
-		cfg          config.SeqAPI
+		cfg          config.Handlers
 		wantRespBody string
 	}{
 		{
 			name: "ok",
 			env:  "default",
-			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
-					MaxSearchLimit:            100,
-					MaxExportLimit:            200,
-					MaxParallelExportRequests: 2,
-					MaxAggregationsPerRequest: 5,
-					SeqCLIMaxSearchLimit:      10000,
+			cfg: config.Handlers{
+				SeqAPI: config.SeqAPI{
+					SeqAPIOptions: &config.SeqAPIOptions{
+						MaxSearchLimit:            100,
+						MaxExportLimit:            200,
+						MaxParallelExportRequests: 2,
+						MaxAggregationsPerRequest: 5,
+						SeqCLIMaxSearchLimit:      10000,
+					},
 				},
 			},
 			wantRespBody: `{"maxSearchLimit":100,"maxExportLimit":200,"maxParallelExportRequests":2,"maxAggregationsPerRequest":5,"seqCliMaxSearchLimit":10000}`,

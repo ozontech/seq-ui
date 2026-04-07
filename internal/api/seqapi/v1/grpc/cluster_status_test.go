@@ -64,7 +64,7 @@ func TestStatus(t *testing.T) {
 			seqDbMock.EXPECT().Status(gomock.Any(), nil).
 				Return(proto.Clone(tt.resp), tt.clientErr).Times(1)
 
-			cfg := config.SeqAPI{}
+			cfg := config.Handlers{}
 
 			seqData := test.APITestData{
 				Cfg: cfg,

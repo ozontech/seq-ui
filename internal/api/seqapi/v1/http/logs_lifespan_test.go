@@ -110,10 +110,12 @@ func TestServeGetLogsLifespan(t *testing.T) {
 			t.Parallel()
 
 			seqData := test.APITestData{
-				Cfg: config.SeqAPI{
-					SeqAPIOptions: &config.SeqAPIOptions{
-						LogsLifespanCacheKey: cacheKey,
-						LogsLifespanCacheTTL: cacheTTL,
+				Cfg: config.Handlers{
+					SeqAPI: config.SeqAPI{
+						SeqAPIOptions: &config.SeqAPIOptions{
+							LogsLifespanCacheKey: cacheKey,
+							LogsLifespanCacheTTL: cacheTTL,
+						},
 					},
 				},
 			}

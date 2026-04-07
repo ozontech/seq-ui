@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+	"unicode/utf8"
 
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -13,6 +14,7 @@ import (
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/api_error"
 	"github.com/ozontech/seq-ui/internal/app/types"
+	"github.com/ozontech/seq-ui/metric"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 )
@@ -42,7 +44,9 @@ func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
 		wr.Error(fmt.Errorf("failed to parse search request: %w", err), http.StatusBadRequest)
 		return
 	}
-
+	if utf8.RuneCountInString(httpReq.Query) > a.config.AsyncSearch.QueryLengthLimit {
+		metric.AsyncSearchQueryTooLong.Inc()
+	}
 	parsedRetention, err := time.ParseDuration(httpReq.Retention)
 	if err != nil {
 		wr.Error(fmt.Errorf("failed to parse retention: %w", err), http.StatusBadRequest)
@@ -54,7 +58,7 @@ func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if err := api_error.CheckAggregationTsInterval(agg.Interval, httpReq.From, httpReq.To,
-			a.config.MaxBucketsPerAggregationTs,
+			a.config.SeqAPI.MaxBucketsPerAggregationTs,
 		); err != nil {
 			wr.Error(err, http.StatusBadRequest)
 			return

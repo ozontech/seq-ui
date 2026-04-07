@@ -14,18 +14,20 @@ import (
 func TestGetLimits(t *testing.T) {
 	tests := []struct {
 		name string
-		cfg  config.SeqAPI
+		cfg  config.Handlers
 		want *seqapi.GetLimitsResponse
 	}{
 		{
 			name: "ok",
-			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
-					MaxSearchLimit:            100,
-					MaxExportLimit:            200,
-					MaxParallelExportRequests: 2,
-					MaxAggregationsPerRequest: 5,
-					SeqCLIMaxSearchLimit:      10000,
+			cfg: config.Handlers{
+				SeqAPI: config.SeqAPI{
+					SeqAPIOptions: &config.SeqAPIOptions{
+						MaxSearchLimit:            100,
+						MaxExportLimit:            200,
+						MaxParallelExportRequests: 2,
+						MaxAggregationsPerRequest: 5,
+						SeqCLIMaxSearchLimit:      10000,
+					},
 				},
 			},
 			want: &seqapi.GetLimitsResponse{
@@ -38,7 +40,7 @@ func TestGetLimits(t *testing.T) {
 		},
 		{
 			name: "empty",
-			cfg:  config.SeqAPI{},
+			cfg:  config.Handlers{},
 			want: &seqapi.GetLimitsResponse{},
 		},
 	}

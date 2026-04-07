@@ -49,7 +49,7 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 		name string
 
 		reqBody      string
-		cfg          config.SeqAPI
+		cfg          config.Handlers
 		wantRespBody string
 		wantStatus   int
 
@@ -243,11 +243,6 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 		{
 			name:    "query_too_long",
 			reqBody: "{}",
-			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
-					AsyncSearchListQueryLimit: 1000,
-				},
-			},
 			mockArgs: &mockArgs{
 				proxyReq: &seqapi.GetAsyncSearchesListRequest{},
 				proxyResp: &seqapi.GetAsyncSearchesListResponse{
@@ -294,9 +289,9 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 			t.Parallel()
 
 			seqData := test.APITestData{
-				Cfg: config.SeqAPI{
-					SeqAPIOptions: &config.SeqAPIOptions{
-						AsyncSearchListQueryLimit: 1000,
+				Cfg: config.Handlers{
+					AsyncSearch: config.AsyncSearch{
+						QueryLengthLimit: 1000,
 					},
 				},
 			}

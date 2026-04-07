@@ -166,7 +166,7 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 		asyncSearchesService = asyncsearches.New(ctx, repo, defaultClient, cfg.Handlers.AsyncSearch.AdminUsers)
 	}
 
-	seqApiV1 := seqapi_v1.New(cfg.Handlers.SeqAPI, seqDBClients, inmemWithRedisCache, redisCache, asyncSearchesService, p)
+	seqApiV1 := seqapi_v1.New(*cfg.Handlers, seqDBClients, inmemWithRedisCache, redisCache, asyncSearchesService, p)
 
 	logger.Info("initializing clickhouse")
 	ch, err := initClickHouse(ctx, cfg.Server.CH)

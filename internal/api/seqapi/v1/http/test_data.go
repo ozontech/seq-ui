@@ -14,13 +14,13 @@ import (
 
 func initTestAPI(data test.APITestData) *API {
 	// when test cases don't explicitly provide configuration.
-	if data.Cfg.SeqAPIOptions == nil {
-		data.Cfg.SeqAPIOptions = &config.SeqAPIOptions{}
+	if data.Cfg.SeqAPI.SeqAPIOptions == nil {
+		data.Cfg.SeqAPI.SeqAPIOptions = &config.SeqAPIOptions{}
 	}
 	seqDBClients := make(map[string]seqdb.Client)
 	seqDBClients[config.DefaultSeqDBClientID] = data.Mocks.SeqDB
 
-	for _, envConfig := range data.Cfg.Envs {
+	for _, envConfig := range data.Cfg.SeqAPI.Envs {
 		seqDBClients[envConfig.SeqDB] = data.Mocks.SeqDB
 	}
 
@@ -28,8 +28,8 @@ func initTestAPI(data test.APITestData) *API {
 }
 
 func initTestAPIWithAsyncSearches(data test.APITestData) *API {
-	if data.Cfg.SeqAPIOptions == nil {
-		data.Cfg.SeqAPIOptions = &config.SeqAPIOptions{}
+	if data.Cfg.SeqAPI.SeqAPIOptions == nil {
+		data.Cfg.SeqAPI.SeqAPIOptions = &config.SeqAPIOptions{}
 	}
 	seqDBClients := map[string]seqdb.Client{
 		config.DefaultSeqDBClientID: data.Mocks.SeqDB,
