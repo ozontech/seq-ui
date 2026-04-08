@@ -813,13 +813,13 @@ Configuration for async search request.
 
 **`async_search`** *`AsyncSearch`* *`optional`*
 
-Fields `AsyncSearch`:
+`AsyncSearch` fields:
 
 + **`admin_users`** *`[]string`* *`optional`*
 
   List of users allowed to cancel or delete async requests created by other users.
 
-+ **`query_length_limit`** *`int`* *`default=1000`*
++ **`list_query_length_limit`** *`int`* *`default=1000`*
 
   Maximum length of `request.query` in async searches list responses. Requests exceeding the limit will be truncated to it
 
