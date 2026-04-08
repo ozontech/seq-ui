@@ -42,6 +42,7 @@ func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
 		wr.Error(fmt.Errorf("failed to parse search request: %w", err), http.StatusBadRequest)
 		return
 	}
+
 	parsedRetention, err := time.ParseDuration(httpReq.Retention)
 	if err != nil {
 		wr.Error(fmt.Errorf("failed to parse retention: %w", err), http.StatusBadRequest)

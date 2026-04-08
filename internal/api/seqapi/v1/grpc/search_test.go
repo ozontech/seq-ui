@@ -83,11 +83,11 @@ func TestSearch(t *testing.T) {
 			req: &seqapi.SearchRequest{
 				Limit: 10,
 			},
-			cfg: test.SetCfgDefaults(config.SeqAPI{
+			cfg: config.SeqAPI{
 				SeqAPIOptions: &config.SeqAPIOptions{
 					MaxSearchLimit: 5,
 				},
-			}),
+			},
 			apiErr: true,
 		},
 		{

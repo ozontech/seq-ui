@@ -288,22 +288,22 @@ func TestServeSearch(t *testing.T) {
 			name:       "err_search_limit_max",
 			reqBody:    formatReqBody(10, 0, false, "", nil, ""),
 			wantStatus: http.StatusBadRequest,
-			cfg: test.SetCfgDefaults(config.SeqAPI{
+			cfg: config.SeqAPI{
 				SeqAPIOptions: &config.SeqAPIOptions{
 					MaxSearchLimit: 5,
 				},
-			}),
+			},
 		},
 		{
 			name:       "err_aggs_limit_max",
 			reqBody:    formatReqBody(3, 0, false, "", aggregationQueries{{}, {}, {}}, ""),
 			wantStatus: http.StatusBadRequest,
-			cfg: test.SetCfgDefaults(config.SeqAPI{
+			cfg: config.SeqAPI{
 				SeqAPIOptions: &config.SeqAPIOptions{
 					MaxSearchLimit:            5,
 					MaxAggregationsPerRequest: 2,
 				},
-			}),
+			},
 		}, {
 			name:       "err_offset_too_high",
 			reqBody:    formatReqBody(3, 11, false, "", nil, ""),

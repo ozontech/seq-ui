@@ -185,9 +185,7 @@ func (s *Service) GetAsyncSearchesList(
 
 	for _, as := range resp.Searches {
 		as.OwnerName = ownerNameByID[as.SearchId]
-		if trimmedQuery, ok := s.trimQueryToLimit(as.Request.Query, s.cfg.ListQueryLengthLimit); ok {
-			as.Request.Query = trimmedQuery + "..."
-		}
+		as.Request.Query = s.trimQueryToLimit(as.Request.Query, s.cfg.ListQueryLengthLimit)
 	}
 
 	return resp, nil
@@ -219,13 +217,13 @@ func (s *Service) deleteExpiredAsyncSearches(ctx context.Context) {
 	}
 }
 
-func (s *Service) trimQueryToLimit(query string, limit int) (string, bool) {
+func (s *Service) trimQueryToLimit(query string, limit int) string {
 	count := 0
 	for i := range query {
 		if count == limit {
-			return query[:i], true
+			return query[:i] + "..."
 		}
 		count++
 	}
-	return query, false
+	return query
 }
