@@ -30,7 +30,7 @@ const (
 	minGRPCKeepaliveTime    = 10 * time.Second
 	minGRPCKeepaliveTimeout = 1 * time.Second
 
-	defaultAsyncSearchQueryLengthLimit = 1000
+	defaultAsyncSearchListQueryLengthLimit = 1000
 
 	defaultMaxSearchTotalLimit        = 1000000
 	defaultMaxSearchOffsetLimit       = 1000000
@@ -313,8 +313,8 @@ type ErrorGroups struct {
 }
 
 type AsyncSearch struct {
-	AdminUsers       []string `yaml:"admin_users"`
-	QueryLengthLimit int      `yaml:"query_length_limit"`
+	AdminUsers           []string `yaml:"admin_users"`
+	ListQueryLengthLimit int      `yaml:"list_query_length_limit"`
 }
 
 // FromFile parse config from config path.
@@ -339,9 +339,6 @@ func FromFile(cfgPath string) (Config, error) {
 		)
 	}
 
-	if cfg.Handlers == nil {
-		return Config{}, fmt.Errorf("invalid config: handlers must be not nil")
-	}
 	if cfg.Handlers.SeqAPI.MaxAggregationsPerRequest <= 0 {
 		cfg.Handlers.SeqAPI.MaxAggregationsPerRequest = defaultMaxAggregationsPerRequest
 	}
@@ -357,8 +354,8 @@ func FromFile(cfgPath string) (Config, error) {
 	if cfg.Handlers.SeqAPI.MaxSearchOffsetLimit <= 0 {
 		cfg.Handlers.SeqAPI.MaxSearchOffsetLimit = defaultMaxSearchOffsetLimit
 	}
-	if cfg.Handlers.AsyncSearch.QueryLengthLimit <= 0 {
-		cfg.Handlers.AsyncSearch.QueryLengthLimit = defaultAsyncSearchQueryLengthLimit
+	if cfg.Handlers.AsyncSearch.ListQueryLengthLimit <= 0 {
+		cfg.Handlers.AsyncSearch.ListQueryLengthLimit = defaultAsyncSearchListQueryLengthLimit
 	}
 	if cfg.Handlers.SeqAPI.EventsCacheTTL <= 0 {
 		cfg.Handlers.SeqAPI.EventsCacheTTL = defaultEventsCacheTTL

@@ -5,14 +5,17 @@ import (
 	"fmt"
 	"slices"
 	"time"
+	"unicode/utf8"
 
 	"github.com/cenkalti/backoff/v4"
 	"go.uber.org/zap"
 
+	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	"github.com/ozontech/seq-ui/internal/pkg/repository"
 	"github.com/ozontech/seq-ui/logger"
+	"github.com/ozontech/seq-ui/metric"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
 
@@ -27,19 +30,19 @@ type Service struct {
 	repo  repository.AsyncSearches
 	seqDB seqdb.Client
 
-	admin_users []string
+	cfg config.AsyncSearch
 }
 
 func New(
 	ctx context.Context,
 	repo repository.AsyncSearches,
 	seqDB seqdb.Client,
-	admins []string,
+	cfg config.AsyncSearch,
 ) *Service {
 	s := &Service{
-		repo:        repo,
-		seqDB:       seqDB,
-		admin_users: admins,
+		repo:  repo,
+		seqDB: seqDB,
+		cfg:   cfg,
 	}
 
 	go s.deleteExpiredAsyncSearches(ctx)
@@ -52,6 +55,9 @@ func (s *Service) StartAsyncSearch(
 	ownerID int64,
 	req *seqapi.StartAsyncSearchRequest,
 ) (*seqapi.StartAsyncSearchResponse, error) {
+	if utf8.RuneCountInString(req.Query) > s.cfg.ListQueryLengthLimit {
+		metric.AsyncSearchQueryTooLong.Inc()
+	}
 	resp, err := s.seqDB.StartAsyncSearch(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start async search: %w", err)
@@ -179,6 +185,9 @@ func (s *Service) GetAsyncSearchesList(
 
 	for _, as := range resp.Searches {
 		as.OwnerName = ownerNameByID[as.SearchId]
+		if trimmedQuery, ok := s.trimQueryToLimit(as.Request.Query, s.cfg.ListQueryLengthLimit); ok {
+			as.Request.Query = trimmedQuery + "..."
+		}
 	}
 
 	return resp, nil
@@ -190,7 +199,7 @@ func (s *Service) isAdmin(ctx context.Context) bool {
 		return false
 	}
 
-	return slices.Index(s.admin_users, userName) >= 0
+	return slices.Index(s.cfg.AdminUsers, userName) >= 0
 }
 
 func (s *Service) deleteExpiredAsyncSearches(ctx context.Context) {
@@ -208,4 +217,15 @@ func (s *Service) deleteExpiredAsyncSearches(ctx context.Context) {
 			}
 		}
 	}
+}
+
+func (s *Service) trimQueryToLimit(query string, limit int) (string, bool) {
+	count := 0
+	for i := range query {
+		if count == limit {
+			return query[:i], true
+		}
+		count++
+	}
+	return query, false
 }

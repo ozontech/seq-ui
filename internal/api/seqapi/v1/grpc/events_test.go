@@ -102,11 +102,9 @@ func TestGetEvent(t *testing.T) {
 			t.Parallel()
 
 			seqData := test.APITestData{
-				Cfg: config.Handlers{
-					SeqAPI: config.SeqAPI{
-						SeqAPIOptions: &config.SeqAPIOptions{
-							EventsCacheTTL: cacheTTL,
-						},
+				Cfg: config.SeqAPI{
+					SeqAPIOptions: &config.SeqAPIOptions{
+						EventsCacheTTL: cacheTTL,
 					},
 				},
 			}
@@ -366,12 +364,10 @@ func TestGetEventWithMasking(t *testing.T) {
 			curEID := curEData.id
 
 			seqData := test.APITestData{
-				Cfg: config.Handlers{
-					SeqAPI: config.SeqAPI{
-						SeqAPIOptions: &config.SeqAPIOptions{
-							EventsCacheTTL: cacheTTL,
-							Masking:        tt.maskingCfg,
-						},
+				Cfg: config.SeqAPI{
+					SeqAPIOptions: &config.SeqAPIOptions{
+						EventsCacheTTL: cacheTTL,
+						Masking:        tt.maskingCfg,
 					},
 				},
 			}

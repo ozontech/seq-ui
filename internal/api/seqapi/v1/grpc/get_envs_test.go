@@ -13,20 +13,18 @@ import (
 func TestGetEnvs(t *testing.T) {
 	tests := []struct {
 		name string
-		cfg  config.Handlers
+		cfg  config.SeqAPI
 		want *seqapi.GetEnvsResponse
 	}{
 		{
 			name: "single_env",
-			cfg: config.Handlers{
-				SeqAPI: config.SeqAPI{
-					SeqAPIOptions: &config.SeqAPIOptions{
-						MaxSearchLimit:            100,
-						MaxExportLimit:            200,
-						MaxParallelExportRequests: 2,
-						MaxAggregationsPerRequest: 5,
-						SeqCLIMaxSearchLimit:      10000,
-					},
+			cfg: config.SeqAPI{
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxSearchLimit:            100,
+					MaxExportLimit:            200,
+					MaxParallelExportRequests: 2,
+					MaxAggregationsPerRequest: 5,
+					SeqCLIMaxSearchLimit:      10000,
 				},
 			},
 			want: &seqapi.GetEnvsResponse{
@@ -44,57 +42,55 @@ func TestGetEnvs(t *testing.T) {
 		},
 		{
 			name: "multiple_envs",
-			cfg: config.Handlers{
-				SeqAPI: config.SeqAPI{
-					Envs: map[string]config.SeqAPIEnv{
-						"test": {
-							Options: &config.SeqAPIOptions{
-								MaxSearchLimit:            100,
-								MaxExportLimit:            200,
-								MaxParallelExportRequests: 2,
-								MaxAggregationsPerRequest: 5,
-								SeqCLIMaxSearchLimit:      10000,
-							},
-						},
-						"prod": {
-							Options: &config.SeqAPIOptions{
-								MaxSearchLimit:            150,
-								MaxExportLimit:            250,
-								MaxParallelExportRequests: 3,
-								MaxAggregationsPerRequest: 6,
-								SeqCLIMaxSearchLimit:      15000,
-							},
-						},
-						"cluster-10": {
-							Options: &config.SeqAPIOptions{
-								MaxSearchLimit:            150,
-								MaxExportLimit:            250,
-								MaxParallelExportRequests: 3,
-								MaxAggregationsPerRequest: 6,
-								SeqCLIMaxSearchLimit:      15000,
-							},
-						},
-						"cluster-102": {
-							Options: &config.SeqAPIOptions{
-								MaxSearchLimit:            100,
-								MaxExportLimit:            200,
-								MaxParallelExportRequests: 2,
-								MaxAggregationsPerRequest: 5,
-								SeqCLIMaxSearchLimit:      10000,
-							},
-						},
-						"cluster-220": {
-							Options: &config.SeqAPIOptions{
-								MaxSearchLimit:            100,
-								MaxExportLimit:            200,
-								MaxParallelExportRequests: 2,
-								MaxAggregationsPerRequest: 5,
-								SeqCLIMaxSearchLimit:      10000,
-							},
+			cfg: config.SeqAPI{
+				Envs: map[string]config.SeqAPIEnv{
+					"test": {
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit:            100,
+							MaxExportLimit:            200,
+							MaxParallelExportRequests: 2,
+							MaxAggregationsPerRequest: 5,
+							SeqCLIMaxSearchLimit:      10000,
 						},
 					},
-					DefaultEnv: "test",
+					"prod": {
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit:            150,
+							MaxExportLimit:            250,
+							MaxParallelExportRequests: 3,
+							MaxAggregationsPerRequest: 6,
+							SeqCLIMaxSearchLimit:      15000,
+						},
+					},
+					"cluster-10": {
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit:            150,
+							MaxExportLimit:            250,
+							MaxParallelExportRequests: 3,
+							MaxAggregationsPerRequest: 6,
+							SeqCLIMaxSearchLimit:      15000,
+						},
+					},
+					"cluster-102": {
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit:            100,
+							MaxExportLimit:            200,
+							MaxParallelExportRequests: 2,
+							MaxAggregationsPerRequest: 5,
+							SeqCLIMaxSearchLimit:      10000,
+						},
+					},
+					"cluster-220": {
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit:            100,
+							MaxExportLimit:            200,
+							MaxParallelExportRequests: 2,
+							MaxAggregationsPerRequest: 5,
+							SeqCLIMaxSearchLimit:      10000,
+						},
+					},
 				},
+				DefaultEnv: "test",
 			},
 			want: &seqapi.GetEnvsResponse{
 				Envs: []*seqapi.GetEnvsResponse_Env{
@@ -149,7 +145,7 @@ func TestGetEnvs(t *testing.T) {
 			t.Parallel()
 			api := API{
 				config:       tt.cfg,
-				envsResponse: parseEnvs(tt.cfg.SeqAPI),
+				envsResponse: parseEnvs(tt.cfg),
 			}
 			resp, err := api.GetEnvs(context.TODO(), &seqapi.GetEnvsRequest{})
 			require.NoError(t, err)

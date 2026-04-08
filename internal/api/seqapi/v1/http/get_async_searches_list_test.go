@@ -289,10 +289,8 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 			t.Parallel()
 
 			seqData := test.APITestData{
-				Cfg: config.Handlers{
-					AsyncSearch: config.AsyncSearch{
-						QueryLengthLimit: 1000,
-					},
+				AsyncCfg: config.AsyncSearch{
+					ListQueryLengthLimit: 1000,
 				},
 			}
 

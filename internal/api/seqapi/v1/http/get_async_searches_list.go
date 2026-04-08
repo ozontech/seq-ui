@@ -83,7 +83,7 @@ func (a *API) serveGetAsyncSearchesList(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	wr.WriteJson(getAsyncSearchesListResponseFromProto(resp, a.config.AsyncSearch.QueryLengthLimit))
+	wr.WriteJson(getAsyncSearchesListResponseFromProto(resp))
 }
 
 type getAsyncSearchesListRequest struct {
@@ -129,7 +129,7 @@ type asyncSearchesListItem struct {
 	Error      *string                 `json:"error,omitempty"`
 } //	@name	seqapi.v1.AsyncSearchesListItem
 
-func getAsyncSearchesListResponseFromProto(resp *seqapi.GetAsyncSearchesListResponse, asyncSearchListQueryLimit int) getAsyncSearchesListResponse {
+func getAsyncSearchesListResponseFromProto(resp *seqapi.GetAsyncSearchesListResponse) getAsyncSearchesListResponse {
 	searches := make([]asyncSearchesListItem, 0, len(resp.Searches))
 
 	for _, s := range resp.Searches {
@@ -142,7 +142,7 @@ func getAsyncSearchesListResponseFromProto(resp *seqapi.GetAsyncSearchesListResp
 		searches = append(searches, asyncSearchesListItem{
 			SearchID:   s.SearchId,
 			Status:     asyncSearchStatusFromProto(s.Status),
-			Request:    startAsyncSearchListRequestFromProto(s.Request, asyncSearchListQueryLimit),
+			Request:    startAsyncSearchRequestFromProto(s.Request),
 			StartedAt:  s.StartedAt.AsTime(),
 			ExpiresAt:  s.ExpiresAt.AsTime(),
 			CanceledAt: canceledAt,
@@ -157,14 +157,6 @@ func getAsyncSearchesListResponseFromProto(resp *seqapi.GetAsyncSearchesListResp
 		Searches: searches,
 		Error:    apiErrorFromProto(resp.GetError()),
 	}
-}
-
-func startAsyncSearchListRequestFromProto(r *seqapi.StartAsyncSearchRequest, queryLimit int) startAsyncSearchRequest {
-	req := startAsyncSearchRequestFromProto(r)
-	if trimmedQuery, ok := trimQueryToLimit(req.Query, queryLimit); ok {
-		req.Query = trimmedQuery + "..."
-	}
-	return req
 }
 
 func startAsyncSearchRequestFromProto(r *seqapi.StartAsyncSearchRequest) startAsyncSearchRequest {
@@ -206,15 +198,4 @@ func aggregationTsQueriesFromProto(aggs []*seqapi.AggregationQuery) aggregationT
 	}
 
 	return result
-}
-
-func trimQueryToLimit(query string, limit int) (string, bool) {
-	count := 0
-	for i := range query {
-		if count == limit {
-			return query[:i], true
-		}
-		count++
-	}
-	return query, false
 }

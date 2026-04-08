@@ -35,7 +35,7 @@ func TestSearch(t *testing.T) {
 		apiErr    bool
 		clientErr error
 
-		cfg config.Handlers
+		cfg config.SeqAPI
 	}{
 		{
 			name: "ok",
@@ -64,12 +64,10 @@ func TestSearch(t *testing.T) {
 					Code: seqapi.ErrorCode_ERROR_CODE_NO,
 				},
 			},
-			cfg: test.SetCfgDefaults(config.Handlers{
-				SeqAPI: config.SeqAPI{
-					SeqAPIOptions: &config.SeqAPIOptions{
-						MaxSearchLimit:            5,
-						MaxAggregationsPerRequest: 5,
-					},
+			cfg: test.SetCfgDefaults(config.SeqAPI{
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxSearchLimit:            5,
+					MaxAggregationsPerRequest: 5,
 				},
 			}),
 		},
@@ -85,11 +83,9 @@ func TestSearch(t *testing.T) {
 			req: &seqapi.SearchRequest{
 				Limit: 10,
 			},
-			cfg: test.SetCfgDefaults(config.Handlers{
-				SeqAPI: config.SeqAPI{
-					SeqAPIOptions: &config.SeqAPIOptions{
-						MaxSearchLimit: 5,
-					},
+			cfg: test.SetCfgDefaults(config.SeqAPI{
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxSearchLimit: 5,
 				},
 			}),
 			apiErr: true,
@@ -104,12 +100,10 @@ func TestSearch(t *testing.T) {
 					{Field: "test3"},
 				},
 			},
-			cfg: test.SetCfgDefaults(config.Handlers{
-				SeqAPI: config.SeqAPI{
-					SeqAPIOptions: &config.SeqAPIOptions{
-						MaxSearchLimit:            5,
-						MaxAggregationsPerRequest: 2,
-					},
+			cfg: test.SetCfgDefaults(config.SeqAPI{
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxSearchLimit:            5,
+					MaxAggregationsPerRequest: 2,
 				},
 			}),
 			apiErr: true,
@@ -123,12 +117,10 @@ func TestSearch(t *testing.T) {
 				Limit:  limit,
 				Offset: 11,
 			},
-			cfg: test.SetCfgDefaults(config.Handlers{
-				SeqAPI: config.SeqAPI{
-					SeqAPIOptions: &config.SeqAPIOptions{
-						MaxSearchLimit:       5,
-						MaxSearchOffsetLimit: 10,
-					},
+			cfg: test.SetCfgDefaults(config.SeqAPI{
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxSearchLimit:       5,
+					MaxSearchOffsetLimit: 10,
 				},
 			}),
 			apiErr: true,
@@ -155,12 +147,10 @@ func TestSearch(t *testing.T) {
 					Message: api_error.ErrQueryTooHeavy.Error(),
 				},
 			},
-			cfg: test.SetCfgDefaults(config.Handlers{
-				SeqAPI: config.SeqAPI{
-					SeqAPIOptions: &config.SeqAPIOptions{
-						MaxSearchLimit:      5,
-						MaxSearchTotalLimit: int64(limit),
-					},
+			cfg: test.SetCfgDefaults(config.SeqAPI{
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxSearchLimit:      5,
+					MaxSearchTotalLimit: int64(limit),
 				},
 			}),
 		},
@@ -173,11 +163,9 @@ func TestSearch(t *testing.T) {
 				Limit:  limit,
 				Offset: 0,
 			},
-			cfg: test.SetCfgDefaults(config.Handlers{
-				SeqAPI: config.SeqAPI{
-					SeqAPIOptions: &config.SeqAPIOptions{
-						MaxSearchLimit: 5,
-					},
+			cfg: test.SetCfgDefaults(config.SeqAPI{
+				SeqAPIOptions: &config.SeqAPIOptions{
+					MaxSearchLimit: 5,
 				},
 			}),
 			clientErr: errors.New("client error"),

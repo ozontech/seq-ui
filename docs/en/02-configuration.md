@@ -809,11 +809,11 @@ Config for `/massexport` API handlers.
 
 ### Async Search
 
-Configuration for async request.
+Configuration for async search request.
 
 **`async_search`** *`AsyncSearch`* *`optional`*
 
-Поля `AsyncSearch`:
+Fields `AsyncSearch`:
 
 + **`admin_users`** *`[]string`* *`optional`*
 
@@ -821,7 +821,7 @@ Configuration for async request.
 
 + **`query_length_limit`** *`int`* *`default=1000`*
 
-  Maximum length of `request.query` in async searches list responses.
+  Maximum length of `request.query` in async searches list responses. Requests exceeding the limit will be truncated to it
 
 ## Tracing
 
