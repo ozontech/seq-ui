@@ -90,6 +90,7 @@ message Aggregation {
 
   repeated Bucket buckets = 1;
   int64 not_exists = 2;
+  string target_bucket_rate = 3;
 }
 
 enum AggFunc {
@@ -109,6 +110,7 @@ message AggregationQuery {
   AggFunc func = 4;
   repeated double quantiles = 5;
   optional string interval = 6;
+  optional string target_bucket_rate = 7;
 }
 
 message SearchRequest {
