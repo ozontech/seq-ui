@@ -34,7 +34,7 @@ func initTestAPIWithAsyncSearches(data test.APITestData) *API {
 	seqDBClients := map[string]seqdb.Client{
 		config.DefaultSeqDBClientID: data.Mocks.SeqDB,
 	}
-	as := asyncsearches.New(context.Background(), data.Mocks.AsyncSearchesRepo, data.Mocks.SeqDB, []string{})
+	as := asyncsearches.New(context.Background(), data.Mocks.AsyncSearchesRepo, data.Mocks.SeqDB, data.AsyncCfg)
 	s := service.New(&repository.Repository{
 		UserProfiles: data.Mocks.ProfilesRepo,
 	})

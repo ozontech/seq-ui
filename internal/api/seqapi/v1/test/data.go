@@ -27,8 +27,9 @@ type Mocks struct {
 }
 
 type APITestData struct {
-	Cfg   config.SeqAPI
-	Mocks Mocks
+	Cfg      config.SeqAPI
+	AsyncCfg config.AsyncSearch
+	Mocks    Mocks
 }
 
 func MakeEvent(id string, countData int, t time.Time) *seqapi.Event {

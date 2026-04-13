@@ -13,6 +13,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
+	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
 	mock_repo "github.com/ozontech/seq-ui/internal/pkg/repository/mock"
@@ -28,8 +29,9 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 		mockProfileID1 int64 = 1
 		mockProfileID2 int64 = 1
 		errorMsg             = "some error"
-
-		mockTime = time.Date(2025, 8, 6, 17, 52, 12, 123, time.UTC)
+		tooLongQuery         = strings.Repeat("message:error and level:3", 41)
+		TruncatedQuery       = strings.Repeat("message:error and level:3", 40)
+		mockTime             = time.Date(2025, 8, 6, 17, 52, 12, 123, time.UTC)
 	)
 
 	type mockArgs struct {
@@ -47,6 +49,7 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 		name string
 
 		reqBody      string
+		cfg          config.Handlers
 		wantRespBody string
 		wantStatus   int
 
@@ -237,12 +240,59 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 			reqBody:    "invalid-request",
 			wantStatus: http.StatusBadRequest,
 		},
+		{
+			name:    "query_too_long",
+			reqBody: "{}",
+			mockArgs: &mockArgs{
+				proxyReq: &seqapi.GetAsyncSearchesListRequest{},
+				proxyResp: &seqapi.GetAsyncSearchesListResponse{
+					Searches: []*seqapi.GetAsyncSearchesListResponse_ListItem{
+						{
+							SearchId: mockSearchID1,
+							Status:   seqapi.AsyncSearchStatus_ASYNC_SEARCH_STATUS_DONE,
+							Request: &seqapi.StartAsyncSearchRequest{
+								Retention: durationpb.New(60 * time.Second),
+								Query:     tooLongQuery,
+								From:      timestamppb.New(mockTime.Add(-15 * time.Minute)),
+								To:        timestamppb.New(mockTime),
+								WithDocs:  true,
+								Size:      100,
+							},
+							StartedAt: timestamppb.New(mockTime.Add(-30 * time.Second)),
+							ExpiresAt: timestamppb.New(mockTime.Add(30 * time.Second)),
+							Progress:  1,
+							DiskUsage: 512,
+							OwnerName: mockUserName1,
+						},
+					},
+					Error: &seqapi.Error{
+						Code:    seqapi.ErrorCode_ERROR_CODE_PARTIAL_RESPONSE,
+						Message: "partial response",
+					},
+				},
+				repoReq: types.GetAsyncSearchesListRequest{},
+				repoResp: []types.AsyncSearchInfo{
+					{
+						SearchID:  mockSearchID1,
+						OwnerID:   mockProfileID1,
+						OwnerName: mockUserName1,
+					},
+				},
+				searchIDs: []string{mockSearchID1},
+			},
+			wantRespBody: `{"searches":[{"search_id":"c9a34cf8-4c66-484e-9cc2-42979d848656","status":"done","request":{"retention":"seconds:60","query":"` + TruncatedQuery + `...","from":"2025-08-06T17:37:12.000000123Z","to":"2025-08-06T17:52:12.000000123Z","with_docs":true,"size":100},"started_at":"2025-08-06T17:51:42.000000123Z","expires_at":"2025-08-06T17:52:42.000000123Z","progress":1,"disk_usage":"512","owner_name":"some_user_1"}],"error":{"code":"ERROR_CODE_PARTIAL_RESPONSE","message":"partial response"}}`,
+			wantStatus:   http.StatusOK,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			seqData := test.APITestData{}
+			seqData := test.APITestData{
+				AsyncCfg: config.AsyncSearch{
+					ListQueryLengthLimit: 1000,
+				},
+			}
 
 			if tt.mockArgs != nil {
 				ctrl := gomock.NewController(t)

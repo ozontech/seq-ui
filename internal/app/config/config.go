@@ -30,6 +30,8 @@ const (
 	minGRPCKeepaliveTime    = 10 * time.Second
 	minGRPCKeepaliveTimeout = 1 * time.Second
 
+	defaultAsyncSearchListQueryLengthLimit = 1000
+
 	defaultMaxSearchTotalLimit        = 1000000
 	defaultMaxSearchOffsetLimit       = 1000000
 	defaultMaxAggregationsPerRequest  = 1
@@ -311,7 +313,8 @@ type ErrorGroups struct {
 }
 
 type AsyncSearch struct {
-	AdminUsers []string `yaml:"admin_users"`
+	AdminUsers           []string `yaml:"admin_users"`
+	ListQueryLengthLimit int      `yaml:"list_query_length_limit"`
 }
 
 // FromFile parse config from config path.
@@ -350,6 +353,9 @@ func FromFile(cfgPath string) (Config, error) {
 	}
 	if cfg.Handlers.SeqAPI.MaxSearchOffsetLimit <= 0 {
 		cfg.Handlers.SeqAPI.MaxSearchOffsetLimit = defaultMaxSearchOffsetLimit
+	}
+	if cfg.Handlers.AsyncSearch.ListQueryLengthLimit <= 0 {
+		cfg.Handlers.AsyncSearch.ListQueryLengthLimit = defaultAsyncSearchListQueryLengthLimit
 	}
 	if cfg.Handlers.SeqAPI.EventsCacheTTL <= 0 {
 		cfg.Handlers.SeqAPI.EventsCacheTTL = defaultEventsCacheTTL

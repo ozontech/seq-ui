@@ -506,6 +506,7 @@ handlers:
   seq_api:
   error_groups:
   mass_export:
+  async_search:
 ```
 
 ### SeqAPI
@@ -811,6 +812,22 @@ Config for `/massexport` API handlers.
   Max retry backoff if previous query was rate-limited. If it's less than `initial_retry_backoff`, then `initial_retry_backoff` value will be reset to `max_retry_backoff`
 
   > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+
+### Async Search
+
+Configuration for async search request.
+
+**`async_search`** *`AsyncSearch`* *`optional`*
+
+`AsyncSearch` fields:
+
++ **`admin_users`** *`[]string`* *`optional`*
+
+  List of users allowed to cancel or delete async requests created by other users.
+
++ **`list_query_length_limit`** *`int`* *`default=1000`*
+
+  Maximum length of `request.query` in async searches list responses. Requests exceeding the limit will be truncated to it
 
 ## Tracing
 
