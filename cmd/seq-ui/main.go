@@ -16,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/ozontech/seq-ui/internal/api"
+	admin_v1 "github.com/ozontech/seq-ui/internal/api/admin/v1"
 	dashboards_v1 "github.com/ozontech/seq-ui/internal/api/dashboards/v1"
 	errorgroups_v1 "github.com/ozontech/seq-ui/internal/api/errorgroups/v1"
 	massexport_v1 "github.com/ozontech/seq-ui/internal/api/massexport/v1"
@@ -152,6 +153,7 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 	var (
 		asyncSearchesService *asyncsearches.Service
 		p                    *profiles.Profiles
+		adminV1              *admin_v1.Admin
 		userProfileV1        *userprofile_v1.UserProfile
 		dashboardsV1         *dashboards_v1.Dashboards
 	)
@@ -160,6 +162,7 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 		svc := service.New(repo)
 		p = profiles.New(svc)
 
+		adminV1 = admin_v1.New(svc)
 		userProfileV1 = userprofile_v1.New(svc, p)
 		dashboardsV1 = dashboards_v1.New(svc, p)
 
@@ -182,7 +185,7 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 		errorGroupsV1 = errorgroups_v1.New(svc)
 	}
 
-	return api.NewRegistrar(seqApiV1, userProfileV1, dashboardsV1, massExportV1, errorGroupsV1)
+	return api.NewRegistrar(adminV1, seqApiV1, userProfileV1, dashboardsV1, massExportV1, errorGroupsV1)
 }
 
 func initSeqDBClients(ctx context.Context, cfg config.Config) (map[string]seqdb.Client, error) {

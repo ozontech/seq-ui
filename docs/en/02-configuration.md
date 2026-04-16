@@ -507,6 +507,7 @@ handlers:
   error_groups:
   mass_export:
   async_search:
+  admin:
 ```
 
 ### SeqAPI
@@ -828,6 +829,18 @@ Configuration for async search request.
 + **`list_query_length_limit`** *`int`* *`default=1000`*
 
   Maximum length of `request.query` in async searches list responses. Requests exceeding the limit will be truncated to it
+
+### Admin
+
+**`admin`** *`Admin`* *`required`*
+
+Configuration for `/admin` API.
+
+`Admin` fields:
+
++ **`super_users`** *`[]string`* *`optional`*
+
+  List of users with full access to admin features. Treated as superadministrators and granted full access regardless of roles stored in the database. Useful during initial system setup or when the database is unavailable.
 
 ## Tracing
 
