@@ -238,7 +238,7 @@ type Handlers struct {
 	ErrorGroups ErrorGroups `yaml:"error_groups"`
 	MassExport  *MassExport `yaml:"mass_export"`
 	AsyncSearch AsyncSearch `yaml:"async_search"`
-	Admin       Admin       `yaml:"admin"`
+	Admin       *Admin      `yaml:"admin"`
 }
 
 type PinnedField struct {

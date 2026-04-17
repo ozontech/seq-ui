@@ -167,7 +167,7 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 
 		asyncSearchesService = asyncsearches.New(ctx, repo, defaultClient, cfg.Handlers.AsyncSearch)
 
-		if len(cfg.Server.OIDC.AuthURLs) > 0 {
+		if cfg.Handlers.Admin != nil {
 			adminV1 = admin_v1.New(svc)
 		}
 	}

@@ -832,15 +832,15 @@ Configuration for async search request.
 
 ### Admin
 
-**`admin`** *`Admin`* *`required`*
+**`admin`** *`Admin`* *`optional`*
 
 Configuration for `/admin` API.
 
 `Admin` fields:
 
-+ **`super_users`** *`[]string`* *`optional`*
++ **`super_users`** *`[]string`* *`required`*
 
-  List of users with full access to admin features. Treated as superadministrators and granted full access regardless of roles stored in the database. Useful during initial system setup or when the database is unavailable.
+  List of users with full access to admin features.
 
 ## Tracing
 
