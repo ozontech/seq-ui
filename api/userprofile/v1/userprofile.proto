@@ -26,6 +26,7 @@ message GetUserProfileResponse {
   string timezone = 1;
   string onboarding_version = 2;
   LogColumns log_columns = 3;
+  int32 role_id = 4;
 }
 
 message UpdateUserProfileRequest {

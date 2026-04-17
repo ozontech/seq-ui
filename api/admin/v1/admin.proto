@@ -4,4 +4,81 @@ package admin.v1;
 
 option go_package = "github.com/ozontech/seq-ui/pkg/admin/v1;admin";
 
-service AdminService {}
+service AdminService {
+  rpc CreateRole(CreateRoleRequest) returns (CreateRoleResponse);
+
+  rpc AddUsersToRole(AddUsersToRoleRequest) returns (AddUsersToRoleResponse);
+
+  rpc GetRoles(GetRolesRequest) returns (GetRolesResponse);
+
+  rpc GetRole(GetRoleRequest) returns (GetRoleResponse);
+
+  rpc UpdateRole(UpdateRoleRequest) returns (UpdateRoleResponse);
+
+  rpc DeleteRole(DeleteRoleRequest) returns (DeleteRoleResponse);
+}
+
+message Role {
+  int32 id = 1;
+  string name = 2;
+  uint64 permissions = 3;
+}
+
+message User {
+  int64 id = 1;
+  string email = 2;
+}
+
+message CreateRoleRequest {
+  string name = 1;
+  uint64 permissions = 2;
+}
+
+message CreateRoleResponse {
+  Role role = 1;
+}
+
+message AddUsersToRoleRequest {
+  int32 role_id = 1;
+  repeated int64 user_ids = 2;
+}
+
+message AddUsersToRoleResponse {}
+
+message GetRolesRequest {}
+
+message GetRolesResponse {
+  message Permission {
+      uint64 bit = 1;
+      string name = 2;
+  }
+
+  repeated Role roles = 1;
+  repeated Permission available_permissions = 2;
+}
+
+message GetRoleRequest {
+  int32 id = 1;
+}
+
+message GetRoleResponse {
+  Role role = 1;
+  repeated User users = 2;
+}
+
+message UpdateRoleRequest {
+  int32 id = 1;
+  optional string name = 2;
+  optional uint64 permissions = 3;
+}
+
+message UpdateRoleResponse {
+  Role role = 1;
+}
+
+message DeleteRoleRequest {
+  int32 id = 1;
+  int32 replacement_role_id = 2;
+}
+
+message DeleteRoleResponse {}
