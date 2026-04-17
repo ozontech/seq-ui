@@ -507,6 +507,7 @@ handlers:
   error_groups:
   mass_export:
   async_search:
+  admin:
 ```
 
 ### SeqAPI
@@ -515,7 +516,7 @@ handlers:
 
 Конфигурация `/seqapi` API.
 
-`SeqAPI` fields:
+Поля `SeqAPI`:
   
 + **`max_search_limit`** *`int`* *`default=0`*
 
@@ -828,6 +829,18 @@ handlers:
 + **`list_query_length_limit`** *`int`* *`default=1000`*
 
   Максимальная длина `request.query` в ответе списка отложенных запросов. Запросы, превышающие лимит, будут обрезаны до этого значения.
+
+### Admin
+
+**`admin`** *`Admin`* *`optional`*
+
+Конфигурация `/admin` API.
+
+Поля `Admin`:
+
++ **`super_users`** *`[]string`* *`required`*
+
+  Список пользователей с полным доступом к административным функциям.
 
 ## Tracing
 

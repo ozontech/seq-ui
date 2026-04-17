@@ -14,11 +14,13 @@ package api
 
 import (
 	"github.com/go-chi/chi/v5"
+	admin_v1_api "github.com/ozontech/seq-ui/internal/api/admin/v1"
 	dashboards_v1_api "github.com/ozontech/seq-ui/internal/api/dashboards/v1"
 	errorgroups_v1_api "github.com/ozontech/seq-ui/internal/api/errorgroups/v1"
 	massexport_v1_api "github.com/ozontech/seq-ui/internal/api/massexport/v1"
 	seqapi_v1_api "github.com/ozontech/seq-ui/internal/api/seqapi/v1"
 	userprofile_v1_api "github.com/ozontech/seq-ui/internal/api/userprofile/v1"
+	admin_v1 "github.com/ozontech/seq-ui/pkg/admin/v1"
 	dashboards_v1 "github.com/ozontech/seq-ui/pkg/dashboards/v1"
 	errorgroups_v1 "github.com/ozontech/seq-ui/pkg/errorgroups/v1"
 	massexport_v1 "github.com/ozontech/seq-ui/pkg/massexport/v1"
@@ -29,6 +31,7 @@ import (
 
 // Registrar is registrar of gRPC and gRPC-Gateway handlers.
 type Registrar struct {
+	adminV1       *admin_v1_api.Admin
 	seqApiV1      *seqapi_v1_api.SeqAPI
 	userProfileV1 *userprofile_v1_api.UserProfile
 	dashboardsV1  *dashboards_v1_api.Dashboards
@@ -38,6 +41,7 @@ type Registrar struct {
 
 // NewRegistrar returns new registrar instance.
 func NewRegistrar(
+	adminV1 *admin_v1_api.Admin,
 	seqApiV1 *seqapi_v1_api.SeqAPI,
 	userProfileV1 *userprofile_v1_api.UserProfile,
 	dashboardsV1 *dashboards_v1_api.Dashboards,
@@ -45,6 +49,7 @@ func NewRegistrar(
 	errorGroupsV1 *errorgroups_v1_api.ErrorGroups,
 ) *Registrar {
 	return &Registrar{
+		adminV1:       adminV1,
 		seqApiV1:      seqApiV1,
 		userProfileV1: userProfileV1,
 		dashboardsV1:  dashboardsV1,
@@ -70,6 +75,9 @@ func (r *Registrar) RegisterGRPCHandlers(grpcServer *grpc.Server) {
 	if r.errorGroupsV1 != nil {
 		errorgroups_v1.RegisterErrorGroupsServiceServer(grpcServer, r.errorGroupsV1.GRPCServer())
 	}
+	if r.adminV1 != nil {
+		admin_v1.RegisterAdminServiceServer(grpcServer, r.adminV1.GRPCServer())
+	}
 }
 
 // RegisterHTTPHandlers registers all handlers for mux.
@@ -88,5 +96,8 @@ func (r *Registrar) RegisterHTTPHandlers(mux *chi.Mux) {
 	}
 	if r.errorGroupsV1 != nil {
 		mux.Mount("/errorgroups/v1", r.errorGroupsV1.HTTPRouter())
+	}
+	if r.adminV1 != nil {
+		mux.Mount("/admin/v1", r.adminV1.HTTPRouter())
 	}
 }
