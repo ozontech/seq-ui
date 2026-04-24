@@ -21,26 +21,21 @@ service AdminService {
 message Role {
   int32 id = 1;
   string name = 2;
-  uint64 permissions = 3;
-}
-
-message User {
-  int64 id = 1;
-  string email = 2;
+  repeated uint64 permissions = 3;
 }
 
 message CreateRoleRequest {
   string name = 1;
-  uint64 permissions = 2;
+  repeated uint64 permissions = 2;
 }
 
 message CreateRoleResponse {
-  Role role = 1;
+  int32 role_id = 1;
 }
 
 message AddUsersToRoleRequest {
   int32 role_id = 1;
-  repeated int64 user_ids = 2;
+  repeated string usernames = 2;
 }
 
 message AddUsersToRoleResponse {}
@@ -49,8 +44,9 @@ message GetRolesRequest {}
 
 message GetRolesResponse {
   message Permission {
-      uint64 bit = 1;
-      string name = 2;
+    uint64 value = 1;
+    string name = 2;
+    optional string description = 3;
   }
 
   repeated Role roles = 1;
@@ -62,23 +58,20 @@ message GetRoleRequest {
 }
 
 message GetRoleResponse {
-  Role role = 1;
-  repeated User users = 2;
+  repeated string usernames = 1;
 }
 
 message UpdateRoleRequest {
   int32 id = 1;
   optional string name = 2;
-  optional uint64 permissions = 3;
+  repeated uint64 permissions = 3;
 }
 
-message UpdateRoleResponse {
-  Role role = 1;
-}
+message UpdateRoleResponse {}
 
 message DeleteRoleRequest {
   int32 id = 1;
-  int32 replacement_role_id = 2;
+  optional int32 replacement_role_id = 2;
 }
 
 message DeleteRoleResponse {}
