@@ -37,6 +37,15 @@ type (
 		DeleteExpiredAsyncSearches(context.Context) error
 		GetAsyncSearchesList(context.Context, types.GetAsyncSearchesListRequest) ([]types.AsyncSearchInfo, error)
 	}
+
+	Admin interface {
+		CreateRole(context.Context, types.CreateRoleRepoRequest) (types.CreateRoleResponse, error)
+		AddUsersToRole(context.Context, types.AddUsersToRoleRequest) error
+		GetRoles(context.Context) (types.GetRolesRepoResponse, error)
+		GetRole(context.Context, types.GetRoleRequest) (types.GetRoleResponse, error)
+		UpdateRole(context.Context, types.UpdateRoleRepoRequest) error
+		DeleteRole(context.Context, types.DeleteRoleRequest) error
+	}
 )
 
 type Repository struct {
@@ -44,6 +53,7 @@ type Repository struct {
 	FavoriteQueries
 	Dashboards
 	AsyncSearches
+	Admin
 }
 
 func New(pool *pgxpool.Pool, requestTimeout time.Duration) *Repository {
@@ -53,5 +63,6 @@ func New(pool *pgxpool.Pool, requestTimeout time.Duration) *Repository {
 		FavoriteQueries: newFavoriteQueriesRepository(p),
 		Dashboards:      newDashboardsRepository(p),
 		AsyncSearches:   newAsyncSearchesRepository(p),
+		Admin:           newAdminRepository(p),
 	}
 }
