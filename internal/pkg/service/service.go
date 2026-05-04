@@ -29,6 +29,7 @@ type Service interface {
 	GetRole(context.Context, types.GetRoleRequest) (types.GetRoleResponse, error)
 	UpdateRole(context.Context, types.UpdateRoleRequest) error
 	DeleteRole(context.Context, types.DeleteRoleRequest) error
+	GetAvailablePermissions() []types.Permission
 }
 
 type service struct {

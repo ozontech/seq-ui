@@ -110,3 +110,7 @@ func (s *service) DeleteRole(ctx context.Context, req types.DeleteRoleRequest) e
 
 	return s.repo.DeleteRole(ctx, req)
 }
+
+func (s *service) GetAvailablePermissions() []types.Permission {
+	return availablePermissions
+}

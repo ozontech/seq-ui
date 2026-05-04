@@ -8,11 +8,13 @@ import (
 type API struct {
 	admin.UnimplementedAdminServiceServer
 
-	service service.Service
+	service              service.Service
+	availablePermissions []*admin.GetRolesResponse_Permission
 }
 
 func New(svc service.Service) *API {
 	return &API{
-		service: svc,
+		service:              svc,
+		availablePermissions: availablePermissionsToProto(svc.GetAvailablePermissions()),
 	}
 }

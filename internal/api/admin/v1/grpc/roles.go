@@ -73,7 +73,7 @@ func (a *API) GetRoles(ctx context.Context, _ *admin.GetRolesRequest) (*admin.Ge
 
 	return &admin.GetRolesResponse{
 		Roles:                rolesToProto(resp.Roles),
-		AvailablePermissions: availablePermissionsToProto(resp.AvailablePermissions),
+		AvailablePermissions: a.availablePermissions,
 	}, nil
 }
 

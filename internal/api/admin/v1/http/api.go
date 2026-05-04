@@ -6,12 +6,14 @@ import (
 )
 
 type API struct {
-	service service.Service
+	service              service.Service
+	availablePermissions []permission
 }
 
 func New(svc service.Service) *API {
 	return &API{
-		service: svc,
+		service:              svc,
+		availablePermissions: parsePermissions(svc.GetAvailablePermissions()),
 	}
 }
 
