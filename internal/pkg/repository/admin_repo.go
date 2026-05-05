@@ -72,9 +72,18 @@ func (r *adminRepository) GetRoles(ctx context.Context) (types.GetRolesRepoRespo
 }
 
 func (r *adminRepository) GetRole(ctx context.Context, req types.GetRoleRequest) (types.GetRoleResponse, error) {
-	query, args := "SELECT user_name FROM user_profiles WHERE role_id=$1 ORDER BY user_name", []any{req.RoleID}
-
 	metricLabels := []string{"admin", "SELECT"}
+
+	roleExists, err := r.roleExists(ctx, req.RoleID)
+	if err != nil {
+		return types.GetRoleResponse{}, err
+	}
+	if !roleExists {
+		incErrorMetric(err, metricLabels)
+		return types.GetRoleResponse{}, types.NewErrNotFound("role")
+	}
+
+	query, args := "SELECT user_name FROM user_profiles WHERE role_id=$1 ORDER BY user_name", []any{req.RoleID}
 	resp := types.GetRoleResponse{}
 
 	rows, err := r.pool.query(ctx, metricLabels, query, args...)
@@ -151,11 +160,12 @@ func (r *adminRepository) DeleteRole(ctx context.Context, req types.DeleteRoleRe
 	}()
 
 	if req.ReplacementRoleID != nil {
-		replacementRoleExists, err := r.roleExists(ctx, tx, *req.ReplacementRoleID)
+		replacementRoleExists, err := r.roleExistsTx(ctx, tx, *req.ReplacementRoleID)
 		if err != nil {
 			return err
 		}
 		if !replacementRoleExists {
+			incErrorMetric(err, metricLabels)
 			return types.NewErrNotFound("replacement role")
 		}
 	}
@@ -207,12 +217,27 @@ func (r *adminRepository) GetUserPermissions(ctx context.Context, req types.GetU
 	return types.GetUserPermissionsResponse{Permissions: permissions}, nil
 }
 
-func (r *adminRepository) roleExists(ctx context.Context, tx pgx.Tx, roleID int32) (bool, error) {
+// Transactional check
+func (r *adminRepository) roleExistsTx(ctx context.Context, tx pgx.Tx, roleID int32) (bool, error) {
 	metricLabels := []string{"admin", "SELECT"}
 	query, args := "SELECT EXISTS(SELECT 1 FROM roles WHERE id=$1)", []any{roleID}
 
 	var exists bool
 	if err := r.pool.queryRowTx(ctx, tx, metricLabels, query, args...).Scan(&exists); err != nil {
+		incErrorMetric(err, metricLabels)
+		return false, fmt.Errorf("failed to check role existence: %w", err)
+	}
+
+	return exists, nil
+}
+
+// Non-transactional check
+func (r *adminRepository) roleExists(ctx context.Context, roleID int32) (bool, error) {
+	metricLabels := []string{"admin", "SELECT"}
+	query, args := "SELECT EXISTS(SELECT 1 FROM roles WHERE id=$1)", []any{roleID}
+
+	var exists bool
+	if err := r.pool.queryRow(ctx, metricLabels, query, args...).Scan(&exists); err != nil {
 		incErrorMetric(err, metricLabels)
 		return false, fmt.Errorf("failed to check role existence: %w", err)
 	}
