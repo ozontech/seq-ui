@@ -4,6 +4,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	grpc_api "github.com/ozontech/seq-ui/internal/api/admin/v1/grpc"
 	http_api "github.com/ozontech/seq-ui/internal/api/admin/v1/http"
+	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/ozontech/seq-ui/internal/pkg/service"
 )
 
@@ -12,10 +13,10 @@ type Admin struct {
 	httpAPI *http_api.API
 }
 
-func New(svc service.Service) *Admin {
+func New(svc service.Service, cfg *config.Admin) *Admin {
 	return &Admin{
-		grpcAPI: grpc_api.New(svc),
-		httpAPI: http_api.New(svc),
+		grpcAPI: grpc_api.New(svc, cfg),
+		httpAPI: http_api.New(svc, cfg),
 	}
 }
 

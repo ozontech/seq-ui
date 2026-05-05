@@ -135,7 +135,7 @@ func TestServeCancelAsyncSearch(t *testing.T) {
 			api := initTestAPIWithAsyncSearches(seqData)
 
 			ctx := context.Background()
-			ctx = context.WithValue(ctx, types.UserKey{}, tt.mockArgs.userName)
+			ctx = types.SetUserKey(ctx, tt.mockArgs.userName)
 
 			resp, err := api.CancelAsyncSearch(ctx, tt.req)
 			if tt.err == nil {

@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -82,7 +81,7 @@ func TestServeGetUserProfile(t *testing.T) {
 					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
 			}
 			if !tt.noUser {
-				req = req.WithContext(context.WithValue(req.Context(), types.UserKey{}, userName))
+				req = req.WithContext(types.SetUserKey(req.Context(), userName))
 			}
 
 			httputil.DoTestHTTP(t, httputil.TestDataHTTP{
@@ -256,7 +255,7 @@ func TestServeUpdateUserProfile(t *testing.T) {
 					Return(tt.mockArgs.err).Times(1)
 			}
 			if !tt.noUser {
-				req = req.WithContext(context.WithValue(req.Context(), types.UserKey{}, userName))
+				req = req.WithContext(types.SetUserKey(req.Context(), userName))
 			}
 
 			httputil.DoTestHTTP(t, httputil.TestDataHTTP{

@@ -70,3 +70,11 @@ type DeleteRoleRequest struct {
 	RoleID            int32
 	ReplacementRoleID *int32
 }
+
+type GetUserPermissionsRequest struct {
+	Username string
+}
+
+type GetUserPermissionsResponse struct {
+	Permissions uint64
+}

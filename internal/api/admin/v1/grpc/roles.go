@@ -11,6 +11,10 @@ import (
 )
 
 func (a *API) CreateRole(ctx context.Context, req *admin.CreateRoleRequest) (*admin.CreateRoleResponse, error) {
+	if err := a.authorize(ctx, "CreateRole"); err != nil {
+		return nil, grpcutil.ProcessError(err)
+	}
+
 	ctx, span := tracing.StartSpan(ctx, "admin_v1_create_role")
 	defer span.End()
 
@@ -41,6 +45,10 @@ func (a *API) CreateRole(ctx context.Context, req *admin.CreateRoleRequest) (*ad
 }
 
 func (a *API) AddUsersToRole(ctx context.Context, req *admin.AddUsersToRoleRequest) (*admin.AddUsersToRoleResponse, error) {
+	if err := a.authorize(ctx, "AddUsersToRole"); err != nil {
+		return nil, grpcutil.ProcessError(err)
+	}
+
 	ctx, span := tracing.StartSpan(ctx, "admin_v1_add_users_to_role")
 	defer span.End()
 
@@ -66,6 +74,10 @@ func (a *API) AddUsersToRole(ctx context.Context, req *admin.AddUsersToRoleReque
 }
 
 func (a *API) GetRoles(ctx context.Context, _ *admin.GetRolesRequest) (*admin.GetRolesResponse, error) {
+	if err := a.authorize(ctx, "GetRoles"); err != nil {
+		return nil, grpcutil.ProcessError(err)
+	}
+
 	resp, err := a.service.GetRoles(ctx)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
@@ -78,6 +90,10 @@ func (a *API) GetRoles(ctx context.Context, _ *admin.GetRolesRequest) (*admin.Ge
 }
 
 func (a *API) GetRole(ctx context.Context, req *admin.GetRoleRequest) (*admin.GetRoleResponse, error) {
+	if err := a.authorize(ctx, "GetRole"); err != nil {
+		return nil, grpcutil.ProcessError(err)
+	}
+
 	ctx, span := tracing.StartSpan(ctx, "admin_v1_get_role")
 	defer span.End()
 
@@ -101,6 +117,10 @@ func (a *API) GetRole(ctx context.Context, req *admin.GetRoleRequest) (*admin.Ge
 }
 
 func (a *API) UpdateRole(ctx context.Context, req *admin.UpdateRoleRequest) (*admin.UpdateRoleResponse, error) {
+	if err := a.authorize(ctx, "UpdateRole"); err != nil {
+		return nil, grpcutil.ProcessError(err)
+	}
+
 	ctx, span := tracing.StartSpan(ctx, "admin_v1_update_role")
 	defer span.End()
 
@@ -134,6 +154,10 @@ func (a *API) UpdateRole(ctx context.Context, req *admin.UpdateRoleRequest) (*ad
 }
 
 func (a *API) DeleteRole(ctx context.Context, req *admin.DeleteRoleRequest) (*admin.DeleteRoleResponse, error) {
+	if err := a.authorize(ctx, "DeleteRole"); err != nil {
+		return nil, grpcutil.ProcessError(err)
+	}
+
 	ctx, span := tracing.StartSpan(ctx, "admin_v1_delete_role")
 	defer span.End()
 

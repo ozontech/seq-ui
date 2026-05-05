@@ -177,7 +177,7 @@ func HTTPAuthInterceptor(providers *AuthProviders) func(next http.Handler) http.
 				http.Error(w, "Unauthenticated", http.StatusUnauthorized)
 				return
 			}
-			r = r.WithContext(context.WithValue(ctx, types.UserKey{}, username))
+			r = r.WithContext(types.SetUserKey(ctx, username))
 
 			next.ServeHTTP(w, r)
 		}

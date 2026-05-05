@@ -73,6 +73,10 @@ func (s *service) UpdateRole(ctx context.Context, req types.UpdateRoleRequest) e
 		return types.NewErrInvalidRequestField("value role_id must be greater than 0")
 	}
 
+	if req.Name == nil && len(req.Permissions) == 0 {
+		return types.ErrEmptyUpdateRequest
+	}
+
 	if req.Name != nil && *req.Name == "" {
 		return types.NewErrInvalidRequestField("empty role name")
 	}
@@ -109,6 +113,10 @@ func (s *service) DeleteRole(ctx context.Context, req types.DeleteRoleRequest) e
 	}
 
 	return s.repo.DeleteRole(ctx, req)
+}
+
+func (s *service) GetUserPermissions(ctx context.Context, req types.GetUserPermissionsRequest) (types.GetUserPermissionsResponse, error) {
+	return s.repo.GetUserPermissions(ctx, req)
 }
 
 func (s *service) GetAvailablePermissions() []types.Permission {

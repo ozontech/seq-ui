@@ -95,7 +95,7 @@ func TestServeGetFavoriteQueries(t *testing.T) {
 					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
 			}
 			if !tt.noUser {
-				req = req.WithContext(context.WithValue(req.Context(), types.UserKey{}, userName))
+				req = req.WithContext(types.SetUserKey(req.Context(), userName))
 				api.profiles.SetID(userName, profileID)
 			}
 
@@ -220,7 +220,7 @@ func TestServeCreateFavoriteQuery(t *testing.T) {
 					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
 			}
 			if !tt.noUser {
-				req = req.WithContext(context.WithValue(req.Context(), types.UserKey{}, userName))
+				req = req.WithContext(types.SetUserKey(req.Context(), userName))
 				api.profiles.SetID(userName, profileID)
 			}
 
@@ -309,7 +309,7 @@ func TestServeDeleteFavoriteQuery(t *testing.T) {
 					Return(tt.mockArgs.err).Times(1)
 			}
 			if !tt.noUser {
-				req = req.WithContext(context.WithValue(req.Context(), types.UserKey{}, userName))
+				req = req.WithContext(types.SetUserKey(req.Context(), userName))
 				api.profiles.SetID(userName, profileID)
 			}
 

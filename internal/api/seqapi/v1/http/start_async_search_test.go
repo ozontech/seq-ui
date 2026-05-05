@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -137,7 +136,7 @@ func TestServeStartAsyncSearch(t *testing.T) {
 
 			api := initTestAPIWithAsyncSearches(seqData)
 			req := httptest.NewRequest(http.MethodPost, "/seqapi/v1/async_search/start", strings.NewReader(tt.reqBody))
-			req = req.WithContext(context.WithValue(req.Context(), types.UserKey{}, mockUserName))
+			req = req.WithContext(types.SetUserKey(req.Context(), mockUserName))
 
 			httputil.DoTestHTTP(t, httputil.TestDataHTTP{
 				Req:          req,

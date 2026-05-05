@@ -118,7 +118,7 @@ func TestServeStartAsyncSearch(t *testing.T) {
 			api := initTestAPIWithAsyncSearches(seqData)
 
 			ctx := context.Background()
-			ctx = context.WithValue(ctx, types.UserKey{}, mockUserName)
+			ctx = types.SetUserKey(ctx, mockUserName)
 
 			resp, err := api.StartAsyncSearch(ctx, tt.req)
 			require.NoError(t, err)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/ozontech/seq-ui/internal/app/types"
 )
 
@@ -115,9 +116,15 @@ func (r *adminRepository) UpdateRole(ctx context.Context, req types.UpdateRoleRe
 		args = []any{*req.Permissions, req.RoleID}
 	}
 
-	if _, err := r.pool.exec(ctx, metricLabels, query, args...); err != nil {
+	tag, err := r.pool.exec(ctx, metricLabels, query, args...)
+	if err != nil {
 		incErrorMetric(err, metricLabels)
 		return fmt.Errorf("failed to update role: %w", err)
+	}
+
+	if tag.RowsAffected() == 0 {
+		incErrorMetric(err, metricLabels)
+		return types.NewErrNotFound("role")
 	}
 
 	return nil
@@ -143,6 +150,16 @@ func (r *adminRepository) DeleteRole(ctx context.Context, req types.DeleteRoleRe
 		_ = tx.Rollback(ctx)
 	}()
 
+	if req.ReplacementRoleID != nil {
+		replacementRoleExists, err := r.roleExists(ctx, tx, *req.ReplacementRoleID)
+		if err != nil {
+			return err
+		}
+		if !replacementRoleExists {
+			return types.NewErrNotFound("replacement role")
+		}
+	}
+
 	switch {
 	case req.ReplacementRoleID != nil:
 		query = "UPDATE user_profiles SET role_id=$1 WHERE role_id=$2"
@@ -158,9 +175,15 @@ func (r *adminRepository) DeleteRole(ctx context.Context, req types.DeleteRoleRe
 	}
 
 	query, args = "DELETE FROM roles WHERE id=$1", []any{req.RoleID}
-	if _, err := r.pool.execTx(ctx, tx, metricLabels, query, args...); err != nil {
+	tag, err := r.pool.execTx(ctx, tx, metricLabels, query, args...)
+	if err != nil {
 		incErrorMetric(err, metricLabels)
 		return fmt.Errorf("failed to delete role: %w", err)
+	}
+
+	if tag.RowsAffected() == 0 {
+		incErrorMetric(err, metricLabels)
+		return types.NewErrNotFound("role")
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -169,4 +192,30 @@ func (r *adminRepository) DeleteRole(ctx context.Context, req types.DeleteRoleRe
 	}
 
 	return nil
+}
+
+func (r *adminRepository) GetUserPermissions(ctx context.Context, req types.GetUserPermissionsRequest) (types.GetUserPermissionsResponse, error) {
+	metricLabels := []string{"admin", "SELECT"}
+	query, args := "SELECT COALESCE(r.permissions, 0) FROM user_profiles up LEFT JOIN roles r ON r.id=up.role_id WHERE up.user_name=$1", []any{req.Username}
+
+	var permissions uint64
+	if err := r.pool.queryRow(ctx, metricLabels, query, args...).Scan(&permissions); err != nil {
+		incErrorMetric(err, metricLabels)
+		return types.GetUserPermissionsResponse{}, fmt.Errorf("failed to get user permissions: %w", err)
+	}
+
+	return types.GetUserPermissionsResponse{Permissions: permissions}, nil
+}
+
+func (r *adminRepository) roleExists(ctx context.Context, tx pgx.Tx, roleID int32) (bool, error) {
+	metricLabels := []string{"admin", "SELECT"}
+	query, args := "SELECT EXISTS(SELECT 1 FROM roles WHERE id=$1)", []any{roleID}
+
+	var exists bool
+	if err := r.pool.queryRowTx(ctx, tx, metricLabels, query, args...).Scan(&exists); err != nil {
+		incErrorMetric(err, metricLabels)
+		return false, fmt.Errorf("failed to check role existence: %w", err)
+	}
+
+	return exists, nil
 }

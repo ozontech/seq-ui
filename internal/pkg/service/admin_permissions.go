@@ -20,7 +20,7 @@ var availablePermissions = []types.Permission{
 	{
 		Value:       PermissionManageRoles,
 		Name:        "manage_roles_access",
-		Description: ptr("Manage  roles"),
+		Description: ptr("Manage roles"),
 	},
 }
 
