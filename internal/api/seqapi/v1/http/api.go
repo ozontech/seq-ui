@@ -86,7 +86,7 @@ func New(
 			}
 
 			envPinnedFields := parseFields(options.PinnedFields)
-			evnSystemFields := parseFields(options.SystemFields)
+			envSystemFields := parseFields(options.SystemFields)
 			envExportLimiter := tokenlimiter.New(options.MaxParallelExportRequests)
 
 			paramsByEnv[envName] = apiParams{
@@ -95,7 +95,7 @@ func New(
 				fieldsCache:   envfCache,
 				masker:        envMasker,
 				pinnedFields:  envPinnedFields,
-				systemFields:  evnSystemFields,
+				systemFields:  envSystemFields,
 				exportLimiter: envExportLimiter,
 			}
 		}

@@ -140,6 +140,6 @@ func getFieldsResponseFromProto(proto *seqapi.GetFieldsResponse) getFieldsRespon
 	return getFieldsResponse{
 		Fields:       fieldsFromProto(proto.GetFields()),
 		SystemFields: fieldsFromProto(proto.GetSystemFields()),
-		PinnedFields: fieldsFromProto(proto.GetSystemFields()),
+		PinnedFields: fieldsFromProto(proto.GetPinnedFields()),
 	}
 }
