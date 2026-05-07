@@ -577,11 +577,15 @@ handlers:
 
   > Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
-+ **`pinned_fields`** *`[]PinnedField`* *`default=[]`*
++ **`pinned_fields`** *`[]Field`* *`default=[]`*
 
   Список полей, которые будут закреплены в пользовательском интерфейсе.
 
-  Поля `PinnedField`:
++ **`system_fields`** *`[]Field`* *`default=[]`*
+
+  Список системных полей.
+
+  Поля `Field`:
 
   + **`name`** *`string`* *`required`*
 

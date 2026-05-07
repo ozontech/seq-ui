@@ -28,6 +28,7 @@ type apiParams struct {
 	fieldsCache   *fieldsCache
 	masker        *mask.Masker
 	pinnedFields  fields
+	systemFields  fields
 	exportLimiter *tokenlimiter.Limiter
 }
 
@@ -61,7 +62,8 @@ func New(
 		logger.Fatal("failed to init masking", zap.Error(err))
 	}
 
-	globalPinnedFields := parsePinnedFields(cfg.PinnedFields)
+	globalPinnedFields := parseFields(cfg.PinnedFields)
+	globalSystemFields := parseFields(cfg.SystemFields)
 	globalExportLimiter := tokenlimiter.New(cfg.MaxParallelExportRequests)
 
 	var params apiParams
@@ -83,7 +85,8 @@ func New(
 				logger.Fatal("failed to init env masking", zap.Error(err))
 			}
 
-			envPinnedFields := parsePinnedFields(options.PinnedFields)
+			envPinnedFields := parseFields(options.PinnedFields)
+			evnSystemFields := parseFields(options.SystemFields)
 			envExportLimiter := tokenlimiter.New(options.MaxParallelExportRequests)
 
 			paramsByEnv[envName] = apiParams{
@@ -92,6 +95,7 @@ func New(
 				fieldsCache:   envfCache,
 				masker:        envMasker,
 				pinnedFields:  envPinnedFields,
+				systemFields:  evnSystemFields,
 				exportLimiter: envExportLimiter,
 			}
 		}
@@ -108,6 +112,7 @@ func New(
 			fieldsCache:   globalfCache,
 			masker:        globalMasker,
 			pinnedFields:  globalPinnedFields,
+			systemFields:  globalSystemFields,
 			exportLimiter: globalExportLimiter,
 		}
 	}
@@ -163,7 +168,7 @@ func (a *API) Router() chi.Router {
 	return mux
 }
 
-func parsePinnedFields(fields []config.PinnedField) []field {
+func parseFields(fields []config.Field) []field {
 	res := make([]field, len(fields))
 	for i, f := range fields {
 		res[i] = field{
