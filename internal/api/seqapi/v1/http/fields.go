@@ -40,9 +40,11 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		res := getFieldsResponseFromProto(resp)
-		res.SystemFields = params.systemFields
-		res.PinnedFields = params.pinnedFields
+		res := getFieldsResponse{
+			Fields:       fieldsFromProto(resp.GetFields()),
+			SystemFields: params.systemFields,
+			PinnedFields: params.pinnedFields,
+		}
 		wr.WriteJson(res)
 		return
 	}
@@ -65,9 +67,11 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := getFieldsResponseFromProto(resp)
-	res.SystemFields = params.systemFields
-	res.PinnedFields = params.pinnedFields
+	res := getFieldsResponse{
+		Fields:       fieldsFromProto(resp.GetFields()),
+		SystemFields: params.systemFields,
+		PinnedFields: params.pinnedFields,
+	}
 	resData, err := json.Marshal(res)
 	if err != nil {
 		if cached {
@@ -135,11 +139,3 @@ type getFieldsResponse struct {
 	SystemFields fields `json:"system_fields,omitempty"`
 	PinnedFields fields `json:"pinned_fields,omitempty"`
 } //	@name	seqapi.v1.GetFieldsResponse
-
-func getFieldsResponseFromProto(proto *seqapi.GetFieldsResponse) getFieldsResponse {
-	return getFieldsResponse{
-		Fields:       fieldsFromProto(proto.GetFields()),
-		SystemFields: fieldsFromProto(proto.GetSystemFields()),
-		PinnedFields: fieldsFromProto(proto.GetPinnedFields()),
-	}
-}

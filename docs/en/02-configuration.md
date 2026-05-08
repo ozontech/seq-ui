@@ -579,11 +579,11 @@ Config for `/seqapi` API handlers.
 
 + **`pinned_fields`** *`[]Field`* *`default=[]`*
 
-  List of fields which will be pinned in UI.
+  List of fields which will be displayed at the top of the event in UI.
 
 + **`system_fields`** *`[]Field`* *`default=[]`*
 
-  List of system fields.
+  List of fields which will be displayed at the bottom of the event in UI.
 
   `Field` fields:
 
