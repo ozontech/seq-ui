@@ -44,7 +44,17 @@ func TestServeGetEnvs(t *testing.T) {
 			cfg: config.SeqAPI{
 				SeqAPIOptions: &config.SeqAPIOptions{},
 				Envs: map[string]config.SeqAPIEnv{
-					"prod": {
+					"cluster-220": {
+						SeqDB: "pro-seqdb",
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit:            1000,
+							MaxExportLimit:            500,
+							MaxParallelExportRequests: 10,
+							MaxAggregationsPerRequest: 5,
+							SeqCLIMaxSearchLimit:      2000,
+						},
+					},
+					"cluster-10": {
 						SeqDB: "prod-seqdb",
 						Options: &config.SeqAPIOptions{
 							MaxSearchLimit:            1000,
@@ -54,7 +64,7 @@ func TestServeGetEnvs(t *testing.T) {
 							SeqCLIMaxSearchLimit:      2000,
 						},
 					},
-					"staging": {
+					"cluster-102": {
 						SeqDB: "staging-seqdb",
 						Options: &config.SeqAPIOptions{
 							MaxSearchLimit:            500,
@@ -64,12 +74,32 @@ func TestServeGetEnvs(t *testing.T) {
 							SeqCLIMaxSearchLimit:      1000,
 						},
 					},
+					"prod": {
+						SeqDB: "stag-seqdb",
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit:            500,
+							MaxExportLimit:            250,
+							MaxParallelExportRequests: 5,
+							MaxAggregationsPerRequest: 3,
+							SeqCLIMaxSearchLimit:      1000,
+						},
+					},
+					"wyanki": {
+						SeqDB: "sta-seqdb",
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit:            500,
+							MaxExportLimit:            250,
+							MaxParallelExportRequests: 5,
+							MaxAggregationsPerRequest: 3,
+							SeqCLIMaxSearchLimit:      1000,
+						},
+					},
 				},
-				DefaultEnv: "prod",
+				DefaultEnv: "cluster-10",
 			},
 			wantEnvs: []envInfo{
 				{
-					Env:                       "prod",
+					Env:                       "cluster-10",
 					MaxSearchLimit:            1000,
 					MaxExportLimit:            500,
 					MaxParallelExportRequests: 10,
@@ -77,7 +107,31 @@ func TestServeGetEnvs(t *testing.T) {
 					SeqCliMaxSearchLimit:      2000,
 				},
 				{
-					Env:                       "staging",
+					Env:                       "cluster-102",
+					MaxSearchLimit:            500,
+					MaxExportLimit:            250,
+					MaxParallelExportRequests: 5,
+					MaxAggregationsPerRequest: 3,
+					SeqCliMaxSearchLimit:      1000,
+				},
+				{
+					Env:                       "cluster-220",
+					MaxSearchLimit:            1000,
+					MaxExportLimit:            500,
+					MaxParallelExportRequests: 10,
+					MaxAggregationsPerRequest: 5,
+					SeqCliMaxSearchLimit:      2000,
+				},
+				{
+					Env:                       "prod",
+					MaxSearchLimit:            500,
+					MaxExportLimit:            250,
+					MaxParallelExportRequests: 5,
+					MaxAggregationsPerRequest: 3,
+					SeqCliMaxSearchLimit:      1000,
+				},
+				{
+					Env:                       "wyanki",
 					MaxSearchLimit:            500,
 					MaxExportLimit:            250,
 					MaxParallelExportRequests: 5,

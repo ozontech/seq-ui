@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 	"time"
 
 	"go.uber.org/zap"
@@ -139,7 +140,35 @@ func parseEnvs(cfg config.SeqAPI) *seqapi.GetEnvsResponse {
 		for name := range cfg.Envs {
 			names = append(names, name)
 		}
-		sort.Strings(names)
+		sort.Slice(names, func(i, j int) bool {
+			a, b := names[i], names[j]
+
+			var aPrefix, bPrefix string
+			var aNum, bNum int
+
+			k := 0
+			for k < len(a) && (a[k] < '0' || a[k] > '9') {
+				k++
+			}
+			aPrefix = a[:k]
+			if k < len(a) {
+				aNum, _ = strconv.Atoi(a[k:])
+			}
+
+			k = 0
+			for k < len(b) && (b[k] < '0' || b[k] > '9') {
+				k++
+			}
+			bPrefix = b[:k]
+			if k < len(b) {
+				bNum, _ = strconv.Atoi(b[k:])
+			}
+
+			if aPrefix != bPrefix {
+				return aPrefix < bPrefix
+			}
+			return aNum < bNum
+		})
 
 		envs = make([]*seqapi.GetEnvsResponse_Env, 0, len(cfg.Envs))
 		for _, name := range names {

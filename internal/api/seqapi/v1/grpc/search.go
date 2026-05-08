@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/aggregation_ts"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/api_error"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
@@ -47,6 +48,10 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 			Key:   "order",
 			Value: attribute.StringValue(req.GetOrder().String()),
 		},
+		{
+			Key:   "offset_id",
+			Value: attribute.StringValue(req.GetOffsetId()),
+		},
 	}
 
 	if env != "" {
@@ -82,9 +87,13 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 	if err := api_error.CheckAggregationsCount(len(req.Aggregations), params.options.MaxAggregationsPerRequest); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+	if err := api_error.CheckForOffsetConflict(req.Offset, req.OffsetId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 	if err := api_error.CheckSearchOffsetLimit(req.Offset, params.options.MaxSearchOffsetLimit); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
+
 	fromRaw, toRaw := req.From.AsTime(), req.To.AsTime()
 	for _, agg := range req.Aggregations {
 		if agg.Interval == nil {
@@ -113,6 +122,11 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 		for _, e := range resp.Events {
 			params.masker.Mask(e.Data)
 		}
+	}
+
+	err = aggregation_ts.NormalizeBuckets(req.Aggregations, resp.Aggregations)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return resp, nil

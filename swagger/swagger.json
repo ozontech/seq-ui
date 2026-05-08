@@ -2327,6 +2327,9 @@
                             "items": {
                                 "$ref": "#/definitions/seqapi.v1.AggregationSeries"
                             }
+                        },
+                        "target_bucket_rate": {
+                            "type": "string"
                         }
                     }
                 }
@@ -2370,6 +2373,11 @@
                     "items": {
                         "type": "number"
                     }
+                },
+                "target_bucket_rate": {
+                    "type": "string",
+                    "format": "duration",
+                    "example": "10s"
                 }
             }
         },
@@ -2504,12 +2512,14 @@
             "type": "string",
             "enum": [
                 "ERROR_CODE_NO",
+                "ERROR_CODE_UNSPECIFIED",
                 "ERROR_CODE_PARTIAL_RESPONSE",
                 "ERROR_CODE_QUERY_TOO_HEAVY",
                 "ERROR_CODE_TOO_MANY_FRACTIONS_HIT"
             ],
             "x-enum-varnames": [
                 "aecNo",
+                "aecUnspecified",
                 "aecPartialResponse",
                 "aecQueryTooHeavy",
                 "aecTooManyFractionsHit"
@@ -2940,6 +2950,9 @@
                 "offset": {
                     "type": "integer",
                     "format": "int32"
+                },
+                "offset_id": {
+                    "type": "string"
                 },
                 "order": {
                     "default": "desc",

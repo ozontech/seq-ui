@@ -282,6 +282,7 @@ func newProxySearchReq(req *seqapi.SearchRequest) *seqproxyapi.ComplexSearchRequ
 		Aggs:      newProxyAggQuerySlice(req.Aggregations),
 		Size:      int64(req.Limit),
 		Offset:    int64(req.Offset),
+		OffsetId:  req.OffsetId,
 		WithTotal: req.WithTotal,
 		Order:     seqproxyapi.Order(req.Order),
 	}

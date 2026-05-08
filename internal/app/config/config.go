@@ -30,8 +30,11 @@ const (
 	minGRPCKeepaliveTime    = 10 * time.Second
 	minGRPCKeepaliveTimeout = 1 * time.Second
 
+	defaultAsyncSearchListQueryLengthLimit = 1000
+
 	defaultMaxSearchTotalLimit        = 1000000
 	defaultMaxSearchOffsetLimit       = 1000000
+	defaultMaxExportLimit             = 100000
 	defaultMaxAggregationsPerRequest  = 1
 	defaultMaxBucketsPerAggregationTs = 200
 	defaultMaxParallelExportRequests  = 1
@@ -312,7 +315,8 @@ type ErrorGroups struct {
 }
 
 type AsyncSearch struct {
-	AdminUsers []string `yaml:"admin_users"`
+	AdminUsers           []string `yaml:"admin_users"`
+	ListQueryLengthLimit int      `yaml:"list_query_length_limit"`
 }
 
 // FromFile parse config from config path.
@@ -337,29 +341,10 @@ func FromFile(cfgPath string) (Config, error) {
 		)
 	}
 
-	if cfg.Handlers.SeqAPI.MaxAggregationsPerRequest <= 0 {
-		cfg.Handlers.SeqAPI.MaxAggregationsPerRequest = defaultMaxAggregationsPerRequest
-	}
-	if cfg.Handlers.SeqAPI.MaxBucketsPerAggregationTs <= 0 {
-		cfg.Handlers.SeqAPI.MaxBucketsPerAggregationTs = defaultMaxBucketsPerAggregationTs
-	}
-	if cfg.Handlers.SeqAPI.MaxParallelExportRequests <= 0 {
-		cfg.Handlers.SeqAPI.MaxParallelExportRequests = defaultMaxParallelExportRequests
-	}
-	if cfg.Handlers.SeqAPI.MaxSearchTotalLimit <= 0 {
-		cfg.Handlers.SeqAPI.MaxSearchTotalLimit = defaultMaxSearchTotalLimit
-	}
-	if cfg.Handlers.SeqAPI.MaxSearchOffsetLimit <= 0 {
-		cfg.Handlers.SeqAPI.MaxSearchOffsetLimit = defaultMaxSearchOffsetLimit
-	}
-	if cfg.Handlers.SeqAPI.EventsCacheTTL <= 0 {
-		cfg.Handlers.SeqAPI.EventsCacheTTL = defaultEventsCacheTTL
-	}
-	if cfg.Handlers.SeqAPI.LogsLifespanCacheKey == "" {
-		cfg.Handlers.SeqAPI.LogsLifespanCacheKey = defaultLogsLifespanCacheKey
-	}
-	if cfg.Handlers.SeqAPI.LogsLifespanCacheTTL <= 0 {
-		cfg.Handlers.SeqAPI.LogsLifespanCacheTTL = defaultLogsLifespanCacheTTL
+	setSeqAPIOptionsDefaults(cfg.Handlers.SeqAPI.SeqAPIOptions)
+
+	if cfg.Handlers.AsyncSearch.ListQueryLengthLimit <= 0 {
+		cfg.Handlers.AsyncSearch.ListQueryLengthLimit = defaultAsyncSearchListQueryLengthLimit
 	}
 
 	if cfg.Server.DB != nil && cfg.Server.DB.UsePreparedStatements == nil {
@@ -436,12 +421,45 @@ func FromFile(cfgPath string) (Config, error) {
 
 			if envConfig.Options == nil {
 				envConfig.Options = cfg.Handlers.SeqAPI.SeqAPIOptions
-				cfg.Handlers.SeqAPI.Envs[envName] = envConfig
+			} else {
+				setSeqAPIOptionsDefaults(envConfig.Options)
 			}
+
+			cfg.Handlers.SeqAPI.Envs[envName] = envConfig
 		}
 	}
 
 	return cfg, nil
+}
+
+func setSeqAPIOptionsDefaults(options *SeqAPIOptions) {
+	if options.MaxAggregationsPerRequest <= 0 {
+		options.MaxAggregationsPerRequest = defaultMaxAggregationsPerRequest
+	}
+	if options.MaxBucketsPerAggregationTs <= 0 {
+		options.MaxBucketsPerAggregationTs = defaultMaxBucketsPerAggregationTs
+	}
+	if options.MaxParallelExportRequests <= 0 {
+		options.MaxParallelExportRequests = defaultMaxParallelExportRequests
+	}
+	if options.MaxSearchTotalLimit <= 0 {
+		options.MaxSearchTotalLimit = defaultMaxSearchTotalLimit
+	}
+	if options.MaxSearchOffsetLimit <= 0 {
+		options.MaxSearchOffsetLimit = defaultMaxSearchOffsetLimit
+	}
+	if options.MaxExportLimit <= 0 {
+		options.MaxExportLimit = defaultMaxExportLimit
+	}
+	if options.EventsCacheTTL <= 0 {
+		options.EventsCacheTTL = defaultEventsCacheTTL
+	}
+	if options.LogsLifespanCacheKey == "" {
+		options.LogsLifespanCacheKey = defaultLogsLifespanCacheKey
+	}
+	if options.LogsLifespanCacheTTL <= 0 {
+		options.LogsLifespanCacheTTL = defaultLogsLifespanCacheTTL
+	}
 }
 
 func parse(cfg []byte) (Config, error) {

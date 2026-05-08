@@ -2,6 +2,7 @@ package mw
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -71,6 +72,14 @@ func logRequestBeforeHandler(ctx context.Context, logger *tracing.Logger, args r
 		zap.Object("header", processedHeader),
 		zap.String("full_method", args.fullMethod),
 		zap.String("body", args.requestBody),
+	}
+	if args.requestBody != "" {
+		var requestData map[string]any
+		if err := json.Unmarshal([]byte(args.requestBody), &requestData); err == nil {
+			if q, ok := requestData["query"].(string); ok && q != "" {
+				logArgs = append(logArgs, zap.String("query", q))
+			}
+		}
 	}
 	if args.user != "" {
 		logArgs = append(logArgs, zap.String("user", args.user))

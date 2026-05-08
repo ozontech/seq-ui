@@ -163,7 +163,7 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 		userProfileV1 = userprofile_v1.New(svc, p)
 		dashboardsV1 = dashboards_v1.New(svc, p)
 
-		asyncSearchesService = asyncsearches.New(ctx, repo, defaultClient, cfg.Handlers.AsyncSearch.AdminUsers)
+		asyncSearchesService = asyncsearches.New(ctx, repo, defaultClient, cfg.Handlers.AsyncSearch)
 	}
 
 	seqApiV1 := seqapi_v1.New(cfg.Handlers.SeqAPI, seqDBClients, inmemWithRedisCache, redisCache, asyncSearchesService, p)

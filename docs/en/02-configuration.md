@@ -506,6 +506,7 @@ handlers:
   seq_api:
   error_groups:
   mass_export:
+  async_search:
 ```
 
 ### SeqAPI
@@ -547,6 +548,12 @@ Config for `/seqapi` API handlers.
 + **`max_buckets_per_aggregation_ts`** *`int`* *`default=200`*
 
   Max allowed buckets per aggregation with timeseries request. The number of buckets is calculated as (`to`-`from`) / `interval`. If set to zero or negative value, then it will be reset to `default`.
+
++ **`default_target_bucket_rate`** *`string`* *`default="0s"`*
+
+  The unit to which bucket values ​​are normalized in aggregation with timeseries request if not specified in the request. The initial bucket unit is `count/interval`; after normalization, it is `count/target_bucket_rate`. If set to negative value, then it will be reset to `default`. By default normalization is disabled.
+
+  > Used only in `count` aggregations. The value must be passed in duration format: `<number>(ms|s|m|h)`.
 
 + **`events_cache_ttl`** *`string`* *`default="24h"`*
 
@@ -805,6 +812,22 @@ Config for `/massexport` API handlers.
   Max retry backoff if previous query was rate-limited. If it's less than `initial_retry_backoff`, then `initial_retry_backoff` value will be reset to `max_retry_backoff`
 
   > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
+
+### Async Search
+
+Configuration for async search request.
+
+**`async_search`** *`AsyncSearch`* *`optional`*
+
+`AsyncSearch` fields:
+
++ **`admin_users`** *`[]string`* *`optional`*
+
+  List of users allowed to cancel or delete async requests created by other users.
+
++ **`list_query_length_limit`** *`int`* *`default=1000`*
+
+  Maximum length of `request.query` in async searches list responses. Requests exceeding the limit will be truncated to it
 
 ## Tracing
 

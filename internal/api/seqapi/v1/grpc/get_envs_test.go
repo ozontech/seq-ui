@@ -62,11 +62,62 @@ func TestGetEnvs(t *testing.T) {
 							SeqCLIMaxSearchLimit:      15000,
 						},
 					},
+					"cluster-10": {
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit:            150,
+							MaxExportLimit:            250,
+							MaxParallelExportRequests: 3,
+							MaxAggregationsPerRequest: 6,
+							SeqCLIMaxSearchLimit:      15000,
+						},
+					},
+					"cluster-102": {
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit:            100,
+							MaxExportLimit:            200,
+							MaxParallelExportRequests: 2,
+							MaxAggregationsPerRequest: 5,
+							SeqCLIMaxSearchLimit:      10000,
+						},
+					},
+					"cluster-220": {
+						Options: &config.SeqAPIOptions{
+							MaxSearchLimit:            100,
+							MaxExportLimit:            200,
+							MaxParallelExportRequests: 2,
+							MaxAggregationsPerRequest: 5,
+							SeqCLIMaxSearchLimit:      10000,
+						},
+					},
 				},
 				DefaultEnv: "test",
 			},
 			want: &seqapi.GetEnvsResponse{
 				Envs: []*seqapi.GetEnvsResponse_Env{
+					{
+						Env:                       "cluster-10",
+						MaxSearchLimit:            150,
+						MaxExportLimit:            250,
+						MaxParallelExportRequests: 3,
+						MaxAggregationsPerRequest: 6,
+						SeqCliMaxSearchLimit:      15000,
+					},
+					{
+						Env:                       "cluster-102",
+						MaxSearchLimit:            100,
+						MaxExportLimit:            200,
+						MaxParallelExportRequests: 2,
+						MaxAggregationsPerRequest: 5,
+						SeqCliMaxSearchLimit:      10000,
+					},
+					{
+						Env:                       "cluster-220",
+						MaxSearchLimit:            100,
+						MaxExportLimit:            200,
+						MaxParallelExportRequests: 2,
+						MaxAggregationsPerRequest: 5,
+						SeqCliMaxSearchLimit:      10000,
+					},
 					{
 						Env:                       "prod",
 						MaxSearchLimit:            150,
