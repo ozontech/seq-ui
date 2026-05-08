@@ -14,14 +14,21 @@ import (
 
 type Repository interface {
 	GetErrorGroups(context.Context, types.GetErrorGroupsRequest) ([]types.ErrorGroup, error)
-	GetErrorGroupsCount(context.Context, types.GetErrorGroupsRequest) (uint64, error)
+	GetErrorGroupsTotal(context.Context, types.GetErrorGroupsRequest) (uint64, error)
+
 	GetNewErrorGroups(context.Context, types.GetErrorGroupsRequest) ([]types.ErrorGroup, error)
-	GetNewErrorGroupsCount(context.Context, types.GetErrorGroupsRequest) (uint64, error)
+	GetNewErrorGroupsTotal(context.Context, types.GetErrorGroupsRequest) (uint64, error)
+
+	GetTopErrorGroups(context.Context, types.GetTopErrorGroupsRequest) ([]types.TopErrorGroup, error)
+	GetTopErrorGroupsTotal(context.Context, types.GetTopErrorGroupsRequest) (uint64, error)
+
 	GetErrorHist(context.Context, types.GetErrorHistRequest) ([]types.ErrorHistBucket, error)
 	GetErrorDetails(context.Context, types.GetErrorGroupDetailsRequest) (types.ErrorGroupDetails, error)
 	GetErrorCounts(context.Context, types.GetErrorGroupDetailsRequest) (types.ErrorGroupCounts, error)
-	GetErrorReleases(context.Context, types.GetErrorGroupReleasesRequest) ([]string, error)
+
 	GetServices(context.Context, types.GetServicesRequest) ([]string, error)
+	GetReleases(context.Context, types.GetReleasesRequest) ([]string, error)
+
 	DiffByReleases(context.Context, types.DiffByReleasesRequest) ([]types.DiffGroup, error)
 	DiffByReleasesTotal(context.Context, types.DiffByReleasesRequest) (uint64, error)
 }

@@ -8,10 +8,10 @@ import (
 type API struct {
 	generated.UnimplementedErrorGroupsServiceServer
 
-	service *errorgroups.Service
+	service errorgroups.Service
 }
 
-func New(svc *errorgroups.Service) *API {
+func New(svc errorgroups.Service) *API {
 	return &API{
 		service: svc,
 	}

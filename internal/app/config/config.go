@@ -301,8 +301,9 @@ type FieldFilterSet struct {
 }
 
 type LogTagsMapping struct {
-	Release []string `yaml:"release"`
 	Env     []string `yaml:"env"`
+	Service []string `yaml:"service"`
+	Release []string `yaml:"release"`
 }
 
 type ErrorGroups struct {

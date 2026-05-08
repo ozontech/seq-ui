@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion8
 
 const (
 	ErrorGroupsService_GetGroups_FullMethodName      = "/errorgroups.v1.ErrorGroupsService/GetGroups"
+	ErrorGroupsService_GetTopGroups_FullMethodName   = "/errorgroups.v1.ErrorGroupsService/GetTopGroups"
 	ErrorGroupsService_GetHist_FullMethodName        = "/errorgroups.v1.ErrorGroupsService/GetHist"
 	ErrorGroupsService_GetDetails_FullMethodName     = "/errorgroups.v1.ErrorGroupsService/GetDetails"
 	ErrorGroupsService_GetReleases_FullMethodName    = "/errorgroups.v1.ErrorGroupsService/GetReleases"
@@ -32,6 +33,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ErrorGroupsServiceClient interface {
 	GetGroups(ctx context.Context, in *GetGroupsRequest, opts ...grpc.CallOption) (*GetGroupsResponse, error)
+	GetTopGroups(ctx context.Context, in *GetTopGroupsRequest, opts ...grpc.CallOption) (*GetTopGroupsResponse, error)
 	GetHist(ctx context.Context, in *GetHistRequest, opts ...grpc.CallOption) (*GetHistResponse, error)
 	GetDetails(ctx context.Context, in *GetDetailsRequest, opts ...grpc.CallOption) (*GetDetailsResponse, error)
 	GetReleases(ctx context.Context, in *GetReleasesRequest, opts ...grpc.CallOption) (*GetReleasesResponse, error)
@@ -51,6 +53,16 @@ func (c *errorGroupsServiceClient) GetGroups(ctx context.Context, in *GetGroupsR
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetGroupsResponse)
 	err := c.cc.Invoke(ctx, ErrorGroupsService_GetGroups_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *errorGroupsServiceClient) GetTopGroups(ctx context.Context, in *GetTopGroupsRequest, opts ...grpc.CallOption) (*GetTopGroupsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTopGroupsResponse)
+	err := c.cc.Invoke(ctx, ErrorGroupsService_GetTopGroups_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -112,6 +124,7 @@ func (c *errorGroupsServiceClient) DiffByReleases(ctx context.Context, in *DiffB
 // for forward compatibility
 type ErrorGroupsServiceServer interface {
 	GetGroups(context.Context, *GetGroupsRequest) (*GetGroupsResponse, error)
+	GetTopGroups(context.Context, *GetTopGroupsRequest) (*GetTopGroupsResponse, error)
 	GetHist(context.Context, *GetHistRequest) (*GetHistResponse, error)
 	GetDetails(context.Context, *GetDetailsRequest) (*GetDetailsResponse, error)
 	GetReleases(context.Context, *GetReleasesRequest) (*GetReleasesResponse, error)
@@ -125,6 +138,9 @@ type UnimplementedErrorGroupsServiceServer struct {
 
 func (UnimplementedErrorGroupsServiceServer) GetGroups(context.Context, *GetGroupsRequest) (*GetGroupsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGroups not implemented")
+}
+func (UnimplementedErrorGroupsServiceServer) GetTopGroups(context.Context, *GetTopGroupsRequest) (*GetTopGroupsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTopGroups not implemented")
 }
 func (UnimplementedErrorGroupsServiceServer) GetHist(context.Context, *GetHistRequest) (*GetHistResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetHist not implemented")
@@ -167,6 +183,24 @@ func _ErrorGroupsService_GetGroups_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ErrorGroupsServiceServer).GetGroups(ctx, req.(*GetGroupsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ErrorGroupsService_GetTopGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTopGroupsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ErrorGroupsServiceServer).GetTopGroups(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ErrorGroupsService_GetTopGroups_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ErrorGroupsServiceServer).GetTopGroups(ctx, req.(*GetTopGroupsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -271,6 +305,10 @@ var ErrorGroupsService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetGroups",
 			Handler:    _ErrorGroupsService_GetGroups_Handler,
+		},
+		{
+			MethodName: "GetTopGroups",
+			Handler:    _ErrorGroupsService_GetTopGroups_Handler,
 		},
 		{
 			MethodName: "GetHist",

@@ -18,13 +18,14 @@ func (a *API) GetHist(ctx context.Context, req *errorgroups.GetHistRequest) (*er
 	ctx, span := tracing.StartSpan(ctx, "errorgroups_v1_get_hist")
 	defer span.End()
 
-	attributes := []attribute.KeyValue{
-		{Key: "service", Value: attribute.StringValue(req.Service)},
-	}
+	attributes := []attribute.KeyValue{}
 	if req.GroupHash != nil {
 		attributes = append(attributes, attribute.KeyValue{
 			Key: "group_hash", Value: attribute.StringValue(strconv.FormatUint(*req.GroupHash, 10)),
 		})
+	}
+	if req.Service != nil {
+		attributes = append(attributes, attribute.KeyValue{Key: "service", Value: attribute.StringValue(*req.Service)})
 	}
 	if req.Env != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*req.Env)})

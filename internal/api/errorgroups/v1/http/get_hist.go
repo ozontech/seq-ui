@@ -46,13 +46,12 @@ func (a *API) serveGetHist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	attributes := []attribute.KeyValue{
-		{Key: "service", Value: attribute.StringValue(httpReq.Service)},
-	}
+	attributes := []attribute.KeyValue{}
 	if httpReq.GroupHash != nil {
-		attributes = append(attributes, attribute.KeyValue{
-			Key: "group_hash", Value: attribute.StringValue(*httpReq.GroupHash),
-		})
+		attributes = append(attributes, attribute.KeyValue{Key: "group_hash", Value: attribute.StringValue(*httpReq.GroupHash)})
+	}
+	if httpReq.Service != nil {
+		attributes = append(attributes, attribute.KeyValue{Key: "service", Value: attribute.StringValue(*httpReq.Service)})
 	}
 	if httpReq.Env != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReq.Env)})
@@ -88,7 +87,7 @@ func (a *API) serveGetHist(w http.ResponseWriter, r *http.Request) {
 }
 
 type getHistRequest struct {
-	Service   string  `json:"service"`
+	Service   *string `json:"service"`
 	GroupHash *string `json:"group_hash,omitempty" format:"uint64"`
 	Env       *string `json:"env,omitempty"`
 	Source    *string `json:"source,omitempty"`

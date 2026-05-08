@@ -10,12 +10,12 @@ import (
 )
 
 type API struct {
-	service *errorgroups.Service
+	service errorgroups.Service
 }
 
-func New(service *errorgroups.Service) *API {
+func New(svc errorgroups.Service) *API {
 	return &API{
-		service: service,
+		service: svc,
 	}
 }
 
@@ -23,11 +23,12 @@ func (a *API) Router() chi.Router {
 	mux := chi.NewMux()
 
 	mux.Post("/groups", a.serveGetGroups)
+	mux.Post("/top_groups", a.serveGetTopGroups)
 	mux.Post("/hist", a.serveGetHist)
 	mux.Post("/details", a.serveGetDetails)
 	mux.Post("/releases", a.serveGetReleases)
 	mux.Post("/services", a.serveGetServices)
-	mux.Post("/diff_by_releases", a.serveGetDiffByReleases)
+	mux.Post("/diff_by_releases", a.serveDiffByReleases)
 
 	return mux
 }
