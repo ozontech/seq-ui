@@ -242,7 +242,7 @@ type Handlers struct {
 	Admin       *Admin      `yaml:"admin"`
 }
 
-type PinnedField struct {
+type Field struct {
 	Name string `yaml:"name"`
 	Type string `yaml:"type"`
 }
@@ -268,7 +268,8 @@ type SeqAPIOptions struct {
 	MaxAggregationsPerRequest  int           `yaml:"max_aggregations_per_request"`
 	MaxBucketsPerAggregationTs int           `yaml:"max_buckets_per_aggregation_ts"`
 	EventsCacheTTL             time.Duration `yaml:"events_cache_ttl"`
-	PinnedFields               []PinnedField `yaml:"pinned_fields"`
+	PinnedFields               []Field       `yaml:"pinned_fields"`
+	SystemFields               []Field       `yaml:"system_fields"`
 	LogsLifespanCacheKey       string        `yaml:"logs_lifespan_cache_key"`
 	LogsLifespanCacheTTL       time.Duration `yaml:"logs_lifespan_cache_ttl"`
 	FieldsCacheTTL             time.Duration `yaml:"fields_cache_ttl"`

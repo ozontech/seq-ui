@@ -12,7 +12,7 @@ Seq API provides:
 
 ### `GET /fields`
 
-Returns a list of [indexed fields](https://github.com/ozontech/seq-db/blob/main/docs/en/03-index-types.md), specified in the seq-db mapping file.
+Returns a list of [indexed fields](https://github.com/ozontech/seq-db/blob/main/docs/en/03-index-types.md), specified in the seq-db mapping file, along with system and pinned fields from config.
 
 **Auth:** NO
 
@@ -33,6 +33,18 @@ curl -X GET \
       "name": "message",
       "type": "text"
     },
+    {
+      "name": "level",
+      "type": "keyword"
+    }
+  ],
+  "system_fields": [
+    {
+      "name": "message",
+      "type": "keyword"
+    }
+  ],
+  "pinned_fields": [
     {
       "name": "level",
       "type": "keyword"
@@ -454,6 +466,8 @@ curl -X POST \
 ```
 
 ### `GET /fields/pinned`
+
+> Deprecated. Pinned fields are now included in the `GET /fields` response.
 
 Returns the list of fields that will be pinned in UI. Set in the `handlers.seq_api.pinned_fields` [config section](./02-configuration.md#seqapi).
 
