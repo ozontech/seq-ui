@@ -2728,6 +2728,18 @@
                     "items": {
                         "$ref": "#/definitions/seqapi.v1.Field"
                     }
+                },
+                "pinned_fields": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seqapi.v1.Field"
+                    }
+                },
+                "system_fields": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seqapi.v1.Field"
+                    }
                 }
             }
         },

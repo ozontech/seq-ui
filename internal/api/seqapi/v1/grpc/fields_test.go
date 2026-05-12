@@ -19,12 +19,15 @@ func TestGetFields(t *testing.T) {
 	tests := []struct {
 		name string
 
-		resp      *seqapi.GetFieldsResponse
+		cfg       config.SeqAPIOptions
+		seqDBResp *seqapi.GetFieldsResponse
+		wantResp  *seqapi.GetFieldsResponse
+
 		clientErr error
 	}{
 		{
 			name: "ok",
-			resp: &seqapi.GetFieldsResponse{
+			seqDBResp: &seqapi.GetFieldsResponse{
 				Fields: []*seqapi.Field{
 					{
 						Name: "test_name1",
@@ -34,6 +37,63 @@ func TestGetFields(t *testing.T) {
 						Name: "test_name2",
 						Type: seqapi.FieldType_text,
 					},
+				},
+			},
+			wantResp: &seqapi.GetFieldsResponse{
+				Fields: []*seqapi.Field{
+					{
+						Name: "test_name1",
+						Type: seqapi.FieldType_keyword,
+					},
+					{
+						Name: "test_name2",
+						Type: seqapi.FieldType_text,
+					},
+				},
+			},
+		},
+		{
+			name: "ok_with_system_and_pinned_fields",
+			cfg: config.SeqAPIOptions{
+				SystemFields: []config.Field{
+					{Name: "field1", Type: "keyword"},
+					{Name: "field2", Type: "text"},
+				},
+				PinnedFields: []config.Field{
+					{Name: "field3", Type: "keyword"},
+					{Name: "field4", Type: "text"},
+				},
+			},
+			seqDBResp: &seqapi.GetFieldsResponse{
+				Fields: []*seqapi.Field{
+					{
+						Name: "test_name1",
+						Type: seqapi.FieldType_keyword,
+					},
+					{
+						Name: "test_name2",
+						Type: seqapi.FieldType_text,
+					},
+				},
+			},
+			wantResp: &seqapi.GetFieldsResponse{
+				Fields: []*seqapi.Field{
+					{
+						Name: "test_name1",
+						Type: seqapi.FieldType_keyword,
+					},
+					{
+						Name: "test_name2",
+						Type: seqapi.FieldType_text,
+					},
+				},
+				SystemFields: []*seqapi.Field{
+					{Name: "field1", Type: seqapi.FieldType_keyword},
+					{Name: "field2", Type: seqapi.FieldType_text},
+				},
+				PinnedFields: []*seqapi.Field{
+					{Name: "field3", Type: seqapi.FieldType_keyword},
+					{Name: "field4", Type: seqapi.FieldType_text},
 				},
 			},
 		},
@@ -51,11 +111,14 @@ func TestGetFields(t *testing.T) {
 
 			seqDbMock := mock_seqdb.NewMockClient(ctrl)
 			seqDbMock.EXPECT().GetFields(gomock.Any(), nil).
-				Return(proto.Clone(tt.resp), tt.clientErr).Times(1)
+				Return(proto.Clone(tt.seqDBResp), tt.clientErr).Times(1)
 
 			seqData := test.APITestData{
 				Mocks: test.Mocks{
 					SeqDB: seqDbMock,
+				},
+				Cfg: config.SeqAPI{
+					SeqAPIOptions: &tt.cfg,
 				},
 			}
 
@@ -66,7 +129,7 @@ func TestGetFields(t *testing.T) {
 			resp, err := s.GetFields(ctx, nil)
 
 			require.Equal(t, tt.clientErr, err)
-			require.True(t, proto.Equal(tt.resp, resp))
+			require.True(t, proto.Equal(tt.wantResp, resp))
 		})
 	}
 }
@@ -135,11 +198,11 @@ func TestGetFieldsCached(t *testing.T) {
 func TestGetPinnedFields(t *testing.T) {
 	tests := []struct {
 		name   string
-		fields []config.PinnedField
+		fields []config.Field
 	}{
 		{
 			name: "ok",
-			fields: []config.PinnedField{
+			fields: []config.Field{
 				{Name: "field1", Type: "keyword"},
 				{Name: "field2", Type: "text"},
 			},

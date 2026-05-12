@@ -12,7 +12,7 @@ Seq API предоставляет:
 
 ### `GET /fields`
 
-Возвращает список [индексированных полей](https://github.com/ozontech/seq-db/blob/main/docs/ru/03-index-types.md), указанных в mapping-файле seq-db.
+Возвращает список [индексированных полей](https://github.com/ozontech/seq-db/blob/main/docs/ru/03-index-types.md), указанных в mapping-файле seq-db, а также системные и закрепленные поля из конфига.
 
 **Авторизация:** НЕТ
 
@@ -33,6 +33,18 @@ curl -X GET \
       "name": "message",
       "type": "text"
     },
+    {
+      "name": "level",
+      "type": "keyword"
+    }
+  ],
+  "system_fields": [
+    {
+      "name": "message",
+      "type": "keyword"
+    }
+  ],
+  "pinned_fields": [
     {
       "name": "level",
       "type": "keyword"
@@ -454,6 +466,8 @@ curl -X POST \
 ```
 
 ### `GET /fields/pinned`
+
+> Устарело. Закрепленные поля теперь включены в ответ `GET /fields`.
 
 Возвращает список полей, которые будут закреплены в пользовательском интерфейсе. Устанавливается в [разделе конфигурации](./02-configuration.md#seqapi) `handlers.seq_api.pinned_fields`.
 

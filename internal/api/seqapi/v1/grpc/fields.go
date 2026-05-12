@@ -22,13 +22,22 @@ func (a *API) GetFields(ctx context.Context, req *seqapi.GetFieldsRequest) (*seq
 	}
 
 	if params.fieldsCache == nil {
-		return params.client.GetFields(ctx, req)
+		resp, err := params.client.GetFields(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+
+		resp.SystemFields = params.systemFields
+		resp.PinnedFields = params.pinnedFields
+		return resp, nil
 	}
 
 	fields, cached, isActual := params.fieldsCache.getFields()
 	if cached && isActual {
 		return &seqapi.GetFieldsResponse{
-			Fields: fields,
+			Fields:       fields,
+			SystemFields: params.systemFields,
+			PinnedFields: params.pinnedFields,
 		}, nil
 	}
 
@@ -36,13 +45,19 @@ func (a *API) GetFields(ctx context.Context, req *seqapi.GetFieldsRequest) (*seq
 	if err != nil {
 		if cached {
 			logger.Error("can't get fields; use cached fields", zap.Error(err))
-			return &seqapi.GetFieldsResponse{Fields: fields}, nil
+			return &seqapi.GetFieldsResponse{
+				Fields:       fields,
+				SystemFields: params.systemFields,
+				PinnedFields: params.pinnedFields,
+			}, nil
 		}
 
 		return nil, err
 	}
 
 	params.fieldsCache.setFields(resp.GetFields())
+	resp.SystemFields = params.systemFields
+	resp.PinnedFields = params.pinnedFields
 	return resp, nil
 }
 

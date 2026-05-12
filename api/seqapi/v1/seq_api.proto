@@ -2,8 +2,8 @@ syntax = "proto3";
 
 package seqapi.v1;
 
-import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/ozontech/seq-ui/pkg/seqapi/v1;seqapi";
 
@@ -134,7 +134,7 @@ message SearchResponse {
   repeated Event events = 1;
   int64 total = 2;
   optional Histogram histogram = 3;
-  bool partial_response = 4 [deprecated=true];
+  bool partial_response = 4 [deprecated = true];
   repeated Aggregation aggregations = 5;
   optional Error error = 6;
 }
@@ -156,7 +156,7 @@ message GetHistogramRequest {
 
 message GetHistogramResponse {
   Histogram histogram = 1;
-  bool partial_response = 2 [deprecated=true];
+  bool partial_response = 2 [deprecated = true];
   optional Error error = 3;
 }
 
@@ -164,13 +164,13 @@ message GetAggregationRequest {
   string query = 1;
   google.protobuf.Timestamp from = 2;
   google.protobuf.Timestamp to = 3;
-  string agg_field = 4 [deprecated=true];
+  string agg_field = 4 [deprecated = true];
   repeated AggregationQuery aggregations = 5;
 }
 
 message GetAggregationResponse {
-  Aggregation aggregation = 1 [deprecated=true];
-  bool partial_response = 2 [deprecated=true];
+  Aggregation aggregation = 1 [deprecated = true];
+  bool partial_response = 2 [deprecated = true];
   repeated Aggregation aggregations = 3;
   optional Error error = 4;
 }
@@ -190,6 +190,8 @@ message GetFieldsRequest {}
 
 message GetFieldsResponse {
   repeated Field fields = 1;
+  repeated Field system_fields = 2;
+  repeated Field pinned_fields = 3;
 }
 
 enum ExportFormat {
@@ -329,13 +331,13 @@ message DeleteAsyncSearchResponse {}
 message GetEnvsRequest {}
 
 message GetEnvsResponse {
-    message Env {
-        string env = 1;
-        uint32 max_search_limit = 2;
-        uint32 max_export_limit = 3;
-        uint32 max_parallel_export_requests = 4;
-        uint32 max_aggregations_per_request = 5;
-        uint32 seq_cli_max_search_limit = 6;
-    }
-    repeated Env envs = 1;
+  message Env {
+    string env = 1;
+    uint32 max_search_limit = 2;
+    uint32 max_export_limit = 3;
+    uint32 max_parallel_export_requests = 4;
+    uint32 max_aggregations_per_request = 5;
+    uint32 seq_cli_max_search_limit = 6;
+  }
+  repeated Env envs = 1;
 }

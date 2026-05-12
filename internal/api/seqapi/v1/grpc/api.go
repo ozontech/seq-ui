@@ -27,6 +27,7 @@ type apiParams struct {
 	fieldsCache  *fieldsCache
 	masker       *mask.Masker
 	pinnedFields []*seqapi.Field
+	systemFields []*seqapi.Field
 }
 
 type API struct {
@@ -61,7 +62,8 @@ func New(
 		logger.Fatal("failed to init masking", zap.Error(err))
 	}
 
-	globalPinnedFields := parsePinnedFields(cfg.PinnedFields)
+	globalPinnedFields := parseFields(cfg.PinnedFields)
+	globalSystemFields := parseFields(cfg.SystemFields)
 
 	var params apiParams
 	var paramsByEnv map[string]apiParams
@@ -82,7 +84,8 @@ func New(
 				logger.Fatal("failed to init env masking", zap.Error(err))
 			}
 
-			envPinnedFields := parsePinnedFields(options.PinnedFields)
+			envPinnedFields := parseFields(options.PinnedFields)
+			envSystemFields := parseFields(options.SystemFields)
 
 			paramsByEnv[envName] = apiParams{
 				client:       client,
@@ -90,6 +93,7 @@ func New(
 				fieldsCache:  envfCache,
 				masker:       envMasker,
 				pinnedFields: envPinnedFields,
+				systemFields: envSystemFields,
 			}
 		}
 	} else {
@@ -105,6 +109,7 @@ func New(
 			fieldsCache:  globalfCache,
 			masker:       globalMasker,
 			pinnedFields: globalPinnedFields,
+			systemFields: globalSystemFields,
 		}
 	}
 
@@ -121,7 +126,7 @@ func New(
 	}
 }
 
-func parsePinnedFields(fields []config.PinnedField) []*seqapi.Field {
+func parseFields(fields []config.Field) []*seqapi.Field {
 	res := make([]*seqapi.Field, len(fields))
 	for i, f := range fields {
 		res[i] = &seqapi.Field{
