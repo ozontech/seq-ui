@@ -577,11 +577,15 @@ Config for `/seqapi` API handlers.
 
   > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
 
-+ **`pinned_fields`** *`[]PinnedField`* *`default=[]`*
++ **`pinned_fields`** *`[]Field`* *`default=[]`*
 
-  List of fields which will be pinned in UI.
+  List of fields which will be displayed at the top of the event in UI.
 
-  `PinnedField` fields:
++ **`system_fields`** *`[]Field`* *`default=[]`*
+
+  List of fields which will be displayed at the bottom of the event in UI.
+
+  `Field` fields:
 
   + **`name`** *`string`* *`required`*
 

@@ -28,6 +28,8 @@ func TestServeGetFields(t *testing.T) {
 	tests := []struct {
 		name string
 
+		cfg config.SeqAPIOptions
+
 		wantRespBody string
 		wantStatus   int
 
@@ -53,6 +55,35 @@ func TestServeGetFields(t *testing.T) {
 			wantStatus:   http.StatusOK,
 		},
 		{
+			name: "ok_with_system_and_pinned_fields",
+			mockArgs: mockArgs{
+				resp: &seqapi.GetFieldsResponse{
+					Fields: []*seqapi.Field{
+						{
+							Name: "test_name1",
+							Type: seqapi.FieldType_keyword,
+						},
+						{
+							Name: "test_name2",
+							Type: seqapi.FieldType_text,
+						},
+					},
+				},
+			},
+			cfg: config.SeqAPIOptions{
+				SystemFields: []config.Field{
+					{Name: "field1", Type: "keyword"},
+					{Name: "field2", Type: "text"},
+				},
+				PinnedFields: []config.Field{
+					{Name: "field3", Type: "keyword"},
+					{Name: "field4", Type: "text"},
+				},
+			},
+			wantRespBody: `{"fields":[{"name":"test_name1","type":"keyword"},{"name":"test_name2","type":"text"}],"system_fields":[{"name":"field1","type":"keyword"},{"name":"field2","type":"text"}],"pinned_fields":[{"name":"field3","type":"keyword"},{"name":"field4","type":"text"}]}`,
+			wantStatus:   http.StatusOK,
+		},
+		{
 			name: "err_client",
 			mockArgs: mockArgs{
 				err: errors.New("client error"),
@@ -66,7 +97,11 @@ func TestServeGetFields(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 
-			seqData := test.APITestData{}
+			seqData := test.APITestData{
+				Cfg: config.SeqAPI{
+					SeqAPIOptions: &tt.cfg,
+				},
+			}
 
 			seqDbMock := mock_seqdb.NewMockClient(ctrl)
 			seqDbMock.EXPECT().GetFields(gomock.Any(), gomock.Any()).
@@ -169,12 +204,12 @@ func TestServeGetPinnedFields(t *testing.T) {
 	tests := []struct {
 		name string
 
-		fields       []config.PinnedField
+		fields       []config.Field
 		wantRespBody string
 	}{
 		{
 			name: "ok",
-			fields: []config.PinnedField{
+			fields: []config.Field{
 				{Name: "field1", Type: "keyword"},
 				{Name: "field2", Type: "text"},
 			},
