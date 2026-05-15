@@ -3,7 +3,6 @@ package service
 import (
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/ozontech/seq-ui/internal/app/types"
 )
@@ -11,8 +10,6 @@ import (
 const (
 	PermissionManageRoles uint64 = 1 << iota
 )
-
-const permissionsCacheTTL = 30 * time.Second
 
 type adminCache struct {
 	roles       []types.Role
