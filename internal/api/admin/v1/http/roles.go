@@ -38,7 +38,7 @@ func (a *API) serveCreateRole(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 
-	resp, err := a.service.CreateRole(ctx, types.CreateRoleRequest{
+	roleID, err := a.service.CreateRole(ctx, types.CreateRoleRequest{
 		Name:        httpReq.Name,
 		Permissions: httpReq.Permissions,
 	})
@@ -47,7 +47,7 @@ func (a *API) serveCreateRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wr.WriteJson(createRoleResponse{RoleID: resp.RoleID})
+	wr.WriteJson(createRoleResponse{RoleID: roleID})
 }
 
 func (a *API) serveAddUsersToRole(w http.ResponseWriter, r *http.Request) {
@@ -127,7 +127,7 @@ func (a *API) serveGetRole(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 
-	resp, err := a.service.GetRole(ctx, types.GetRoleRequest{
+	usernames, err := a.service.GetRole(ctx, types.GetRoleRequest{
 		RoleID: roleID,
 	})
 	if err != nil {
@@ -136,7 +136,7 @@ func (a *API) serveGetRole(w http.ResponseWriter, r *http.Request) {
 	}
 
 	wr.WriteJson(getRoleResponse{
-		Usernames: resp.Usernames,
+		Usernames: usernames,
 	})
 }
 
@@ -273,9 +273,9 @@ type role struct {
 }
 
 type permission struct {
-	Value       uint64  `json:"value"`
-	Name        string  `json:"name"`
-	Description *string `json:"description"`
+	Value       uint64 `json:"value"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
 }
 
 type createRoleRequest struct {

@@ -33,13 +33,13 @@ func (a *API) adminAuthInterceptor(next http.Handler) http.Handler {
 			return
 		}
 
-		resp, err := a.service.GetUserPermissions(ctx, types.GetUserPermissionsRequest{Username: username})
+		permissions, err := a.service.GetUserPermissions(ctx, types.GetUserPermissionsRequest{Username: username})
 		if err != nil {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
 
-		if resp.Permissions&requiredPermission == 0 {
+		if permissions&requiredPermission == 0 {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}

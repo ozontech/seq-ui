@@ -2,22 +2,23 @@ package service
 
 import (
 	"context"
+	"slices"
 
 	"github.com/ozontech/seq-ui/internal/app/types"
 )
 
-func (s *service) CreateRole(ctx context.Context, req types.CreateRoleRequest) (types.CreateRoleResponse, error) {
+func (s *service) CreateRole(ctx context.Context, req types.CreateRoleRequest) (int32, error) {
 	if req.Name == "" {
-		return types.CreateRoleResponse{}, types.NewErrInvalidRequestField("empty role name")
+		return 0, types.NewErrInvalidRequestField("empty role name")
 	}
 
 	if err := validatePermissions(req.Permissions); err != nil {
-		return types.CreateRoleResponse{}, err
+		return 0, err
 	}
 
 	return s.repo.CreateRole(ctx, types.CreateRoleRepoRequest{
 		Name:        req.Name,
-		Permissions: permissionsToValue(req.Permissions),
+		Permissions: maskPermissions(req.Permissions),
 	})
 }
 
@@ -30,27 +31,33 @@ func (s *service) AddUsersToRole(ctx context.Context, req types.AddUsersToRoleRe
 		return types.NewErrInvalidRequestField("empty usernames")
 	}
 
-	for _, username := range req.Usernames {
-		if username == "" {
-			return types.NewErrInvalidRequestField("empty username")
-		}
+	if slices.Contains(req.Usernames, "") {
+		return types.NewErrInvalidRequestField("empty username")
 	}
 
-	return s.repo.AddUsersToRole(ctx, req)
+	if err := s.repo.AddUsersToRole(ctx, req); err != nil {
+		return err
+	}
+
+	for _, username := range req.Usernames {
+		s.permCache.reset(username)
+	}
+
+	return nil
 }
 
 func (s *service) GetRoles(ctx context.Context) (types.GetRolesResponse, error) {
-	resp, err := s.repo.GetRoles(ctx)
+	repoRoles, err := s.repo.GetRoles(ctx)
 	if err != nil {
 		return types.GetRolesResponse{}, err
 	}
 
-	roles := make([]types.Role, 0, len(resp.Roles))
-	for _, role := range resp.Roles {
+	roles := make([]types.Role, 0, len(repoRoles))
+	for _, role := range repoRoles {
 		roles = append(roles, types.Role{
 			ID:          role.ID,
 			Name:        role.Name,
-			Permissions: valueToPermissions(role.Permissions),
+			Permissions: unmaskPermissions(role.Permissions),
 		})
 	}
 
@@ -60,9 +67,9 @@ func (s *service) GetRoles(ctx context.Context) (types.GetRolesResponse, error) 
 	}, nil
 }
 
-func (s *service) GetRole(ctx context.Context, req types.GetRoleRequest) (types.GetRoleResponse, error) {
+func (s *service) GetRole(ctx context.Context, req types.GetRoleRequest) ([]types.Username, error) {
 	if req.RoleID <= 0 {
-		return types.GetRoleResponse{}, types.NewErrInvalidRequestField("value role_id must be greater than 0")
+		return nil, types.NewErrInvalidRequestField("value role_id must be greater than 0")
 	}
 
 	return s.repo.GetRole(ctx, req)
@@ -73,12 +80,8 @@ func (s *service) UpdateRole(ctx context.Context, req types.UpdateRoleRequest) e
 		return types.NewErrInvalidRequestField("value role_id must be greater than 0")
 	}
 
-	if req.Name == nil && len(req.Permissions) == 0 {
+	if (req.Name == nil || *req.Name == "") && len(req.Permissions) == 0 {
 		return types.ErrEmptyUpdateRequest
-	}
-
-	if req.Name != nil && *req.Name == "" {
-		return types.NewErrInvalidRequestField("empty role name")
 	}
 
 	var permissions *uint64
@@ -87,15 +90,23 @@ func (s *service) UpdateRole(ctx context.Context, req types.UpdateRoleRequest) e
 			return err
 		}
 
-		value := permissionsToValue(req.Permissions)
+		value := maskPermissions(req.Permissions)
 		permissions = &value
 	}
 
-	return s.repo.UpdateRole(ctx, types.UpdateRoleRepoRequest{
+	if err := s.repo.UpdateRole(ctx, types.UpdateRoleRepoRequest{
 		RoleID:      req.RoleID,
 		Name:        req.Name,
 		Permissions: permissions,
-	})
+	}); err != nil {
+		return err
+	}
+
+	if permissions != nil {
+		s.permCache.resetAll()
+	}
+
+	return nil
 }
 
 func (s *service) DeleteRole(ctx context.Context, req types.DeleteRoleRequest) error {
@@ -112,11 +123,28 @@ func (s *service) DeleteRole(ctx context.Context, req types.DeleteRoleRequest) e
 		}
 	}
 
-	return s.repo.DeleteRole(ctx, req)
+	if err := s.repo.DeleteRole(ctx, req); err != nil {
+		return err
+	}
+
+	s.permCache.resetAll()
+
+	return nil
 }
 
-func (s *service) GetUserPermissions(ctx context.Context, req types.GetUserPermissionsRequest) (types.GetUserPermissionsResponse, error) {
-	return s.repo.GetUserPermissions(ctx, req)
+func (s *service) GetUserPermissions(ctx context.Context, req types.GetUserPermissionsRequest) (uint64, error) {
+	if perms, ok := s.permCache.get(req.Username); ok {
+		return perms, nil
+	}
+
+	perms, err := s.repo.GetUserPermissions(ctx, req)
+	if err != nil {
+		return 0, nil
+	}
+
+	s.permCache.set(req.Username, perms)
+
+	return perms, nil
 }
 
 func (s *service) GetAvailablePermissions() []types.Permission {

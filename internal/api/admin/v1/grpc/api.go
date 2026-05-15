@@ -49,12 +49,12 @@ func (a *API) authorize(ctx context.Context, method string) error {
 		return types.ErrPermissionDenied
 	}
 
-	resp, err := a.service.GetUserPermissions(ctx, types.GetUserPermissionsRequest{Username: username})
+	permissions, err := a.service.GetUserPermissions(ctx, types.GetUserPermissionsRequest{Username: username})
 	if err != nil {
 		return types.ErrPermissionDenied
 	}
 
-	if resp.Permissions&requiredPermission == 0 {
+	if permissions&requiredPermission == 0 {
 		return types.ErrPermissionDenied
 	}
 

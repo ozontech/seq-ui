@@ -400,10 +400,10 @@ func (mr *MockAdminMockRecorder) AddUsersToRole(arg0, arg1 any) *gomock.Call {
 }
 
 // CreateRole mocks base method.
-func (m *MockAdmin) CreateRole(arg0 context.Context, arg1 types.CreateRoleRepoRequest) (types.CreateRoleResponse, error) {
+func (m *MockAdmin) CreateRole(arg0 context.Context, arg1 types.CreateRoleRepoRequest) (int32, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateRole", arg0, arg1)
-	ret0, _ := ret[0].(types.CreateRoleResponse)
+	ret0, _ := ret[0].(int32)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -429,10 +429,10 @@ func (mr *MockAdminMockRecorder) DeleteRole(arg0, arg1 any) *gomock.Call {
 }
 
 // GetRole mocks base method.
-func (m *MockAdmin) GetRole(arg0 context.Context, arg1 types.GetRoleRequest) (types.GetRoleResponse, error) {
+func (m *MockAdmin) GetRole(arg0 context.Context, arg1 types.GetRoleRequest) ([]types.Username, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRole", arg0, arg1)
-	ret0, _ := ret[0].(types.GetRoleResponse)
+	ret0, _ := ret[0].([]types.Username)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -444,10 +444,10 @@ func (mr *MockAdminMockRecorder) GetRole(arg0, arg1 any) *gomock.Call {
 }
 
 // GetRoles mocks base method.
-func (m *MockAdmin) GetRoles(arg0 context.Context) (types.GetRolesRepoResponse, error) {
+func (m *MockAdmin) GetRoles(arg0 context.Context) ([]types.RoleRepo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRoles", arg0)
-	ret0, _ := ret[0].(types.GetRolesRepoResponse)
+	ret0, _ := ret[0].([]types.RoleRepo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -459,10 +459,10 @@ func (mr *MockAdminMockRecorder) GetRoles(arg0 any) *gomock.Call {
 }
 
 // GetUserPermissions mocks base method.
-func (m *MockAdmin) GetUserPermissions(arg0 context.Context, arg1 types.GetUserPermissionsRequest) (types.GetUserPermissionsResponse, error) {
+func (m *MockAdmin) GetUserPermissions(arg0 context.Context, arg1 types.GetUserPermissionsRequest) (uint64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserPermissions", arg0, arg1)
-	ret0, _ := ret[0].(types.GetUserPermissionsResponse)
+	ret0, _ := ret[0].(uint64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

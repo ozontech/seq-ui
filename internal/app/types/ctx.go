@@ -16,16 +16,12 @@ func SetUserKey(ctx context.Context, username string) context.Context {
 
 // GetUserKey returns username from context.
 func GetUserKey(ctx context.Context) (string, error) {
-	userStr := ""
 	userVal := ctx.Value(UserKey{})
-
 	if userVal == nil {
 		return "", ErrUnauthenticated
 	}
 
-	userStr = userVal.(string)
-
-	return userStr, nil
+	return userVal.(string), nil
 }
 
 type UseSeqQL struct{}

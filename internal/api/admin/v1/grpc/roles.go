@@ -40,7 +40,7 @@ func (a *API) CreateRole(ctx context.Context, req *admin.CreateRoleRequest) (*ad
 	}
 
 	return &admin.CreateRoleResponse{
-		RoleId: roleID.RoleID,
+		RoleId: roleID,
 	}, nil
 }
 
@@ -104,7 +104,7 @@ func (a *API) GetRole(ctx context.Context, req *admin.GetRoleRequest) (*admin.Ge
 		},
 	)
 
-	resp, err := a.service.GetRole(ctx, types.GetRoleRequest{
+	usernames, err := a.service.GetRole(ctx, types.GetRoleRequest{
 		RoleID: req.Id,
 	})
 	if err != nil {
@@ -112,7 +112,7 @@ func (a *API) GetRole(ctx context.Context, req *admin.GetRoleRequest) (*admin.Ge
 	}
 
 	return &admin.GetRoleResponse{
-		Usernames: resp.Usernames,
+		Usernames: usernames,
 	}, nil
 }
 

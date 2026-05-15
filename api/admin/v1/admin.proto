@@ -46,7 +46,7 @@ message GetRolesResponse {
   message Permission {
     uint64 value = 1;
     string name = 2;
-    optional string description = 3;
+    string description = 3;
   }
 
   repeated Role roles = 1;

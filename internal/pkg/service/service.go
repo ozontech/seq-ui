@@ -23,22 +23,24 @@ type Service interface {
 	DeleteDashboard(context.Context, types.DeleteDashboardRequest) error
 	SearchDashboards(context.Context, types.SearchDashboardsRequest) (types.DashboardInfosWithOwner, error)
 
-	CreateRole(context.Context, types.CreateRoleRequest) (types.CreateRoleResponse, error)
+	CreateRole(context.Context, types.CreateRoleRequest) (int32, error)
 	AddUsersToRole(context.Context, types.AddUsersToRoleRequest) error
 	GetRoles(context.Context) (types.GetRolesResponse, error)
-	GetRole(context.Context, types.GetRoleRequest) (types.GetRoleResponse, error)
+	GetRole(context.Context, types.GetRoleRequest) ([]types.Username, error)
 	UpdateRole(context.Context, types.UpdateRoleRequest) error
 	DeleteRole(context.Context, types.DeleteRoleRequest) error
-	GetUserPermissions(context.Context, types.GetUserPermissionsRequest) (types.GetUserPermissionsResponse, error)
+	GetUserPermissions(context.Context, types.GetUserPermissionsRequest) (uint64, error)
 	GetAvailablePermissions() []types.Permission
 }
 
 type service struct {
-	repo *repository.Repository
+	repo      *repository.Repository
+	permCache *permissionsCache
 }
 
 func New(repo *repository.Repository) Service {
 	return &service{
-		repo: repo,
+		repo:      repo,
+		permCache: newPermissionsCache(),
 	}
 }
