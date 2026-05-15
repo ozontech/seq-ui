@@ -15,13 +15,8 @@ const (
 const permissionsCacheTTL = 30 * time.Second
 
 type permissionsCache struct {
-	data map[string]permissionsCacheItem
+	data map[string]uint64
 	mu   sync.RWMutex
-}
-
-type permissionsCacheItem struct {
-	permissions uint64
-	expiresAt   time.Time
 }
 
 var availablePermissions = []types.Permission{
@@ -38,7 +33,7 @@ var availablePermissionsMap = map[uint64]struct{}{
 
 func newPermissionsCache() *permissionsCache {
 	return &permissionsCache{
-		data: make(map[string]permissionsCacheItem),
+		data: make(map[string]uint64),
 	}
 }
 
@@ -46,22 +41,19 @@ func (c *permissionsCache) get(username string) (uint64, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	userInf, ok := c.data[username]
-	if !ok || time.Now().After(userInf.expiresAt) {
+	perms, ok := c.data[username]
+	if !ok {
 		return 0, false
 	}
 
-	return userInf.permissions, true
+	return perms, true
 }
 
 func (c *permissionsCache) set(username string, permissions uint64) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.data[username] = permissionsCacheItem{
-		permissions: permissions,
-		expiresAt:   time.Now().Add(permissionsCacheTTL),
-	}
+	c.data[username] = permissions
 }
 
 func (c *permissionsCache) reset(username string) {
@@ -75,7 +67,7 @@ func (c *permissionsCache) resetAll() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.data = make(map[string]permissionsCacheItem)
+	c.data = make(map[string]uint64)
 }
 
 func unmaskPermissions(value uint64) []uint64 {
