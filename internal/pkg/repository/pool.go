@@ -62,9 +62,6 @@ func (p *pool) exec(ctx context.Context, metricLabels []string, query string, ar
 }
 
 func (p *pool) execTx(ctx context.Context, tx pgx.Tx, metricLabels []string, query string, args ...any) (pgconn.CommandTag, error) {
-	ctx, cancel := context.WithTimeout(ctx, p.requestTimeout)
-	defer cancel()
-
 	metric.RepositoryRequestSent.WithLabelValues(metricLabels...).Inc()
 	start := time.Now()
 	tag, err := tx.Exec(ctx, query, args...)

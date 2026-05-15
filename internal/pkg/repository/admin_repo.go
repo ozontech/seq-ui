@@ -124,7 +124,6 @@ func (r *adminRepository) UpdateRole(ctx context.Context, req types.UpdateRoleRe
 	}
 
 	if tag.RowsAffected() == 0 {
-		incErrorMetric(err, metricLabels)
 		return types.NewErrNotFound("role")
 	}
 
@@ -165,7 +164,6 @@ func (r *adminRepository) DeleteRole(ctx context.Context, req types.DeleteRoleRe
 	}
 
 	if tag.RowsAffected() == 0 {
-		incErrorMetric(err, metricLabels)
 		return types.NewErrNotFound("role")
 	}
 
