@@ -14,9 +14,10 @@ const (
 
 const permissionsCacheTTL = 30 * time.Second
 
-type permissionsCache struct {
-	data map[string]uint64
-	mu   sync.RWMutex
+type adminCache struct {
+	roles       []types.Role
+	permissions map[string]uint64
+	mu          sync.RWMutex
 }
 
 var availablePermissions = []types.Permission{
@@ -31,17 +32,24 @@ var availablePermissionsMap = map[uint64]struct{}{
 	PermissionManageRoles: {},
 }
 
-func newPermissionsCache() *permissionsCache {
-	return &permissionsCache{
-		data: make(map[string]uint64),
+func newAdminCache() *adminCache {
+	return &adminCache{
+		permissions: make(map[string]uint64),
 	}
 }
 
-func (c *permissionsCache) get(username string) (uint64, bool) {
+func (c *adminCache) getRoles() ([]types.Role, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	perms, ok := c.data[username]
+	return c.roles, c.roles != nil
+}
+
+func (c *adminCache) getPermissions(username string) (uint64, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	perms, ok := c.permissions[username]
 	if !ok {
 		return 0, false
 	}
@@ -49,25 +57,39 @@ func (c *permissionsCache) get(username string) (uint64, bool) {
 	return perms, true
 }
 
-func (c *permissionsCache) set(username string, permissions uint64) {
+func (c *adminCache) setRoles(roles []types.Role) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.data[username] = permissions
+	c.roles = roles
 }
 
-func (c *permissionsCache) reset(username string) {
+func (c *adminCache) setPermissions(username string, permissions uint64) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	delete(c.data, username)
+	c.permissions[username] = permissions
 }
 
-func (c *permissionsCache) resetAll() {
+func (c *adminCache) resetRoles() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.data = make(map[string]uint64)
+	c.roles = nil
+}
+
+func (c *adminCache) resetPermissions(username string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	delete(c.permissions, username)
+}
+
+func (c *adminCache) resetAllPermissions() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.permissions = make(map[string]uint64)
 }
 
 func unmaskPermissions(value uint64) []uint64 {

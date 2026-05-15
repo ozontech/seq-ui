@@ -16,10 +16,17 @@ func (s *service) CreateRole(ctx context.Context, req types.CreateRoleRequest) (
 		return 0, err
 	}
 
-	return s.repo.CreateRole(ctx, types.CreateRoleRepoRequest{
+	roleID, err := s.repo.CreateRole(ctx, types.CreateRoleRepoRequest{
 		Name:        req.Name,
 		Permissions: maskPermissions(req.Permissions),
 	})
+	if err != nil {
+		return 0, err
+	}
+
+	s.adminCache.resetRoles()
+
+	return roleID, nil
 }
 
 func (s *service) AddUsersToRole(ctx context.Context, req types.AddUsersToRoleRequest) error {
@@ -40,13 +47,20 @@ func (s *service) AddUsersToRole(ctx context.Context, req types.AddUsersToRoleRe
 	}
 
 	for _, username := range req.Usernames {
-		s.permCache.reset(username)
+		s.adminCache.resetPermissions(username)
 	}
 
 	return nil
 }
 
 func (s *service) GetRoles(ctx context.Context) (types.GetRolesResponse, error) {
+	if roles, ok := s.adminCache.getRoles(); ok {
+		return types.GetRolesResponse{
+			Roles:                roles,
+			AvailablePermissions: availablePermissions,
+		}, nil
+	}
+
 	repoRoles, err := s.repo.GetRoles(ctx)
 	if err != nil {
 		return types.GetRolesResponse{}, err
@@ -60,6 +74,8 @@ func (s *service) GetRoles(ctx context.Context) (types.GetRolesResponse, error) 
 			Permissions: unmaskPermissions(role.Permissions),
 		})
 	}
+
+	s.adminCache.setRoles(roles)
 
 	return types.GetRolesResponse{
 		Roles:                roles,
@@ -102,8 +118,10 @@ func (s *service) UpdateRole(ctx context.Context, req types.UpdateRoleRequest) e
 		return err
 	}
 
+	s.adminCache.resetRoles()
+
 	if permissions != nil {
-		s.permCache.resetAll()
+		s.adminCache.resetAllPermissions()
 	}
 
 	return nil
@@ -127,13 +145,14 @@ func (s *service) DeleteRole(ctx context.Context, req types.DeleteRoleRequest) e
 		return err
 	}
 
-	s.permCache.resetAll()
+	s.adminCache.resetAllPermissions()
+	s.adminCache.resetRoles()
 
 	return nil
 }
 
 func (s *service) GetUserPermissions(ctx context.Context, req types.GetUserPermissionsRequest) (uint64, error) {
-	if perms, ok := s.permCache.get(req.Username); ok {
+	if perms, ok := s.adminCache.getPermissions(req.Username); ok {
 		return perms, nil
 	}
 
@@ -142,7 +161,7 @@ func (s *service) GetUserPermissions(ctx context.Context, req types.GetUserPermi
 		return 0, nil
 	}
 
-	s.permCache.set(req.Username, perms)
+	s.adminCache.setPermissions(req.Username, perms)
 
 	return perms, nil
 }

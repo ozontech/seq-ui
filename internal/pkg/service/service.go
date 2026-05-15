@@ -34,13 +34,13 @@ type Service interface {
 }
 
 type service struct {
-	repo      *repository.Repository
-	permCache *permissionsCache
+	repo       *repository.Repository
+	adminCache *adminCache
 }
 
 func New(repo *repository.Repository) Service {
 	return &service{
-		repo:      repo,
-		permCache: newPermissionsCache(),
+		repo:       repo,
+		adminCache: newAdminCache(),
 	}
 }
