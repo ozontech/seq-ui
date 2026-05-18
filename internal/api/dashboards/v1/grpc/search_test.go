@@ -160,7 +160,7 @@ func TestSearch(t *testing.T) {
 
 			ctx := context.Background()
 			if !tt.noUser {
-				ctx = context.WithValue(ctx, types.UserKey{}, userName)
+				ctx = types.SetUserKey(ctx, userName)
 				api.profiles.SetID(userName, profileID)
 			}
 

@@ -16,18 +16,13 @@ func TestGetUserKey(t *testing.T) {
 	}{
 		{
 			name:         "success",
-			ctx:          context.WithValue(context.Background(), UserKey{}, "unnamed"),
+			ctx:          SetUserKey(context.Background(), "unnamed"),
 			wantUserName: "unnamed",
 		},
 		{
 			name:    "err_unauthenticated",
 			ctx:     context.Background(),
 			wantErr: ErrUnauthenticated,
-		},
-		{
-			name:    "err_bad_value_type",
-			ctx:     context.WithValue(context.Background(), UserKey{}, 99999),
-			wantErr: ErrBadUserKeyValueType,
 		},
 	}
 

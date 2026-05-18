@@ -239,6 +239,7 @@ type Handlers struct {
 	ErrorGroups ErrorGroups `yaml:"error_groups"`
 	MassExport  *MassExport `yaml:"mass_export"`
 	AsyncSearch AsyncSearch `yaml:"async_search"`
+	Admin       *Admin      `yaml:"admin"`
 }
 
 type Field struct {
@@ -317,6 +318,10 @@ type ErrorGroups struct {
 type AsyncSearch struct {
 	AdminUsers           []string `yaml:"admin_users"`
 	ListQueryLengthLimit int      `yaml:"list_query_length_limit"`
+}
+
+type Admin struct {
+	SuperUsers []string `yaml:"super_users"`
 }
 
 // FromFile parse config from config path.
