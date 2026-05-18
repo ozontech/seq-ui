@@ -9,6 +9,7 @@ option go_package = "github.com/ozontech/seq-ui/pkg/errorgroups/v1;errorgroups";
 
 service ErrorGroupsService {
   rpc GetGroups(GetGroupsRequest) returns (GetGroupsResponse) {}
+  rpc GetTopGroups(GetTopGroupsRequest) returns (GetTopGroupsResponse) {}
   rpc GetHist(GetHistRequest) returns (GetHistResponse) {}
   rpc GetDetails(GetDetailsRequest) returns (GetDetailsResponse) {}
   rpc GetReleases(GetReleasesRequest) returns (GetReleasesResponse) {}
@@ -40,21 +41,42 @@ message GetGroupsRequest {
 }
 
 message GetGroupsResponse {
+  message Group {
+    uint64 hash = 1;
+    string message = 2;
+    uint64 seen_total = 3;
+    google.protobuf.Timestamp first_seen_at = 4;
+    google.protobuf.Timestamp last_seen_at = 5;
+    string source = 6;
+  }
+
   uint64 total = 1;
   repeated Group groups = 2;
 }
 
-message Group {
-  uint64 hash = 1;
-  string message = 2;
-  uint64 seen_total = 3;
-  google.protobuf.Timestamp first_seen_at = 4;
-  google.protobuf.Timestamp last_seen_at = 5;
-  string source = 6;
+message GetTopGroupsRequest {
+  optional string env = 1;
+  optional string source = 2;
+  google.protobuf.Duration duration = 3;
+  uint32 limit = 4;
+  uint32 offset = 5;
+  bool with_total = 6;
+}
+
+message GetTopGroupsResponse {
+  message Group {
+    uint64 hash = 1;
+    string message = 2;
+    string source = 3;
+    uint64 seen_total = 4;
+  }
+
+  uint64 total = 1;
+  repeated Group groups = 2;
 }
 
 message GetHistRequest {
-  string service = 1;
+  optional string service = 1;
   optional uint64 group_hash = 2;
   optional string env = 3;
   optional string release = 4;
@@ -72,7 +94,7 @@ message Bucket {
 }
 
 message GetDetailsRequest {
-  string service = 1;
+  optional string service = 1;
   uint64 group_hash = 2;
   optional string env = 3;
   optional string release = 4;
@@ -88,6 +110,8 @@ message GetDetailsResponse {
   message Distributions {
     repeated Distribution by_env = 1;
     repeated Distribution by_release = 2;
+    repeated Distribution by_source = 3;
+    repeated Distribution by_service = 4;
   }
 
   uint64 group_hash = 1;

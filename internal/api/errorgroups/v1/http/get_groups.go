@@ -160,7 +160,7 @@ func newGroups(source []types.ErrorGroup) []group {
 		groups = append(groups, group{
 			Hash:        strconv.FormatUint(g.Hash, 10),
 			Message:     g.Message,
-			SeenTotal:   g.SeenTotal,
+			SeenTotal:   g.Count,
 			FirstSeenAt: g.FirstSeenAt,
 			LastSeenAt:  g.LastSeenAt,
 			Source:      g.Source,

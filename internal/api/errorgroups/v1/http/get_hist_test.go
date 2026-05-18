@@ -1,103 +1,101 @@
 package http
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
-	"net/http/httptest"
-	"strconv"
-	"strings"
 	"testing"
 	"time"
 
 	"go.uber.org/mock/gomock"
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
-	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/ozontech/seq-ui/internal/app/types"
-	repo_mock "github.com/ozontech/seq-ui/internal/pkg/repository_ch/mock"
-	"github.com/ozontech/seq-ui/internal/pkg/service/errorgroups"
+	svc_mock "github.com/ozontech/seq-ui/internal/pkg/service/errorgroups/mock"
 )
 
 func TestServeGetHist(t *testing.T) {
 	var (
-		service              = "service1"
-		groupHash     uint64 = 123
-		env                  = "prod"
-		release              = "v1"
-		twoMinutes           = 2 * time.Minute
-		now                  = time.Now()
-		oneMinuteAgo         = now.Add(-1 * time.Minute)
-		twoMinutesAgo        = now.Add(-2 * time.Minute)
+		groupHashStr  = "123"
+		groupHash     = uint64(123)
+		service       = "test-service"
+		env           = "test-env"
+		source        = "test-source"
+		release       = "test-release"
+		durationStr   = "2m"
+		duration      = 2 * time.Minute
+		now           = time.Now()
+		oneMinuteAgo  = now.Add(-1 * time.Minute)
+		twoMinutesAgo = now.Add(-2 * time.Minute)
+		someErr       = errors.New("some err")
 	)
 
 	type mockArgs struct {
-		req  types.GetErrorHistRequest
-		resp []types.ErrorHistBucket
-		err  error
+		req types.GetErrorHistRequest
+
+		buckets []types.ErrorHistBucket
+		err     error
 	}
 
 	tests := []struct {
 		name string
 
-		reqBody      string
-		wantRespBody string
-		wantStatus   int
+		req     getHistRequest
+		want    getHistResponse
+		wantErr bool
 
 		mockArgs *mockArgs
 	}{
 		{
-			name: "success_all_fields",
-			reqBody: fmt.Sprintf(
-				`{"service":"%s","group_hash":"%s","env":"%s","release":"%s","duration":"%s"}`,
-				service, strconv.FormatUint(groupHash, 10), env, release, twoMinutes,
-			),
-			wantRespBody: fmt.Sprintf(
-				`{"buckets":[{"time":"%s","count":10},{"time":"%s","count":20}]}`,
-				oneMinuteAgo.Format(time.RFC3339Nano), twoMinutesAgo.Format(time.RFC3339Nano),
-			),
-			wantStatus: http.StatusOK,
+			name: "ok",
+
+			req: getHistRequest{
+				GroupHash: &groupHashStr,
+				Service:   &service,
+				Env:       &env,
+				Source:    &source,
+				Release:   &release,
+				Duration:  &durationStr,
+			},
+			want: getHistResponse{
+				Buckets: []bucket{
+					{
+						Time:  twoMinutesAgo,
+						Count: 100,
+					},
+					{
+						Time:  oneMinuteAgo,
+						Count: 200,
+					},
+				},
+			},
+
 			mockArgs: &mockArgs{
 				req: types.GetErrorHistRequest{
-					Service:   service,
 					GroupHash: &groupHash,
+					Service:   &service,
 					Env:       &env,
+					Source:    &source,
 					Release:   &release,
-					Duration:  &twoMinutes,
+					Duration:  &duration,
 				},
-				resp: []types.ErrorHistBucket{
-					{Time: oneMinuteAgo, Count: 10},
-					{Time: twoMinutesAgo, Count: 20},
+
+				buckets: []types.ErrorHistBucket{
+					{Time: twoMinutesAgo, Count: 100},
+					{Time: oneMinuteAgo, Count: 200},
 				},
 			},
 		},
 		{
-			name:    "success_only_service_field",
-			reqBody: fmt.Sprintf(`{"service":"%s"}`, service),
-			wantRespBody: fmt.Sprintf(
-				`{"buckets":[{"time":"%s","count":10},{"time":"%s","count":20}]}`,
-				oneMinuteAgo.Format(time.RFC3339Nano), twoMinutesAgo.Format(time.RFC3339Nano),
-			),
-			wantStatus: http.StatusOK,
+			name: "err_svc",
+
+			req:     getHistRequest{},
+			wantErr: true,
+
 			mockArgs: &mockArgs{
-				req: types.GetErrorHistRequest{
-					Service: service,
-				},
-				resp: []types.ErrorHistBucket{
-					{Time: oneMinuteAgo, Count: 10},
-					{Time: twoMinutesAgo, Count: 20},
-				},
+				req: types.GetErrorHistRequest{},
+
+				err: someErr,
 			},
-		},
-		{
-			name:         "err_no_service_field",
-			reqBody:      `{"group_hash":"123"}`,
-			wantRespBody: `{"message":"invalid request field: 'service' must not be empty"}`,
-			wantStatus:   http.StatusBadRequest,
-		},
-		{
-			name:       "err_invalid_request",
-			reqBody:    "invalid-request",
-			wantStatus: http.StatusBadRequest,
 		},
 	}
 
@@ -107,21 +105,26 @@ func TestServeGetHist(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			mockedRepo := repo_mock.NewMockRepository(ctrl)
-			api := New(errorgroups.New(mockedRepo, config.LogTagsMapping{}))
+			mockedSvc := svc_mock.NewMockService(ctrl)
 
-			if tt.mockArgs != nil {
-				mockedRepo.EXPECT().GetErrorHist(gomock.Any(), tt.mockArgs.req).
-					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
+			api := New(mockedSvc)
+
+			if ma := tt.mockArgs; ma != nil {
+				mockedSvc.EXPECT().
+					GetHist(gomock.Any(), ma.req).
+					Return(ma.buckets, ma.err).
+					Times(1)
 			}
 
-			req := httptest.NewRequest(http.MethodPost, "/errorgroups/v1/hist", strings.NewReader(tt.reqBody))
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[getHistRequest, getHistResponse]{
+				Method: http.MethodPost,
+				Target: "/errorgroups/v1/hist",
+				Req:    tt.req,
 
-			httputil.DoTestHTTP(t, httputil.TestDataHTTP{
-				Req:          req,
-				Handler:      api.serveGetHist,
-				WantRespBody: tt.wantRespBody,
-				WantStatus:   tt.wantStatus,
+				Handler: api.serveGetHist,
+
+				Want:    tt.want,
+				WantErr: tt.wantErr,
 			})
 		})
 	}

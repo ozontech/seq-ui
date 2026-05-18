@@ -41,7 +41,7 @@ func (a *API) serveGetReleases(w http.ResponseWriter, r *http.Request) {
 	}
 	span.SetAttributes(attributes...)
 
-	req := types.GetErrorGroupReleasesRequest{
+	req := types.GetReleasesRequest{
 		Service: httpReq.Service,
 		Env:     httpReq.Env,
 	}

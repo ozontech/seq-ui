@@ -1,88 +1,71 @@
 package http
 
 import (
+	"errors"
 	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"go.uber.org/mock/gomock"
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
-	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/ozontech/seq-ui/internal/app/types"
-	repo_mock "github.com/ozontech/seq-ui/internal/pkg/repository_ch/mock"
-	"github.com/ozontech/seq-ui/internal/pkg/service/errorgroups"
+	svc_mock "github.com/ozontech/seq-ui/internal/pkg/service/errorgroups/mock"
 )
 
 func TestServeGetReleases(t *testing.T) {
 	var (
-		service = "service1"
-		env     = "prod"
+		service = "test-service"
+		env     = "test-env"
+		someErr = errors.New("some err")
 	)
 
 	type mockArgs struct {
-		req  types.GetErrorGroupReleasesRequest
-		resp []string
-		err  error
+		req types.GetReleasesRequest
+
+		releases []string
+		err      error
 	}
 
 	tests := []struct {
 		name string
 
-		reqBody      string
-		wantRespBody string
-		wantStatus   int
+		req     getReleasesRequest
+		want    getReleasesResponse
+		wantErr bool
 
 		mockArgs *mockArgs
 	}{
 		{
-			name:         "success_all_fields",
-			reqBody:      `{"service":"service1","env":"prod"}`,
-			wantRespBody: `{"releases":["v1","v2"]}`,
-			wantStatus:   http.StatusOK,
+			name: "ok",
+
+			req: getReleasesRequest{
+				Service: service,
+				Env:     &env,
+			},
+			want: getReleasesResponse{
+				Releases: []string{"release1", "release2"},
+			},
+
 			mockArgs: &mockArgs{
-				req: types.GetErrorGroupReleasesRequest{
+				req: types.GetReleasesRequest{
 					Service: service,
 					Env:     &env,
 				},
-				resp: []string{"v1", "v2"},
+
+				releases: []string{"release1", "release2"},
 			},
 		},
 		{
-			name:         "success_no_env_field",
-			reqBody:      `{"service":"service1","group_hash":"123"}`,
-			wantRespBody: `{"releases":["v1","v2"]}`,
-			wantStatus:   http.StatusOK,
+			name: "err_svc",
+
+			req:     getReleasesRequest{},
+			wantErr: true,
+
 			mockArgs: &mockArgs{
-				req: types.GetErrorGroupReleasesRequest{
-					Service: service,
-				},
-				resp: []string{"v1", "v2"},
+				req: types.GetReleasesRequest{},
+
+				err: someErr,
 			},
-		},
-		{
-			name:         "success_only_service_field",
-			reqBody:      `{"service":"service1"}`,
-			wantRespBody: `{"releases":["v1","v2"]}`,
-			wantStatus:   http.StatusOK,
-			mockArgs: &mockArgs{
-				req: types.GetErrorGroupReleasesRequest{
-					Service: service,
-				},
-				resp: []string{"v1", "v2"},
-			},
-		},
-		{
-			name:         "err_no_service_field",
-			reqBody:      `{"group_hash":"123"}`,
-			wantRespBody: `{"message":"invalid request field: 'service' must not be empty"}`,
-			wantStatus:   http.StatusBadRequest,
-		},
-		{
-			name:       "err_invalid_request",
-			reqBody:    "invalid-request",
-			wantStatus: http.StatusBadRequest,
 		},
 	}
 
@@ -92,21 +75,26 @@ func TestServeGetReleases(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			mockedRepo := repo_mock.NewMockRepository(ctrl)
-			api := New(errorgroups.New(mockedRepo, config.LogTagsMapping{}))
+			mockedSvc := svc_mock.NewMockService(ctrl)
 
-			if tt.mockArgs != nil {
-				mockedRepo.EXPECT().GetErrorReleases(gomock.Any(), tt.mockArgs.req).
-					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
+			api := New(mockedSvc)
+
+			if ma := tt.mockArgs; ma != nil {
+				mockedSvc.EXPECT().
+					GetReleases(gomock.Any(), ma.req).
+					Return(ma.releases, ma.err).
+					Times(1)
 			}
 
-			req := httptest.NewRequest(http.MethodPost, "/errorgroups/v1/releases", strings.NewReader(tt.reqBody))
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[getReleasesRequest, getReleasesResponse]{
+				Method: http.MethodPost,
+				Target: "/errorgroups/v1/releases",
+				Req:    tt.req,
 
-			httputil.DoTestHTTP(t, httputil.TestDataHTTP{
-				Req:          req,
-				Handler:      api.serveGetReleases,
-				WantRespBody: tt.wantRespBody,
-				WantStatus:   tt.wantStatus,
+				Handler: api.serveGetReleases,
+
+				Want:    tt.want,
+				WantErr: tt.wantErr,
 			})
 		})
 	}

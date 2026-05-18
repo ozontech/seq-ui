@@ -23,7 +23,7 @@ func (a *API) GetReleases(ctx context.Context, req *errorgroups.GetReleasesReque
 	}
 	span.SetAttributes(attributes...)
 
-	request := types.GetErrorGroupReleasesRequest{
+	request := types.GetReleasesRequest{
 		Service: req.Service,
 		Env:     req.Env,
 	}

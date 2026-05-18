@@ -87,6 +87,10 @@ deps: .protoc-plugins .install-tools
 .PHONY: mock
 mock:
 	PATH="$(LOCAL_BIN):$(PATH)" mockgen \
+		-destination=internal/pkg/service/errorgroups/mock/service.go \
+		github.com/ozontech/seq-ui/internal/pkg/service/errorgroups \
+		Service
+	PATH="$(LOCAL_BIN):$(PATH)" mockgen \
 		-source=internal/pkg/repository/repository.go \
 		-destination=internal/pkg/repository/mock/repository.go
 	PATH="$(LOCAL_BIN):$(PATH)" mockgen \
