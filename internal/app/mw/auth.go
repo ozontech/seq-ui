@@ -13,15 +13,6 @@ import (
 
 var errAuthProviderNotInit = errors.New("auth provider was not initialized")
 
-var (
-	tokenAuthServices = map[string]struct{}{
-		"seqapi":            {},
-		"massexport":        {},
-		"SeqAPIService":     {},
-		"MassExportService": {},
-	}
-)
-
 const authHeaderBearerKey = "Bearer"
 
 func getTokenFromAuthHeader(authHeader string) (string, error) {
@@ -64,12 +55,12 @@ func NewAuthProviders(
 	return authPrvds, nil
 }
 
-func (p *AuthProviders) auth(ctx context.Context, authHeader string, checkAPIToken bool) (string, error) {
+func (p *AuthProviders) auth(ctx context.Context, authHeader string) (string, error) {
 	token, err := getTokenFromAuthHeader(authHeader)
 	if err != nil {
 		return "", fmt.Errorf("failed to get token from auth header: %w", err)
 	}
-	if checkAPIToken && p.JwtProvider != nil {
+	if p.JwtProvider != nil {
 		// first check if token was issued by the app's JWT provider
 		jwtClaims, err := p.JwtProvider.Verify(token)
 		if err == nil {

@@ -46,9 +46,8 @@ func TestAuthProvidersAuth(t *testing.T) {
 	tCases := []struct {
 		name string
 
-		authHeader    string
-		checkAPIToken bool
-		mockArgs      mockArgs
+		authHeader string
+		mockArgs   mockArgs
 
 		want    string
 		wantErr bool
@@ -59,9 +58,8 @@ func TestAuthProvidersAuth(t *testing.T) {
 			wantErr:    true,
 		},
 		{
-			name:          "ok_jwt_only",
-			authHeader:    authHeader,
-			checkAPIToken: true,
+			name:       "ok_jwt_only",
+			authHeader: authHeader,
 			mockArgs: mockArgs{
 				jwt: &jwtMockArgs{
 					token:     token,
@@ -71,9 +69,8 @@ func TestAuthProvidersAuth(t *testing.T) {
 			want: formatJWTServiceName(userName),
 		},
 		{
-			name:          "err_jwt_only",
-			authHeader:    authHeader,
-			checkAPIToken: true,
+			name:       "err_jwt_only",
+			authHeader: authHeader,
 			mockArgs: mockArgs{
 				jwt: &jwtMockArgs{
 					token: token,
@@ -83,9 +80,8 @@ func TestAuthProvidersAuth(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:          "ok_oidc_only",
-			authHeader:    authHeader,
-			checkAPIToken: true,
+			name:       "ok_oidc_only",
+			authHeader: authHeader,
 			mockArgs: mockArgs{
 				oidc: &oidcMockArgs{
 					token:     token,
@@ -95,9 +91,8 @@ func TestAuthProvidersAuth(t *testing.T) {
 			want: userName,
 		},
 		{
-			name:          "err_oidc_only",
-			authHeader:    authHeader,
-			checkAPIToken: true,
+			name:       "err_oidc_only",
+			authHeader: authHeader,
 			mockArgs: mockArgs{
 				oidc: &oidcMockArgs{
 					token: token,
@@ -107,15 +102,13 @@ func TestAuthProvidersAuth(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:          "err_no_providers",
-			authHeader:    authHeader,
-			checkAPIToken: true,
-			wantErr:       true,
+			name:       "err_no_providers",
+			authHeader: authHeader,
+			wantErr:    true,
 		},
 		{
-			name:          "err_jwt_ok_oidc",
-			authHeader:    authHeader,
-			checkAPIToken: true,
+			name:       "err_jwt_ok_oidc",
+			authHeader: authHeader,
 			mockArgs: mockArgs{
 				jwt: &jwtMockArgs{
 					token: token,
@@ -127,38 +120,6 @@ func TestAuthProvidersAuth(t *testing.T) {
 				},
 			},
 			want: userName,
-		},
-		{
-			name:          "ok_oidc_skip_check_api_token",
-			authHeader:    authHeader,
-			checkAPIToken: false,
-			mockArgs: mockArgs{
-				jwt: &jwtMockArgs{
-					token:     token,
-					jwtClaims: jwtClaims,
-				},
-				oidc: &oidcMockArgs{
-					token:     token,
-					oidcToken: oidcToken,
-				},
-			},
-			want: userName,
-		},
-		{
-			name:          "err_oidc_skip_check_api_token",
-			authHeader:    authHeader,
-			checkAPIToken: false,
-			mockArgs: mockArgs{
-				jwt: &jwtMockArgs{
-					token:     token,
-					jwtClaims: jwtClaims,
-				},
-				oidc: &oidcMockArgs{
-					token: token,
-					err:   err,
-				},
-			},
-			wantErr: true,
 		},
 	}
 
@@ -172,10 +133,8 @@ func TestAuthProvidersAuth(t *testing.T) {
 			authPrv := &AuthProviders{}
 			if tCase.mockArgs.jwt != nil {
 				jwtProvider := mock_auth.NewMockJWTProvider(ctrl)
-				if tCase.checkAPIToken {
-					jwtProvider.EXPECT().Verify(tCase.mockArgs.jwt.token).
-						Return(tCase.mockArgs.jwt.jwtClaims, tCase.mockArgs.jwt.err)
-				}
+				jwtProvider.EXPECT().Verify(tCase.mockArgs.jwt.token).
+					Return(tCase.mockArgs.jwt.jwtClaims, tCase.mockArgs.jwt.err)
 
 				authPrv.JwtProvider = jwtProvider
 			}
@@ -187,7 +146,7 @@ func TestAuthProvidersAuth(t *testing.T) {
 				authPrv.OidcProvider = oidcProvider
 			}
 
-			got, err := authPrv.auth(context.Background(), authHeader, tCase.checkAPIToken)
+			got, err := authPrv.auth(context.Background(), authHeader)
 			require.Equal(t, tCase.wantErr, err != nil)
 			if tCase.wantErr {
 				return

@@ -157,8 +157,7 @@ func GRPCAuthInterceptor(providers *AuthProviders) grpc.UnaryServerInterceptor {
 			logger.Error("no authorization metadata provided")
 			return nil, errUnauth
 		}
-		_, checkAPIToken := tokenAuthServices[svc]
-		userName, err := providers.auth(ctx, authHeaderSlice[0], checkAPIToken)
+		userName, err := providers.auth(ctx, authHeaderSlice[0])
 		if err != nil {
 			logger.Error("token auth failed", zap.Error(err))
 			return nil, errUnauth
