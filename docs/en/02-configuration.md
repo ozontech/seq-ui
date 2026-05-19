@@ -121,8 +121,6 @@ HTTP server CORS config. If not set, no CORS settings will be applied.
 
 If set to non-empty string, JWT provider is created for API tokens verification.
 
-> API tokens allow access only for [`/seqapi/*`, `/massexport/*`] routes in HTTP API and [`SeqAPIService`, `MassExportService`] service in gRPC API. For other routes/services requiring auth, OIDC check will be performed, so `jwt_secret_key` should be used in pair with `oidc`.
-
 **`oidc`** *`OIDC`* *`optional`*
 
 Open ID Connect config. If not set, no OIDC verification will be applied.

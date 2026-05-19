@@ -161,17 +161,8 @@ func HTTPAuthInterceptor(providers *AuthProviders) func(next http.Handler) http.
 				return
 			}
 
-			uriApi, _, _, err := parseURI(r.RequestURI)
-			if err != nil {
-				msg := "failed to parse URI"
-				logger.Error(msg, zap.Error(err))
-				http.Error(w, msg, http.StatusInternalServerError)
-				return
-			}
-
 			authHeader := r.Header.Get("Authorization")
-			_, checkAPIToken := tokenAuthServices[uriApi]
-			username, err := providers.auth(ctx, authHeader, checkAPIToken)
+			username, err := providers.auth(ctx, authHeader)
 			if err != nil {
 				logger.Error("token auth failed", zap.Error(err))
 				http.Error(w, "Unauthenticated", http.StatusUnauthorized)
