@@ -85,7 +85,7 @@ lint-full:
 .PHONY: gci
 gci:
 	go run github.com/daixiang0/gci@v$(GCI_VER) write . \
-		-s standard -s default -s localmodule
+		-s standard -s default -s localmodule --skip-generated
 
 .PHONY: deps
 deps: .protoc-plugins .install-tools

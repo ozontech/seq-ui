@@ -13,9 +13,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
-
 	auth "github.com/ozontech/seq-ui/internal/app/auth"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockOIDCProvider is a mock of OIDCProvider interface.
