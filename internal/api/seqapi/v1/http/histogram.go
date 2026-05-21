@@ -7,11 +7,12 @@ import (
 	"strconv"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
-	"go.opentelemetry.io/otel/attribute"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // serveGetHistogram go doc.

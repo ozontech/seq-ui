@@ -14,6 +14,8 @@ package api
 
 import (
 	"github.com/go-chi/chi/v5"
+	"google.golang.org/grpc"
+
 	dashboards_v1_api "github.com/ozontech/seq-ui/internal/api/dashboards/v1"
 	errorgroups_v1_api "github.com/ozontech/seq-ui/internal/api/errorgroups/v1"
 	massexport_v1_api "github.com/ozontech/seq-ui/internal/api/massexport/v1"
@@ -24,7 +26,6 @@ import (
 	massexport_v1 "github.com/ozontech/seq-ui/pkg/massexport/v1"
 	seqapi_v1 "github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	userprofile_v1 "github.com/ozontech/seq-ui/pkg/userprofile/v1"
-	"google.golang.org/grpc"
 )
 
 // Registrar is registrar of gRPC and gRPC-Gateway handlers.

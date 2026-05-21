@@ -2,6 +2,7 @@ package dashboards_v1
 
 import (
 	"github.com/go-chi/chi/v5"
+
 	grpc_api "github.com/ozontech/seq-ui/internal/api/dashboards/v1/grpc"
 	http_api "github.com/ozontech/seq-ui/internal/api/dashboards/v1/http"
 	"github.com/ozontech/seq-ui/internal/api/profiles"

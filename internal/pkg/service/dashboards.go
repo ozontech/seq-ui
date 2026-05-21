@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/gofrs/uuid"
+
 	"github.com/ozontech/seq-ui/internal/app/types"
 )
 

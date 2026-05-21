@@ -5,8 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/ozontech/seq-ui/logger"
 	"go.uber.org/zap"
+
+	"github.com/ozontech/seq-ui/logger"
 )
 
 type inmemWithRedis struct {

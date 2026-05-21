@@ -5,12 +5,13 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ozontech/seq-ui/internal/app/types"
-	"github.com/ozontech/seq-ui/pkg/dashboards/v1"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/ozontech/seq-ui/internal/app/types"
+	"github.com/ozontech/seq-ui/pkg/dashboards/v1"
 )
 
 func TestSearch(t *testing.T) {

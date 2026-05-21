@@ -3,12 +3,13 @@ package grpc
 import (
 	"context"
 
-	"github.com/ozontech/seq-ui/logger"
-	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
-	"github.com/ozontech/seq-ui/tracing"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/ozontech/seq-ui/logger"
+	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
+	"github.com/ozontech/seq-ui/tracing"
 )
 
 func (a *API) GetFields(ctx context.Context, req *seqapi.GetFieldsRequest) (*seqapi.GetFieldsResponse, error) {

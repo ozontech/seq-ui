@@ -8,8 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/stretchr/testify/require"
+
+	"github.com/ozontech/seq-ui/internal/app/types"
 )
 
 func TestGetHistData(t *testing.T) {
@@ -159,7 +160,8 @@ func TestGetErrorGroups(t *testing.T) {
 					},
 
 					rows: &mockRowsCount{
-						count: 2,
+						count:        2,
+						isScanStruct: true,
 					},
 				},
 			},
@@ -186,14 +188,14 @@ func TestGetErrorGroups(t *testing.T) {
 						" LIMIT 10 OFFSET 20",
 					args: []any{service, timeDiff},
 
-					rows: &mockRowsScan{
-						scanFns: []func(...any) error{
-							func(args ...any) error {
-								*args[0].(*uint64) = 123
+					rows: &mockRowsScanStruct{
+						scanStructFns: []func(any) error{
+							func(v any) error {
+								*v.(*errorCount) = errorCount{Hash: 123}
 								return nil
 							},
-							func(args ...any) error {
-								*args[0].(*uint64) = 456
+							func(v any) error {
+								*v.(*errorCount) = errorCount{Hash: 456}
 								return nil
 							},
 						},
@@ -207,7 +209,8 @@ func TestGetErrorGroups(t *testing.T) {
 					args: []any{uint64(123), uint64(456), service},
 
 					rows: &mockRowsCount{
-						count: 2,
+						count:        2,
+						isScanStruct: true,
 					},
 				},
 			},
@@ -246,14 +249,14 @@ func TestGetErrorGroups(t *testing.T) {
 						service, timeDiff,
 					},
 
-					rows: &mockRowsScan{
-						scanFns: []func(...any) error{
-							func(args ...any) error {
-								*args[0].(*uint64) = 123
+					rows: &mockRowsScanStruct{
+						scanStructFns: []func(any) error{
+							func(v any) error {
+								*v.(*errorInfo) = errorInfo{Hash: 123}
 								return nil
 							},
-							func(args ...any) error {
-								*args[0].(*uint64) = 456
+							func(v any) error {
+								*v.(*errorInfo) = errorInfo{Hash: 456}
 								return nil
 							},
 						},
@@ -262,12 +265,13 @@ func TestGetErrorGroups(t *testing.T) {
 				{
 					query: "SELECT _group_hash, countMerge(counts) as count" +
 						" FROM agg_events_10min" +
-						" WHERE _group_hash IN (?,?) AND service = ?" +
+						" WHERE _group_hash IN (?,?) AND service = ? AND toStartOfHour(start_date) >= ?" +
 						" GROUP BY _group_hash",
-					args: []any{uint64(123), uint64(456), service},
+					args: []any{uint64(123), uint64(456), service, timeDiff},
 
 					rows: &mockRowsCount{
-						count: 2,
+						count:        2,
+						isScanStruct: true,
 					},
 				},
 			},
@@ -314,7 +318,8 @@ func TestGetErrorGroups(t *testing.T) {
 					},
 
 					rows: &mockRowsCount{
-						count: 2,
+						count:        2,
+						isScanStruct: true,
 					},
 				},
 			},
@@ -388,7 +393,8 @@ func TestGetErrorGroups(t *testing.T) {
 			mockConns: []*mockConnRows{
 				{
 					rows: &mockRowsCount{
-						scanErr: someErr,
+						scanErr:      someErr,
+						isScanStruct: true,
 					},
 				},
 			},
@@ -581,7 +587,8 @@ func TestGetNewErrorGroups(t *testing.T) {
 				},
 
 				rows: &mockRowsCount{
-					count: 2,
+					count:        2,
+					isScanStruct: true,
 				},
 			},
 		},
@@ -618,12 +625,13 @@ func TestGetNewErrorGroups(t *testing.T) {
 				},
 
 				rows: &mockRowsCount{
-					count: 2,
+					count:        2,
+					isScanStruct: true,
 				},
 			},
 		},
 		{
-			name: "ok_full_filters",
+			name: "ok_full_filters_sharded",
 
 			req: types.GetErrorGroupsRequest{
 				Service:  service,
@@ -640,16 +648,17 @@ func TestGetNewErrorGroups(t *testing.T) {
 				"filter1": "value1",
 				"filter2": "value2",
 			},
+			isSharded: true,
 
 			mockConn: &mockConnRows{
 				query: fmt.Sprintf(
 					"SELECT _group_hash, source, any(message) as message, countMerge(seen_total) as seen_total, minMerge(first_seen_at) as first_seen_at, maxMerge(last_seen_at) as last_seen_at"+
 						" FROM error_groups"+
-						" WHERE env = ? AND filter1 = ? AND filter2 = ? AND service = ? AND source = ? AND _group_hash IN (%s)"+
+						" WHERE env = ? AND filter1 = ? AND filter2 = ? AND service = ? AND source = ? AND _group_hash GLOBAL IN (%s)"+
 						" GROUP BY _group_hash, source"+
 						" ORDER BY first_seen_at",
 
-					"SELECT _group_hash"+
+					"SELECT DISTINCT _group_hash"+
 						" FROM error_groups"+
 						" WHERE env = ? AND filter1 = ? AND filter2 = ? AND service = ? AND source = ?"+
 						" GROUP BY _group_hash"+
@@ -663,46 +672,8 @@ func TestGetNewErrorGroups(t *testing.T) {
 				},
 
 				rows: &mockRowsCount{
-					count: 2,
-				},
-			},
-		},
-		{
-			name: "ok_sharded",
-
-			req: types.GetErrorGroupsRequest{
-				Service:  service,
-				Duration: &duration,
-				Limit:    10,
-				Offset:   20,
-				Order:    types.OrderFrequent,
-			},
-			wantGroupsCount: 2,
-
-			isSharded: true,
-			mockConn: &mockConnRows{
-				query: fmt.Sprintf(
-					"SELECT _group_hash, source, any(message) as message, countMerge(seen_total) as seen_total, minMerge(first_seen_at) as first_seen_at, maxMerge(last_seen_at) as last_seen_at"+
-						" FROM error_groups"+
-						" WHERE service = ? AND _group_hash GLOBAL IN (%s)"+
-						" GROUP BY _group_hash, source"+
-						" ORDER BY seen_total DESC",
-
-					"SELECT DISTINCT _group_hash"+
-						" FROM error_groups"+
-						" WHERE service = ?"+
-						" GROUP BY _group_hash"+
-						" HAVING minMerge(first_seen_at) >= ?"+
-						" ORDER BY countMerge(seen_total) DESC"+
-						" LIMIT 10 OFFSET 20",
-				),
-				args: []any{
-					service,
-					service, timeDiff,
-				},
-
-				rows: &mockRowsCount{
-					count: 2,
+					count:        2,
+					isScanStruct: true,
 				},
 			},
 		},
@@ -736,7 +707,8 @@ func TestGetNewErrorGroups(t *testing.T) {
 
 			mockConn: &mockConnRows{
 				rows: &mockRowsCount{
-					scanErr: someErr,
+					scanErr:      someErr,
+					isScanStruct: true,
 				},
 			},
 		},
@@ -942,7 +914,8 @@ func TestGetTopErrorGroups(t *testing.T) {
 					args: []any{},
 
 					rows: &mockRowsCount{
-						count: 2,
+						count:        2,
+						isScanStruct: true,
 					},
 				},
 			},
@@ -967,14 +940,14 @@ func TestGetTopErrorGroups(t *testing.T) {
 						" LIMIT 10 OFFSET 20",
 					args: []any{timeDiff},
 
-					rows: &mockRowsScan{
-						scanFns: []func(...any) error{
-							func(args ...any) error {
-								*args[0].(*uint64) = 123
+					rows: &mockRowsScanStruct{
+						scanStructFns: []func(any) error{
+							func(v any) error {
+								*v.(*errorCount) = errorCount{Hash: 123}
 								return nil
 							},
-							func(args ...any) error {
-								*args[0].(*uint64) = 456
+							func(v any) error {
+								*v.(*errorCount) = errorCount{Hash: 456}
 								return nil
 							},
 						},
@@ -988,7 +961,8 @@ func TestGetTopErrorGroups(t *testing.T) {
 					args: []any{uint64(123), uint64(456)},
 
 					rows: &mockRowsCount{
-						count: 2,
+						count:        2,
+						isScanStruct: true,
 					},
 				},
 			},
@@ -1032,7 +1006,8 @@ func TestGetTopErrorGroups(t *testing.T) {
 					},
 
 					rows: &mockRowsCount{
-						count: 2,
+						count:        2,
+						isScanStruct: true,
 					},
 				},
 			},
@@ -1088,7 +1063,8 @@ func TestGetTopErrorGroups(t *testing.T) {
 			mockConns: []*mockConnRows{
 				{
 					rows: &mockRowsCount{
-						scanErr: someErr,
+						scanErr:      someErr,
+						isScanStruct: true,
 					},
 				},
 			},
@@ -1913,20 +1889,20 @@ func TestGetErrorCounts(t *testing.T) {
 				rows: &mockRowsScanStruct{
 					scanStructFns: []func(any) error{
 						func(ec any) error {
-							*ec.(*errCounts) = errCounts{
-								count:   10,
-								env:     "env1",
-								source:  "source1",
-								service: "service1",
+							*ec.(*errDetailsCount) = errDetailsCount{
+								Count:   10,
+								Env:     "env1",
+								Source:  "source1",
+								Service: "service1",
 							}
 							return nil
 						},
 						func(ec any) error {
-							*ec.(*errCounts) = errCounts{
-								count:   20,
-								env:     "env2",
-								source:  "source2",
-								service: "service1",
+							*ec.(*errDetailsCount) = errDetailsCount{
+								Count:   20,
+								Env:     "env2",
+								Source:  "source2",
+								Service: "service1",
 							}
 							return nil
 						},
@@ -1967,12 +1943,12 @@ func TestGetErrorCounts(t *testing.T) {
 				rows: &mockRowsScanStruct{
 					scanStructFns: []func(any) error{
 						func(ec any) error {
-							*ec.(*errCounts) = errCounts{
-								count:   10,
-								env:     env,
-								source:  source,
-								service: service,
-								release: release,
+							*ec.(*errDetailsCount) = errDetailsCount{
+								Count:   10,
+								Env:     env,
+								Source:  source,
+								Service: service,
+								Release: release,
 							}
 							return nil
 						},

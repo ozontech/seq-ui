@@ -50,14 +50,14 @@ linters:
           - dupl
           - gosec
           - goconst
-      - linters: [ govet ]
+      - linters: [govet]
         text: 'declaration of "(err|ctx)"'
-      - linters: [ gosec ]
-        text: 'integer overflow conversion'
-      - linters: [ staticcheck ]
-        text: 'SA1019:' # <something> is deprecated 
-      - linters: [ staticcheck ]
-        text: 'QF1008:' # could remove embedded field <something> from selector 
+      - linters: [gosec]
+        text: "integer overflow conversion"
+      - linters: [staticcheck]
+        text: "SA1019:" # <something> is deprecated
+      - linters: [staticcheck]
+        text: "QF1008:" # could remove embedded field <something> from selector
     paths:
       - bin
       - vendor
@@ -71,6 +71,13 @@ formatters:
   enable:
     - gofmt
     - goimports
+    - gci
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - localmodule
   exclusions:
     paths:
       - bin

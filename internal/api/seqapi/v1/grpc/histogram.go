@@ -3,11 +3,12 @@ package grpc
 import (
 	"context"
 
-	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
-	"github.com/ozontech/seq-ui/tracing"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
+	"github.com/ozontech/seq-ui/tracing"
 )
 
 func (a *API) GetHistogram(ctx context.Context, req *seqapi.GetHistogramRequest) (*seqapi.GetHistogramResponse, error) {

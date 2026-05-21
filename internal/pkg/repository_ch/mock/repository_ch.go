@@ -13,8 +13,9 @@ import (
 	context "context"
 	reflect "reflect"
 
-	types "github.com/ozontech/seq-ui/internal/app/types"
 	gomock "go.uber.org/mock/gomock"
+
+	types "github.com/ozontech/seq-ui/internal/app/types"
 )
 
 // MockRepository is a mock of Repository interface.

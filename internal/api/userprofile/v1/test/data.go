@@ -3,11 +3,12 @@ package test
 import (
 	"testing"
 
+	"go.uber.org/mock/gomock"
+
 	"github.com/ozontech/seq-ui/internal/api/profiles"
 	repo "github.com/ozontech/seq-ui/internal/pkg/repository"
 	repo_mock "github.com/ozontech/seq-ui/internal/pkg/repository/mock"
 	"github.com/ozontech/seq-ui/internal/pkg/service"
-	"go.uber.org/mock/gomock"
 )
 
 func NewUserProfilesData(t *testing.T) (*repo_mock.MockUserProfiles, service.Service, *profiles.Profiles) {

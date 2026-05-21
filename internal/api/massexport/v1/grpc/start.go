@@ -4,12 +4,13 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/ozontech/seq-ui/internal/api/grpcutil"
 	"github.com/ozontech/seq-ui/internal/api/massexport/v1/util"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	massexport_v1 "github.com/ozontech/seq-ui/pkg/massexport/v1"
 	"github.com/ozontech/seq-ui/tracing"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 func (a *API) Start(ctx context.Context, req *massexport_v1.StartRequest) (*massexport_v1.StartResponse, error) {

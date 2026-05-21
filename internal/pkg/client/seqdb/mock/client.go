@@ -13,10 +13,11 @@ import (
 	context "context"
 	reflect "reflect"
 
+	gomock "go.uber.org/mock/gomock"
+
 	httputil "github.com/ozontech/seq-ui/internal/api/httputil"
 	mask "github.com/ozontech/seq-ui/internal/pkg/mask"
 	seqapi "github.com/ozontech/seq-ui/pkg/seqapi/v1"
-	gomock "go.uber.org/mock/gomock"
 )
 
 // MockClient is a mock of Client interface.

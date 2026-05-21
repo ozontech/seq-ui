@@ -26,11 +26,11 @@ type GetErrorGroupsRequest struct {
 
 type ErrorGroup struct {
 	Hash        uint64
+	Source      string
 	Message     string
 	Count       uint64
 	FirstSeenAt time.Time
 	LastSeenAt  time.Time
-	Source      string
 }
 
 type GetTopErrorGroupsRequest struct {

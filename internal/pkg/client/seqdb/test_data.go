@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1"
 	mock "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type streamErrorType int8

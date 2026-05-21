@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	mock "github.com/ozontech/seq-ui/internal/pkg/repository_ch/mock"
 	"go.uber.org/mock/gomock"
+
+	mock "github.com/ozontech/seq-ui/internal/pkg/repository_ch/mock"
 )
 
 func fakeNow(now time.Time) func() time.Time {
@@ -24,6 +25,8 @@ type mockConnRow struct {
 type mockRowsCount struct {
 	count   int
 	scanErr error
+
+	isScanStruct bool
 }
 
 type mockRowsScan struct {
@@ -91,8 +94,15 @@ func initMockConnRows(t *testing.T, params ...*mockConnRows) *mock.MockConn {
 					times = 1
 				}
 
-				mockedRows.EXPECT().Next().Return(true).Times(times)
-				mockedRows.EXPECT().Scan(gomock.Any()).Return(rows.scanErr).Times(times)
+				if times > 0 {
+					mockedRows.EXPECT().Next().Return(true).Times(times)
+
+					if rows.isScanStruct {
+						mockedRows.EXPECT().ScanStruct(gomock.Any()).Return(rows.scanErr).Times(times)
+					} else {
+						mockedRows.EXPECT().Scan(gomock.Any()).Return(rows.scanErr).Times(times)
+					}
+				}
 
 				if rows.scanErr == nil {
 					mockedRows.EXPECT().Next().Return(false).Times(1)

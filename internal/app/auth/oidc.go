@@ -10,12 +10,13 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"go.uber.org/zap"
+
 	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/ozontech/seq-ui/internal/app/tls"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/metric"
-	"go.uber.org/zap"
 )
 
 const (

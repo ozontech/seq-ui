@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"net/http"
 
+	"google.golang.org/grpc"
+
 	"github.com/ozontech/seq-ui/internal/api"
 	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/ozontech/seq-ui/internal/app/mw"
-	"google.golang.org/grpc"
 )
 
 // Server contains application dependencies.

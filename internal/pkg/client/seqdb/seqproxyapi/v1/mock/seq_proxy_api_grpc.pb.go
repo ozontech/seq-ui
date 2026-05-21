@@ -13,10 +13,11 @@ import (
 	context "context"
 	reflect "reflect"
 
-	seqproxyapi "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1"
 	gomock "go.uber.org/mock/gomock"
 	grpc "google.golang.org/grpc"
 	metadata "google.golang.org/grpc/metadata"
+
+	seqproxyapi "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1"
 )
 
 // MockSeqProxyApiClient is a mock of SeqProxyApiClient interface.

@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/redis/go-redis/v9"
+
+	"github.com/ozontech/seq-ui/internal/app/config"
 )
 
 func New(ctx context.Context, cfg *config.Redis) (*redis.Client, error) {

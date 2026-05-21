@@ -7,13 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1"
-	mock "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1/mock"
-	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1"
+	mock "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1/mock"
+	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
 
 func Test_GRPCClient_Search(t *testing.T) {
