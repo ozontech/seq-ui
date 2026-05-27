@@ -132,7 +132,6 @@
                         "description": "Request body",
                         "name": "body",
                         "in": "body",
-                        "required": true,
                         "schema": {
                             "$ref": "#/definitions/admin.v1.DeleteRoleResponse"
                         }

@@ -240,7 +240,7 @@ func (a *API) serveUpdateRole(w http.ResponseWriter, r *http.Request) {
 //	@ID			admin_v1_deleteRole
 //	@Tags		admin_v1
 //	@Param		id		path		int32				true	"Role ID"
-//	@Param		body	body		deleteRoleRequest	true	"Request body"
+//	@Param		body	body		deleteRoleRequest	false	"Request body"
 //	@Success	200		{object}	nil					"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
 //	@Security	bearer

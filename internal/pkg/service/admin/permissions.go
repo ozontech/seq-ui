@@ -53,7 +53,7 @@ func (s *service) GetUserPermissions(ctx context.Context, req types.GetUserPermi
 
 	perms, err := s.repo.GetUserPermissions(ctx, req)
 	if err != nil {
-		return 0, nil
+		return 0, err
 	}
 
 	s.cache.setPermissions(req.Username, perms)
