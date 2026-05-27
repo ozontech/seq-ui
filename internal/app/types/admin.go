@@ -1,7 +1,5 @@
 package types
 
-type Username = string
-
 type Role struct {
 	ID          int32
 	Name        string
@@ -12,6 +10,10 @@ type RoleRepo struct {
 	ID          int32
 	Name        string
 	Permissions uint64
+}
+
+type RoleInfo struct {
+	Usernames []string
 }
 
 type Permission struct {
@@ -75,4 +77,9 @@ type GetUserPermissionsRequest struct {
 
 type GetUserPermissionsResponse struct {
 	Permissions uint64
+}
+
+type DeleteUsersFromRoleRequest struct {
+	RoleID    int32
+	Usernames []string
 }

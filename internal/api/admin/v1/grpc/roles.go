@@ -11,10 +11,6 @@ import (
 )
 
 func (a *API) CreateRole(ctx context.Context, req *admin.CreateRoleRequest) (*admin.CreateRoleResponse, error) {
-	if err := a.authorize(ctx, "CreateRole"); err != nil {
-		return nil, grpcutil.ProcessError(err)
-	}
-
 	ctx, span := tracing.StartSpan(ctx, "admin_v1_create_role")
 	defer span.End()
 
@@ -45,10 +41,6 @@ func (a *API) CreateRole(ctx context.Context, req *admin.CreateRoleRequest) (*ad
 }
 
 func (a *API) AddUsersToRole(ctx context.Context, req *admin.AddUsersToRoleRequest) (*admin.AddUsersToRoleResponse, error) {
-	if err := a.authorize(ctx, "AddUsersToRole"); err != nil {
-		return nil, grpcutil.ProcessError(err)
-	}
-
 	ctx, span := tracing.StartSpan(ctx, "admin_v1_add_users_to_role")
 	defer span.End()
 
@@ -74,10 +66,6 @@ func (a *API) AddUsersToRole(ctx context.Context, req *admin.AddUsersToRoleReque
 }
 
 func (a *API) GetRoles(ctx context.Context, _ *admin.GetRolesRequest) (*admin.GetRolesResponse, error) {
-	if err := a.authorize(ctx, "GetRoles"); err != nil {
-		return nil, grpcutil.ProcessError(err)
-	}
-
 	resp, err := a.service.GetRoles(ctx)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
@@ -90,10 +78,6 @@ func (a *API) GetRoles(ctx context.Context, _ *admin.GetRolesRequest) (*admin.Ge
 }
 
 func (a *API) GetRole(ctx context.Context, req *admin.GetRoleRequest) (*admin.GetRoleResponse, error) {
-	if err := a.authorize(ctx, "GetRole"); err != nil {
-		return nil, grpcutil.ProcessError(err)
-	}
-
 	ctx, span := tracing.StartSpan(ctx, "admin_v1_get_role")
 	defer span.End()
 
@@ -104,7 +88,7 @@ func (a *API) GetRole(ctx context.Context, req *admin.GetRoleRequest) (*admin.Ge
 		},
 	)
 
-	usernames, err := a.service.GetRole(ctx, types.GetRoleRequest{
+	roleInfo, err := a.service.GetRole(ctx, types.GetRoleRequest{
 		RoleID: req.Id,
 	})
 	if err != nil {
@@ -112,15 +96,11 @@ func (a *API) GetRole(ctx context.Context, req *admin.GetRoleRequest) (*admin.Ge
 	}
 
 	return &admin.GetRoleResponse{
-		Usernames: usernames,
+		Usernames: roleInfo.Usernames,
 	}, nil
 }
 
 func (a *API) UpdateRole(ctx context.Context, req *admin.UpdateRoleRequest) (*admin.UpdateRoleResponse, error) {
-	if err := a.authorize(ctx, "UpdateRole"); err != nil {
-		return nil, grpcutil.ProcessError(err)
-	}
-
 	ctx, span := tracing.StartSpan(ctx, "admin_v1_update_role")
 	defer span.End()
 
@@ -154,10 +134,6 @@ func (a *API) UpdateRole(ctx context.Context, req *admin.UpdateRoleRequest) (*ad
 }
 
 func (a *API) DeleteRole(ctx context.Context, req *admin.DeleteRoleRequest) (*admin.DeleteRoleResponse, error) {
-	if err := a.authorize(ctx, "DeleteRole"); err != nil {
-		return nil, grpcutil.ProcessError(err)
-	}
-
 	ctx, span := tracing.StartSpan(ctx, "admin_v1_delete_role")
 	defer span.End()
 
@@ -185,6 +161,31 @@ func (a *API) DeleteRole(ctx context.Context, req *admin.DeleteRoleRequest) (*ad
 	return &admin.DeleteRoleResponse{}, nil
 }
 
+func (a *API) DeleteUsersFromRole(ctx context.Context, req *admin.DeleteUsersFromRoleRequest) (*admin.DeleteUsersFromRoleResponse, error) {
+	ctx, span := tracing.StartSpan(ctx, "admin_v1_delete_users_from_role")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.KeyValue{
+			Key:   "role_id",
+			Value: attribute.IntValue(int(req.GetRoleId())),
+		},
+		attribute.KeyValue{
+			Key:   "users_count",
+			Value: attribute.IntValue(len(req.GetUsernames())),
+		},
+	)
+
+	if err := a.service.DeleteUsersFromRole(ctx, types.DeleteUsersFromRoleRequest{
+		RoleID:    req.RoleId,
+		Usernames: req.Usernames,
+	}); err != nil {
+		return nil, grpcutil.ProcessError(err)
+	}
+
+	return &admin.DeleteUsersFromRoleResponse{}, nil
+}
+
 func rolesToProto(source []types.Role) []*admin.Role {
 	roles := make([]*admin.Role, 0, len(source))
 	for _, role := range source {
@@ -195,16 +196,4 @@ func rolesToProto(source []types.Role) []*admin.Role {
 		})
 	}
 	return roles
-}
-
-func availablePermissionsToProto(source []types.Permission) []*admin.GetRolesResponse_Permission {
-	availablePermissions := make([]*admin.GetRolesResponse_Permission, 0, len(source))
-	for _, aPermission := range source {
-		availablePermissions = append(availablePermissions, &admin.GetRolesResponse_Permission{
-			Value:       aPermission.Value,
-			Name:        aPermission.Name,
-			Description: aPermission.Description,
-		})
-	}
-	return availablePermissions
 }

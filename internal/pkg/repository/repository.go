@@ -41,8 +41,9 @@ type (
 	Admin interface {
 		CreateRole(context.Context, types.CreateRoleRepoRequest) (int32, error)
 		AddUsersToRole(context.Context, types.AddUsersToRoleRequest) error
+		DeleteUsersFromRole(context.Context, types.DeleteUsersFromRoleRequest) error
 		GetRoles(context.Context) ([]types.RoleRepo, error)
-		GetRole(context.Context, types.GetRoleRequest) ([]types.Username, error)
+		GetRole(context.Context, types.GetRoleRequest) (types.RoleInfo, error)
 		UpdateRole(context.Context, types.UpdateRoleRepoRequest) error
 		DeleteRole(context.Context, types.DeleteRoleRequest) error
 		GetUserPermissions(context.Context, types.GetUserPermissionsRequest) (uint64, error)

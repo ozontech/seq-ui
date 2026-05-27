@@ -12,6 +12,267 @@
         "version": "1.0"
     },
     "paths": {
+        "/admin/v1/roles": {
+            "get": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "admin_v1"
+                ],
+                "operationId": "admin_v1_getRoles",
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/admin.v1.GetRolesResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "admin_v1"
+                ],
+                "operationId": "admin_v1_createRole",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/admin.v1.CreateRoleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/admin.v1.CreateRoleResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/v1/roles/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "admin_v1"
+                ],
+                "operationId": "admin_v1_getRole",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Role ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/admin.v1.GetRoleResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "admin_v1"
+                ],
+                "operationId": "admin_v1_deleteRole",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Role ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/admin.v1.DeleteRoleResponse"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response"
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "admin_v1"
+                ],
+                "operationId": "admin_v1_updateRole",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Role ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/admin.v1.UpdateRoleResponse"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response"
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/v1/roles/{id}/users": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "admin_v1"
+                ],
+                "operationId": "admin_v1_addUsersToRole",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Role ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/admin.v1.AddUsersToRoleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response"
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "admin_v1"
+                ],
+                "operationId": "admin_v1_deleteUsersFromRole",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Role ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/admin.v1.DeleteUsersFromRoleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response"
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
         "/dashboards/v1/": {
             "post": {
                 "security": [
@@ -1465,6 +1726,131 @@
             "properties": {
                 "message": {
                     "type": "string"
+                }
+            }
+        },
+        "admin.v1.AddUsersToRoleRequest": {
+            "type": "object",
+            "properties": {
+                "usernames": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "admin.v1.CreateRoleRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "admin.v1.CreateRoleResponse": {
+            "type": "object",
+            "properties": {
+                "role_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "admin.v1.DeleteRoleResponse": {
+            "type": "object",
+            "properties": {
+                "replacement_role_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "admin.v1.DeleteUsersFromRoleRequest": {
+            "type": "object",
+            "properties": {
+                "usernames": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "admin.v1.GetRoleResponse": {
+            "type": "object",
+            "properties": {
+                "usernames": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "admin.v1.GetRolesResponse": {
+            "type": "object",
+            "properties": {
+                "available_permissions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/admin.v1.Permission"
+                    }
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/admin.v1.Role"
+                    }
+                }
+            }
+        },
+        "admin.v1.Permission": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "integer"
+                }
+            }
+        },
+        "admin.v1.Role": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "admin.v1.UpdateRoleResponse": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 }
             }
         },

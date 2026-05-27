@@ -1,4 +1,4 @@
-package service
+package admin
 
 import (
 	"context"
@@ -8,6 +8,10 @@ import (
 )
 
 func (s *service) CreateRole(ctx context.Context, req types.CreateRoleRequest) (int32, error) {
+	if err := s.checkAccess(ctx, PermissionManageRoles); err != nil {
+		return 0, err
+	}
+
 	if req.Name == "" {
 		return 0, types.NewErrInvalidRequestField("empty role name")
 	}
@@ -24,12 +28,16 @@ func (s *service) CreateRole(ctx context.Context, req types.CreateRoleRequest) (
 		return 0, err
 	}
 
-	s.adminCache.resetRoles()
+	s.cache.resetRoles()
 
 	return roleID, nil
 }
 
 func (s *service) AddUsersToRole(ctx context.Context, req types.AddUsersToRoleRequest) error {
+	if err := s.checkAccess(ctx, PermissionManageRoles); err != nil {
+		return err
+	}
+
 	if req.RoleID <= 0 {
 		return types.NewErrInvalidRequestField("value role_id must be greater than 0")
 	}
@@ -46,15 +54,17 @@ func (s *service) AddUsersToRole(ctx context.Context, req types.AddUsersToRoleRe
 		return err
 	}
 
-	for _, username := range req.Usernames {
-		s.adminCache.resetPermissions(username)
-	}
+	s.cache.resetPermissions(req.Usernames...)
 
 	return nil
 }
 
 func (s *service) GetRoles(ctx context.Context) (types.GetRolesResponse, error) {
-	if roles, ok := s.adminCache.getRoles(); ok {
+	if err := s.checkAccess(ctx, PermissionManageRoles); err != nil {
+		return types.GetRolesResponse{}, err
+	}
+
+	if roles, ok := s.cache.getRoles(); ok {
 		return types.GetRolesResponse{
 			Roles:                roles,
 			AvailablePermissions: availablePermissions,
@@ -75,7 +85,7 @@ func (s *service) GetRoles(ctx context.Context) (types.GetRolesResponse, error) 
 		})
 	}
 
-	s.adminCache.setRoles(roles)
+	s.cache.setRoles(roles)
 
 	return types.GetRolesResponse{
 		Roles:                roles,
@@ -83,15 +93,23 @@ func (s *service) GetRoles(ctx context.Context) (types.GetRolesResponse, error) 
 	}, nil
 }
 
-func (s *service) GetRole(ctx context.Context, req types.GetRoleRequest) ([]types.Username, error) {
+func (s *service) GetRole(ctx context.Context, req types.GetRoleRequest) (types.RoleInfo, error) {
+	if err := s.checkAccess(ctx, PermissionManageRoles); err != nil {
+		return types.RoleInfo{}, err
+	}
+
 	if req.RoleID <= 0 {
-		return nil, types.NewErrInvalidRequestField("value role_id must be greater than 0")
+		return types.RoleInfo{}, types.NewErrInvalidRequestField("value role_id must be greater than 0")
 	}
 
 	return s.repo.GetRole(ctx, req)
 }
 
 func (s *service) UpdateRole(ctx context.Context, req types.UpdateRoleRequest) error {
+	if err := s.checkAccess(ctx, PermissionManageRoles); err != nil {
+		return err
+	}
+
 	if req.RoleID <= 0 {
 		return types.NewErrInvalidRequestField("value role_id must be greater than 0")
 	}
@@ -118,16 +136,20 @@ func (s *service) UpdateRole(ctx context.Context, req types.UpdateRoleRequest) e
 		return err
 	}
 
-	s.adminCache.resetRoles()
+	s.cache.resetRoles()
 
 	if permissions != nil {
-		s.adminCache.resetAllPermissions()
+		s.cache.resetAllPermissions()
 	}
 
 	return nil
 }
 
 func (s *service) DeleteRole(ctx context.Context, req types.DeleteRoleRequest) error {
+	if err := s.checkAccess(ctx, PermissionManageRoles); err != nil {
+		return err
+	}
+
 	if req.RoleID <= 0 {
 		return types.NewErrInvalidRequestField("value role_id must be greater than 0")
 	}
@@ -145,27 +167,34 @@ func (s *service) DeleteRole(ctx context.Context, req types.DeleteRoleRequest) e
 		return err
 	}
 
-	s.adminCache.resetAllPermissions()
-	s.adminCache.resetRoles()
+	s.cache.resetAllPermissions()
+	s.cache.resetRoles()
 
 	return nil
 }
 
-func (s *service) GetUserPermissions(ctx context.Context, req types.GetUserPermissionsRequest) (uint64, error) {
-	if perms, ok := s.adminCache.getPermissions(req.Username); ok {
-		return perms, nil
+func (s *service) DeleteUsersFromRole(ctx context.Context, req types.DeleteUsersFromRoleRequest) error {
+	if err := s.checkAccess(ctx, PermissionManageRoles); err != nil {
+		return err
 	}
 
-	perms, err := s.repo.GetUserPermissions(ctx, req)
-	if err != nil {
-		return 0, nil
+	if req.RoleID <= 0 {
+		return types.NewErrInvalidRequestField("value role_id must be greater than 0")
 	}
 
-	s.adminCache.setPermissions(req.Username, perms)
+	if len(req.Usernames) == 0 {
+		return types.NewErrInvalidRequestField("empty usernames")
+	}
 
-	return perms, nil
-}
+	if slices.Contains(req.Usernames, "") {
+		return types.NewErrInvalidRequestField("empty username")
+	}
 
-func (s *service) GetAvailablePermissions() []types.Permission {
-	return availablePermissions
+	if err := s.repo.DeleteUsersFromRole(ctx, req); err != nil {
+		return err
+	}
+
+	s.cache.resetPermissions(req.Usernames...)
+
+	return nil
 }

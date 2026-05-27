@@ -428,11 +428,25 @@ func (mr *MockAdminMockRecorder) DeleteRole(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRole", reflect.TypeOf((*MockAdmin)(nil).DeleteRole), arg0, arg1)
 }
 
+// DeleteUsersFromRole mocks base method.
+func (m *MockAdmin) DeleteUsersFromRole(arg0 context.Context, arg1 types.DeleteUsersFromRoleRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteUsersFromRole", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteUsersFromRole indicates an expected call of DeleteUsersFromRole.
+func (mr *MockAdminMockRecorder) DeleteUsersFromRole(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUsersFromRole", reflect.TypeOf((*MockAdmin)(nil).DeleteUsersFromRole), arg0, arg1)
+}
+
 // GetRole mocks base method.
-func (m *MockAdmin) GetRole(arg0 context.Context, arg1 types.GetRoleRequest) ([]types.Username, error) {
+func (m *MockAdmin) GetRole(arg0 context.Context, arg1 types.GetRoleRequest) (types.RoleInfo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRole", arg0, arg1)
-	ret0, _ := ret[0].([]types.Username)
+	ret0, _ := ret[0].(types.RoleInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
