@@ -1,8 +1,6 @@
 package http
 
 import (
-	"net/http"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	adminservice "github.com/ozontech/seq-ui/internal/pkg/service/admin"
@@ -22,12 +20,7 @@ func New(svc adminservice.Service) *API {
 
 func (a *API) Router() chi.Router {
 	mux := chi.NewMux()
-	mux.Use(func(h http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := types.SetUserKey(r.Context(), "serlazarenko")
-			h.ServeHTTP(w, r.WithContext(ctx))
-		})
-	})
+
 	mux.Route("/roles", func(r chi.Router) {
 		r.Post("/", a.serveCreateRole)
 		r.Get("/", a.serveGetRoles)
