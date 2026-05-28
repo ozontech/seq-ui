@@ -17,7 +17,7 @@ import (
 // serveGetEvent go doc.
 //
 //	@Router		/seqapi/v1/events/{id} [get]
-//	@ID			seqapi_v1_getEvent
+//	@ID			seqapi_v1_get_event
 //	@Tags		seqapi_v1
 //	@Param		env		query		string				false	"Environment"
 //	@Param		id		path		string				true	"Event ID"

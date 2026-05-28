@@ -30,11 +30,7 @@ func (c *adminCache) getPermissions(username string) (perm uint64, ok bool) {
 	defer c.mu.RUnlock()
 
 	perms, ok := c.userPermissions[username]
-	if !ok {
-		return 0, false
-	}
-
-	return perms, true
+	return perms, ok
 }
 
 func (c *adminCache) setRoles(roles []types.Role) {

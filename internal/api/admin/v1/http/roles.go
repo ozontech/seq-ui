@@ -18,7 +18,7 @@ import (
 // serveCreateRole go doc.
 //
 //	@Router		/admin/v1/roles [post]
-//	@ID			admin_v1_createRole
+//	@ID			admin_v1_create_role
 //	@Tags		admin_v1
 //	@Param		body	body		createRoleRequest	true	"Request body"
 //	@Success	200		{object}	createRoleResponse	"A successful response"
@@ -62,7 +62,7 @@ func (a *API) serveCreateRole(w http.ResponseWriter, r *http.Request) {
 // serveAddUsersToRole go doc.
 //
 //	@Router		/admin/v1/roles/{id}/users [post]
-//	@ID			admin_v1_addUsersToRole
+//	@ID			admin_v1_add_users_to_role
 //	@Tags		admin_v1
 //	@Param		id		path		int32					true	"Role ID"
 //	@Param		body	body		addUsersToRoleRequest	true	"Request body"
@@ -112,7 +112,7 @@ func (a *API) serveAddUsersToRole(w http.ResponseWriter, r *http.Request) {
 // serveGetRoles go doc.
 //
 //	@Router		/admin/v1/roles [get]
-//	@ID			admin_v1_getRoles
+//	@ID			admin_v1_get_roles
 //	@Tags		admin_v1
 //	@Success	200		{object}	getRolesResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
@@ -138,7 +138,7 @@ func (a *API) serveGetRoles(w http.ResponseWriter, r *http.Request) {
 // serveGetRole go doc.
 //
 //	@Router		/admin/v1/roles/{id} [get]
-//	@ID			admin_v1_getRole
+//	@ID			admin_v1_get_role
 //	@Tags		admin_v1
 //	@Param		id		path		int32			true	"Role ID"
 //	@Success	200		{object}	getRoleResponse	"A successful response"
@@ -179,7 +179,7 @@ func (a *API) serveGetRole(w http.ResponseWriter, r *http.Request) {
 // serveUpdateRole go doc.
 //
 //	@Router		/admin/v1/roles/{id} [patch]
-//	@ID			admin_v1_updateRole
+//	@ID			admin_v1_update_role
 //	@Tags		admin_v1
 //	@Param		id		path		int32				true	"Role ID"
 //	@Param		body	body		updateRoleRequest	true	"Request body"
@@ -237,7 +237,7 @@ func (a *API) serveUpdateRole(w http.ResponseWriter, r *http.Request) {
 // serveDeleteRole go doc.
 //
 //	@Router		/admin/v1/roles/{id} [delete]
-//	@ID			admin_v1_deleteRole
+//	@ID			admin_v1_delete_role
 //	@Tags		admin_v1
 //	@Param		id		path		int32				true	"Role ID"
 //	@Param		body	body		deleteRoleRequest	false	"Request body"
@@ -290,7 +290,7 @@ func (a *API) serveDeleteRole(w http.ResponseWriter, r *http.Request) {
 // serveDeleteUsersFromRole go doc.
 //
 //	@Router		/admin/v1/roles/{id}/users [delete]
-//	@ID			admin_v1_deleteUsersFromRole
+//	@ID			admin_v1_delete_users_from_role
 //	@Tags		admin_v1
 //	@Param		id		path		int32						true	"Role ID"
 //	@Param		body	body		deleteUsersFromRoleRequest	true	"Request body"

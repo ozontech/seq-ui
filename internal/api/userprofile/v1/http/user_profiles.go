@@ -14,7 +14,7 @@ import (
 // serveGetUserProfile go doc.
 //
 //	@Router		/userprofile/v1/profile [get]
-//	@ID			userprofile_v1_getUserProfile
+//	@ID			userprofile_v1_get_user_profile
 //	@Tags		userprofile_v1
 //	@Success	200		{object}	userProfile		"A successful response"
 //	@Failure	default	{object}	httputil.Error	"An unexpected error response"
@@ -48,7 +48,7 @@ func (a *API) serveGetUserProfile(w http.ResponseWriter, r *http.Request) {
 // serveUpdateUserProfile go doc.
 //
 //	@Router		/userprofile/v1/profile [patch]
-//	@ID			userprofile_v1_updateUserProfile
+//	@ID			userprofile_v1_update_user_profile
 //	@Tags		userprofile_v1
 //	@Param		body	body		updateUserProfileRequest	true	"Request body"
 //	@Success	200		{object}	nil							"A successful response"

@@ -17,7 +17,7 @@ import (
 // serveGetFavoriteQueries go doc.
 //
 //	@Router		/userprofile/v1/queries/favorite [get]
-//	@ID			userprofile_v1_getFavoriteQueries
+//	@ID			userprofile_v1_get_favorite_queries
 //	@Tags		userprofile_v1
 //	@Success	200		{object}	getFavoriteQueriesResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error				"An unexpected error response"
@@ -51,7 +51,7 @@ func (a *API) serveGetFavoriteQueries(w http.ResponseWriter, r *http.Request) {
 // serveCreateFavoriteQuery go doc.
 //
 //	@Router		/userprofile/v1/queries/favorite [post]
-//	@ID			userprofile_v1_createFavoriteQuery
+//	@ID			userprofile_v1_create_favorite_query
 //	@Tags		userprofile_v1
 //	@Param		body	body		createFavoriteQueryRequest	true	"Request body"
 //	@Success	200		{object}	createFavoriteQueryResponse	"A successful response"
@@ -118,7 +118,7 @@ func (a *API) serveCreateFavoriteQuery(w http.ResponseWriter, r *http.Request) {
 // serveDeleteFavoriteQuery go doc.
 //
 //	@Router		/userprofile/v1/queries/favorite/{id} [delete]
-//	@ID			userprofile_v1_deleteFavoriteQuery
+//	@ID			userprofile_v1_delete_favorite_query
 //	@Tags		userprofile_v1
 //	@Param		id		path		string			true	"Favorite Query ID"	Format(int64)
 //	@Success	200		{object}	nil				"A successful response"

@@ -8,19 +8,19 @@ import (
 )
 
 const (
-	PermissionManageRoles uint64 = 1 << iota
+	permissionManageRoles uint64 = 1 << iota
 )
 
 var availablePermissions = []types.Permission{
 	{
-		Value:       PermissionManageRoles,
+		Value:       permissionManageRoles,
 		Name:        "manage_roles",
 		Description: "Manage roles",
 	},
 }
 
 var availablePermissionsMap = map[uint64]struct{}{
-	PermissionManageRoles: {},
+	permissionManageRoles: {},
 }
 
 //nolint:unparam
@@ -36,7 +36,7 @@ func (s *service) checkAccess(ctx context.Context, requiredPermission uint64) er
 
 	permissions, err := s.GetUserPermissions(ctx, types.GetUserPermissionsRequest{Username: username})
 	if err != nil {
-		return types.ErrPermissionDenied
+		return fmt.Errorf("can't get user permissions: %w", err)
 	}
 
 	if permissions&requiredPermission == 0 {

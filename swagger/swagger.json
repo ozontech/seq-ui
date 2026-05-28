@@ -22,7 +22,7 @@
                 "tags": [
                     "admin_v1"
                 ],
-                "operationId": "admin_v1_getRoles",
+                "operationId": "admin_v1_get_roles",
                 "responses": {
                     "200": {
                         "description": "A successful response",
@@ -47,7 +47,7 @@
                 "tags": [
                     "admin_v1"
                 ],
-                "operationId": "admin_v1_createRole",
+                "operationId": "admin_v1_create_role",
                 "parameters": [
                     {
                         "description": "Request body",
@@ -85,7 +85,7 @@
                 "tags": [
                     "admin_v1"
                 ],
-                "operationId": "admin_v1_getRole",
+                "operationId": "admin_v1_get_role",
                 "parameters": [
                     {
                         "type": "integer",
@@ -119,7 +119,7 @@
                 "tags": [
                     "admin_v1"
                 ],
-                "operationId": "admin_v1_deleteRole",
+                "operationId": "admin_v1_delete_role",
                 "parameters": [
                     {
                         "type": "integer",
@@ -158,7 +158,7 @@
                 "tags": [
                     "admin_v1"
                 ],
-                "operationId": "admin_v1_updateRole",
+                "operationId": "admin_v1_update_role",
                 "parameters": [
                     {
                         "type": "integer",
@@ -200,7 +200,7 @@
                 "tags": [
                     "admin_v1"
                 ],
-                "operationId": "admin_v1_addUsersToRole",
+                "operationId": "admin_v1_add_users_to_role",
                 "parameters": [
                     {
                         "type": "integer",
@@ -240,7 +240,7 @@
                 "tags": [
                     "admin_v1"
                 ],
-                "operationId": "admin_v1_deleteUsersFromRole",
+                "operationId": "admin_v1_delete_users_from_role",
                 "parameters": [
                     {
                         "type": "integer",
@@ -320,7 +320,7 @@
                 "tags": [
                     "dashboards_v1"
                 ],
-                "operationId": "dashboards_v1_getAll",
+                "operationId": "dashboards_v1_get_all",
                 "parameters": [
                     {
                         "description": "Request body",
@@ -358,7 +358,7 @@
                 "tags": [
                     "dashboards_v1"
                 ],
-                "operationId": "dashboards_v1_getMy",
+                "operationId": "dashboards_v1_get_my",
                 "parameters": [
                     {
                         "description": "Request body",
@@ -434,7 +434,7 @@
                 "tags": [
                     "dashboards_v1"
                 ],
-                "operationId": "dashboards_v1_getByUUID",
+                "operationId": "dashboards_v1_get_by_uuid",
                 "parameters": [
                     {
                         "type": "string",
@@ -948,7 +948,7 @@
                 "tags": [
                     "seqapi_v1"
                 ],
-                "operationId": "seqapi_v1_getAggregation",
+                "operationId": "seqapi_v1_get_aggregation",
                 "parameters": [
                     {
                         "type": "string",
@@ -998,7 +998,7 @@
                 "tags": [
                     "seqapi_v1"
                 ],
-                "operationId": "seqapi_v1_getAggregationTs",
+                "operationId": "seqapi_v1_get_aggregation_ts",
                 "parameters": [
                     {
                         "type": "string",
@@ -1247,7 +1247,7 @@
                 "tags": [
                     "seqapi_v1"
                 ],
-                "operationId": "seqapi_v1_getEvent",
+                "operationId": "seqapi_v1_get_event",
                 "parameters": [
                     {
                         "type": "string",
@@ -1358,7 +1358,7 @@
                 "tags": [
                     "seqapi_v1"
                 ],
-                "operationId": "seqapi_v1_getPinnedFields",
+                "operationId": "seqapi_v1_get_pinned_fields",
                 "parameters": [
                     {
                         "type": "string",
@@ -1393,7 +1393,7 @@
                 "tags": [
                     "seqapi_v1"
                 ],
-                "operationId": "seqapi_v1_getHistogram",
+                "operationId": "seqapi_v1_get_histogram",
                 "parameters": [
                     {
                         "type": "string",
@@ -1432,7 +1432,7 @@
                 "tags": [
                     "seqapi_v1"
                 ],
-                "operationId": "seqapi_v1_getLimits",
+                "operationId": "seqapi_v1_get_limits",
                 "parameters": [
                     {
                         "type": "string",
@@ -1571,7 +1571,7 @@
                 "tags": [
                     "userprofile_v1"
                 ],
-                "operationId": "userprofile_v1_getUserProfile",
+                "operationId": "userprofile_v1_get_user_profile",
                 "responses": {
                     "200": {
                         "description": "A successful response",
@@ -1596,7 +1596,7 @@
                 "tags": [
                     "userprofile_v1"
                 ],
-                "operationId": "userprofile_v1_updateUserProfile",
+                "operationId": "userprofile_v1_update_user_profile",
                 "parameters": [
                     {
                         "description": "Request body",
@@ -1631,7 +1631,7 @@
                 "tags": [
                     "userprofile_v1"
                 ],
-                "operationId": "userprofile_v1_getFavoriteQueries",
+                "operationId": "userprofile_v1_get_favorite_queries",
                 "responses": {
                     "200": {
                         "description": "A successful response",
@@ -1656,7 +1656,7 @@
                 "tags": [
                     "userprofile_v1"
                 ],
-                "operationId": "userprofile_v1_createFavoriteQuery",
+                "operationId": "userprofile_v1_create_favorite_query",
                 "parameters": [
                     {
                         "description": "Request body",
@@ -1694,7 +1694,7 @@
                 "tags": [
                     "userprofile_v1"
                 ],
-                "operationId": "userprofile_v1_deleteFavoriteQuery",
+                "operationId": "userprofile_v1_delete_favorite_query",
                 "parameters": [
                     {
                         "type": "string",

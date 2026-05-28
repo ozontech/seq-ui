@@ -12,7 +12,7 @@ import (
 // serveGetByUUID go doc.
 //
 //	@Router		/dashboards/v1/{uuid} [get]
-//	@ID			dashboards_v1_getByUUID
+//	@ID			dashboards_v1_get_by_uuid
 //	@Tags		dashboards_v1
 //	@Param		uuid	path		string			true	"Dashboard UUID"
 //	@Success	200		{object}	dashboard		"A successful response"

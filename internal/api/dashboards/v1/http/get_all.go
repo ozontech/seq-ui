@@ -14,7 +14,7 @@ import (
 // serveGetAll go doc.
 //
 //	@Router		/dashboards/v1/all [post]
-//	@ID			dashboards_v1_getAll
+//	@ID			dashboards_v1_get_all
 //	@Tags		dashboards_v1
 //	@Param		body	body		getAllRequest	true	"Request body"
 //	@Success	200		{object}	getAllResponse	"A successful response"
