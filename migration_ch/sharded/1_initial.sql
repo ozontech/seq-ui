@@ -104,9 +104,9 @@ AS SELECT
 FROM seq_ui_server_replicated.sharded_events_raw
 GROUP BY cluster, env, service, release;
 
-CREATE TABLE seq_ui_server_replicated.error_groups AS seq_ui_server_replicated.sharded_error_groups ENGINE = Distributed("seq-ui-server-replicated", seq_ui_server_replicated, sharded_error_groups);
-CREATE TABLE seq_ui_server_replicated.agg_events_10min AS seq_ui_server_replicated.sharded_agg_events_10min ENGINE = Distributed("seq-ui-server-replicated", seq_ui_server_replicated, sharded_agg_events_10min);
-CREATE TABLE seq_ui_server_replicated.services AS seq_ui_server_replicated.sharded_services ENGINE = Distributed("seq-ui-server-replicated", seq_ui_server_replicated, sharded_services);
+CREATE TABLE IF NOT EXISTS seq_ui_server_replicated.error_groups AS seq_ui_server_replicated.sharded_error_groups ENGINE = Distributed("seq-ui-server-replicated", seq_ui_server_replicated, sharded_error_groups);
+CREATE TABLE IF NOT EXISTS seq_ui_server_replicated.agg_events_10min AS seq_ui_server_replicated.sharded_agg_events_10min ENGINE = Distributed("seq-ui-server-replicated", seq_ui_server_replicated, sharded_agg_events_10min);
+CREATE TABLE IF NOT EXISTS seq_ui_server_replicated.services AS seq_ui_server_replicated.sharded_services ENGINE = Distributed("seq-ui-server-replicated", seq_ui_server_replicated, sharded_services);
 
 -- +goose Down
 DROP TABLE IF EXISTS seq_ui_server_replicated.sharded_events_raw;

@@ -53,8 +53,8 @@ AS SELECT
 FROM seq_ui_server_replicated.sharded_agg_events_10min
 GROUP BY cluster, source, env, service, release, _group_hash, start_date;
 
-CREATE TABLE seq_ui_server_replicated.error_groups_brief AS seq_ui_server_replicated.sharded_error_groups_brief ENGINE = Distributed("seq-ui-server-replicated", seq_ui_server_replicated, sharded_error_groups_brief);
-CREATE TABLE seq_ui_server_replicated.agg_events_1d AS seq_ui_server_replicated.sharded_agg_events_1d ENGINE = Distributed("seq-ui-server-replicated", seq_ui_server_replicated, sharded_agg_events_1d);
+CREATE TABLE IF NOT EXISTS seq_ui_server_replicated.error_groups_brief AS seq_ui_server_replicated.sharded_error_groups_brief ENGINE = Distributed("seq-ui-server-replicated", seq_ui_server_replicated, sharded_error_groups_brief);
+CREATE TABLE IF NOT EXISTS seq_ui_server_replicated.agg_events_1d AS seq_ui_server_replicated.sharded_agg_events_1d ENGINE = Distributed("seq-ui-server-replicated", seq_ui_server_replicated, sharded_agg_events_1d);
 
 ALTER TABLE seq_ui_server_replicated.sharded_error_groups MODIFY TTL ttl + INTERVAL 3 MONTH;
 ALTER TABLE seq_ui_server_replicated.sharded_services MODIFY TTL ttl + INTERVAL 3 MONTH;
