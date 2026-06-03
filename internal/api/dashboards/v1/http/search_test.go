@@ -25,11 +25,11 @@ func TestServeSearch(t *testing.T) {
 
 	formatReqBody := func(query string, limit, offset int, filter *types.SearchDashboardsFilter) string {
 		var sb strings.Builder
-		sb.WriteString(fmt.Sprintf(`{"query":%q,"limit":%d,"offset":%d`, query, limit, offset))
+		fmt.Fprintf(&sb, `{"query":%q,"limit":%d,"offset":%d`, query, limit, offset)
 		if filter != nil {
 			sb.WriteString(`,"filter":{`)
 			if filter.OwnerName != nil {
-				sb.WriteString(fmt.Sprintf(`"owner_name":%q`, *filter.OwnerName))
+				fmt.Fprintf(&sb, `"owner_name":%q`, *filter.OwnerName)
 			}
 			sb.WriteString("}")
 		}
@@ -142,7 +142,6 @@ func TestServeSearch(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 

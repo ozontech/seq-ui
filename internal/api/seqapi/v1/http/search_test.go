@@ -29,22 +29,22 @@ func TestServeSearch(t *testing.T) {
 
 	formatReqBody := func(limit, offset int, withTotal bool, histInterval string, aggQueries aggregationQueries, order string) string {
 		var sb strings.Builder
-		sb.WriteString(fmt.Sprintf(`{"query":%q,"from":%q,"to":%q,"limit":%d,"offset":%d`,
-			query, from.Format(time.RFC3339), to.Format(time.RFC3339), limit, offset))
+		fmt.Fprintf(&sb, `{"query":%q,"from":%q,"to":%q,"limit":%d,"offset":%d`,
+			query, from.Format(time.RFC3339), to.Format(time.RFC3339), limit, offset)
 
 		if withTotal {
-			sb.WriteString(fmt.Sprintf(`,"withTotal":%v`, withTotal))
+			fmt.Fprintf(&sb, `,"withTotal":%v`, withTotal)
 		}
 		if histInterval != "" {
-			sb.WriteString(fmt.Sprintf(`,"histogram":{"interval":%q}`, histInterval))
+			fmt.Fprintf(&sb, `,"histogram":{"interval":%q}`, histInterval)
 		}
 		if len(aggQueries) > 0 {
 			aggQueriesRaw, err := json.Marshal(aggQueries)
 			assert.NoError(t, err)
-			sb.WriteString(fmt.Sprintf(`,"aggregations":%s`, aggQueriesRaw))
+			fmt.Fprintf(&sb, `,"aggregations":%s`, aggQueriesRaw)
 		}
 		if order != "" {
-			sb.WriteString(fmt.Sprintf(`,"order":%q`, order))
+			fmt.Fprintf(&sb, `,"order":%q`, order)
 		}
 
 		sb.WriteString("}")
@@ -367,7 +367,6 @@ func TestServeSearch(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 

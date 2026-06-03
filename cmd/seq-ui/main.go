@@ -208,9 +208,7 @@ func initSeqDBClients(ctx context.Context, cfg config.Config) (map[string]seqdb.
 
 func createSeqBDClient(ctx context.Context, cfg config.SeqDBClient, seqAPI config.SeqAPI) (seqdb.Client, error) {
 	clientMaxRecvMsgSize := cfg.AvgDocSize * 1024 * int(seqAPI.MaxSearchLimit)
-	if clientMaxRecvMsgSize < defaultClientMaxRecvMsgSize {
-		clientMaxRecvMsgSize = defaultClientMaxRecvMsgSize
-	}
+	clientMaxRecvMsgSize = max(clientMaxRecvMsgSize, defaultClientMaxRecvMsgSize)
 
 	clientParams := seqdb.ClientParams{
 		Addrs:               cfg.Addrs,

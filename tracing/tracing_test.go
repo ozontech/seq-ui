@@ -72,7 +72,6 @@ func TestValidateTracingConfig(t *testing.T) {
 	}
 
 	for _, tCase := range tCases {
-		tCase := tCase
 		t.Run(tCase.name, func(t *testing.T) {
 			t.Parallel()
 			err := validateTracingConfig(tCase.cfg)

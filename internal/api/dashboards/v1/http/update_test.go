@@ -26,13 +26,13 @@ func TestServeUpdate(t *testing.T) {
 		var sb strings.Builder
 		sb.WriteString("{")
 		if name != "" {
-			sb.WriteString(fmt.Sprintf(`"name":%q`, name))
+			fmt.Fprintf(&sb, `"name":%q`, name)
 		}
 		if meta != "" {
 			if name != "" {
 				sb.WriteString(",")
 			}
-			sb.WriteString(fmt.Sprintf(`"meta":%q`, meta))
+			fmt.Fprintf(&sb, `"meta":%q`, meta)
 		}
 		sb.WriteString("}")
 		return sb.String()
@@ -164,7 +164,6 @@ func TestServeUpdate(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
