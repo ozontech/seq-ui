@@ -70,7 +70,7 @@ func TestCheckAccess(t *testing.T) {
 					Times(1)
 			}
 
-			ctx := t.Context()
+			ctx := context.Background()
 			if tt.username != "" {
 				ctx = types.SetUserKey(ctx, tt.username)
 			}

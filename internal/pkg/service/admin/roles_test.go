@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -170,7 +171,7 @@ func TestCreateRole(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			repo := mock.NewMockAdmin(ctrl)
 			svc := New(repo, adminCfg)
-			ctx := t.Context()
+			ctx := context.Background()
 
 			setupAccessMock(repo, tt.actorUsername, tt.accessMock)
 
@@ -222,6 +223,7 @@ func TestAddUsersToRole(t *testing.T) {
 			accessMock: &accessMock{
 				permissions: permissionManageRoles,
 			},
+			mockArgs: &mockArgs{},
 		},
 		{
 			name:          "ok_superuser",
@@ -230,6 +232,7 @@ func TestAddUsersToRole(t *testing.T) {
 				RoleID:    1,
 				Usernames: []string{"user1"},
 			},
+			mockArgs: &mockArgs{},
 		},
 		{
 			name: "err_no_auth",
@@ -311,7 +314,7 @@ func TestAddUsersToRole(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			repo := mock.NewMockAdmin(ctrl)
 			svc := New(repo, adminCfg)
-			ctx := t.Context()
+			ctx := context.Background()
 
 			setupAccessMock(repo, tt.actorUsername, tt.accessMock)
 
@@ -428,7 +431,7 @@ func TestGetRoles(t *testing.T) {
 					Times(1)
 			}
 
-			ctx := t.Context()
+			ctx := context.Background()
 			if tt.actorUsername != "" {
 				ctx = types.SetUserKey(ctx, tt.actorUsername)
 			}
@@ -538,7 +541,7 @@ func TestGetRole(t *testing.T) {
 					Times(1)
 			}
 
-			ctx := t.Context()
+			ctx := context.Background()
 			if tt.actorUsername != "" {
 				ctx = types.SetUserKey(ctx, tt.actorUsername)
 			}
@@ -745,7 +748,7 @@ func TestUpdateRole(t *testing.T) {
 					Times(1)
 			}
 
-			ctx := t.Context()
+			ctx := context.Background()
 			if tt.actorUsername != "" {
 				ctx = types.SetUserKey(ctx, tt.actorUsername)
 			}
@@ -883,7 +886,7 @@ func TestDeleteRole(t *testing.T) {
 					Times(1)
 			}
 
-			ctx := t.Context()
+			ctx := context.Background()
 			if tt.actorUsername != "" {
 				ctx = types.SetUserKey(ctx, tt.actorUsername)
 			}
@@ -1026,7 +1029,7 @@ func TestDeleteUsersFromRole(t *testing.T) {
 					Times(1)
 			}
 
-			ctx := t.Context()
+			ctx := context.Background()
 			if tt.actorUsername != "" {
 				ctx = types.SetUserKey(ctx, tt.actorUsername)
 			}
