@@ -15,6 +15,92 @@ import (
 	mock "github.com/ozontech/seq-ui/internal/pkg/repository_ch/mock"
 )
 
+func TestValidateTimeRange(t *testing.T) {
+	var (
+		dur  = time.Second
+		to   = time.Now()
+		from = to.Add(-2 * time.Second)
+	)
+
+	tests := []struct {
+		name string
+
+		tr      *types.TimeRange
+		wantErr bool
+	}{
+		{
+			name: "ok_nil",
+			tr:   nil,
+		},
+		{
+			name: "ok_duration",
+			tr: &types.TimeRange{
+				Duration: dur,
+			},
+		},
+		{
+			name: "ok_from_to",
+			tr: &types.TimeRange{
+				From: from,
+				To:   to,
+			},
+		},
+		{
+			name: "err_both",
+			tr: &types.TimeRange{
+				Duration: dur,
+				From:     from,
+				To:       to,
+			},
+			wantErr: true,
+		},
+		{
+			name:    "err_empty",
+			tr:      &types.TimeRange{},
+			wantErr: true,
+		},
+		{
+			name: "err_only_from",
+			tr: &types.TimeRange{
+				From: from,
+			},
+			wantErr: true,
+		},
+		{
+			name: "err_only_to",
+			tr: &types.TimeRange{
+				To: to,
+			},
+			wantErr: true,
+		},
+		{
+			name: "err_from_to_equal",
+			tr: &types.TimeRange{
+				From: from,
+				To:   from,
+			},
+			wantErr: true,
+		},
+		{
+			name: "err_from_before_to",
+			tr: &types.TimeRange{
+				From: to,
+				To:   from,
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := validateTimeRange(tt.tr)
+			require.Equal(t, tt.wantErr, err != nil)
+		})
+	}
+}
+
 func TestGetErrorGroups(t *testing.T) {
 	var (
 		service = "test-svc"
@@ -101,9 +187,44 @@ func TestGetErrorGroups(t *testing.T) {
 			},
 		},
 		{
+			name: "ok_time_range",
+
+			req: types.GetErrorGroupsRequest{
+				Service: service,
+				Limit:   10,
+				TimeRange: &types.TimeRange{
+					Duration: time.Minute,
+				},
+			},
+			wantGroupsCount: 10,
+			wantTotal:       0,
+
+			mockArgs: &mockArgs{
+				req: types.GetErrorGroupsRequest{
+					Service: service,
+					Limit:   10,
+					TimeRange: &types.TimeRange{
+						Duration: time.Minute,
+					},
+				},
+
+				groupsCount: 10,
+				total:       0,
+			},
+		},
+		{
 			name: "err_no_service",
 
 			req:     types.GetErrorGroupsRequest{},
+			wantErr: true,
+		},
+		{
+			name: "err_timerange",
+
+			req: types.GetErrorGroupsRequest{
+				Service:   service,
+				TimeRange: &types.TimeRange{},
+			},
 			wantErr: true,
 		},
 		{
@@ -228,20 +349,18 @@ func TestGetNewErrorGroups(t *testing.T) {
 			name: "ok_limit",
 
 			req: types.GetErrorGroupsRequest{
-				Service:  service,
-				Release:  &release,
-				Duration: &duration,
-				Limit:    5,
+				Service: service,
+				Release: &release,
+				Limit:   5,
 			},
 			wantGroupsCount: 5,
 			wantTotal:       0,
 
 			mockArgs: &mockArgs{
 				req: types.GetErrorGroupsRequest{
-					Service:  service,
-					Release:  &release,
-					Duration: &duration,
-					Limit:    5,
+					Service: service,
+					Release: &release,
+					Limit:   5,
 				},
 
 				groupsCount: 5,
@@ -251,19 +370,17 @@ func TestGetNewErrorGroups(t *testing.T) {
 			name: "ok_no_limit",
 
 			req: types.GetErrorGroupsRequest{
-				Service:  service,
-				Release:  &release,
-				Duration: &duration,
+				Service: service,
+				Release: &release,
 			},
 			wantGroupsCount: 10,
 			wantTotal:       0,
 
 			mockArgs: &mockArgs{
 				req: types.GetErrorGroupsRequest{
-					Service:  service,
-					Release:  &release,
-					Duration: &duration,
-					Limit:    defaultLimit,
+					Service: service,
+					Release: &release,
+					Limit:   defaultLimit,
 				},
 
 				groupsCount: 10,
@@ -275,7 +392,6 @@ func TestGetNewErrorGroups(t *testing.T) {
 			req: types.GetErrorGroupsRequest{
 				Service:   service,
 				Release:   &release,
-				Duration:  &duration,
 				Limit:     10,
 				WithTotal: true,
 			},
@@ -286,7 +402,6 @@ func TestGetNewErrorGroups(t *testing.T) {
 				req: types.GetErrorGroupsRequest{
 					Service:   service,
 					Release:   &release,
-					Duration:  &duration,
 					Limit:     10,
 					WithTotal: true,
 				},
@@ -296,11 +411,46 @@ func TestGetNewErrorGroups(t *testing.T) {
 			},
 		},
 		{
+			name: "ok_timerange",
+
+			req: types.GetErrorGroupsRequest{
+				Service: service,
+				Release: &release,
+				TimeRange: &types.TimeRange{
+					Duration: duration,
+				},
+				Limit: 10,
+			},
+			wantGroupsCount: 10,
+
+			mockArgs: &mockArgs{
+				req: types.GetErrorGroupsRequest{
+					Service: service,
+					Release: &release,
+					TimeRange: &types.TimeRange{
+						Duration: duration,
+					},
+					Limit: 10,
+				},
+
+				groupsCount: 10,
+			},
+		},
+		{
 			name: "err_no_service",
 
 			req: types.GetErrorGroupsRequest{
-				Release:  &release,
-				Duration: &duration,
+				Release: &release,
+			},
+			wantErr: true,
+		},
+		{
+			name: "err_timerange",
+
+			req: types.GetErrorGroupsRequest{
+				Service:   service,
+				Release:   &release,
+				TimeRange: &types.TimeRange{},
 			},
 			wantErr: true,
 		},
@@ -310,7 +460,6 @@ func TestGetNewErrorGroups(t *testing.T) {
 			req: types.GetErrorGroupsRequest{
 				Service:   service,
 				Release:   &release,
-				Duration:  &duration,
 				Limit:     10,
 				WithTotal: true,
 			},
@@ -320,7 +469,6 @@ func TestGetNewErrorGroups(t *testing.T) {
 				req: types.GetErrorGroupsRequest{
 					Service:   service,
 					Release:   &release,
-					Duration:  &duration,
 					Limit:     10,
 					WithTotal: true,
 				},
@@ -335,7 +483,6 @@ func TestGetNewErrorGroups(t *testing.T) {
 			req: types.GetErrorGroupsRequest{
 				Service:   service,
 				Release:   &release,
-				Duration:  &duration,
 				Limit:     10,
 				WithTotal: true,
 			},
@@ -345,7 +492,6 @@ func TestGetNewErrorGroups(t *testing.T) {
 				req: types.GetErrorGroupsRequest{
 					Service:   service,
 					Release:   &release,
-					Duration:  &duration,
 					Limit:     10,
 					WithTotal: true,
 				},
@@ -396,7 +542,10 @@ func TestGetNewErrorGroups(t *testing.T) {
 }
 
 func TestGetTopErrorGroups(t *testing.T) {
-	var someErr = errors.New("some err")
+	var (
+		duration = time.Hour
+		someErr  = errors.New("some err")
+	)
 
 	type mockArgs struct {
 		req types.GetTopErrorGroupsRequest
@@ -469,6 +618,36 @@ func TestGetTopErrorGroups(t *testing.T) {
 				groupsCount: 10,
 				total:       100,
 			},
+		},
+		{
+			name: "ok_timerange",
+
+			req: types.GetTopErrorGroupsRequest{
+				Limit: 10,
+				TimeRange: &types.TimeRange{
+					Duration: duration,
+				},
+			},
+			wantGroupsCount: 10,
+
+			mockArgs: &mockArgs{
+				req: types.GetTopErrorGroupsRequest{
+					Limit: 10,
+					TimeRange: &types.TimeRange{
+						Duration: duration,
+					},
+				},
+
+				groupsCount: 10,
+			},
+		},
+		{
+			name: "err_timerange",
+
+			req: types.GetTopErrorGroupsRequest{
+				TimeRange: &types.TimeRange{},
+			},
+			wantErr: true,
 		},
 		{
 			name: "err_repo_groups",
@@ -550,7 +729,10 @@ func TestGetTopErrorGroups(t *testing.T) {
 }
 
 func TestGetHist(t *testing.T) {
-	var someErr = errors.New("some err")
+	var (
+		duration = time.Hour
+		someErr  = errors.New("some err")
+	)
 
 	type mockArgs struct {
 		req types.GetErrorHistRequest
@@ -579,6 +761,34 @@ func TestGetHist(t *testing.T) {
 
 				bucketsCount: 50,
 			},
+		},
+		{
+			name: "ok_timerange",
+
+			req: types.GetErrorHistRequest{
+				TimeRange: &types.TimeRange{
+					Duration: duration,
+				},
+			},
+			wantBucketsCount: 50,
+
+			mockArgs: &mockArgs{
+				req: types.GetErrorHistRequest{
+					TimeRange: &types.TimeRange{
+						Duration: duration,
+					},
+				},
+
+				bucketsCount: 50,
+			},
+		},
+		{
+			name: "err_timerange",
+
+			req: types.GetErrorHistRequest{
+				TimeRange: &types.TimeRange{},
+			},
+			wantErr: true,
 		},
 		{
 			name: "err_repo",

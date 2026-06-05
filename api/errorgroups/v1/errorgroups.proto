@@ -23,6 +23,12 @@ enum Order {
   ORDER_OLDEST = 2;
 }
 
+message TimeRange {
+  google.protobuf.Duration duration = 1;
+  google.protobuf.Timestamp from = 2;
+  google.protobuf.Timestamp to = 3;
+}
+
 message GetGroupsRequest {
   message Filter {
     bool is_new = 1;
@@ -31,13 +37,14 @@ message GetGroupsRequest {
   string service = 1;
   optional string env = 2;
   optional string release = 3;
-  google.protobuf.Duration duration = 4;
+  google.protobuf.Duration duration = 4 [deprecated = true];
   uint32 limit = 5;
   uint32 offset = 6;
   Order order = 7;
   bool with_total = 8;
   optional string source = 9;
   optional Filter filter = 10;
+  optional TimeRange time_range = 11;
 }
 
 message GetGroupsResponse {
@@ -57,10 +64,11 @@ message GetGroupsResponse {
 message GetTopGroupsRequest {
   optional string env = 1;
   optional string source = 2;
-  google.protobuf.Duration duration = 3;
+  google.protobuf.Duration duration = 3 [deprecated = true];
   uint32 limit = 4;
   uint32 offset = 5;
   bool with_total = 6;
+  optional TimeRange time_range = 7;
 }
 
 message GetTopGroupsResponse {
@@ -80,8 +88,9 @@ message GetHistRequest {
   optional uint64 group_hash = 2;
   optional string env = 3;
   optional string release = 4;
-  optional google.protobuf.Duration duration = 5;
+  optional google.protobuf.Duration duration = 5 [deprecated = true];
   optional string source = 6;
+  optional TimeRange time_range = 7;
 }
 
 message GetHistResponse {

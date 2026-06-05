@@ -34,12 +34,6 @@ func (a *API) serveGetTopGroups(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	parsedDuration, err := parseDuration(httpReq.Duration)
-	if err != nil {
-		wr.Error(fmt.Errorf("failed to parse duration: %w", err), http.StatusBadRequest)
-		return
-	}
-
 	attributes := []attribute.KeyValue{
 		{Key: "limit", Value: attribute.IntValue(int(httpReq.Limit))},
 		{Key: "offset", Value: attribute.IntValue(int(httpReq.Offset))},
@@ -54,12 +48,22 @@ func (a *API) serveGetTopGroups(w http.ResponseWriter, r *http.Request) {
 	if httpReq.Duration != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "duration", Value: attribute.StringValue(*httpReq.Duration)})
 	}
+	if httpReq.TimeRange != nil {
+		trRaw, _ := json.Marshal(httpReq.TimeRange)
+		attributes = append(attributes, attribute.KeyValue{Key: "time_range", Value: attribute.StringValue(string(trRaw))})
+	}
 	span.SetAttributes(attributes...)
+
+	tr, err := parseTimeRange(httpReq.TimeRange, httpReq.Duration)
+	if err != nil {
+		wr.Error(fmt.Errorf("failed to parse time range: %w", err), http.StatusBadRequest)
+		return
+	}
 
 	req := types.GetTopErrorGroupsRequest{
 		Env:       httpReq.Env,
 		Source:    httpReq.Source,
-		Duration:  parsedDuration,
+		TimeRange: tr,
 		Limit:     httpReq.Limit,
 		Offset:    httpReq.Offset,
 		WithTotal: httpReq.WithTotal,
@@ -80,11 +84,12 @@ func (a *API) serveGetTopGroups(w http.ResponseWriter, r *http.Request) {
 type getTopGroupsRequest struct {
 	Env    *string `json:"env,omitempty"`
 	Source *string `json:"source,omitempty"`
-	// In go duration format. If not specified, then for the entire time.
-	Duration  *string `json:"duration,omitempty" format:"duration" example:"1h"`
-	Limit     uint32  `json:"limit"`
-	Offset    uint32  `json:"offset"`
-	WithTotal bool    `json:"with_total"`
+	// Deprecated: Use time_range instead
+	Duration  *string    `json:"duration,omitempty" format:"duration" example:"1h"`
+	TimeRange *timeRange `json:"time_range,omitempty"`
+	Limit     uint32     `json:"limit"`
+	Offset    uint32     `json:"offset"`
+	WithTotal bool       `json:"with_total"`
 } //	@name	errorgroups.v1.GetTopGroupsRequest
 
 type getTopGroupsResponse struct {
