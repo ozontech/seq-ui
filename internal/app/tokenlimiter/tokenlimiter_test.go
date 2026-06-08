@@ -7,8 +7,6 @@ import (
 )
 
 func TestLimiter(t *testing.T) {
-	t.Parallel()
-
 	user := "unnamed"
 	maxTokens := 2
 

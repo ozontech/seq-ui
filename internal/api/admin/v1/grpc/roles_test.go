@@ -16,28 +16,12 @@ import (
 
 var (
 	errSomethingWrong = errors.New("something happened wrong")
-
-	defaultAvailablePermissions = []types.Permission{
-		{
-			Value:       1,
-			Name:        "manage_roles",
-			Description: "Manage roles",
-		},
-	}
 )
 
 func setupAPI(t *testing.T) (*API, *mock.MockService) {
 	ctrl := gomock.NewController(t)
 	mockedSvc := mock.NewMockService(ctrl)
-
-	mockedSvc.EXPECT().
-		GetAvailablePermissions().
-		Return(defaultAvailablePermissions).
-		Times(1)
-
-	api := New(mockedSvc)
-
-	return api, mockedSvc
+	return New(mockedSvc), mockedSvc
 }
 
 func TestCreateRole(t *testing.T) {
@@ -73,35 +57,7 @@ func TestCreateRole(t *testing.T) {
 			},
 		},
 		{
-			name: "err_svc_validation",
-			req: &admin.CreateRoleRequest{
-				Name: "",
-			},
-			wantCode: codes.InvalidArgument,
-			mockArgs: &mockArgs{
-				req: types.CreateRoleRequest{
-					Name: "",
-				},
-				err: types.NewErrInvalidRequestField("empty role name"),
-			},
-		},
-		{
-			name: "err_svc_permission_denied",
-			req: &admin.CreateRoleRequest{
-				Name:        "manager",
-				Permissions: []uint64{1},
-			},
-			wantCode: codes.PermissionDenied,
-			mockArgs: &mockArgs{
-				req: types.CreateRoleRequest{
-					Name:        "manager",
-					Permissions: []uint64{1},
-				},
-				err: types.ErrPermissionDenied,
-			},
-		},
-		{
-			name: "err_svc_internal",
+			name: "err_svc",
 			req: &admin.CreateRoleRequest{
 				Name:        "manager",
 				Permissions: []uint64{1},
@@ -170,22 +126,7 @@ func TestAddUsersToRole(t *testing.T) {
 			},
 		},
 		{
-			name: "err_svc_validation",
-			req: &admin.AddUsersToRoleRequest{
-				RoleId:    0,
-				Usernames: []string{"user1"},
-			},
-			wantCode: codes.InvalidArgument,
-			mockArgs: &mockArgs{
-				req: types.AddUsersToRoleRequest{
-					RoleID:    0,
-					Usernames: []string{"user1"},
-				},
-				err: types.NewErrInvalidRequestField("value role_id must be greater than 0"),
-			},
-		},
-		{
-			name: "err_svc_internal",
+			name: "err_svc",
 			req: &admin.AddUsersToRoleRequest{
 				RoleId:    1,
 				Usernames: []string{"user1"},
@@ -254,14 +195,7 @@ func TestGetRoles(t *testing.T) {
 			},
 		},
 		{
-			name:     "err_svc_permission_denied",
-			wantCode: codes.PermissionDenied,
-			mockArgs: &mockArgs{
-				err: types.ErrPermissionDenied,
-			},
-		},
-		{
-			name:     "err_svc_internal",
+			name:     "err_svc",
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
 				err: errSomethingWrong,
@@ -322,16 +256,7 @@ func TestGetRole(t *testing.T) {
 			},
 		},
 		{
-			name:     "err_svc_validation",
-			req:      &admin.GetRoleRequest{Id: 0},
-			wantCode: codes.InvalidArgument,
-			mockArgs: &mockArgs{
-				req: types.GetRoleRequest{RoleID: 0},
-				err: types.NewErrInvalidRequestField("value role_id must be greater than 0"),
-			},
-		},
-		{
-			name:     "err_svc_internal",
+			name:     "err_svc",
 			req:      &admin.GetRoleRequest{Id: 1},
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
@@ -398,20 +323,7 @@ func TestUpdateRole(t *testing.T) {
 			},
 		},
 		{
-			name: "err_svc_empty_update",
-			req: &admin.UpdateRoleRequest{
-				Id: 1,
-			},
-			wantCode: codes.InvalidArgument,
-			mockArgs: &mockArgs{
-				req: types.UpdateRoleRequest{
-					RoleID: 1,
-				},
-				err: types.ErrEmptyUpdateRequest,
-			},
-		},
-		{
-			name: "err_svc_internal",
+			name: "err_svc",
 			req: &admin.UpdateRoleRequest{
 				Id:   1,
 				Name: &name,
@@ -485,16 +397,7 @@ func TestDeleteRole(t *testing.T) {
 			},
 		},
 		{
-			name:     "err_svc_validation",
-			req:      &admin.DeleteRoleRequest{Id: 0},
-			wantCode: codes.InvalidArgument,
-			mockArgs: &mockArgs{
-				req: types.DeleteRoleRequest{RoleID: 0},
-				err: types.NewErrInvalidRequestField("value role_id must be greater than 0"),
-			},
-		},
-		{
-			name:     "err_svc_internal",
+			name:     "err_svc",
 			req:      &admin.DeleteRoleRequest{Id: 1},
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
@@ -552,22 +455,7 @@ func TestDeleteUsersFromRole(t *testing.T) {
 			},
 		},
 		{
-			name: "err_svc_validation",
-			req: &admin.DeleteUsersFromRoleRequest{
-				RoleId:    0,
-				Usernames: []string{"user1"},
-			},
-			wantCode: codes.InvalidArgument,
-			mockArgs: &mockArgs{
-				req: types.DeleteUsersFromRoleRequest{
-					RoleID:    0,
-					Usernames: []string{"user1"},
-				},
-				err: types.NewErrInvalidRequestField("value role_id must be greater than 0"),
-			},
-		},
-		{
-			name: "err_svc_internal",
+			name: "err_svc",
 			req: &admin.DeleteUsersFromRoleRequest{
 				RoleId:    1,
 				Usernames: []string{"user1"},

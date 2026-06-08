@@ -14,7 +14,7 @@ type API struct {
 func New(svc adminservice.Service) *API {
 	return &API{
 		service:              svc,
-		availablePermissions: parsePermissions(svc.GetAvailablePermissions()),
+		availablePermissions: parsePermissions(adminservice.GetAvailablePermissions()),
 	}
 }
 

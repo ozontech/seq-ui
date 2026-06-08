@@ -19,50 +19,56 @@ var (
 )
 
 type accessMock struct {
+	username    string
 	permissions uint64
 	err         error
 }
 
-func setupAccessMock(repo *mock.MockAdmin, actorUsername string, access *accessMock) {
+func setupAccessMock(ctx context.Context, repo *mock.MockAdmin, access *accessMock) context.Context {
 	if access == nil {
-		return
+		return ctx
 	}
 
-	repo.EXPECT().
-		GetUserPermissions(gomock.Any(), types.GetUserPermissionsRequest{Username: actorUsername}).
-		Return(access.permissions, access.err).
-		Times(1)
+	ctx = types.SetUserKey(ctx, access.username)
+
+	if access.username != defaultSuperUser {
+		repo.EXPECT().
+			GetUserPermissions(gomock.Any(), types.GetUserPermissionsRequest{Username: access.username}).
+			Return(access.permissions, access.err).
+			Times(1)
+	}
+
+	return ctx
 }
 
 func TestCreateRole(t *testing.T) {
-	type MockArgs struct {
+	type mockArgs struct {
 		req    types.CreateRoleRepoRequest
 		roleID int32
 		err    error
 	}
 
 	tests := []struct {
-		name          string
-		actorUsername string
-		req           types.CreateRoleRequest
+		name string
+		req  types.CreateRoleRequest
 
 		accessMock *accessMock
-		mockArgs   *MockArgs
+		mockArgs   *mockArgs
 
 		wantRoleID int32
 		wantErr    bool
 	}{
 		{
-			name:          "ok",
-			actorUsername: "admin",
+			name: "ok",
 			req: types.CreateRoleRequest{
 				Name:        "typical good boy",
 				Permissions: []uint64{permissionManageRoles},
 			},
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
-			mockArgs: &MockArgs{
+			mockArgs: &mockArgs{
 				req: types.CreateRoleRepoRequest{
 					Name:        "typical good boy",
 					Permissions: permissionManageRoles,
@@ -72,18 +78,20 @@ func TestCreateRole(t *testing.T) {
 			wantRoleID: 1,
 		},
 		{
-			name:          "ok_superuser",
-			actorUsername: defaultSuperUser,
+			name: "ok_superuser",
 			req: types.CreateRoleRequest{
 				Name:        "typical good boy",
 				Permissions: []uint64{permissionManageRoles},
 			},
-			mockArgs: &MockArgs{
+			mockArgs: &mockArgs{
 				req: types.CreateRoleRepoRequest{
 					Name:        "typical good boy",
 					Permissions: permissionManageRoles,
 				},
 				roleID: 2,
+			},
+			accessMock: &accessMock{
+				username: defaultSuperUser,
 			},
 			wantRoleID: 2,
 		},
@@ -96,64 +104,64 @@ func TestCreateRole(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:          "err_no_access",
-			actorUsername: "bad boy",
+			name: "err_no_access",
 			req: types.CreateRoleRequest{
 				Name:        "typical good boy",
 				Permissions: []uint64{permissionManageRoles},
 			},
 			accessMock: &accessMock{
+				username:    "bad boy",
 				permissions: 0,
 			},
 			wantErr: true,
 		},
 		{
-			name:          "err_empty_name",
-			actorUsername: "admin",
+			name: "err_empty_name",
 			req: types.CreateRoleRequest{
 				Name:        "",
 				Permissions: []uint64{permissionManageRoles},
 			},
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			wantErr: true,
 		},
 		{
-			name:          "err_empty_permissions",
-			actorUsername: "admin",
+			name: "err_empty_permissions",
 			req: types.CreateRoleRequest{
 				Name:        "typical good boy",
 				Permissions: []uint64{},
 			},
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			wantErr: true,
 		},
 		{
-			name:          "err_unknown_permissions",
-			actorUsername: "admin",
+			name: "err_unknown_permissions",
 			req: types.CreateRoleRequest{
 				Name:        "typical good boy",
 				Permissions: []uint64{52},
 			},
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			wantErr: true,
 		},
 		{
-			name:          "err_repo",
-			actorUsername: "admin",
+			name: "err_repo",
 			req: types.CreateRoleRequest{
 				Name:        "typical good boy",
 				Permissions: []uint64{permissionManageRoles},
 			},
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
-			mockArgs: &MockArgs{
+			mockArgs: &mockArgs{
 				req: types.CreateRoleRepoRequest{
 					Name:        "typical good boy",
 					Permissions: permissionManageRoles,
@@ -171,19 +179,14 @@ func TestCreateRole(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			repo := mock.NewMockAdmin(ctrl)
 			svc := New(repo, adminCfg)
-			ctx := context.Background()
 
-			setupAccessMock(repo, tt.actorUsername, tt.accessMock)
+			ctx := setupAccessMock(context.Background(), repo, tt.accessMock)
 
 			if tt.mockArgs != nil {
 				repo.EXPECT().
 					CreateRole(gomock.Any(), tt.mockArgs.req).
 					Return(tt.mockArgs.roleID, tt.mockArgs.err).
 					Times(1)
-			}
-
-			if tt.actorUsername != "" {
-				ctx = types.SetUserKey(ctx, tt.actorUsername)
 			}
 
 			roleID, err := svc.CreateRole(ctx, tt.req)
@@ -204,9 +207,8 @@ func TestAddUsersToRole(t *testing.T) {
 	}
 
 	tests := []struct {
-		name          string
-		actorUsername string
-		req           types.AddUsersToRoleRequest
+		name string
+		req  types.AddUsersToRoleRequest
 
 		accessMock *accessMock
 		mockArgs   *mockArgs
@@ -214,25 +216,27 @@ func TestAddUsersToRole(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:          "ok",
-			actorUsername: "admin",
+			name: "ok",
 			req: types.AddUsersToRoleRequest{
 				RoleID:    1,
 				Usernames: []string{"user1", "user2"},
 			},
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			mockArgs: &mockArgs{},
 		},
 		{
-			name:          "ok_superuser",
-			actorUsername: defaultSuperUser,
+			name: "ok_superuser",
 			req: types.AddUsersToRoleRequest{
 				RoleID:    1,
 				Usernames: []string{"user1"},
 			},
 			mockArgs: &mockArgs{},
+			accessMock: &accessMock{
+				username: defaultSuperUser,
+			},
 		},
 		{
 			name: "err_no_auth",
@@ -243,61 +247,61 @@ func TestAddUsersToRole(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:          "err_no_access",
-			actorUsername: "user",
+			name: "err_no_access",
 			req: types.AddUsersToRoleRequest{
 				RoleID:    1,
 				Usernames: []string{"user1"},
 			},
 			accessMock: &accessMock{
+				username:    "user",
 				permissions: 0,
 			},
 			wantErr: true,
 		},
 		{
-			name:          "err_invalid_role_id_zero",
-			actorUsername: "admin",
+			name: "err_invalid_role_id_zero",
 			req: types.AddUsersToRoleRequest{
 				RoleID:    0,
 				Usernames: []string{"user1"},
 			},
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			wantErr: true,
 		},
 		{
-			name:          "err_empty_usernames",
-			actorUsername: "admin",
+			name: "err_empty_usernames",
 			req: types.AddUsersToRoleRequest{
 				RoleID:    1,
 				Usernames: []string{},
 			},
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			wantErr: true,
 		},
 		{
-			name:          "err_contains_empty_username",
-			actorUsername: "admin",
+			name: "err_contains_empty_username",
 			req: types.AddUsersToRoleRequest{
 				RoleID:    1,
 				Usernames: []string{"user1", ""},
 			},
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			wantErr: true,
 		},
 		{
-			name:          "err_repo",
-			actorUsername: "admin",
+			name: "err_repo",
 			req: types.AddUsersToRoleRequest{
 				RoleID:    1,
 				Usernames: []string{"user1"},
 			},
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			mockArgs: &mockArgs{
@@ -314,19 +318,14 @@ func TestAddUsersToRole(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			repo := mock.NewMockAdmin(ctrl)
 			svc := New(repo, adminCfg)
-			ctx := context.Background()
 
-			setupAccessMock(repo, tt.actorUsername, tt.accessMock)
+			ctx := setupAccessMock(context.Background(), repo, tt.accessMock)
 
 			if tt.mockArgs != nil {
 				repo.EXPECT().
 					AddUsersToRole(gomock.Any(), tt.req).
 					Return(tt.mockArgs.err).
 					Times(1)
-			}
-
-			if tt.actorUsername != "" {
-				ctx = types.SetUserKey(ctx, tt.actorUsername)
 			}
 
 			err := svc.AddUsersToRole(ctx, tt.req)
@@ -347,9 +346,7 @@ func TestGetRoles(t *testing.T) {
 	}
 
 	tests := []struct {
-		name          string
-		actorUsername string
-
+		name       string
 		accessMock *accessMock
 		mockArgs   *mockArgs
 
@@ -357,9 +354,9 @@ func TestGetRoles(t *testing.T) {
 		wantErr   bool
 	}{
 		{
-			name:          "ok",
-			actorUsername: "admin",
+			name: "ok",
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			mockArgs: &mockArgs{
@@ -380,9 +377,9 @@ func TestGetRoles(t *testing.T) {
 			},
 		},
 		{
-			name:          "ok_empty",
-			actorUsername: "admin",
+			name: "ok_empty",
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			mockArgs: &mockArgs{
@@ -395,17 +392,17 @@ func TestGetRoles(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:          "err_no_access",
-			actorUsername: "user",
+			name: "err_no_access",
 			accessMock: &accessMock{
+				username:    "user",
 				permissions: 0,
 			},
 			wantErr: true,
 		},
 		{
-			name:          "err_repo",
-			actorUsername: "admin",
+			name: "err_repo",
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			mockArgs: &mockArgs{
@@ -422,18 +419,14 @@ func TestGetRoles(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			repo := mock.NewMockAdmin(ctrl)
 			svc := New(repo, adminCfg)
-			setupAccessMock(repo, tt.actorUsername, tt.accessMock)
+
+			ctx := setupAccessMock(context.Background(), repo, tt.accessMock)
 
 			if tt.mockArgs != nil {
 				repo.EXPECT().
 					GetRoles(gomock.Any()).
 					Return(tt.mockArgs.roles, tt.mockArgs.err).
 					Times(1)
-			}
-
-			ctx := context.Background()
-			if tt.actorUsername != "" {
-				ctx = types.SetUserKey(ctx, tt.actorUsername)
 			}
 
 			// first call goes to repo.
@@ -462,9 +455,8 @@ func TestGetRole(t *testing.T) {
 	}
 
 	tests := []struct {
-		name          string
-		actorUsername string
-		req           types.GetRoleRequest
+		name string
+		req  types.GetRoleRequest
 
 		accessMock *accessMock
 		mockArgs   *mockArgs
@@ -473,9 +465,8 @@ func TestGetRole(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:          "ok",
-			actorUsername: "admin",
-			req:           types.GetRoleRequest{RoleID: 1},
+			name: "ok",
+			req:  types.GetRoleRequest{RoleID: 1},
 			want: types.RoleInfo{
 				Usernames: []string{"user1", "user2"},
 			},
@@ -485,6 +476,7 @@ func TestGetRole(t *testing.T) {
 				},
 			},
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 		},
@@ -494,29 +486,29 @@ func TestGetRole(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:          "err_no_access",
-			actorUsername: "user",
-			req:           types.GetRoleRequest{RoleID: 1},
-			wantErr:       true,
+			name:    "err_no_access",
+			req:     types.GetRoleRequest{RoleID: 1},
+			wantErr: true,
 			accessMock: &accessMock{
+				username:    "user",
 				permissions: 0,
 			},
 		},
 		{
-			name:          "err_invalid_role_id_zero",
-			actorUsername: "admin",
-			req:           types.GetRoleRequest{RoleID: 0},
-			wantErr:       true,
+			name:    "err_invalid_role_id_zero",
+			req:     types.GetRoleRequest{RoleID: 0},
+			wantErr: true,
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 		},
 		{
-			name:          "err_repo",
-			actorUsername: "admin",
-			req:           types.GetRoleRequest{RoleID: 1},
-			wantErr:       true,
+			name:    "err_repo",
+			req:     types.GetRoleRequest{RoleID: 1},
+			wantErr: true,
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			mockArgs: &mockArgs{
@@ -532,18 +524,14 @@ func TestGetRole(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			repo := mock.NewMockAdmin(ctrl)
 			svc := New(repo, adminCfg)
-			setupAccessMock(repo, tt.actorUsername, tt.accessMock)
+
+			ctx := setupAccessMock(context.Background(), repo, tt.accessMock)
 
 			if tt.mockArgs != nil {
 				repo.EXPECT().
 					GetRole(gomock.Any(), tt.req).
 					Return(tt.mockArgs.roleInfo, tt.mockArgs.err).
 					Times(1)
-			}
-
-			ctx := context.Background()
-			if tt.actorUsername != "" {
-				ctx = types.SetUserKey(ctx, tt.actorUsername)
 			}
 
 			gotRoleInfo, err := svc.GetRole(ctx, tt.req)
@@ -568,9 +556,8 @@ func TestUpdateRole(t *testing.T) {
 	}
 
 	tests := []struct {
-		name          string
-		actorUsername string
-		req           types.UpdateRoleRequest
+		name string
+		req  types.UpdateRoleRequest
 
 		mockArgs   *mockArgs
 		accessMock *accessMock
@@ -578,8 +565,7 @@ func TestUpdateRole(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:          "ok_name_and_permissions",
-			actorUsername: "typical good boy",
+			name: "ok_name_and_permissions",
 			req: types.UpdateRoleRequest{
 				RoleID:      1,
 				Name:        &name,
@@ -593,12 +579,12 @@ func TestUpdateRole(t *testing.T) {
 				},
 			},
 			accessMock: &accessMock{
+				username:    "typical good boy",
 				permissions: permissionManageRoles,
 			},
 		},
 		{
-			name:          "ok_name_only",
-			actorUsername: "typical good boy",
+			name: "ok_name_only",
 			req: types.UpdateRoleRequest{
 				RoleID: 1,
 				Name:   &name,
@@ -610,12 +596,12 @@ func TestUpdateRole(t *testing.T) {
 				},
 			},
 			accessMock: &accessMock{
+				username:    "typical good boy",
 				permissions: permissionManageRoles,
 			},
 		},
 		{
-			name:          "ok_permissions_only",
-			actorUsername: "typical good boy",
+			name: "ok_permissions_only",
 			req: types.UpdateRoleRequest{
 				RoleID:      1,
 				Permissions: []uint64{permissionManageRoles},
@@ -627,12 +613,12 @@ func TestUpdateRole(t *testing.T) {
 				},
 			},
 			accessMock: &accessMock{
+				username:    "typical good boy",
 				permissions: permissionManageRoles,
 			},
 		},
 		{
-			name:          "ok_superuser",
-			actorUsername: defaultSuperUser,
+			name: "ok_superuser",
 			req: types.UpdateRoleRequest{
 				RoleID: 1,
 				Name:   &name,
@@ -642,6 +628,9 @@ func TestUpdateRole(t *testing.T) {
 					RoleID: 1,
 					Name:   &name,
 				},
+			},
+			accessMock: &accessMock{
+				username: defaultSuperUser,
 			},
 		},
 		{
@@ -653,67 +642,66 @@ func TestUpdateRole(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:          "err_no_access",
-			actorUsername: "typical bad boy",
+			name: "err_no_access",
 			req: types.UpdateRoleRequest{
 				RoleID: 1,
 				Name:   &name,
 			},
 			accessMock: &accessMock{
+				username:    "typical bad boy",
 				permissions: 0,
 			},
 			wantErr: true,
 		},
 		{
-			name:          "err_invalid_role_id",
-			actorUsername: "typical good boy",
+			name: "err_invalid_role_id",
 			req: types.UpdateRoleRequest{
 				RoleID: 0,
 				Name:   &name,
 			},
 			accessMock: &accessMock{
+				username:    "typical good boy",
 				permissions: permissionManageRoles,
 			},
 			wantErr: true,
 		},
 		{
-			name:          "err_empty_update",
-			actorUsername: "typical good boy",
+			name: "err_empty_update",
 			req: types.UpdateRoleRequest{
 				RoleID: 1,
 			},
 			accessMock: &accessMock{
+				username:    "typical good boy",
 				permissions: permissionManageRoles,
 			},
 			wantErr: true,
 		},
 		{
-			name:          "err_empty_name_no_permissions",
-			actorUsername: "typical good boy",
+			name: "err_empty_name_no_permissions",
 			req: types.UpdateRoleRequest{
 				RoleID: 1,
 				Name:   &emptyName,
 			},
 			accessMock: &accessMock{
+				username:    "typical good boy",
 				permissions: permissionManageRoles,
 			},
 			wantErr: true,
 		},
 		{
-			name:          "err_unknown_permission",
-			actorUsername: "typical good boy",
+			name: "err_unknown_permission",
 			req: types.UpdateRoleRequest{
 				RoleID:      1,
 				Permissions: []uint64{52},
 			},
 			accessMock: &accessMock{
+				username:    "typical good boy",
 				permissions: permissionManageRoles,
 			},
 			wantErr: true,
 		},
 		{
-			name:          "err_repo",
-			actorUsername: "typical good boy",
+			name: "err_repo",
 			req: types.UpdateRoleRequest{
 				RoleID: 1,
 				Name:   &name,
@@ -726,6 +714,7 @@ func TestUpdateRole(t *testing.T) {
 				err: errSomethingWrong,
 			},
 			accessMock: &accessMock{
+				username:    "typical good boy",
 				permissions: permissionManageRoles,
 			},
 			wantErr: true,
@@ -739,18 +728,14 @@ func TestUpdateRole(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			repo := mock.NewMockAdmin(ctrl)
 			svc := New(repo, adminCfg)
-			setupAccessMock(repo, tt.actorUsername, tt.accessMock)
+
+			ctx := setupAccessMock(context.Background(), repo, tt.accessMock)
 
 			if tt.mockArgs != nil {
 				repo.EXPECT().
 					UpdateRole(gomock.Any(), tt.mockArgs.req).
 					Return(tt.mockArgs.err).
 					Times(1)
-			}
-
-			ctx := context.Background()
-			if tt.actorUsername != "" {
-				ctx = types.SetUserKey(ctx, tt.actorUsername)
 			}
 
 			err := svc.UpdateRole(ctx, tt.req)
@@ -773,9 +758,8 @@ func TestDeleteRole(t *testing.T) {
 	}
 
 	tests := []struct {
-		name          string
-		actorUsername string
-		req           types.DeleteRoleRequest
+		name string
+		req  types.DeleteRoleRequest
 
 		accessMock *accessMock
 		mockArgs   *mockArgs
@@ -783,12 +767,12 @@ func TestDeleteRole(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:          "ok_no_replacement",
-			actorUsername: "admin",
+			name: "ok_no_replacement",
 			req: types.DeleteRoleRequest{
 				RoleID: 1,
 			},
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			mockArgs: &mockArgs{
@@ -796,13 +780,13 @@ func TestDeleteRole(t *testing.T) {
 			},
 		},
 		{
-			name:          "ok_with_replacement",
-			actorUsername: "admin",
+			name: "ok_with_replacement",
 			req: types.DeleteRoleRequest{
 				RoleID:            1,
 				ReplacementRoleID: &replacementID,
 			},
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			mockArgs: &mockArgs{
@@ -820,46 +804,46 @@ func TestDeleteRole(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:          "err_no_access",
-			actorUsername: "user",
+			name: "err_no_access",
 			req: types.DeleteRoleRequest{
 				RoleID: 1,
 			},
 			accessMock: &accessMock{
+				username:    "user",
 				permissions: 0,
 			},
 			wantErr: true,
 		},
 		{
-			name:          "err_invalid_role_id",
-			actorUsername: "admin",
+			name: "err_invalid_role_id",
 			req: types.DeleteRoleRequest{
 				RoleID: 0,
 			},
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			wantErr: true,
 		},
 		{
-			name:          "err_replacement_equals_role_id",
-			actorUsername: "admin",
+			name: "err_replacement_equals_role_id",
 			req: types.DeleteRoleRequest{
 				RoleID:            1,
 				ReplacementRoleID: ptr[int32](1),
 			},
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			wantErr: true,
 		},
 		{
-			name:          "err_repo",
-			actorUsername: "admin",
+			name: "err_repo",
 			req: types.DeleteRoleRequest{
 				RoleID: 1,
 			},
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			mockArgs: &mockArgs{
@@ -877,18 +861,14 @@ func TestDeleteRole(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			repo := mock.NewMockAdmin(ctrl)
 			svc := New(repo, adminCfg)
-			setupAccessMock(repo, tt.actorUsername, tt.accessMock)
+
+			ctx := setupAccessMock(context.Background(), repo, tt.accessMock)
 
 			if tt.mockArgs != nil {
 				repo.EXPECT().
 					DeleteRole(gomock.Any(), tt.mockArgs.repoReq).
 					Return(tt.mockArgs.errRepo).
 					Times(1)
-			}
-
-			ctx := context.Background()
-			if tt.actorUsername != "" {
-				ctx = types.SetUserKey(ctx, tt.actorUsername)
 			}
 
 			err := svc.DeleteRole(ctx, tt.req)
@@ -909,9 +889,8 @@ func TestDeleteUsersFromRole(t *testing.T) {
 	}
 
 	tests := []struct {
-		name          string
-		actorUsername string
-		req           types.DeleteUsersFromRoleRequest
+		name string
+		req  types.DeleteUsersFromRoleRequest
 
 		accessMock *accessMock
 		mockArgs   *mockArgs
@@ -919,13 +898,13 @@ func TestDeleteUsersFromRole(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:          "ok",
-			actorUsername: "admin",
+			name: "ok",
 			req: types.DeleteUsersFromRoleRequest{
 				RoleID:    1,
 				Usernames: []string{"user1", "user2"},
 			},
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			mockArgs: &mockArgs{
@@ -944,61 +923,61 @@ func TestDeleteUsersFromRole(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:          "err_no_access",
-			actorUsername: "user",
+			name: "err_no_access",
 			req: types.DeleteUsersFromRoleRequest{
 				RoleID:    1,
 				Usernames: []string{"user1"},
 			},
 			accessMock: &accessMock{
+				username:    "user",
 				permissions: 0,
 			},
 			wantErr: true,
 		},
 		{
-			name:          "err_invalid_role_id",
-			actorUsername: "admin",
+			name: "err_invalid_role_id",
 			req: types.DeleteUsersFromRoleRequest{
 				RoleID:    0,
 				Usernames: []string{"user1"},
 			},
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			wantErr: true,
 		},
 		{
-			name:          "err_empty_usernames",
-			actorUsername: "admin",
+			name: "err_empty_usernames",
 			req: types.DeleteUsersFromRoleRequest{
 				RoleID:    1,
 				Usernames: []string{},
 			},
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			wantErr: true,
 		},
 		{
-			name:          "err_contains_empty_username",
-			actorUsername: "admin",
+			name: "err_contains_empty_username",
 			req: types.DeleteUsersFromRoleRequest{
 				RoleID:    1,
 				Usernames: []string{"user1", ""},
 			},
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			wantErr: true,
 		},
 		{
-			name:          "err_repo",
-			actorUsername: "admin",
+			name: "err_repo",
 			req: types.DeleteUsersFromRoleRequest{
 				RoleID:    1,
 				Usernames: []string{"user1"},
 			},
 			accessMock: &accessMock{
+				username:    "admin",
 				permissions: permissionManageRoles,
 			},
 			mockArgs: &mockArgs{
@@ -1020,18 +999,13 @@ func TestDeleteUsersFromRole(t *testing.T) {
 			repo := mock.NewMockAdmin(ctrl)
 			svc := New(repo, adminCfg)
 
-			setupAccessMock(repo, tt.actorUsername, tt.accessMock)
+			ctx := setupAccessMock(context.Background(), repo, tt.accessMock)
 
 			if tt.mockArgs != nil {
 				repo.EXPECT().
 					DeleteUsersFromRole(gomock.Any(), tt.mockArgs.req).
 					Return(tt.mockArgs.err).
 					Times(1)
-			}
-
-			ctx := context.Background()
-			if tt.actorUsername != "" {
-				ctx = types.SetUserKey(ctx, tt.actorUsername)
 			}
 
 			err := svc.DeleteUsersFromRole(ctx, tt.req)

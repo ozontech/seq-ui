@@ -162,15 +162,6 @@ func TestGetUserPermissions(t *testing.T) {
 	}
 }
 
-func TestGetAvailablePermissions(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	repo := mock.NewMockAdmin(ctrl)
-	svc := New(repo, adminCfg)
-
-	got := svc.GetAvailablePermissions()
-	require.Equal(t, availablePermissions, got)
-}
-
 func TestMaskUnmaskPermissions(t *testing.T) {
 	tests := []struct {
 		name  string

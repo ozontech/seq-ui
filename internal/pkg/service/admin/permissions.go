@@ -61,7 +61,7 @@ func (s *service) GetUserPermissions(ctx context.Context, req types.GetUserPermi
 	return perms, nil
 }
 
-func (s *service) GetAvailablePermissions() []types.Permission {
+func GetAvailablePermissions() []types.Permission {
 	return availablePermissions
 }
 
