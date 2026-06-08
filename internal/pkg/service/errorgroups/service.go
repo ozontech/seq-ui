@@ -2,7 +2,6 @@ package errorgroups
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math"
 	"slices"
@@ -309,18 +308,23 @@ func validateTimeRange(tr *types.TimeRange) error {
 	if tr == nil {
 		return nil
 	}
+
+	err := func(s string) error {
+		return fmt.Errorf("validate timerange failed: %s", s)
+	}
+
 	if tr.Duration != 0 && (!tr.From.IsZero() || !tr.To.IsZero()) {
-		return errors.New("validate timerange failed: only one of 'duration' or 'from'/'to' must be specified")
+		return err("only one of 'duration' or 'from'/'to' must be specified")
 	}
 	if tr.Duration == 0 && tr.From.IsZero() && tr.To.IsZero() {
-		return errors.New("validate timerange failed: at least one of 'duration' or 'from'/'to' must be specified")
+		return err("at least one of 'duration' or 'from'/'to' must be specified")
 	}
 	if tr.Duration == 0 {
 		if tr.From.IsZero() && !tr.To.IsZero() || !tr.From.IsZero() && tr.To.IsZero() {
-			return errors.New("validate timerange failed: both 'from'/'to' must be specified")
+			return err("both 'from'/'to' must be specified")
 		}
 		if tr.From.Equal(tr.To) || tr.From.After(tr.To) {
-			return errors.New("validate timerange failed: 'from' should be before 'to'")
+			return err("'from' should be before 'to'")
 		}
 	}
 	return nil

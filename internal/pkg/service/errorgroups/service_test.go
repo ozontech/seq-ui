@@ -26,7 +26,7 @@ func TestValidateTimeRange(t *testing.T) {
 		name string
 
 		tr      *types.TimeRange
-		wantErr bool
+		wantErr string
 	}{
 		{
 			name: "ok_nil",
@@ -52,26 +52,26 @@ func TestValidateTimeRange(t *testing.T) {
 				From:     from,
 				To:       to,
 			},
-			wantErr: true,
+			wantErr: "only one of 'duration' or 'from'/'to' must be specified",
 		},
 		{
 			name:    "err_empty",
 			tr:      &types.TimeRange{},
-			wantErr: true,
+			wantErr: "at least one of 'duration' or 'from'/'to' must be specified",
 		},
 		{
 			name: "err_only_from",
 			tr: &types.TimeRange{
 				From: from,
 			},
-			wantErr: true,
+			wantErr: "both 'from'/'to' must be specified",
 		},
 		{
 			name: "err_only_to",
 			tr: &types.TimeRange{
 				To: to,
 			},
-			wantErr: true,
+			wantErr: "both 'from'/'to' must be specified",
 		},
 		{
 			name: "err_from_to_equal",
@@ -79,7 +79,7 @@ func TestValidateTimeRange(t *testing.T) {
 				From: from,
 				To:   from,
 			},
-			wantErr: true,
+			wantErr: "'from' should be before 'to'",
 		},
 		{
 			name: "err_from_before_to",
@@ -87,7 +87,7 @@ func TestValidateTimeRange(t *testing.T) {
 				From: to,
 				To:   from,
 			},
-			wantErr: true,
+			wantErr: "'from' should be before 'to'",
 		},
 	}
 
@@ -96,7 +96,12 @@ func TestValidateTimeRange(t *testing.T) {
 			t.Parallel()
 
 			err := validateTimeRange(tt.tr)
-			require.Equal(t, tt.wantErr, err != nil)
+			if tt.wantErr == "" {
+				require.NoError(t, err)
+				return
+			}
+
+			require.Contains(t, err.Error(), tt.wantErr)
 		})
 	}
 }
