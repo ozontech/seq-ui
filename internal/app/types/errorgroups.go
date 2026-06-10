@@ -12,12 +12,38 @@ const (
 	OrderOldest
 )
 
+type TimeRange struct {
+	Duration time.Duration
+
+	From time.Time
+	To   time.Time
+}
+
+func (tr *TimeRange) IsAbsolute() bool {
+	return tr != nil && !tr.From.IsZero() && !tr.To.IsZero()
+}
+
+func (tr *TimeRange) AbsoluteDuration() time.Duration {
+	if !tr.IsAbsolute() {
+		return 0
+	}
+	return tr.To.Sub(tr.From)
+}
+
+func (tr *TimeRange) IsRelative() bool {
+	return tr != nil && tr.Duration != 0
+}
+
+func (tr *TimeRange) IsEmpty() bool {
+	return tr == nil || !tr.IsAbsolute() && !tr.IsRelative()
+}
+
 type GetErrorGroupsRequest struct {
 	Service   string
 	Env       *string
 	Source    *string
 	Release   *string
-	Duration  *time.Duration
+	TimeRange *TimeRange
 	Limit     uint32
 	Offset    uint32
 	Order     ErrorGroupsOrder
@@ -36,7 +62,7 @@ type ErrorGroup struct {
 type GetTopErrorGroupsRequest struct {
 	Env       *string
 	Source    *string
-	Duration  *time.Duration
+	TimeRange *TimeRange
 	Limit     uint32
 	Offset    uint32
 	WithTotal bool
@@ -55,7 +81,7 @@ type GetErrorHistRequest struct {
 	Env       *string
 	Source    *string
 	Release   *string
-	Duration  *time.Duration
+	TimeRange *TimeRange
 }
 
 type ErrorHistBucket struct {

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	sq "github.com/n-r-w/squirrel"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ozontech/seq-ui/internal/app/types"
@@ -15,72 +16,275 @@ import (
 
 func TestGetHistData(t *testing.T) {
 	const (
-		day   = 24 * time.Hour
-		month = 30 * day
+		_10min = 10 * time.Minute
+		day    = 24 * time.Hour
+		week   = 7 * day
+		month  = 4 * week
+		year   = 12 * month
 	)
+
+	fakeNow := fakeNow(time.Now())
 
 	tests := []struct {
 		name string
 
-		duration time.Duration
+		tr *types.TimeRange
 
 		wantTable, wantColumn string
+		wantWithFill          withFillData
 	}{
 		{
 			name: "nil",
 
-			duration: -1,
+			wantTable:  "agg_events_1d",
+			wantColumn: "toStartOfMonth(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfMonth(?) TO toStartOfMonth(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-2 * year),
+					fakeNow(),
+					int(month.Seconds()),
+				},
+			},
+		},
+		{
+			name: "empty",
+
+			tr: &types.TimeRange{},
 
 			wantTable:  "agg_events_1d",
 			wantColumn: "toStartOfMonth(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfMonth(?) TO toStartOfMonth(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-2 * year),
+					fakeNow(),
+					int(month.Seconds()),
+				},
+			},
 		},
 		{
-			name: "zero",
+			name: "duration_5_hour",
 
-			duration: 0,
-
-			wantTable:  "agg_events_1d",
-			wantColumn: "toStartOfMonth(start_date)",
-		},
-		{
-			name: "5_hour",
-
-			duration: 5 * time.Hour,
+			tr: &types.TimeRange{
+				Duration: 5 * time.Hour,
+			},
 
 			wantTable:  "agg_events_10min",
 			wantColumn: "start_date",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfTenMinutes(?) TO toStartOfTenMinutes(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-5 * time.Hour),
+					fakeNow(),
+					int(_10min.Seconds()),
+				},
+			},
 		},
 		{
-			name: "1_day",
+			name: "duration_1_day",
 
-			duration: day,
+			tr: &types.TimeRange{
+				Duration: day,
+			},
 
 			wantTable:  "agg_events_10min",
 			wantColumn: "toStartOfHour(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfHour(?) TO toStartOfHour(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-day),
+					fakeNow(),
+					int(time.Hour.Seconds()),
+				},
+			},
 		},
 		{
-			name: "1_month",
+			name: "duration_1_month",
 
-			duration: month,
+			tr: &types.TimeRange{
+				Duration: month,
+			},
 
 			wantTable:  "agg_events_10min",
 			wantColumn: "toStartOfDay(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfDay(?) TO toStartOfDay(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-month),
+					fakeNow(),
+					int(day.Seconds()),
+				},
+			},
 		},
 		{
-			name: "7_month",
+			name: "duration_7_month",
 
-			duration: 7 * month,
+			tr: &types.TimeRange{
+				Duration: 7 * month,
+			},
 
 			wantTable:  "agg_events_1d",
 			wantColumn: "toStartOfWeek(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfWeek(?) TO toStartOfWeek(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-7 * month),
+					fakeNow(),
+					int(week.Seconds()),
+				},
+			},
 		},
 		{
-			name: "1_year",
+			name: "duration_1_year",
 
-			duration: 12 * month,
+			tr: &types.TimeRange{
+				Duration: year,
+			},
 
 			wantTable:  "agg_events_1d",
 			wantColumn: "toStartOfMonth(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfMonth(?) TO toStartOfMonth(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-year),
+					fakeNow(),
+					int(month.Seconds()),
+				},
+			},
+		},
+		{
+			name: "absolute_old_1_month",
+
+			tr: &types.TimeRange{
+				From: fakeNow().Add(-(3*month + 14*day)),
+				To:   fakeNow().Add(-(2*month + 14*day)),
+			},
+
+			wantTable:  "agg_events_1d",
+			wantColumn: "start_date",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfDay(?) TO toStartOfDay(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-(3*month + 14*day)),
+					fakeNow().Add(-(2*month + 14*day)),
+					int(day.Seconds()),
+				},
+			},
+		},
+		{
+			name: "absolute_old_6_month",
+
+			tr: &types.TimeRange{
+				From: fakeNow().Add(-year),
+				To:   fakeNow().Add(-6 * month),
+			},
+
+			wantTable:  "agg_events_1d",
+			wantColumn: "toStartOfWeek(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfWeek(?) TO toStartOfWeek(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-year),
+					fakeNow().Add(-6 * month),
+					int(week.Seconds()),
+				},
+			},
+		},
+		{
+			name: "absolute_old_1_year",
+
+			tr: &types.TimeRange{
+				From: fakeNow().Add(-18 * month),
+				To:   fakeNow().Add(-6 * month),
+			},
+
+			wantTable:  "agg_events_1d",
+			wantColumn: "toStartOfMonth(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfMonth(?) TO toStartOfMonth(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-18 * month),
+					fakeNow().Add(-6 * month),
+					int(month.Seconds()),
+				},
+			},
+		},
+		{
+			name: "absolute_new_5_hour",
+
+			tr: &types.TimeRange{
+				From: fakeNow().Add(-5 * time.Hour),
+				To:   fakeNow(),
+			},
+
+			wantTable:  "agg_events_10min",
+			wantColumn: "start_date",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfTenMinutes(?) TO toStartOfTenMinutes(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-5 * time.Hour),
+					fakeNow(),
+					int(_10min.Seconds()),
+				},
+			},
+		},
+		{
+			name: "absolute_new_1_day",
+
+			tr: &types.TimeRange{
+				From: fakeNow().Add(-day),
+				To:   fakeNow(),
+			},
+
+			wantTable:  "agg_events_10min",
+			wantColumn: "toStartOfHour(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfHour(?) TO toStartOfHour(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-day),
+					fakeNow(),
+					int(time.Hour.Seconds()),
+				},
+			},
+		},
+		{
+			name: "absolute_new_1_month",
+
+			tr: &types.TimeRange{
+				From: fakeNow().Add(-month),
+				To:   fakeNow(),
+			},
+
+			wantTable:  "agg_events_10min",
+			wantColumn: "toStartOfDay(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfDay(?) TO toStartOfDay(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-month),
+					fakeNow(),
+					int(day.Seconds()),
+				},
+			},
+		},
+		{
+			name: "absolute_new_3_month",
+
+			tr: &types.TimeRange{
+				From: fakeNow().Add(-3 * month),
+				To:   fakeNow(),
+			},
+
+			wantTable:  "agg_events_10min",
+			wantColumn: "toStartOfWeek(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfWeek(?) TO toStartOfWeek(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-3 * month),
+					fakeNow(),
+					int(week.Seconds()),
+				},
+			},
 		},
 	}
 
@@ -88,15 +292,65 @@ func TestGetHistData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			var dur *time.Duration
-			if tt.duration != -1 {
-				dur = &tt.duration
-			}
+			r := newRepo(nil, false, nil, fakeNow)
 
-			gotTable, gotColumn := getHistData(dur)
+			gotTable, gotColumn, gotWithFill := r.getHistData(tt.tr)
 
 			require.Equal(t, tt.wantTable, gotTable)
 			require.Equal(t, tt.wantColumn, gotColumn)
+			require.Equal(t, tt.wantWithFill, gotWithFill)
+		})
+	}
+}
+
+func TestTimeRangeCond(t *testing.T) {
+	var (
+		fakeNow = fakeNow(time.Now())
+		col     = "test-col"
+	)
+
+	tests := []struct {
+		name string
+
+		tr *types.TimeRange
+
+		want any
+	}{
+		{
+			name: "nil",
+
+			want: nil,
+		},
+		{
+			name: "absolute",
+
+			tr: &types.TimeRange{
+				From: fakeNow().Add(-time.Hour),
+				To:   fakeNow(),
+			},
+			want: sq.And{
+				sq.GtOrEq{col: fakeNow().Add(-time.Hour)},
+				sq.LtOrEq{col: fakeNow()},
+			},
+		},
+		{
+			name: "relative",
+
+			tr: &types.TimeRange{
+				Duration: time.Hour,
+			},
+			want: sq.GtOrEq{col: fakeNow().Add(-time.Hour)},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			r := newRepo(nil, false, nil, fakeNow)
+
+			got := r.timeRangeCond(col, tt.tr)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -128,7 +382,7 @@ func TestGetErrorGroups(t *testing.T) {
 		mockConns []*mockConnRows
 	}{
 		{
-			name: "ok_no_duration",
+			name: "ok_no_timerange",
 
 			req: types.GetErrorGroupsRequest{
 				Service: service,
@@ -167,14 +421,16 @@ func TestGetErrorGroups(t *testing.T) {
 			},
 		},
 		{
-			name: "ok_duration_frequent",
+			name: "ok_timerange_relative_frequent",
 
 			req: types.GetErrorGroupsRequest{
-				Service:  service,
-				Duration: &duration,
-				Limit:    10,
-				Offset:   20,
-				Order:    types.OrderFrequent,
+				Service: service,
+				TimeRange: &types.TimeRange{
+					Duration: duration,
+				},
+				Limit:  10,
+				Offset: 20,
+				Order:  types.OrderFrequent,
 			},
 			wantGroupsCount: 2,
 
@@ -216,14 +472,68 @@ func TestGetErrorGroups(t *testing.T) {
 			},
 		},
 		{
-			name: "ok_duration_not_frequent",
+			name: "ok_timerange_absolute_frequent",
 
 			req: types.GetErrorGroupsRequest{
-				Service:  service,
-				Duration: &duration,
-				Limit:    10,
-				Offset:   20,
-				Order:    types.OrderLatest,
+				Service: service,
+				TimeRange: &types.TimeRange{
+					From: timeDiff,
+					To:   fakeNow(),
+				},
+				Limit:  10,
+				Offset: 20,
+				Order:  types.OrderFrequent,
+			},
+			wantGroupsCount: 2,
+
+			mockConns: []*mockConnRows{
+				{
+					query: "SELECT _group_hash, countMerge(counts) as count" +
+						" FROM agg_events_10min" +
+						" WHERE service = ? AND (toStartOfHour(start_date) >= ? AND toStartOfHour(start_date) <= ?)" +
+						" GROUP BY _group_hash" +
+						" ORDER BY count DESC" +
+						" LIMIT 10 OFFSET 20",
+					args: []any{service, timeDiff, fakeNow()},
+
+					rows: &mockRowsScanStruct{
+						scanStructFns: []func(any) error{
+							func(v any) error {
+								*v.(*errorCount) = errorCount{Hash: 123}
+								return nil
+							},
+							func(v any) error {
+								*v.(*errorCount) = errorCount{Hash: 456}
+								return nil
+							},
+						},
+					},
+				},
+				{
+					query: "SELECT _group_hash, source, any(message) as message, minMerge(first_seen_at) as first_seen_at, maxMerge(last_seen_at) as last_seen_at" +
+						" FROM error_groups" +
+						" WHERE _group_hash IN (?,?) AND service = ?" +
+						" GROUP BY _group_hash, source",
+					args: []any{uint64(123), uint64(456), service},
+
+					rows: &mockRowsCount{
+						count:        2,
+						isScanStruct: true,
+					},
+				},
+			},
+		},
+		{
+			name: "ok_timerange_relative_not_frequent",
+
+			req: types.GetErrorGroupsRequest{
+				Service: service,
+				TimeRange: &types.TimeRange{
+					Duration: duration,
+				},
+				Limit:  10,
+				Offset: 20,
+				Order:  types.OrderLatest,
 			},
 			wantGroupsCount: 2,
 
@@ -268,6 +578,70 @@ func TestGetErrorGroups(t *testing.T) {
 						" WHERE _group_hash IN (?,?) AND service = ? AND toStartOfHour(start_date) >= ?" +
 						" GROUP BY _group_hash",
 					args: []any{uint64(123), uint64(456), service, timeDiff},
+
+					rows: &mockRowsCount{
+						count:        2,
+						isScanStruct: true,
+					},
+				},
+			},
+		},
+		{
+			name: "ok_timerange_absolute_not_frequent",
+
+			req: types.GetErrorGroupsRequest{
+				Service: service,
+				TimeRange: &types.TimeRange{
+					From: timeDiff,
+					To:   fakeNow(),
+				},
+				Limit:  10,
+				Offset: 20,
+				Order:  types.OrderLatest,
+			},
+			wantGroupsCount: 2,
+
+			mockConns: []*mockConnRows{
+				{
+					query: fmt.Sprintf(
+						"SELECT _group_hash, source, any(message) as message, minMerge(first_seen_at) as first_seen_at, maxMerge(last_seen_at) as last_seen_at"+
+							" FROM error_groups"+
+							" WHERE service = ? AND _group_hash IN (%s)"+
+							" GROUP BY _group_hash, source"+
+							" ORDER BY last_seen_at DESC",
+
+						"SELECT _group_hash"+
+							" FROM error_groups"+
+							" WHERE service = ?"+
+							" GROUP BY _group_hash"+
+							" HAVING (maxMerge(last_seen_at) >= ? AND maxMerge(last_seen_at) <= ?)"+
+							" ORDER BY maxMerge(last_seen_at) DESC"+
+							" LIMIT 10 OFFSET 20",
+					),
+					args: []any{
+						service,
+						service, timeDiff, fakeNow(),
+					},
+
+					rows: &mockRowsScanStruct{
+						scanStructFns: []func(any) error{
+							func(v any) error {
+								*v.(*errorInfo) = errorInfo{Hash: 123}
+								return nil
+							},
+							func(v any) error {
+								*v.(*errorInfo) = errorInfo{Hash: 456}
+								return nil
+							},
+						},
+					},
+				},
+				{
+					query: "SELECT _group_hash, countMerge(counts) as count" +
+						" FROM agg_events_10min" +
+						" WHERE _group_hash IN (?,?) AND service = ? AND (toStartOfHour(start_date) >= ? AND toStartOfHour(start_date) <= ?)" +
+						" GROUP BY _group_hash",
+					args: []any{uint64(123), uint64(456), service, timeDiff, fakeNow()},
 
 					rows: &mockRowsCount{
 						count:        2,
@@ -339,11 +713,13 @@ func TestGetErrorGroups(t *testing.T) {
 			},
 		},
 		{
-			name: "ok_no_rows_duration_frequent",
+			name: "ok_no_rows_timerange_frequent",
 
 			req: types.GetErrorGroupsRequest{
-				Duration: &duration,
-				Order:    types.OrderFrequent,
+				TimeRange: &types.TimeRange{
+					Duration: duration,
+				},
+				Order: types.OrderFrequent,
 			},
 			wantGroupsCount: 0,
 
@@ -356,11 +732,13 @@ func TestGetErrorGroups(t *testing.T) {
 			},
 		},
 		{
-			name: "ok_no_rows_duration_no_frequent",
+			name: "ok_no_rows_timerange_no_frequent",
 
 			req: types.GetErrorGroupsRequest{
-				Duration: &duration,
-				Order:    types.OrderLatest,
+				TimeRange: &types.TimeRange{
+					Duration: duration,
+				},
+				Order: types.OrderLatest,
 			},
 			wantGroupsCount: 0,
 
@@ -460,14 +838,60 @@ func TestGetErrorGroupsTotal(t *testing.T) {
 			},
 		},
 		{
+			name: "ok_timerange_relative",
+
+			req: types.GetErrorGroupsRequest{
+				Service: service,
+				TimeRange: &types.TimeRange{
+					Duration: duration,
+				},
+			},
+
+			mockConn: &mockConnRow{
+				query: fmt.Sprintf(
+					"SELECT count() FROM (%s) AS subQ",
+
+					"SELECT maxMerge(last_seen_at) AS last_seen_at"+
+						" FROM error_groups"+
+						" WHERE service = ?"+
+						" GROUP BY _group_hash"+
+						" HAVING last_seen_at >= ?",
+				),
+				args: []any{service, timeDiff},
+			},
+		},
+		{
+			name: "ok_timerange_absolute",
+
+			req: types.GetErrorGroupsRequest{
+				Service: service,
+				TimeRange: &types.TimeRange{
+					From: timeDiff,
+					To:   fakeNow(),
+				},
+			},
+
+			mockConn: &mockConnRow{
+				query: fmt.Sprintf(
+					"SELECT count() FROM (%s) AS subQ",
+
+					"SELECT maxMerge(last_seen_at) AS last_seen_at"+
+						" FROM error_groups"+
+						" WHERE service = ?"+
+						" GROUP BY _group_hash"+
+						" HAVING (last_seen_at >= ? AND last_seen_at <= ?)",
+				),
+				args: []any{service, timeDiff, fakeNow()},
+			},
+		},
+		{
 			name: "ok_full_filters",
 
 			req: types.GetErrorGroupsRequest{
-				Service:  service,
-				Env:      &env,
-				Source:   &source,
-				Release:  &release,
-				Duration: &duration,
+				Service: service,
+				Env:     &env,
+				Source:  &source,
+				Release: &release,
 			},
 
 			queryFilter: map[string]string{
@@ -482,10 +906,9 @@ func TestGetErrorGroupsTotal(t *testing.T) {
 					"SELECT maxMerge(last_seen_at) AS last_seen_at"+
 						" FROM error_groups"+
 						" WHERE service = ? AND filter1 = ? AND filter2 = ? AND env = ? AND source = ? AND release = ?"+
-						" GROUP BY _group_hash"+
-						" HAVING last_seen_at >= ?",
+						" GROUP BY _group_hash",
 				),
-				args: []any{service, "value1", "value2", env, source, release, timeDiff},
+				args: []any{service, "value1", "value2", env, source, release},
 			},
 		},
 		{
@@ -556,12 +979,14 @@ func TestGetNewErrorGroups(t *testing.T) {
 			name: "ok_by_releases",
 
 			req: types.GetErrorGroupsRequest{
-				Service:  service,
-				Release:  &release,
-				Duration: &duration,
-				Limit:    20,
-				Offset:   5,
-				Order:    types.OrderFrequent,
+				Service: service,
+				Release: &release,
+				TimeRange: &types.TimeRange{
+					Duration: duration,
+				},
+				Limit:  20,
+				Offset: 5,
+				Order:  types.OrderFrequent,
 			},
 			wantGroupsCount: 2,
 
@@ -593,13 +1018,15 @@ func TestGetNewErrorGroups(t *testing.T) {
 			},
 		},
 		{
-			name: "ok_by_duration",
+			name: "ok_by_timerange_relative",
 
 			req: types.GetErrorGroupsRequest{
-				Service:  service,
-				Duration: &duration,
-				Limit:    10,
-				Order:    types.OrderLatest,
+				Service: service,
+				TimeRange: &types.TimeRange{
+					Duration: duration,
+				},
+				Limit: 10,
+				Order: types.OrderLatest,
 			},
 			wantGroupsCount: 2,
 
@@ -631,16 +1058,59 @@ func TestGetNewErrorGroups(t *testing.T) {
 			},
 		},
 		{
+			name: "ok_by_timerange_absolute",
+
+			req: types.GetErrorGroupsRequest{
+				Service: service,
+				TimeRange: &types.TimeRange{
+					From: timeDiff,
+					To:   fakeNow(),
+				},
+				Limit: 10,
+				Order: types.OrderLatest,
+			},
+			wantGroupsCount: 2,
+
+			mockConn: &mockConnRows{
+				query: fmt.Sprintf(
+					"SELECT _group_hash, source, any(message) as message, countMerge(seen_total) as seen_total, minMerge(first_seen_at) as first_seen_at, maxMerge(last_seen_at) as last_seen_at"+
+						" FROM error_groups"+
+						" WHERE service = ? AND _group_hash IN (%s)"+
+						" GROUP BY _group_hash, source"+
+						" ORDER BY last_seen_at DESC",
+
+					"SELECT _group_hash"+
+						" FROM error_groups"+
+						" WHERE service = ?"+
+						" GROUP BY _group_hash"+
+						" HAVING (minMerge(first_seen_at) >= ? AND minMerge(first_seen_at) <= ?)"+
+						" ORDER BY maxMerge(last_seen_at) DESC"+
+						" LIMIT 10 OFFSET 0",
+				),
+				args: []any{
+					service,
+					service, timeDiff, fakeNow(),
+				},
+
+				rows: &mockRowsCount{
+					count:        2,
+					isScanStruct: true,
+				},
+			},
+		},
+		{
 			name: "ok_full_filters_sharded",
 
 			req: types.GetErrorGroupsRequest{
-				Service:  service,
-				Env:      &env,
-				Source:   &source,
-				Duration: &duration,
-				Limit:    10,
-				Offset:   20,
-				Order:    types.OrderOldest,
+				Service: service,
+				Env:     &env,
+				Source:  &source,
+				TimeRange: &types.TimeRange{
+					Duration: duration,
+				},
+				Limit:  10,
+				Offset: 20,
+				Order:  types.OrderOldest,
 			},
 			wantGroupsCount: 2,
 
@@ -757,9 +1227,11 @@ func TestGetNewErrorGroupsTotal(t *testing.T) {
 			name: "ok_by_releases",
 
 			req: types.GetErrorGroupsRequest{
-				Service:  service,
-				Release:  &release,
-				Duration: &duration,
+				Service: service,
+				Release: &release,
+				TimeRange: &types.TimeRange{
+					Duration: duration,
+				},
 			},
 
 			mockConn: &mockConnRow{
@@ -776,11 +1248,13 @@ func TestGetNewErrorGroupsTotal(t *testing.T) {
 			},
 		},
 		{
-			name: "ok_by_duration",
+			name: "ok_by_timerange_relative",
 
 			req: types.GetErrorGroupsRequest{
-				Service:  service,
-				Duration: &duration,
+				Service: service,
+				TimeRange: &types.TimeRange{
+					Duration: duration,
+				},
 			},
 
 			mockConn: &mockConnRow{
@@ -797,13 +1271,39 @@ func TestGetNewErrorGroupsTotal(t *testing.T) {
 			},
 		},
 		{
+			name: "ok_by_timerange_absolute",
+
+			req: types.GetErrorGroupsRequest{
+				Service: service,
+				TimeRange: &types.TimeRange{
+					From: timeDiff,
+					To:   fakeNow(),
+				},
+			},
+
+			mockConn: &mockConnRow{
+				query: fmt.Sprintf(
+					"SELECT count() FROM (%s) AS subQ",
+
+					"SELECT _group_hash"+
+						" FROM error_groups"+
+						" WHERE service = ?"+
+						" GROUP BY _group_hash"+
+						" HAVING (minMerge(first_seen_at) >= ? AND minMerge(first_seen_at) <= ?)",
+				),
+				args: []any{service, timeDiff, fakeNow()},
+			},
+		},
+		{
 			name: "ok_full_filters",
 
 			req: types.GetErrorGroupsRequest{
-				Service:  service,
-				Duration: &duration,
-				Env:      &env,
-				Source:   &source,
+				Service: service,
+				TimeRange: &types.TimeRange{
+					Duration: duration,
+				},
+				Env:    &env,
+				Source: &source,
 			},
 
 			queryFilter: map[string]string{
@@ -887,7 +1387,7 @@ func TestGetTopErrorGroups(t *testing.T) {
 		mockConns []*mockConnRows
 	}{
 		{
-			name: "ok_no_duration",
+			name: "ok_no_timerange",
 
 			req: types.GetTopErrorGroupsRequest{
 				Limit:  10,
@@ -921,12 +1421,14 @@ func TestGetTopErrorGroups(t *testing.T) {
 			},
 		},
 		{
-			name: "ok_duration",
+			name: "ok_timerange_relative",
 
 			req: types.GetTopErrorGroupsRequest{
-				Duration: &duration,
-				Limit:    10,
-				Offset:   20,
+				TimeRange: &types.TimeRange{
+					Duration: duration,
+				},
+				Limit:  10,
+				Offset: 20,
 			},
 			wantGroupsCount: 2,
 
@@ -939,6 +1441,56 @@ func TestGetTopErrorGroups(t *testing.T) {
 						" ORDER BY count DESC" +
 						" LIMIT 10 OFFSET 20",
 					args: []any{timeDiff},
+
+					rows: &mockRowsScanStruct{
+						scanStructFns: []func(any) error{
+							func(v any) error {
+								*v.(*errorCount) = errorCount{Hash: 123}
+								return nil
+							},
+							func(v any) error {
+								*v.(*errorCount) = errorCount{Hash: 456}
+								return nil
+							},
+						},
+					},
+				},
+				{
+					query: "SELECT _group_hash, source, any(message) as message" +
+						" FROM error_groups" +
+						" WHERE _group_hash IN (?,?)" +
+						" GROUP BY _group_hash, source",
+					args: []any{uint64(123), uint64(456)},
+
+					rows: &mockRowsCount{
+						count:        2,
+						isScanStruct: true,
+					},
+				},
+			},
+		},
+		{
+			name: "ok_timerange_absolute",
+
+			req: types.GetTopErrorGroupsRequest{
+				TimeRange: &types.TimeRange{
+					From: timeDiff,
+					To:   fakeNow(),
+				},
+				Limit:  10,
+				Offset: 20,
+			},
+			wantGroupsCount: 2,
+
+			mockConns: []*mockConnRows{
+				{
+					query: "SELECT _group_hash, countMerge(counts) as count" +
+						" FROM agg_events_10min" +
+						" WHERE (1=1) AND (toStartOfHour(start_date) >= ? AND toStartOfHour(start_date) <= ?)" +
+						" GROUP BY _group_hash" +
+						" ORDER BY count DESC" +
+						" LIMIT 10 OFFSET 20",
+					args: []any{timeDiff, fakeNow()},
 
 					rows: &mockRowsScanStruct{
 						scanStructFns: []func(any) error{
@@ -1013,7 +1565,7 @@ func TestGetTopErrorGroups(t *testing.T) {
 			},
 		},
 		{
-			name: "ok_no_rows_no_duration",
+			name: "ok_no_rows_no_timerange",
 
 			req:             types.GetTopErrorGroupsRequest{},
 			wantGroupsCount: 0,
@@ -1027,10 +1579,12 @@ func TestGetTopErrorGroups(t *testing.T) {
 			},
 		},
 		{
-			name: "ok_no_rows_duration",
+			name: "ok_no_rows_timerange",
 
 			req: types.GetTopErrorGroupsRequest{
-				Duration: &duration,
+				TimeRange: &types.TimeRange{
+					Duration: duration,
+				},
 			},
 			wantGroupsCount: 0,
 
@@ -1109,7 +1663,7 @@ func TestGetTopErrorGroupsTotal(t *testing.T) {
 		mockConn *mockConnRow
 	}{
 		{
-			name: "ok_no_duration",
+			name: "ok_no_timerange",
 
 			req: types.GetTopErrorGroupsRequest{},
 
@@ -1122,10 +1676,12 @@ func TestGetTopErrorGroupsTotal(t *testing.T) {
 			},
 		},
 		{
-			name: "ok_duration",
+			name: "ok_timerange_relative",
 
 			req: types.GetTopErrorGroupsRequest{
-				Duration: &duration,
+				TimeRange: &types.TimeRange{
+					Duration: duration,
+				},
 			},
 
 			mockConn: &mockConnRow{
@@ -1135,6 +1691,25 @@ func TestGetTopErrorGroupsTotal(t *testing.T) {
 					" WHERE toStartOfHour(start_date) >= ?",
 
 				args: []any{timeDiff},
+			},
+		},
+		{
+			name: "ok_timerange_absolute",
+
+			req: types.GetTopErrorGroupsRequest{
+				TimeRange: &types.TimeRange{
+					From: timeDiff,
+					To:   fakeNow(),
+				},
+			},
+
+			mockConn: &mockConnRow{
+				query: "" +
+					"SELECT uniq(_group_hash)" +
+					" FROM agg_events_10min" +
+					" WHERE (toStartOfHour(start_date) >= ? AND toStartOfHour(start_date) <= ?)",
+
+				args: []any{timeDiff, fakeNow()},
 			},
 		},
 		{
@@ -1608,6 +2183,13 @@ func TestDiffByReleasesTotal(t *testing.T) {
 }
 
 func TestGetErrorHist(t *testing.T) {
+	const (
+		_10min = 10 * time.Minute
+		day    = 24 * time.Hour
+		month  = 28 * day
+		year   = 12 * month
+	)
+
 	var (
 		groupHash = uint64(123)
 		service   = "test-svc"
@@ -1644,8 +2226,60 @@ func TestGetErrorHist(t *testing.T) {
 					"SELECT toStartOfMonth(start_date), countMerge(counts) as counts" +
 					" FROM agg_events_1d" +
 					" GROUP BY toStartOfMonth(start_date)" +
-					" ORDER BY toStartOfMonth(start_date)",
-				args: []any{},
+					" ORDER BY toStartOfMonth(start_date)" +
+					" WITH FILL FROM toStartOfMonth(?) TO toStartOfMonth(?) STEP ?",
+				args: []any{fakeNow().Add(-2 * year), fakeNow(), int(month.Seconds())},
+
+				rows: &mockRowsCount{
+					count: 2,
+				},
+			},
+		},
+		{
+			name: "ok_timerange_relative",
+
+			req: types.GetErrorHistRequest{
+				TimeRange: &types.TimeRange{
+					Duration: duration,
+				},
+			},
+			wantBucketsCount: 2,
+
+			mockConn: &mockConnRows{
+				query: "" +
+					"SELECT start_date, countMerge(counts) as counts" +
+					" FROM agg_events_10min" +
+					" WHERE start_date >= ?" +
+					" GROUP BY start_date" +
+					" ORDER BY start_date" +
+					" WITH FILL FROM toStartOfTenMinutes(?) TO toStartOfTenMinutes(?) STEP ?",
+				args: []any{timeDiff, timeDiff, fakeNow(), int(_10min.Seconds())},
+
+				rows: &mockRowsCount{
+					count: 2,
+				},
+			},
+		},
+		{
+			name: "ok_timerange_absolute",
+
+			req: types.GetErrorHistRequest{
+				TimeRange: &types.TimeRange{
+					From: timeDiff,
+					To:   fakeNow(),
+				},
+			},
+			wantBucketsCount: 2,
+
+			mockConn: &mockConnRows{
+				query: "" +
+					"SELECT start_date, countMerge(counts) as counts" +
+					" FROM agg_events_10min" +
+					" WHERE (start_date >= ? AND start_date <= ?)" +
+					" GROUP BY start_date" +
+					" ORDER BY start_date" +
+					" WITH FILL FROM toStartOfTenMinutes(?) TO toStartOfTenMinutes(?) STEP ?",
+				args: []any{timeDiff, fakeNow(), timeDiff, fakeNow(), int(_10min.Seconds())},
 
 				rows: &mockRowsCount{
 					count: 2,
@@ -1661,7 +2295,9 @@ func TestGetErrorHist(t *testing.T) {
 				Env:       &env,
 				Source:    &source,
 				Release:   &release,
-				Duration:  &duration,
+				TimeRange: &types.TimeRange{
+					Duration: duration,
+				},
 			},
 			wantBucketsCount: 2,
 
@@ -1676,8 +2312,9 @@ func TestGetErrorHist(t *testing.T) {
 					" FROM agg_events_10min" +
 					" WHERE filter1 = ? AND filter2 = ? AND _group_hash = ? AND env = ? AND source = ? AND service = ? AND release = ? AND start_date >= ?" +
 					" GROUP BY start_date" +
-					" ORDER BY start_date",
-				args: []any{"value1", "value2", groupHash, env, source, service, release, timeDiff},
+					" ORDER BY start_date" +
+					" WITH FILL FROM toStartOfTenMinutes(?) TO toStartOfTenMinutes(?) STEP ?",
+				args: []any{"value1", "value2", groupHash, env, source, service, release, timeDiff, timeDiff, fakeNow(), int(_10min.Seconds())},
 
 				rows: &mockRowsCount{
 					count: 2,
