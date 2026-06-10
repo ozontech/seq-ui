@@ -316,10 +316,10 @@ func validateTimeRange(tr *types.TimeRange) error {
 	if tr.Duration != 0 && (!tr.From.IsZero() || !tr.To.IsZero()) {
 		return err("only one of 'duration' or 'from'/'to' must be specified")
 	}
-	if tr.Duration == 0 && tr.From.IsZero() && tr.To.IsZero() {
-		return err("at least one of 'duration' or 'from'/'to' must be specified")
-	}
 	if tr.Duration == 0 {
+		if tr.From.IsZero() && tr.To.IsZero() {
+			return err("at least one of 'duration' or 'from'/'to' must be specified")
+		}
 		if tr.From.IsZero() && !tr.To.IsZero() || !tr.From.IsZero() && tr.To.IsZero() {
 			return err("both 'from'/'to' must be specified")
 		}
