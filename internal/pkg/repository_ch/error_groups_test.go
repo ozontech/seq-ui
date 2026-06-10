@@ -16,8 +16,11 @@ import (
 
 func TestGetHistData(t *testing.T) {
 	const (
-		day   = 24 * time.Hour
-		month = 28 * day
+		_10min = 10 * time.Minute
+		day    = 24 * time.Hour
+		week   = 7 * day
+		month  = 4 * week
+		year   = 12 * month
 	)
 
 	fakeNow := fakeNow(time.Now())
@@ -28,12 +31,21 @@ func TestGetHistData(t *testing.T) {
 		tr *types.TimeRange
 
 		wantTable, wantColumn string
+		wantWithFill          withFillData
 	}{
 		{
 			name: "nil",
 
 			wantTable:  "agg_events_1d",
 			wantColumn: "toStartOfMonth(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfMonth(?) TO toStartOfMonth(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-2 * year),
+					fakeNow(),
+					int(month.Seconds()),
+				},
+			},
 		},
 		{
 			name: "empty",
@@ -42,6 +54,14 @@ func TestGetHistData(t *testing.T) {
 
 			wantTable:  "agg_events_1d",
 			wantColumn: "toStartOfMonth(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfMonth(?) TO toStartOfMonth(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-2 * year),
+					fakeNow(),
+					int(month.Seconds()),
+				},
+			},
 		},
 		{
 			name: "duration_5_hour",
@@ -52,6 +72,14 @@ func TestGetHistData(t *testing.T) {
 
 			wantTable:  "agg_events_10min",
 			wantColumn: "start_date",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfTenMinutes(?) TO toStartOfTenMinutes(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-5 * time.Hour),
+					fakeNow(),
+					int(_10min.Seconds()),
+				},
+			},
 		},
 		{
 			name: "duration_1_day",
@@ -62,6 +90,14 @@ func TestGetHistData(t *testing.T) {
 
 			wantTable:  "agg_events_10min",
 			wantColumn: "toStartOfHour(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfHour(?) TO toStartOfHour(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-day),
+					fakeNow(),
+					int(time.Hour.Seconds()),
+				},
+			},
 		},
 		{
 			name: "duration_1_month",
@@ -72,6 +108,14 @@ func TestGetHistData(t *testing.T) {
 
 			wantTable:  "agg_events_10min",
 			wantColumn: "toStartOfDay(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfDay(?) TO toStartOfDay(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-month),
+					fakeNow(),
+					int(day.Seconds()),
+				},
+			},
 		},
 		{
 			name: "duration_7_month",
@@ -82,16 +126,32 @@ func TestGetHistData(t *testing.T) {
 
 			wantTable:  "agg_events_1d",
 			wantColumn: "toStartOfWeek(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfWeek(?) TO toStartOfWeek(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-7 * month),
+					fakeNow(),
+					int(week.Seconds()),
+				},
+			},
 		},
 		{
 			name: "duration_1_year",
 
 			tr: &types.TimeRange{
-				Duration: 12 * month,
+				Duration: year,
 			},
 
 			wantTable:  "agg_events_1d",
 			wantColumn: "toStartOfMonth(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfMonth(?) TO toStartOfMonth(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-year),
+					fakeNow(),
+					int(month.Seconds()),
+				},
+			},
 		},
 		{
 			name: "absolute_old_1_month",
@@ -103,17 +163,33 @@ func TestGetHistData(t *testing.T) {
 
 			wantTable:  "agg_events_1d",
 			wantColumn: "start_date",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfDay(?) TO toStartOfDay(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-(3*month + 14*day)),
+					fakeNow().Add(-(2*month + 14*day)),
+					int(day.Seconds()),
+				},
+			},
 		},
 		{
 			name: "absolute_old_6_month",
 
 			tr: &types.TimeRange{
-				From: fakeNow().Add(-12 * month),
+				From: fakeNow().Add(-year),
 				To:   fakeNow().Add(-6 * month),
 			},
 
 			wantTable:  "agg_events_1d",
 			wantColumn: "toStartOfWeek(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfWeek(?) TO toStartOfWeek(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-year),
+					fakeNow().Add(-6 * month),
+					int(week.Seconds()),
+				},
+			},
 		},
 		{
 			name: "absolute_old_1_year",
@@ -125,6 +201,14 @@ func TestGetHistData(t *testing.T) {
 
 			wantTable:  "agg_events_1d",
 			wantColumn: "toStartOfMonth(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfMonth(?) TO toStartOfMonth(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-18 * month),
+					fakeNow().Add(-6 * month),
+					int(month.Seconds()),
+				},
+			},
 		},
 		{
 			name: "absolute_new_5_hour",
@@ -136,6 +220,14 @@ func TestGetHistData(t *testing.T) {
 
 			wantTable:  "agg_events_10min",
 			wantColumn: "start_date",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfTenMinutes(?) TO toStartOfTenMinutes(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-5 * time.Hour),
+					fakeNow(),
+					int(_10min.Seconds()),
+				},
+			},
 		},
 		{
 			name: "absolute_new_1_day",
@@ -147,6 +239,14 @@ func TestGetHistData(t *testing.T) {
 
 			wantTable:  "agg_events_10min",
 			wantColumn: "toStartOfHour(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfHour(?) TO toStartOfHour(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-day),
+					fakeNow(),
+					int(time.Hour.Seconds()),
+				},
+			},
 		},
 		{
 			name: "absolute_new_1_month",
@@ -158,6 +258,14 @@ func TestGetHistData(t *testing.T) {
 
 			wantTable:  "agg_events_10min",
 			wantColumn: "toStartOfDay(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfDay(?) TO toStartOfDay(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-month),
+					fakeNow(),
+					int(day.Seconds()),
+				},
+			},
 		},
 		{
 			name: "absolute_new_3_month",
@@ -169,6 +277,14 @@ func TestGetHistData(t *testing.T) {
 
 			wantTable:  "agg_events_10min",
 			wantColumn: "toStartOfWeek(start_date)",
+			wantWithFill: withFillData{
+				sql: "WITH FILL FROM toStartOfWeek(?) TO toStartOfWeek(?) STEP ?",
+				args: []any{
+					fakeNow().Add(-3 * month),
+					fakeNow(),
+					int(week.Seconds()),
+				},
+			},
 		},
 	}
 
@@ -178,10 +294,11 @@ func TestGetHistData(t *testing.T) {
 
 			r := newRepo(nil, false, nil, fakeNow)
 
-			gotTable, gotColumn := r.getHistData(tt.tr)
+			gotTable, gotColumn, gotWithFill := r.getHistData(tt.tr)
 
 			require.Equal(t, tt.wantTable, gotTable)
 			require.Equal(t, tt.wantColumn, gotColumn)
+			require.Equal(t, tt.wantWithFill, gotWithFill)
 		})
 	}
 }
@@ -2066,6 +2183,13 @@ func TestDiffByReleasesTotal(t *testing.T) {
 }
 
 func TestGetErrorHist(t *testing.T) {
+	const (
+		_10min = 10 * time.Minute
+		day    = 24 * time.Hour
+		month  = 28 * day
+		year   = 12 * month
+	)
+
 	var (
 		groupHash = uint64(123)
 		service   = "test-svc"
@@ -2102,8 +2226,9 @@ func TestGetErrorHist(t *testing.T) {
 					"SELECT toStartOfMonth(start_date), countMerge(counts) as counts" +
 					" FROM agg_events_1d" +
 					" GROUP BY toStartOfMonth(start_date)" +
-					" ORDER BY toStartOfMonth(start_date)",
-				args: []any{},
+					" ORDER BY toStartOfMonth(start_date)" +
+					" WITH FILL FROM toStartOfMonth(?) TO toStartOfMonth(?) STEP ?",
+				args: []any{fakeNow().Add(-2 * year), fakeNow(), int(month.Seconds())},
 
 				rows: &mockRowsCount{
 					count: 2,
@@ -2126,8 +2251,9 @@ func TestGetErrorHist(t *testing.T) {
 					" FROM agg_events_10min" +
 					" WHERE start_date >= ?" +
 					" GROUP BY start_date" +
-					" ORDER BY start_date",
-				args: []any{timeDiff},
+					" ORDER BY start_date" +
+					" WITH FILL FROM toStartOfTenMinutes(?) TO toStartOfTenMinutes(?) STEP ?",
+				args: []any{timeDiff, timeDiff, fakeNow(), int(_10min.Seconds())},
 
 				rows: &mockRowsCount{
 					count: 2,
@@ -2151,8 +2277,9 @@ func TestGetErrorHist(t *testing.T) {
 					" FROM agg_events_10min" +
 					" WHERE (start_date >= ? AND start_date <= ?)" +
 					" GROUP BY start_date" +
-					" ORDER BY start_date",
-				args: []any{timeDiff, fakeNow()},
+					" ORDER BY start_date" +
+					" WITH FILL FROM toStartOfTenMinutes(?) TO toStartOfTenMinutes(?) STEP ?",
+				args: []any{timeDiff, fakeNow(), timeDiff, fakeNow(), int(_10min.Seconds())},
 
 				rows: &mockRowsCount{
 					count: 2,
@@ -2185,8 +2312,9 @@ func TestGetErrorHist(t *testing.T) {
 					" FROM agg_events_10min" +
 					" WHERE filter1 = ? AND filter2 = ? AND _group_hash = ? AND env = ? AND source = ? AND service = ? AND release = ? AND start_date >= ?" +
 					" GROUP BY start_date" +
-					" ORDER BY start_date",
-				args: []any{"value1", "value2", groupHash, env, source, service, release, timeDiff},
+					" ORDER BY start_date" +
+					" WITH FILL FROM toStartOfTenMinutes(?) TO toStartOfTenMinutes(?) STEP ?",
+				args: []any{"value1", "value2", groupHash, env, source, service, release, timeDiff, timeDiff, fakeNow(), int(_10min.Seconds())},
 
 				rows: &mockRowsCount{
 					count: 2,

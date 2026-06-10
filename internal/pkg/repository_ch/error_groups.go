@@ -415,7 +415,7 @@ func (r *repository) GetTopErrorGroupsTotal(
 
 	var table string
 	if !req.TimeRange.IsEmpty() {
-		aggTable, startDate := r.getHistData(req.TimeRange)
+		aggTable, startDate, _ := r.getHistData(req.TimeRange)
 		q = q.Where(r.timeRangeCond(startDate, req.TimeRange))
 
 		table = aggTable
@@ -443,7 +443,7 @@ func (r *repository) GetErrorHist(
 	ctx context.Context,
 	req types.GetErrorHistRequest,
 ) ([]types.ErrorHistBucket, error) {
-	table, startDate := r.getHistData(req.TimeRange)
+	table, startDate, withFill := r.getHistData(req.TimeRange)
 
 	q := sq.
 		Select(
@@ -452,7 +452,8 @@ func (r *repository) GetErrorHist(
 		).
 		From(table).
 		GroupBy(startDate).
-		OrderBy(startDate)
+		OrderBy(startDate).
+		Suffix(withFill.sql, withFill.args...)
 
 	for col, val := range r.queryFilters() {
 		q = q.Where(sq.Eq{col: val})
@@ -1020,7 +1021,7 @@ func (r *repository) getErrorCounts(
 	ctx context.Context,
 	params getErrorCountsParams,
 ) (errorCounts, error) {
-	aggTable, startDate := r.getHistData(params.tr)
+	aggTable, startDate, _ := r.getHistData(params.tr)
 
 	q := sq.
 		Select(
@@ -1069,65 +1070,116 @@ func (r *repository) in() string {
 	return "IN"
 }
 
-func (r *repository) getHistData(tr *types.TimeRange) (string, string) {
+type withFillData struct {
+	sql  string
+	args []any
+}
+
+// getHistData returns `table`, `column` and WITH FILL data
+func (r *repository) getHistData(tr *types.TimeRange) (string, string, withFillData) {
 	const (
 		table_10min = "agg_events_10min"
 		table_1d    = "agg_events_1d"
+		startDate   = "start_date"
 
-		startDate    = "start_date"
-		startOfHour  = "toStartOfHour(start_date)"
-		startOfDay   = "toStartOfDay(start_date)"
-		startOfWeek  = "toStartOfWeek(start_date)"
-		startOfMonth = "toStartOfMonth(start_date)"
-
-		day   = 24 * time.Hour
-		month = 28 * day
+		_10min = 10 * time.Minute
+		hour   = time.Hour
+		day    = 24 * hour
+		week   = 7 * day
+		month  = 4 * week
+		year   = 12 * month
 
 		table_10min_TTL = 3 * month
+		table_1d_TTL    = 2 * year
 	)
 
+	startOf10Minutes := func(s string) string { return "toStartOfTenMinutes(" + s + ")" }
+	startOfHour := func(s string) string { return "toStartOfHour(" + s + ")" }
+	startOfDay := func(s string) string { return "toStartOfDay(" + s + ")" }
+	startOfWeek := func(s string) string { return "toStartOfWeek(" + s + ")" }
+	startOfMonth := func(s string) string { return "toStartOfMonth(" + s + ")" }
+
+	withFill := func(from, to time.Time, step time.Duration) withFillData {
+		var fn func(s string) string
+		switch step {
+		case _10min:
+			fn = startOf10Minutes
+		case hour:
+			fn = startOfHour
+		case day:
+			fn = startOfDay
+		case week:
+			fn = startOfWeek
+		case month:
+			fn = startOfMonth
+		default:
+			panic("invalid step")
+		}
+
+		return withFillData{
+			sql:  fmt.Sprintf("WITH FILL FROM %s TO %s STEP ?", fn("?"), fn("?")),
+			args: []any{from, to, int(step.Seconds())},
+		}
+	}
+
+	now := r.nowFn()
+
 	if tr.IsEmpty() {
-		return table_1d, startOfMonth
+		return table_1d, startOfMonth(startDate),
+			withFill(now.Add(-table_1d_TTL), now, month)
 	}
 
 	if tr.IsAbsolute() {
 		d := tr.AbsoluteDuration()
-		if r.nowFn().Sub(tr.From) > table_10min_TTL {
+		if now.Sub(tr.From) > table_10min_TTL {
 			switch {
 			case d <= month:
-				return table_1d, startDate
+				return table_1d, startDate,
+					withFill(tr.From, tr.To, day)
 			case d <= 7*month:
-				return table_1d, startOfWeek
+				return table_1d, startOfWeek(startDate),
+					withFill(tr.From, tr.To, week)
 			default:
-				return table_1d, startOfMonth
+				return table_1d, startOfMonth(startDate),
+					withFill(tr.From, tr.To, month)
 			}
 		}
 
 		// d <= table_10min_TTL (3 month)
 		switch {
 		case d <= 5*time.Hour:
-			return table_10min, startDate
+			return table_10min, startDate,
+				withFill(tr.From, tr.To, _10min)
 		case d <= day:
-			return table_10min, startOfHour
+			return table_10min, startOfHour(startDate),
+				withFill(tr.From, tr.To, hour)
 		case d <= month:
-			return table_10min, startOfDay
+			return table_10min, startOfDay(startDate),
+				withFill(tr.From, tr.To, day)
 		default:
-			return table_10min, startOfWeek
+			return table_10min, startOfWeek(startDate),
+				withFill(tr.From, tr.To, week)
 		}
 	}
 
 	d := tr.Duration
+	from := now.Add(-d.Abs())
 	switch {
 	case d <= 5*time.Hour:
-		return table_10min, startDate
+		return table_10min, startDate,
+			withFill(from, now, _10min)
 	case d <= day:
-		return table_10min, startOfHour
+		return table_10min, startOfHour(startDate),
+			withFill(from, now, hour)
 	case d <= month:
-		return table_10min, startOfDay
+		return table_10min, startOfDay(startDate),
+			withFill(from, now, day)
 	case d <= 7*month:
-		return table_1d, startOfWeek
+		return table_1d, startOfWeek(startDate),
+			withFill(from, now, week)
 	default:
-		return table_1d, startOfMonth
+		return table_1d, startOfMonth(startDate),
+			withFill(from, now, month)
 	}
 }
 
