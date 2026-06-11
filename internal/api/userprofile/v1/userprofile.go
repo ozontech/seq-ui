@@ -2,6 +2,7 @@ package userprofile_v1
 
 import (
 	"github.com/go-chi/chi/v5"
+
 	"github.com/ozontech/seq-ui/internal/api/profiles"
 	grpc_api "github.com/ozontech/seq-ui/internal/api/userprofile/v1/grpc"
 	http_api "github.com/ozontech/seq-ui/internal/api/userprofile/v1/http"

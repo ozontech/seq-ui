@@ -7,11 +7,12 @@ import (
 	"net/http"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/massexport/v1/util"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/tracing"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 // serveStart go doc.

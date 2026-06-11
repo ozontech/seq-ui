@@ -46,13 +46,12 @@ func (a *API) serveGetHist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	attributes := []attribute.KeyValue{
-		{Key: "service", Value: attribute.StringValue(httpReq.Service)},
-	}
+	attributes := []attribute.KeyValue{}
 	if httpReq.GroupHash != nil {
-		attributes = append(attributes, attribute.KeyValue{
-			Key: "group_hash", Value: attribute.StringValue(*httpReq.GroupHash),
-		})
+		attributes = append(attributes, attribute.KeyValue{Key: "group_hash", Value: attribute.StringValue(*httpReq.GroupHash)})
+	}
+	if httpReq.Service != nil {
+		attributes = append(attributes, attribute.KeyValue{Key: "service", Value: attribute.StringValue(*httpReq.Service)})
 	}
 	if httpReq.Env != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReq.Env)})
@@ -76,19 +75,17 @@ func (a *API) serveGetHist(w http.ResponseWriter, r *http.Request) {
 		Release:   httpReq.Release,
 		Duration:  parsedDuration,
 	}
-	buckets, err := a.service.GetHist(ctx, req)
+	hist, err := a.service.GetHist(ctx, req)
 	if err != nil {
 		httputil.ProcessError(wr, err)
 		return
 	}
 
-	wr.WriteJson(getHistResponse{
-		Buckets: newBuckets(buckets),
-	})
+	wr.WriteJson(newHistResp(hist))
 }
 
 type getHistRequest struct {
-	Service   string  `json:"service"`
+	Service   *string `json:"service"`
 	GroupHash *string `json:"group_hash,omitempty" format:"uint64"`
 	Env       *string `json:"env,omitempty"`
 	Source    *string `json:"source,omitempty"`
@@ -99,6 +96,8 @@ type getHistRequest struct {
 
 type getHistResponse struct {
 	Buckets []bucket `json:"buckets"`
+	// Interval between buckets in seconds.
+	Interval uint64 `json:"interval"`
 } //	@name	errorgroups.v1.GetHistResponse
 
 type bucket struct {
@@ -106,15 +105,18 @@ type bucket struct {
 	Count uint64    `json:"count"`
 } //	@name	errorgroups.v1.Bucket
 
-func newBuckets(source []types.ErrorHistBucket) []bucket {
-	buckets := make([]bucket, 0, len(source))
+func newHistResp(source types.ErrorHist) getHistResponse {
+	buckets := make([]bucket, 0, len(source.Buckets))
 
-	for _, b := range source {
+	for _, b := range source.Buckets {
 		buckets = append(buckets, bucket{
 			Time:  b.Time,
 			Count: b.Count,
 		})
 	}
 
-	return buckets
+	return getHistResponse{
+		Buckets:  buckets,
+		Interval: source.Interval,
+	}
 }

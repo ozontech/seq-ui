@@ -5,9 +5,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/throttled/throttled/v2"
 	"github.com/throttled/throttled/v2/store/memstore"
+
+	"github.com/ozontech/seq-ui/internal/app/config"
 )
 
 const rateLimiterQuantityPerCall = 1

@@ -9,9 +9,10 @@ import (
 	"net/http/pprof"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
+
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/swagger"
-	"go.uber.org/zap"
 )
 
 func serveHealth(mux *chi.Mux) {

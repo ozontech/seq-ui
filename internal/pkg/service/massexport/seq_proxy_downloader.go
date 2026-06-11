@@ -5,14 +5,15 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/metric"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
-	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type seqProxyDownloader struct {

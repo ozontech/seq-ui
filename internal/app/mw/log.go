@@ -6,9 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ozontech/seq-ui/tracing"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/ozontech/seq-ui/tracing"
 )
 
 var nonLogHeaders = map[string]struct{}{"authorization": {}}

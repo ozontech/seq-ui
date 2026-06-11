@@ -11,14 +11,15 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/metric"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
-	"go.uber.org/zap"
-	"golang.org/x/sync/errgroup"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type loadTask struct {

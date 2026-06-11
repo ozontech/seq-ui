@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"strings"
 
-	sq "github.com/Masterminds/squirrel"
 	"github.com/gofrs/uuid"
 	"github.com/jackc/pgx/v5"
+	sq "github.com/n-r-w/squirrel"
+
 	"github.com/ozontech/seq-ui/internal/app/types"
 	sqlb "github.com/ozontech/seq-ui/internal/pkg/repository/sql_builder"
 )

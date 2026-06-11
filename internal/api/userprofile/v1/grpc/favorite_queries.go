@@ -3,11 +3,12 @@ package grpc
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/ozontech/seq-ui/internal/api/grpcutil"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/pkg/userprofile/v1"
 	"github.com/ozontech/seq-ui/tracing"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 // GetFavoriteQueries returns user's favorite queries.

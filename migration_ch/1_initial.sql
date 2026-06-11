@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS seq_ui_server.events_raw
     log_tags Map(String, String),
     ttl DateTime DEFAULT now()
 )
-ENGINE MergeTree()
+ENGINE = MergeTree()
 PARTITION BY toStartOfTenMinutes(timestamp)
 ORDER BY (timestamp)
 TTL ttl + INTERVAL 10 MINUTES
@@ -53,7 +53,8 @@ AS SELECT
 FROM seq_ui_server.events_raw
 GROUP BY _group_hash, service, env, release, source, cluster;
 
-CREATE TABLE IF NOT EXISTS seq_ui_server.agg_events_10min (
+CREATE TABLE IF NOT EXISTS seq_ui_server.agg_events_10min
+(
     start_date DateTime NOT NULL,
     service String,
     _group_hash UInt64,
@@ -82,13 +83,15 @@ AS SELECT
 FROM seq_ui_server.events_raw
 GROUP BY start_date, _group_hash, service, env, release, source, cluster;
 
-CREATE TABLE IF NOT EXISTS seq_ui_server.services (
+CREATE TABLE IF NOT EXISTS seq_ui_server.services
+(
     env LowCardinality(String),
     cluster LowCardinality(String),
     service String,
     release String,
     ttl DateTime
-) ENGINE = ReplacingMergeTree()
+)
+ENGINE = ReplacingMergeTree()
 ORDER BY (cluster, env, service, release);
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS seq_ui_server.services_mv TO seq_ui_server.services
@@ -103,8 +106,12 @@ GROUP BY cluster, env, service, release;
 
 -- +goose Down
 DROP TABLE IF EXISTS seq_ui_server.events_raw;
-DROP TABLE IF EXISTS seq_ui_server.error_groups;
+
 DROP TABLE IF EXISTS seq_ui_server.error_groups_mv;
+DROP TABLE IF EXISTS seq_ui_server.error_groups;
+
+DROP TABLE IF EXISTS seq_ui_server.agg_events_10min_mv;
 DROP TABLE IF EXISTS seq_ui_server.agg_events_10min;
-DROP TABLE IF EXISTS seq_ui_server.services;
+
 DROP TABLE IF EXISTS seq_ui_server.services_mv;
+DROP TABLE IF EXISTS seq_ui_server.services;

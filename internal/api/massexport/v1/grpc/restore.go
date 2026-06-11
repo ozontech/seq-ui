@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/ozontech/seq-ui/internal/api/grpcutil"
 	massexport_v1 "github.com/ozontech/seq-ui/pkg/massexport/v1"
 	"github.com/ozontech/seq-ui/tracing"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 func (a *API) Restore(ctx context.Context, req *massexport_v1.RestoreRequest) (*massexport_v1.RestoreResponse, error) {

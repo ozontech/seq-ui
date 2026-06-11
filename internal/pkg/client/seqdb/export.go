@@ -7,12 +7,13 @@ import (
 	"fmt"
 	"io"
 
+	"go.uber.org/zap"
+
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/metric"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
-	"go.uber.org/zap"
 )
 
 const (

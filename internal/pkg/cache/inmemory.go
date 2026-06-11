@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dgraph-io/ristretto"
+
 	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/ozontech/seq-ui/metric"
 )

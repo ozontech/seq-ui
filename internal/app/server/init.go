@@ -9,14 +9,15 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	grpc_mw "github.com/grpc-ecosystem/go-grpc-middleware"
-	"github.com/ozontech/seq-ui/internal/api"
-	"github.com/ozontech/seq-ui/internal/app/mw"
-	"github.com/ozontech/seq-ui/logger"
-	"github.com/ozontech/seq-ui/tracing"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+
+	"github.com/ozontech/seq-ui/internal/api"
+	"github.com/ozontech/seq-ui/internal/app/mw"
+	"github.com/ozontech/seq-ui/logger"
+	"github.com/ozontech/seq-ui/tracing"
 )
 
 const (

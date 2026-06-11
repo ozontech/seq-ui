@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 
+	"go.opentelemetry.io/otel/attribute"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/aggregation_ts"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/api_error"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
-	"go.opentelemetry.io/otel/attribute"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequest) (*seqapi.GetAggregationResponse, error) {

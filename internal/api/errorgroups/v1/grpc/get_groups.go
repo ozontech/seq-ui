@@ -66,7 +66,6 @@ func (a *API) GetGroups(ctx context.Context, req *errorgroups.GetGroupsRequest) 
 		total  uint64
 		err    error
 	)
-
 	if req.Filter != nil && req.Filter.IsNew {
 		groups, total, err = a.service.GetNewErrorGroups(ctx, request)
 	} else {
@@ -83,14 +82,14 @@ func (a *API) GetGroups(ctx context.Context, req *errorgroups.GetGroupsRequest) 
 	}, nil
 }
 
-func groupsToProto(source []types.ErrorGroup) []*errorgroups.Group {
-	groups := make([]*errorgroups.Group, 0, len(source))
+func groupsToProto(source []types.ErrorGroup) []*errorgroups.GetGroupsResponse_Group {
+	groups := make([]*errorgroups.GetGroupsResponse_Group, 0, len(source))
 
 	for _, g := range source {
-		groups = append(groups, &errorgroups.Group{
+		groups = append(groups, &errorgroups.GetGroupsResponse_Group{
 			Hash:        g.Hash,
 			Message:     g.Message,
-			SeenTotal:   g.SeenTotal,
+			SeenTotal:   g.Count,
 			FirstSeenAt: timestamppb.New(g.FirstSeenAt),
 			LastSeenAt:  timestamppb.New(g.LastSeenAt),
 			Source:      g.Source,

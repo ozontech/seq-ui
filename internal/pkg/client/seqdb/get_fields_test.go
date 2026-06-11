@@ -5,12 +5,13 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1"
-	mock "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1/mock"
-	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+
+	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1"
+	mock "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1/mock"
+	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
 
 func Test_GRPCClient_GetFields(t *testing.T) {

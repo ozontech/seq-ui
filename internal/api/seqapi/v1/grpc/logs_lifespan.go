@@ -7,16 +7,17 @@ import (
 	"strconv"
 	"time"
 
+	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/durationpb"
+
 	"github.com/ozontech/seq-ui/internal/api/grpcutil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/lifespan"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
-	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 func (a *API) GetLogsLifespan(ctx context.Context, _ *seqapi.GetLogsLifespanRequest) (*seqapi.GetLogsLifespanResponse, error) {

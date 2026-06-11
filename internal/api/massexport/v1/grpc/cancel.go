@@ -3,10 +3,11 @@ package grpc
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/ozontech/seq-ui/internal/api/grpcutil"
 	"github.com/ozontech/seq-ui/pkg/massexport/v1"
 	"github.com/ozontech/seq-ui/tracing"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 func (a *API) Cancel(ctx context.Context, req *massexport.CancelRequest) (*massexport.CancelResponse, error) {

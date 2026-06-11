@@ -4,9 +4,10 @@ import (
 	"errors"
 	"runtime/debug"
 
+	"go.uber.org/zap"
+
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/metric"
-	"go.uber.org/zap"
 )
 
 func handleRecover(method string, recoverVal any) {

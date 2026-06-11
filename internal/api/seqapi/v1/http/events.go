@@ -5,13 +5,14 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
-	"go.opentelemetry.io/otel/attribute"
-	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
 )
 
 // serveGetEvent go doc.
