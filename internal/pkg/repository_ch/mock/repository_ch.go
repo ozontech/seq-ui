@@ -116,26 +116,26 @@ func (mr *MockRepositoryMockRecorder) GetErrorGroups(arg0, arg1 any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetErrorGroups", reflect.TypeOf((*MockRepository)(nil).GetErrorGroups), arg0, arg1)
 }
 
-// GetErrorGroupsCount mocks base method.
-func (m *MockRepository) GetErrorGroupsCount(arg0 context.Context, arg1 types.GetErrorGroupsRequest) (uint64, error) {
+// GetErrorGroupsTotal mocks base method.
+func (m *MockRepository) GetErrorGroupsTotal(arg0 context.Context, arg1 types.GetErrorGroupsRequest) (uint64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetErrorGroupsCount", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetErrorGroupsTotal", arg0, arg1)
 	ret0, _ := ret[0].(uint64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetErrorGroupsCount indicates an expected call of GetErrorGroupsCount.
-func (mr *MockRepositoryMockRecorder) GetErrorGroupsCount(arg0, arg1 any) *gomock.Call {
+// GetErrorGroupsTotal indicates an expected call of GetErrorGroupsTotal.
+func (mr *MockRepositoryMockRecorder) GetErrorGroupsTotal(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetErrorGroupsCount", reflect.TypeOf((*MockRepository)(nil).GetErrorGroupsCount), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetErrorGroupsTotal", reflect.TypeOf((*MockRepository)(nil).GetErrorGroupsTotal), arg0, arg1)
 }
 
 // GetErrorHist mocks base method.
-func (m *MockRepository) GetErrorHist(arg0 context.Context, arg1 types.GetErrorHistRequest) ([]types.ErrorHistBucket, error) {
+func (m *MockRepository) GetErrorHist(arg0 context.Context, arg1 types.GetErrorHistRequest) (types.ErrorHist, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetErrorHist", arg0, arg1)
-	ret0, _ := ret[0].([]types.ErrorHistBucket)
+	ret0, _ := ret[0].(types.ErrorHist)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -144,21 +144,6 @@ func (m *MockRepository) GetErrorHist(arg0 context.Context, arg1 types.GetErrorH
 func (mr *MockRepositoryMockRecorder) GetErrorHist(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetErrorHist", reflect.TypeOf((*MockRepository)(nil).GetErrorHist), arg0, arg1)
-}
-
-// GetErrorReleases mocks base method.
-func (m *MockRepository) GetErrorReleases(arg0 context.Context, arg1 types.GetErrorGroupReleasesRequest) ([]string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetErrorReleases", arg0, arg1)
-	ret0, _ := ret[0].([]string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetErrorReleases indicates an expected call of GetErrorReleases.
-func (mr *MockRepositoryMockRecorder) GetErrorReleases(arg0, arg1 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetErrorReleases", reflect.TypeOf((*MockRepository)(nil).GetErrorReleases), arg0, arg1)
 }
 
 // GetNewErrorGroups mocks base method.
@@ -176,19 +161,34 @@ func (mr *MockRepositoryMockRecorder) GetNewErrorGroups(arg0, arg1 any) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNewErrorGroups", reflect.TypeOf((*MockRepository)(nil).GetNewErrorGroups), arg0, arg1)
 }
 
-// GetNewErrorGroupsCount mocks base method.
-func (m *MockRepository) GetNewErrorGroupsCount(arg0 context.Context, arg1 types.GetErrorGroupsRequest) (uint64, error) {
+// GetNewErrorGroupsTotal mocks base method.
+func (m *MockRepository) GetNewErrorGroupsTotal(arg0 context.Context, arg1 types.GetErrorGroupsRequest) (uint64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetNewErrorGroupsCount", arg0, arg1)
+	ret := m.ctrl.Call(m, "GetNewErrorGroupsTotal", arg0, arg1)
 	ret0, _ := ret[0].(uint64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetNewErrorGroupsCount indicates an expected call of GetNewErrorGroupsCount.
-func (mr *MockRepositoryMockRecorder) GetNewErrorGroupsCount(arg0, arg1 any) *gomock.Call {
+// GetNewErrorGroupsTotal indicates an expected call of GetNewErrorGroupsTotal.
+func (mr *MockRepositoryMockRecorder) GetNewErrorGroupsTotal(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNewErrorGroupsCount", reflect.TypeOf((*MockRepository)(nil).GetNewErrorGroupsCount), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNewErrorGroupsTotal", reflect.TypeOf((*MockRepository)(nil).GetNewErrorGroupsTotal), arg0, arg1)
+}
+
+// GetReleases mocks base method.
+func (m *MockRepository) GetReleases(arg0 context.Context, arg1 types.GetReleasesRequest) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetReleases", arg0, arg1)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetReleases indicates an expected call of GetReleases.
+func (mr *MockRepositoryMockRecorder) GetReleases(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReleases", reflect.TypeOf((*MockRepository)(nil).GetReleases), arg0, arg1)
 }
 
 // GetServices mocks base method.
@@ -204,4 +204,34 @@ func (m *MockRepository) GetServices(arg0 context.Context, arg1 types.GetService
 func (mr *MockRepositoryMockRecorder) GetServices(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServices", reflect.TypeOf((*MockRepository)(nil).GetServices), arg0, arg1)
+}
+
+// GetTopErrorGroups mocks base method.
+func (m *MockRepository) GetTopErrorGroups(arg0 context.Context, arg1 types.GetTopErrorGroupsRequest) ([]types.TopErrorGroup, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTopErrorGroups", arg0, arg1)
+	ret0, _ := ret[0].([]types.TopErrorGroup)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTopErrorGroups indicates an expected call of GetTopErrorGroups.
+func (mr *MockRepositoryMockRecorder) GetTopErrorGroups(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTopErrorGroups", reflect.TypeOf((*MockRepository)(nil).GetTopErrorGroups), arg0, arg1)
+}
+
+// GetTopErrorGroupsTotal mocks base method.
+func (m *MockRepository) GetTopErrorGroupsTotal(arg0 context.Context, arg1 types.GetTopErrorGroupsRequest) (uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTopErrorGroupsTotal", arg0, arg1)
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTopErrorGroupsTotal indicates an expected call of GetTopErrorGroupsTotal.
+func (mr *MockRepositoryMockRecorder) GetTopErrorGroupsTotal(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTopErrorGroupsTotal", reflect.TypeOf((*MockRepository)(nil).GetTopErrorGroupsTotal), arg0, arg1)
 }

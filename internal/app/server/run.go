@@ -6,9 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ozontech/seq-ui/logger"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/ozontech/seq-ui/logger"
 )
 
 // Run starts accepting new connections until the context is done.

@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/redis/go-redis/v9"
+
 	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/ozontech/seq-ui/internal/pkg/redisclient"
 	"github.com/ozontech/seq-ui/metric"
-	"github.com/redis/go-redis/v9"
 )
 
 type redisCache struct {

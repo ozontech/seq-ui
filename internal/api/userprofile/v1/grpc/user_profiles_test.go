@@ -5,12 +5,13 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ozontech/seq-ui/internal/app/types"
-	"github.com/ozontech/seq-ui/pkg/userprofile/v1"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/ozontech/seq-ui/internal/app/types"
+	"github.com/ozontech/seq-ui/pkg/userprofile/v1"
 )
 
 func TestGetUserProfile(t *testing.T) {

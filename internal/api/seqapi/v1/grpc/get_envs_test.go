@@ -4,10 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
-	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
 
 func TestGetEnvs(t *testing.T) {

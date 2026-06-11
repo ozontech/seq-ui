@@ -9,9 +9,10 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/mock/gomock"
+
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/app/types"
-	"go.uber.org/mock/gomock"
 )
 
 func TestServeDelete(t *testing.T) {

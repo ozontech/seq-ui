@@ -26,16 +26,32 @@ type GetErrorGroupsRequest struct {
 
 type ErrorGroup struct {
 	Hash        uint64
+	Source      string
 	Message     string
-	SeenTotal   uint64
+	Count       uint64
 	FirstSeenAt time.Time
 	LastSeenAt  time.Time
-	Source      string
+}
+
+type GetTopErrorGroupsRequest struct {
+	Env       *string
+	Source    *string
+	Duration  *time.Duration
+	Limit     uint32
+	Offset    uint32
+	WithTotal bool
+}
+
+type TopErrorGroup struct {
+	Hash    uint64
+	Source  string
+	Message string
+	Count   uint64
 }
 
 type GetErrorHistRequest struct {
-	Service   string
 	GroupHash *uint64
+	Service   *string
 	Env       *string
 	Source    *string
 	Release   *string
@@ -47,21 +63,28 @@ type ErrorHistBucket struct {
 	Count uint64
 }
 
+type ErrorHist struct {
+	Buckets  []ErrorHistBucket
+	Interval uint64
+}
+
 type GetErrorGroupDetailsRequest struct {
-	Service   string
 	GroupHash uint64
 	Env       *string
 	Source    *string
+	Service   *string
 	Release   *string
 }
 
 func (r GetErrorGroupDetailsRequest) IsFullyFilled() bool {
 	return r.Env != nil && *r.Env != "" &&
-		r.Release != nil && *r.Release != ""
+		r.Release != nil && *r.Release != "" &&
+		r.Service != nil && *r.Service != "" &&
+		r.Source != nil && *r.Source != ""
 }
 
 type ErrorGroupDetails struct {
-	GroupHash     uint64
+	Hash          uint64
 	Message       string
 	SeenTotal     uint64
 	FirstSeenAt   time.Time
@@ -78,6 +101,8 @@ type ErrorGroupDistribution struct {
 
 type ErrorGroupDistributions struct {
 	ByEnv     []ErrorGroupDistribution
+	BySource  []ErrorGroupDistribution
+	ByService []ErrorGroupDistribution
 	ByRelease []ErrorGroupDistribution
 }
 
@@ -85,12 +110,9 @@ type ErrorGroupCount map[string]uint64
 
 type ErrorGroupCounts struct {
 	ByEnv     ErrorGroupCount
+	BySource  ErrorGroupCount
+	ByService ErrorGroupCount
 	ByRelease ErrorGroupCount
-}
-
-type GetErrorGroupReleasesRequest struct {
-	Service string
-	Env     *string
 }
 
 type GetServicesRequest struct {
@@ -98,6 +120,11 @@ type GetServicesRequest struct {
 	Env    *string
 	Limit  uint32
 	Offset uint32
+}
+
+type GetReleasesRequest struct {
+	Service string
+	Env     *string
 }
 
 type DiffByReleasesRequest struct {

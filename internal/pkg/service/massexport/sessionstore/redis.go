@@ -8,12 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
+
 	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/internal/pkg/redisclient"
 	"github.com/ozontech/seq-ui/logger"
-	"github.com/redis/go-redis/v9"
-	"go.uber.org/zap"
 )
 
 type redisSessionStore struct {

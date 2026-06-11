@@ -7,10 +7,11 @@ import (
 	"strconv"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/tracing"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 // serveDiffByReleases go doc.
@@ -22,7 +23,7 @@ import (
 //	@Success	200		{object}	diffByReleasesResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error			"An unexpected error response"
 //	@Security	bearer
-func (a *API) serveGetDiffByReleases(w http.ResponseWriter, r *http.Request) {
+func (a *API) serveDiffByReleases(w http.ResponseWriter, r *http.Request) {
 	ctx, span := tracing.StartSpan(r.Context(), "errorgroups_v1_diff_by_releases")
 	defer span.End()
 

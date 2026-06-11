@@ -1,6 +1,6 @@
 package sql_builder
 
-import sq "github.com/Masterminds/squirrel"
+import sq "github.com/n-r-w/squirrel"
 
 func Select(columns ...string) sq.SelectBuilder {
 	return sq.StatementBuilder.PlaceholderFormat(sq.Dollar).Select(columns...)
