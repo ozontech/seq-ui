@@ -86,6 +86,7 @@ message GetHistRequest {
 
 message GetHistResponse {
   repeated Bucket buckets = 1;
+  uint64 interval = 2;
 }
 
 message Bucket {

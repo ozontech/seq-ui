@@ -15,8 +15,11 @@ import (
 
 func TestGetHistData(t *testing.T) {
 	const (
-		day   = 24 * time.Hour
-		month = 30 * day
+		_10min = 10 * time.Minute
+		hour   = time.Hour
+		day    = 24 * time.Hour
+		week   = 7 * day
+		month  = 31 * day
 	)
 
 	tests := []struct {
@@ -24,63 +27,77 @@ func TestGetHistData(t *testing.T) {
 
 		duration time.Duration
 
-		wantTable, wantColumn string
+		want histData
 	}{
 		{
 			name: "nil",
 
 			duration: -1,
-
-			wantTable:  "agg_events_1d",
-			wantColumn: "toStartOfMonth(start_date)",
+			want: histData{
+				table:    "agg_events_1d",
+				column:   "toStartOfMonth(start_date)",
+				interval: uint64(month.Seconds()),
+			},
 		},
 		{
 			name: "zero",
 
 			duration: 0,
-
-			wantTable:  "agg_events_1d",
-			wantColumn: "toStartOfMonth(start_date)",
+			want: histData{
+				table:    "agg_events_1d",
+				column:   "toStartOfMonth(start_date)",
+				interval: uint64(month.Seconds()),
+			},
 		},
 		{
 			name: "5_hour",
 
 			duration: 5 * time.Hour,
-
-			wantTable:  "agg_events_10min",
-			wantColumn: "start_date",
+			want: histData{
+				table:    "agg_events_10min",
+				column:   "start_date",
+				interval: uint64(_10min.Seconds()),
+			},
 		},
 		{
 			name: "1_day",
 
 			duration: day,
-
-			wantTable:  "agg_events_10min",
-			wantColumn: "toStartOfHour(start_date)",
+			want: histData{
+				table:    "agg_events_10min",
+				column:   "toStartOfHour(start_date)",
+				interval: uint64(hour.Seconds()),
+			},
 		},
 		{
 			name: "1_month",
 
 			duration: month,
-
-			wantTable:  "agg_events_10min",
-			wantColumn: "toStartOfDay(start_date)",
+			want: histData{
+				table:    "agg_events_10min",
+				column:   "toStartOfDay(start_date)",
+				interval: uint64(day.Seconds()),
+			},
 		},
 		{
 			name: "7_month",
 
 			duration: 7 * month,
-
-			wantTable:  "agg_events_1d",
-			wantColumn: "toStartOfWeek(start_date)",
+			want: histData{
+				table:    "agg_events_1d",
+				column:   "toStartOfWeek(start_date)",
+				interval: uint64(week.Seconds()),
+			},
 		},
 		{
 			name: "1_year",
 
 			duration: 12 * month,
-
-			wantTable:  "agg_events_1d",
-			wantColumn: "toStartOfMonth(start_date)",
+			want: histData{
+				table:    "agg_events_1d",
+				column:   "toStartOfMonth(start_date)",
+				interval: uint64(month.Seconds()),
+			},
 		},
 	}
 
@@ -93,10 +110,8 @@ func TestGetHistData(t *testing.T) {
 				dur = &tt.duration
 			}
 
-			gotTable, gotColumn := getHistData(dur)
-
-			require.Equal(t, tt.wantTable, gotTable)
-			require.Equal(t, tt.wantColumn, gotColumn)
+			got := getHistData(dur)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -448,14 +463,10 @@ func TestGetErrorGroupsTotal(t *testing.T) {
 			},
 
 			mockConn: &mockConnRow{
-				query: fmt.Sprintf(
-					"SELECT count() FROM (%s) AS subQ",
+				query: "SELECT uniq(_group_hash)" +
+					" FROM error_groups" +
+					" WHERE service = ?",
 
-					"SELECT maxMerge(last_seen_at) AS last_seen_at"+
-						" FROM error_groups"+
-						" WHERE service = ?"+
-						" GROUP BY _group_hash",
-				),
 				args: []any{service},
 			},
 		},
@@ -476,16 +487,10 @@ func TestGetErrorGroupsTotal(t *testing.T) {
 			},
 
 			mockConn: &mockConnRow{
-				query: fmt.Sprintf(
-					"SELECT count() FROM (%s) AS subQ",
-
-					"SELECT maxMerge(last_seen_at) AS last_seen_at"+
-						" FROM error_groups"+
-						" WHERE service = ? AND filter1 = ? AND filter2 = ? AND env = ? AND source = ? AND release = ?"+
-						" GROUP BY _group_hash"+
-						" HAVING last_seen_at >= ?",
-				),
-				args: []any{service, "value1", "value2", env, source, release, timeDiff},
+				query: "SELECT uniq(_group_hash)" +
+					" FROM agg_events_10min" +
+					" WHERE env = ? AND filter1 = ? AND filter2 = ? AND release = ? AND service = ? AND source = ? AND toStartOfHour(start_date) >= ?",
+				args: []any{env, "value1", "value2", release, service, source, timeDiff},
 			},
 		},
 		{
@@ -1114,9 +1119,9 @@ func TestGetTopErrorGroupsTotal(t *testing.T) {
 			req: types.GetTopErrorGroupsRequest{},
 
 			mockConn: &mockConnRow{
-				query: "" +
-					"SELECT uniq(_group_hash)" +
-					" FROM error_groups_brief",
+				query: "SELECT uniq(_group_hash)" +
+					" FROM error_groups_brief" +
+					" WHERE (1=1)",
 
 				args: []any{},
 			},
@@ -1129,10 +1134,9 @@ func TestGetTopErrorGroupsTotal(t *testing.T) {
 			},
 
 			mockConn: &mockConnRow{
-				query: "" +
-					"SELECT uniq(_group_hash)" +
+				query: "SELECT uniq(_group_hash)" +
 					" FROM agg_events_10min" +
-					" WHERE toStartOfHour(start_date) >= ?",
+					" WHERE (1=1) AND toStartOfHour(start_date) >= ?",
 
 				args: []any{timeDiff},
 			},
@@ -1151,12 +1155,11 @@ func TestGetTopErrorGroupsTotal(t *testing.T) {
 			},
 
 			mockConn: &mockConnRow{
-				query: "" +
-					"SELECT uniq(_group_hash)" +
+				query: "SELECT uniq(_group_hash)" +
 					" FROM error_groups_brief" +
-					" WHERE filter1 = ? AND filter2 = ? AND env = ? AND source = ?",
+					" WHERE env = ? AND filter1 = ? AND filter2 = ? AND source = ?",
 
-				args: []any{"value1", "value2", env, source},
+				args: []any{env, "value1", "value2", source},
 			},
 		},
 		{
@@ -1531,14 +1534,9 @@ func TestDiffByReleasesTotal(t *testing.T) {
 			},
 
 			mockConn: &mockConnRow{
-				query: fmt.Sprintf(
-					"SELECT count() FROM (%s) AS subQ",
-
-					"SELECT _group_hash"+
-						" FROM error_groups"+
-						" WHERE release IN (?,?) AND service = ?"+
-						" GROUP BY _group_hash",
-				),
+				query: "SELECT uniq(_group_hash)" +
+					" FROM error_groups" +
+					" WHERE release IN (?,?) AND service = ?",
 				args: []any{releases[0], releases[1], service},
 			},
 		},
@@ -1558,15 +1556,10 @@ func TestDiffByReleasesTotal(t *testing.T) {
 			},
 
 			mockConn: &mockConnRow{
-				query: fmt.Sprintf(
-					"SELECT count() FROM (%s) AS subQ",
-
-					"SELECT _group_hash"+
-						" FROM error_groups"+
-						" WHERE release IN (?,?) AND service = ? AND filter1 = ? AND filter2 = ? AND env = ? AND source = ?"+
-						" GROUP BY _group_hash",
-				),
-				args: []any{releases[0], releases[1], service, "value1", "value2", env, source},
+				query: "SELECT uniq(_group_hash)" +
+					" FROM error_groups" +
+					" WHERE env = ? AND filter1 = ? AND filter2 = ? AND release IN (?,?) AND service = ? AND source = ?",
+				args: []any{env, "value1", "value2", releases[0], releases[1], service, source},
 			},
 		},
 		{
@@ -1730,7 +1723,7 @@ func TestGetErrorHist(t *testing.T) {
 			got, err := repo.GetErrorHist(context.Background(), tt.req)
 
 			require.Equal(t, tt.wantErr, err != nil)
-			require.Equal(t, tt.wantBucketsCount, len(got))
+			require.Equal(t, tt.wantBucketsCount, len(got.Buckets))
 		})
 	}
 }

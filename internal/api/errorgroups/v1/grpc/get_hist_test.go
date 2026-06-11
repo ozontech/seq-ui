@@ -33,8 +33,8 @@ func TestGetHist(t *testing.T) {
 	type mockArgs struct {
 		req types.GetErrorHistRequest
 
-		buckets []types.ErrorHistBucket
-		err     error
+		hist types.ErrorHist
+		err  error
 	}
 
 	tests := []struct {
@@ -62,6 +62,7 @@ func TestGetHist(t *testing.T) {
 					{Time: timestamppb.New(oneMinuteAgo), Count: 10},
 					{Time: timestamppb.New(twoMinutesAgo), Count: 20},
 				},
+				Interval: 123,
 			},
 
 			mockArgs: &mockArgs{
@@ -74,9 +75,12 @@ func TestGetHist(t *testing.T) {
 					Duration:  &duration,
 				},
 
-				buckets: []types.ErrorHistBucket{
-					{Time: oneMinuteAgo, Count: 10},
-					{Time: twoMinutesAgo, Count: 20},
+				hist: types.ErrorHist{
+					Buckets: []types.ErrorHistBucket{
+						{Time: oneMinuteAgo, Count: 10},
+						{Time: twoMinutesAgo, Count: 20},
+					},
+					Interval: 123,
 				},
 			},
 		},
@@ -107,7 +111,7 @@ func TestGetHist(t *testing.T) {
 			if ma := tt.mockArgs; ma != nil {
 				mockedSvc.EXPECT().
 					GetHist(gomock.Any(), ma.req).
-					Return(ma.buckets, ma.err).
+					Return(ma.hist, ma.err).
 					Times(1)
 			}
 

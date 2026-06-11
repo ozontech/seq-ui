@@ -55,25 +55,26 @@ func (a *API) GetHist(ctx context.Context, req *errorgroups.GetHistRequest) (*er
 		Release:   req.Release,
 		Duration:  duration,
 	}
-	buckets, err := a.service.GetHist(ctx, request)
+	hist, err := a.service.GetHist(ctx, request)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}
 
-	return &errorgroups.GetHistResponse{
-		Buckets: bucketsToProto(buckets),
-	}, nil
+	return histToProto(hist), nil
 }
 
-func bucketsToProto(source []types.ErrorHistBucket) []*errorgroups.Bucket {
-	buckets := make([]*errorgroups.Bucket, 0, len(source))
+func histToProto(source types.ErrorHist) *errorgroups.GetHistResponse {
+	buckets := make([]*errorgroups.Bucket, 0, len(source.Buckets))
 
-	for _, b := range source {
+	for _, b := range source.Buckets {
 		buckets = append(buckets, &errorgroups.Bucket{
 			Time:  timestamppb.New(b.Time),
 			Count: b.Count,
 		})
 	}
 
-	return buckets
+	return &errorgroups.GetHistResponse{
+		Buckets:  buckets,
+		Interval: source.Interval,
+	}
 }

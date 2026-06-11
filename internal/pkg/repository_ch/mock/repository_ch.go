@@ -132,10 +132,10 @@ func (mr *MockRepositoryMockRecorder) GetErrorGroupsTotal(arg0, arg1 any) *gomoc
 }
 
 // GetErrorHist mocks base method.
-func (m *MockRepository) GetErrorHist(arg0 context.Context, arg1 types.GetErrorHistRequest) ([]types.ErrorHistBucket, error) {
+func (m *MockRepository) GetErrorHist(arg0 context.Context, arg1 types.GetErrorHistRequest) (types.ErrorHist, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetErrorHist", arg0, arg1)
-	ret0, _ := ret[0].([]types.ErrorHistBucket)
+	ret0, _ := ret[0].(types.ErrorHist)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

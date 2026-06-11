@@ -607,7 +607,9 @@ func TestGetHist(t *testing.T) {
 				mockedRepo.EXPECT().
 					GetErrorHist(gomock.Any(), ma.req).
 					Return(
-						slices.Repeat([]types.ErrorHistBucket{{}}, ma.bucketsCount),
+						types.ErrorHist{
+							Buckets: slices.Repeat([]types.ErrorHistBucket{{}}, ma.bucketsCount),
+						},
 						ma.err,
 					).
 					Times(1)
@@ -620,7 +622,7 @@ func TestGetHist(t *testing.T) {
 				return
 			}
 
-			require.Equal(t, tt.wantBucketsCount, len(got))
+			require.Equal(t, tt.wantBucketsCount, len(got.Buckets))
 		})
 	}
 }

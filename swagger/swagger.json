@@ -1933,6 +1933,10 @@
                     "items": {
                         "$ref": "#/definitions/errorgroups.v1.Bucket"
                     }
+                },
+                "interval": {
+                    "description": "Interval between buckets in seconds.",
+                    "type": "integer"
                 }
             }
         },

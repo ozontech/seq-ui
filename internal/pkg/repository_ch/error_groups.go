@@ -180,29 +180,27 @@ func (r *repository) GetErrorGroupsTotal(
 	ctx context.Context,
 	req types.GetErrorGroupsRequest,
 ) (uint64, error) {
-	subQ := sq.
-		Select("maxMerge(last_seen_at) AS last_seen_at").
-		From("error_groups").
-		Where(sq.Eq{"service": req.Service}).
-		GroupBy("_group_hash")
-
+	where := sq.Eq{
+		"service": req.Service,
+	}
 	for col, val := range r.queryFilters() {
-		subQ = subQ.Where(sq.Eq{col: val})
+		where[col] = val
 	}
 	if req.Env != nil && *req.Env != "" {
-		subQ = subQ.Where(sq.Eq{"env": *req.Env})
+		where["env"] = *req.Env
 	}
 	if req.Source != nil && *req.Source != "" {
-		subQ = subQ.Where(sq.Eq{"source": *req.Source})
+		where["source"] = *req.Source
 	}
 	if req.Release != nil && *req.Release != "" {
-		subQ = subQ.Where(sq.Eq{"release": *req.Release})
-	}
-	if req.Duration != nil && *req.Duration != 0 {
-		subQ = subQ.Having(sq.GtOrEq{"last_seen_at": r.nowFn().Add(-req.Duration.Abs())})
+		where["release"] = *req.Release
 	}
 
-	return r.getTotal(ctx, subQ)
+	return r.getTotal(ctx, getTotalParams{
+		where:    where,
+		table:    "error_groups",
+		duration: req.Duration,
+	})
 }
 
 func (r *repository) GetNewErrorGroups(
@@ -299,7 +297,22 @@ func (r *repository) GetNewErrorGroupsTotal(
 		subQ = subQ.Having(sq.GtOrEq{"minMerge(first_seen_at)": r.nowFn().Add(-req.Duration.Abs())})
 	}
 
-	return r.getTotal(ctx, subQ)
+	q := sq.Select("count()").FromSelect(subQ, "subQ")
+
+	query, args := q.MustSql()
+	metricLabels := []string{"error_groups", "SELECT"}
+	row := r.conn.QueryRow(ctx, metricLabels, query, args...)
+
+	var total uint64
+	if err := row.Scan(&total); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, nil
+		}
+		incErrorMetric(err, metricLabels)
+		return 0, fmt.Errorf("failed to get error groups count: %w", err)
+	}
+
+	return total, nil
 }
 
 func (r *repository) GetTopErrorGroups(
@@ -402,58 +415,38 @@ func (r *repository) GetTopErrorGroupsTotal(
 	ctx context.Context,
 	req types.GetTopErrorGroupsRequest,
 ) (uint64, error) {
-	q := sq.Select("uniq(_group_hash)")
-
+	where := sq.Eq{}
 	for col, val := range r.queryFilters() {
-		q = q.Where(sq.Eq{col: val})
+		where[col] = val
 	}
 	if req.Env != nil && *req.Env != "" {
-		q = q.Where(sq.Eq{"env": *req.Env})
+		where["env"] = *req.Env
 	}
 	if req.Source != nil && *req.Source != "" {
-		q = q.Where(sq.Eq{"source": *req.Source})
+		where["source"] = *req.Source
 	}
 
-	var table string
-	if req.Duration != nil && *req.Duration != 0 {
-		aggTable, startDate := getHistData(req.Duration)
-		q = q.Where(sq.GtOrEq{startDate: r.nowFn().Add(-req.Duration.Abs())})
-
-		table = aggTable
-	} else {
-		table = "error_groups_brief"
-	}
-
-	query, args := q.From(table).MustSql()
-	metricLabels := []string{table, "SELECT"}
-	row := r.conn.QueryRow(ctx, metricLabels, query, args...)
-
-	var total uint64
-	if err := row.Scan(&total); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return 0, nil
-		}
-		incErrorMetric(err, metricLabels)
-		return 0, fmt.Errorf("failed to get top error groups count: %w", err)
-	}
-
-	return total, nil
+	return r.getTotal(ctx, getTotalParams{
+		table:    "error_groups_brief",
+		where:    where,
+		duration: req.Duration,
+	})
 }
 
 func (r *repository) GetErrorHist(
 	ctx context.Context,
 	req types.GetErrorHistRequest,
-) ([]types.ErrorHistBucket, error) {
-	table, startDate := getHistData(req.Duration)
+) (types.ErrorHist, error) {
+	histData := getHistData(req.Duration)
 
 	q := sq.
 		Select(
-			startDate,
+			histData.column,
 			"countMerge(counts) as counts",
 		).
-		From(table).
-		GroupBy(startDate).
-		OrderBy(startDate)
+		From(histData.table).
+		GroupBy(histData.column).
+		OrderBy(histData.column)
 
 	for col, val := range r.queryFilters() {
 		q = q.Where(sq.Eq{col: val})
@@ -474,7 +467,7 @@ func (r *repository) GetErrorHist(
 		q = q.Where(sq.Eq{"release": *req.Release})
 	}
 	if req.Duration != nil && *req.Duration != 0 {
-		q = q.Where(sq.GtOrEq{startDate: r.nowFn().Add(-req.Duration.Abs())})
+		q = q.Where(sq.GtOrEq{histData.column: r.nowFn().Add(-req.Duration.Abs())})
 	}
 
 	query, args := q.MustSql()
@@ -482,7 +475,7 @@ func (r *repository) GetErrorHist(
 	rows, err := r.conn.Query(ctx, metricLabels, query, args...)
 	if err != nil {
 		incErrorMetric(err, metricLabels)
-		return nil, fmt.Errorf("failed to get error hist: %w", err)
+		return types.ErrorHist{}, fmt.Errorf("failed to get error hist: %w", err)
 	}
 
 	var buckets []types.ErrorHistBucket
@@ -492,12 +485,15 @@ func (r *repository) GetErrorHist(
 			&bucket.Time,
 			&bucket.Count,
 		); err != nil {
-			return nil, fmt.Errorf("failed to scan row: %w", err)
+			return types.ErrorHist{}, fmt.Errorf("failed to scan row: %w", err)
 		}
 		buckets = append(buckets, bucket)
 	}
 
-	return buckets, nil
+	return types.ErrorHist{
+		Buckets:  buckets,
+		Interval: histData.interval,
+	}, nil
 }
 
 func (r *repository) GetErrorDetails(
@@ -841,26 +837,24 @@ func (r *repository) DiffByReleasesTotal(
 	ctx context.Context,
 	req types.DiffByReleasesRequest,
 ) (uint64, error) {
-	subQ := sq.
-		Select("_group_hash").
-		From("error_groups").
-		Where(sq.Eq{
-			"service": req.Service,
-			"release": req.Releases,
-		}).
-		GroupBy("_group_hash")
-
+	where := sq.Eq{
+		"service": req.Service,
+		"release": req.Releases,
+	}
 	for col, val := range r.queryFilters() {
-		subQ = subQ.Where(sq.Eq{col: val})
+		where[col] = val
 	}
 	if req.Env != nil && *req.Env != "" {
-		subQ = subQ.Where(sq.Eq{"env": *req.Env})
+		where["env"] = *req.Env
 	}
 	if req.Source != nil && *req.Source != "" {
-		subQ = subQ.Where(sq.Eq{"source": *req.Source})
+		where["source"] = *req.Source
 	}
 
-	return r.getTotal(ctx, subQ)
+	return r.getTotal(ctx, getTotalParams{
+		table: "error_groups",
+		where: where,
+	})
 }
 
 type getHashSubQueryParams struct {
@@ -892,14 +886,32 @@ func (r *repository) getHashSubQuery(params getHashSubQueryParams) sq.SelectBuil
 	return subQ
 }
 
+type getTotalParams struct {
+	table    string
+	where    sq.Eq
+	duration *time.Duration
+}
+
 func (r *repository) getTotal(
 	ctx context.Context,
-	subQ sq.SelectBuilder,
+	params getTotalParams,
 ) (uint64, error) {
-	q := sq.Select("count()").FromSelect(subQ, "subQ")
+	q := sq.
+		Select("uniq(_group_hash)").
+		Where(params.where)
 
-	query, args := q.MustSql()
-	metricLabels := []string{"error_groups", "SELECT"}
+	var table string
+	if dur := params.duration; dur != nil && *dur != 0 {
+		histData := getHistData(dur)
+		q = q.Where(sq.GtOrEq{histData.column: r.nowFn().Add(-dur.Abs())})
+
+		table = histData.table
+	} else {
+		table = params.table
+	}
+
+	query, args := q.From(table).MustSql()
+	metricLabels := []string{table, "SELECT"}
 	row := r.conn.QueryRow(ctx, metricLabels, query, args...)
 
 	var total uint64
@@ -908,7 +920,7 @@ func (r *repository) getTotal(
 			return 0, nil
 		}
 		incErrorMetric(err, metricLabels)
-		return 0, fmt.Errorf("failed to get error groups count: %w", err)
+		return 0, fmt.Errorf("failed to get total: %w", err)
 	}
 
 	return total, nil
@@ -1021,16 +1033,16 @@ func (r *repository) getErrorCounts(
 	ctx context.Context,
 	params getErrorCountsParams,
 ) (errorCounts, error) {
-	aggTable, startDate := getHistData(params.duration)
+	histData := getHistData(params.duration)
 
 	q := sq.
 		Select(
 			"_group_hash",
 			"countMerge(counts) as count",
 		).
-		From(aggTable).
+		From(histData.table).
 		Where(params.where).
-		Where(sq.GtOrEq{startDate: r.nowFn().Add(-params.duration.Abs())}).
+		Where(sq.GtOrEq{histData.column: r.nowFn().Add(-params.duration.Abs())}).
 		GroupBy("_group_hash")
 
 	if params.orderBy != "" {
@@ -1044,7 +1056,7 @@ func (r *repository) getErrorCounts(
 	}
 
 	query, args := q.MustSql()
-	metricLabels := []string{aggTable, "SELECT"}
+	metricLabels := []string{histData.table, "SELECT"}
 	rows, err := r.conn.Query(ctx, metricLabels, query, args...)
 	if err != nil {
 		incErrorMetric(err, metricLabels)
@@ -1091,7 +1103,13 @@ func orderBy(o types.ErrorGroupsOrder, sub bool) string {
 	return seenTotal
 }
 
-func getHistData(duration *time.Duration) (string, string) {
+type histData struct {
+	table    string
+	column   string
+	interval uint64
+}
+
+func getHistData(duration *time.Duration) histData {
 	const (
 		table_10min = "agg_events_10min"
 		table_1d    = "agg_events_1d"
@@ -1102,26 +1120,33 @@ func getHistData(duration *time.Duration) (string, string) {
 		startOfWeek  = "toStartOfWeek(start_date)"
 		startOfMonth = "toStartOfMonth(start_date)"
 
-		day   = 24 * time.Hour
-		month = 30 * day
+		_10min = 10 * time.Minute
+		hour   = time.Hour
+		day    = 24 * hour
+		week   = 7 * day
+		month  = 31 * day
 	)
 
+	data := func(table, column string, interval time.Duration) histData {
+		return histData{table: table, column: column, interval: uint64(interval.Seconds())}
+	}
+
 	if duration == nil || *duration == 0 {
-		return table_1d, startOfMonth
+		return data(table_1d, startOfMonth, month)
 	}
 
 	// try get ~30 buckets
 	d := *duration
 	switch {
 	case d <= 5*time.Hour:
-		return table_10min, startDate
+		return data(table_10min, startDate, _10min)
 	case d <= day:
-		return table_10min, startOfHour
+		return data(table_10min, startOfHour, hour)
 	case d <= month:
-		return table_10min, startOfDay
+		return data(table_10min, startOfDay, day)
 	case d <= 7*month:
-		return table_1d, startOfWeek
+		return data(table_1d, startOfWeek, week)
 	default:
-		return table_1d, startOfMonth
+		return data(table_1d, startOfMonth, month)
 	}
 }

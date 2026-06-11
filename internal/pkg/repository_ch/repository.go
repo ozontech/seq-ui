@@ -22,7 +22,7 @@ type Repository interface {
 	GetTopErrorGroups(context.Context, types.GetTopErrorGroupsRequest) ([]types.TopErrorGroup, error)
 	GetTopErrorGroupsTotal(context.Context, types.GetTopErrorGroupsRequest) (uint64, error)
 
-	GetErrorHist(context.Context, types.GetErrorHistRequest) ([]types.ErrorHistBucket, error)
+	GetErrorHist(context.Context, types.GetErrorHistRequest) (types.ErrorHist, error)
 	GetErrorDetails(context.Context, types.GetErrorGroupDetailsRequest) (types.ErrorGroupDetails, error)
 	GetErrorCounts(context.Context, types.GetErrorGroupDetailsRequest) (types.ErrorGroupCounts, error)
 

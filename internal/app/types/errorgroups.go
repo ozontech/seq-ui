@@ -63,6 +63,11 @@ type ErrorHistBucket struct {
 	Count uint64
 }
 
+type ErrorHist struct {
+	Buckets  []ErrorHistBucket
+	Interval uint64
+}
+
 type GetErrorGroupDetailsRequest struct {
 	GroupHash uint64
 	Env       *string

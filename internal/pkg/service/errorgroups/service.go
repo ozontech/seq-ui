@@ -23,7 +23,7 @@ type Service interface {
 	GetTopErrorGroups(context.Context, types.GetTopErrorGroupsRequest) ([]types.TopErrorGroup, uint64, error)
 
 	GetDetails(context.Context, types.GetErrorGroupDetailsRequest) (types.ErrorGroupDetails, error)
-	GetHist(context.Context, types.GetErrorHistRequest) ([]types.ErrorHistBucket, error)
+	GetHist(context.Context, types.GetErrorHistRequest) (types.ErrorHist, error)
 
 	GetServices(context.Context, types.GetServicesRequest) ([]string, error)
 	GetReleases(context.Context, types.GetReleasesRequest) ([]string, error)
@@ -142,7 +142,7 @@ func (s *service) GetTopErrorGroups(
 func (s *service) GetHist(
 	ctx context.Context,
 	req types.GetErrorHistRequest,
-) ([]types.ErrorHistBucket, error) {
+) (types.ErrorHist, error) {
 	return s.repo.GetErrorHist(ctx, req)
 }
 

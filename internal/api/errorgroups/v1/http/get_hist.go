@@ -75,15 +75,13 @@ func (a *API) serveGetHist(w http.ResponseWriter, r *http.Request) {
 		Release:   httpReq.Release,
 		Duration:  parsedDuration,
 	}
-	buckets, err := a.service.GetHist(ctx, req)
+	hist, err := a.service.GetHist(ctx, req)
 	if err != nil {
 		httputil.ProcessError(wr, err)
 		return
 	}
 
-	wr.WriteJson(getHistResponse{
-		Buckets: newBuckets(buckets),
-	})
+	wr.WriteJson(newHistResp(hist))
 }
 
 type getHistRequest struct {
@@ -98,6 +96,8 @@ type getHistRequest struct {
 
 type getHistResponse struct {
 	Buckets []bucket `json:"buckets"`
+	// Interval between buckets in seconds.
+	Interval uint64 `json:"interval"`
 } //	@name	errorgroups.v1.GetHistResponse
 
 type bucket struct {
@@ -105,15 +105,18 @@ type bucket struct {
 	Count uint64    `json:"count"`
 } //	@name	errorgroups.v1.Bucket
 
-func newBuckets(source []types.ErrorHistBucket) []bucket {
-	buckets := make([]bucket, 0, len(source))
+func newHistResp(source types.ErrorHist) getHistResponse {
+	buckets := make([]bucket, 0, len(source.Buckets))
 
-	for _, b := range source {
+	for _, b := range source.Buckets {
 		buckets = append(buckets, bucket{
 			Time:  b.Time,
 			Count: b.Count,
 		})
 	}
 
-	return buckets
+	return getHistResponse{
+		Buckets:  buckets,
+		Interval: source.Interval,
+	}
 }
