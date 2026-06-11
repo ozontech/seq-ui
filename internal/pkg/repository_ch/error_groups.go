@@ -84,7 +84,7 @@ func (r *repository) GetErrorGroups(
 				offset:   uint64(req.Offset),
 			})
 
-			infos, err := r.getErrorInfos(ctx, getErrorInfosParams{
+			infos, err = r.getErrorInfos(ctx, getErrorInfosParams{
 				columns: []string{
 					"_group_hash",
 					"source",
