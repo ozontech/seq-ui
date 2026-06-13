@@ -1,23 +1,31 @@
-package grpc
+package http
 
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	mock "github.com/ozontech/seq-ui/internal/pkg/service/admin/mock"
-	"github.com/ozontech/seq-ui/pkg/admin/v1"
 )
 
 var (
 	errSomethingWrong = errors.New("something happened wrong")
 )
+
+func withRoleID(h http.HandlerFunc, id string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		rCtx := chi.NewRouteContext()
+		rCtx.URLParams.Add("id", id)
+		r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rCtx))
+		h(w, r)
+	}
+}
 
 func setupAPI(t *testing.T) (*API, *mock.MockService) {
 	ctrl := gomock.NewController(t)
@@ -25,7 +33,7 @@ func setupAPI(t *testing.T) (*API, *mock.MockService) {
 	return New(mockedSvc), mockedSvc
 }
 
-func TestCreateRole(t *testing.T) {
+func TestServeCreateRole(t *testing.T) {
 	type mockArgs struct {
 		req    types.CreateRoleRequest
 		roleID int32
@@ -35,20 +43,19 @@ func TestCreateRole(t *testing.T) {
 	tests := []struct {
 		name string
 
-		req      *admin.CreateRoleRequest
-		want     *admin.CreateRoleResponse
-		wantCode codes.Code
+		req     createRoleRequest
+		want    createRoleResponse
+		wantErr bool
 
 		mockArgs *mockArgs
 	}{
 		{
 			name: "ok",
-			req: &admin.CreateRoleRequest{
+			req: createRoleRequest{
 				Name:        "manager",
 				Permissions: []uint64{1},
 			},
-			want:     &admin.CreateRoleResponse{RoleId: 1},
-			wantCode: codes.OK,
+			want: createRoleResponse{RoleID: 1},
 			mockArgs: &mockArgs{
 				req: types.CreateRoleRequest{
 					Name:        "manager",
@@ -59,11 +66,11 @@ func TestCreateRole(t *testing.T) {
 		},
 		{
 			name: "err_svc",
-			req: &admin.CreateRoleRequest{
+			req: createRoleRequest{
 				Name:        "manager",
 				Permissions: []uint64{1},
 			},
-			wantCode: codes.Internal,
+			wantErr: true,
 			mockArgs: &mockArgs{
 				req: types.CreateRoleRequest{
 					Name:        "manager",
@@ -87,18 +94,19 @@ func TestCreateRole(t *testing.T) {
 					Times(1)
 			}
 
-			gotResp, err := api.CreateRole(context.Background(), tt.req)
-			require.Equal(t, tt.wantCode, status.Code(err))
-			if tt.wantCode != codes.OK {
-				return
-			}
-
-			require.Equal(t, tt.want, gotResp)
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[createRoleRequest, createRoleResponse]{
+				Method:  http.MethodPost,
+				Target:  "/admin/v1/roles",
+				Req:     tt.req,
+				Handler: api.serveCreateRole,
+				Want:    tt.want,
+				WantErr: tt.wantErr,
+			})
 		})
 	}
 }
 
-func TestAddUsersToRole(t *testing.T) {
+func TestServeAddUsersToRole(t *testing.T) {
 	type mockArgs struct {
 		req types.AddUsersToRoleRequest
 		err error
@@ -107,18 +115,18 @@ func TestAddUsersToRole(t *testing.T) {
 	tests := []struct {
 		name string
 
-		req      *admin.AddUsersToRoleRequest
-		wantCode codes.Code
+		roleID  string
+		req     addUsersToRoleRequest
+		wantErr bool
 
 		mockArgs *mockArgs
 	}{
 		{
-			name: "ok",
-			req: &admin.AddUsersToRoleRequest{
-				RoleId:    1,
+			name:   "ok",
+			roleID: "1",
+			req: addUsersToRoleRequest{
 				Usernames: []string{"user1", "user2"},
 			},
-			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				req: types.AddUsersToRoleRequest{
 					RoleID:    1,
@@ -127,16 +135,16 @@ func TestAddUsersToRole(t *testing.T) {
 			},
 		},
 		{
-			name: "err_svc",
-			req: &admin.AddUsersToRoleRequest{
-				RoleId:    1,
-				Usernames: []string{"user1"},
+			name:   "err_svc",
+			roleID: "1",
+			req: addUsersToRoleRequest{
+				Usernames: []string{"user1", "user2"},
 			},
-			wantCode: codes.Internal,
+			wantErr: true,
 			mockArgs: &mockArgs{
 				req: types.AddUsersToRoleRequest{
 					RoleID:    1,
-					Usernames: []string{"user1"},
+					Usernames: []string{"user1", "user2"},
 				},
 				err: errSomethingWrong,
 			},
@@ -156,13 +164,19 @@ func TestAddUsersToRole(t *testing.T) {
 					Times(1)
 			}
 
-			_, err := api.AddUsersToRole(context.Background(), tt.req)
-			require.Equal(t, tt.wantCode, status.Code(err))
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[addUsersToRoleRequest, struct{}]{
+				Method:  http.MethodPost,
+				Target:  "/admin/v1/roles/" + tt.roleID + "/users",
+				Req:     tt.req,
+				Handler: withRoleID(api.serveAddUsersToRole, tt.roleID),
+				NoResp:  true,
+				WantErr: tt.wantErr,
+			})
 		})
 	}
 }
 
-func TestGetRoles(t *testing.T) {
+func TestServeGetRoles(t *testing.T) {
 	type mockArgs struct {
 		resp types.GetRolesResponse
 		err  error
@@ -171,33 +185,44 @@ func TestGetRoles(t *testing.T) {
 	tests := []struct {
 		name string
 
-		want     *admin.GetRolesResponse
-		wantCode codes.Code
+		want    getRolesResponse
+		wantErr bool
 
 		mockArgs *mockArgs
 	}{
 		{
 			name: "ok",
-			want: &admin.GetRolesResponse{
-				Roles: []*admin.Role{
-					{Id: 1, Name: "manager", Permissions: []uint64{1}},
+			want: getRolesResponse{
+				Roles: []role{
+					{
+						ID:          1,
+						Name:        "manager",
+						Permissions: []uint64{1},
+					},
 				},
-				AvailablePermissions: []*admin.GetRolesResponse_Permission{
-					{Value: 1, Name: "manage_roles", Description: "Manage roles"},
+				AvailablePermissions: []permission{
+					{
+						Value:       1,
+						Name:        "manage_roles",
+						Description: "Manage roles",
+					},
 				},
 			},
-			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				resp: types.GetRolesResponse{
 					Roles: []types.Role{
-						{ID: 1, Name: "manager", Permissions: []uint64{1}},
+						{
+							ID:          1,
+							Name:        "manager",
+							Permissions: []uint64{1},
+						},
 					},
 				},
 			},
 		},
 		{
-			name:     "err_svc",
-			wantCode: codes.Internal,
+			name:    "err_svc",
+			wantErr: true,
 			mockArgs: &mockArgs{
 				err: errSomethingWrong,
 			},
@@ -217,49 +242,50 @@ func TestGetRoles(t *testing.T) {
 					Times(1)
 			}
 
-			gotResp, err := api.GetRoles(context.Background(), &admin.GetRolesRequest{})
-			require.Equal(t, tt.wantCode, status.Code(err))
-			if tt.wantCode != codes.OK {
-				return
-			}
-
-			require.Equal(t, tt.want, gotResp)
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getRolesResponse]{
+				Method:  http.MethodGet,
+				Target:  "/admin/v1/roles",
+				Handler: api.serveGetRoles,
+				Want:    tt.want,
+				WantErr: tt.wantErr,
+			})
 		})
 	}
 }
 
-func TestGetRole(t *testing.T) {
+func TestServeGetRole(t *testing.T) {
 	type mockArgs struct {
-		req      types.GetRoleRequest
-		roleInfo types.RoleInfo
-		err      error
+		req  types.GetRoleRequest
+		resp types.RoleInfo
+		err  error
 	}
 
 	tests := []struct {
 		name string
 
-		req      *admin.GetRoleRequest
-		want     *admin.GetRoleResponse
-		wantCode codes.Code
+		roleID  string
+		want    getRoleResponse
+		wantErr bool
 
 		mockArgs *mockArgs
 	}{
 		{
-			name: "ok",
-			req:  &admin.GetRoleRequest{Id: 1},
-			want: &admin.GetRoleResponse{
+			name:   "ok",
+			roleID: "1",
+			want: getRoleResponse{
 				Usernames: []string{"user1", "user2"},
 			},
-			wantCode: codes.OK,
 			mockArgs: &mockArgs{
-				req:      types.GetRoleRequest{RoleID: 1},
-				roleInfo: types.RoleInfo{Usernames: []string{"user1", "user2"}},
+				req: types.GetRoleRequest{RoleID: 1},
+				resp: types.RoleInfo{
+					Usernames: []string{"user1", "user2"},
+				},
 			},
 		},
 		{
-			name:     "err_svc",
-			req:      &admin.GetRoleRequest{Id: 1},
-			wantCode: codes.Internal,
+			name:    "err_svc",
+			roleID:  "1",
+			wantErr: true,
 			mockArgs: &mockArgs{
 				req: types.GetRoleRequest{RoleID: 1},
 				err: errSomethingWrong,
@@ -276,22 +302,22 @@ func TestGetRole(t *testing.T) {
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().
 					GetRole(gomock.Any(), tt.mockArgs.req).
-					Return(tt.mockArgs.roleInfo, tt.mockArgs.err).
+					Return(tt.mockArgs.resp, tt.mockArgs.err).
 					Times(1)
 			}
 
-			gotResp, err := api.GetRole(context.Background(), tt.req)
-			require.Equal(t, tt.wantCode, status.Code(err))
-			if tt.wantCode != codes.OK {
-				return
-			}
-
-			require.Equal(t, tt.want, gotResp)
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getRoleResponse]{
+				Method:  http.MethodGet,
+				Target:  "/admin/v1/roles/" + tt.roleID,
+				Handler: withRoleID(api.serveGetRole, tt.roleID),
+				Want:    tt.want,
+				WantErr: tt.wantErr,
+			})
 		})
 	}
 }
 
-func TestUpdateRole(t *testing.T) {
+func TestServeUpdateRole(t *testing.T) {
 	name := "new role name"
 
 	type mockArgs struct {
@@ -302,19 +328,19 @@ func TestUpdateRole(t *testing.T) {
 	tests := []struct {
 		name string
 
-		req      *admin.UpdateRoleRequest
-		wantCode codes.Code
+		roleID  string
+		req     updateRoleRequest
+		wantErr bool
 
 		mockArgs *mockArgs
 	}{
 		{
-			name: "ok",
-			req: &admin.UpdateRoleRequest{
-				Id:          1,
+			name:   "ok",
+			roleID: "1",
+			req: updateRoleRequest{
 				Name:        &name,
 				Permissions: []uint64{1},
 			},
-			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				req: types.UpdateRoleRequest{
 					RoleID:      1,
@@ -324,16 +350,18 @@ func TestUpdateRole(t *testing.T) {
 			},
 		},
 		{
-			name: "err_svc",
-			req: &admin.UpdateRoleRequest{
-				Id:   1,
-				Name: &name,
+			name:   "err_svc",
+			roleID: "1",
+			req: updateRoleRequest{
+				Name:        &name,
+				Permissions: []uint64{1},
 			},
-			wantCode: codes.Internal,
+			wantErr: true,
 			mockArgs: &mockArgs{
 				req: types.UpdateRoleRequest{
-					RoleID: 1,
-					Name:   &name,
+					RoleID:      1,
+					Name:        &name,
+					Permissions: []uint64{1},
 				},
 				err: errSomethingWrong,
 			},
@@ -353,13 +381,19 @@ func TestUpdateRole(t *testing.T) {
 					Times(1)
 			}
 
-			_, err := api.UpdateRole(context.Background(), tt.req)
-			require.Equal(t, tt.wantCode, status.Code(err))
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[updateRoleRequest, struct{}]{
+				Method:  http.MethodPatch,
+				Target:  "/admin/v1/roles/" + tt.roleID,
+				Req:     tt.req,
+				Handler: withRoleID(api.serveUpdateRole, tt.roleID),
+				NoResp:  true,
+				WantErr: tt.wantErr,
+			})
 		})
 	}
 }
 
-func TestDeleteRole(t *testing.T) {
+func TestServeDeleteRole(t *testing.T) {
 	replacementID := int32(2)
 
 	type mockArgs struct {
@@ -370,26 +404,25 @@ func TestDeleteRole(t *testing.T) {
 	tests := []struct {
 		name string
 
-		req      *admin.DeleteRoleRequest
-		wantCode codes.Code
+		roleID  string
+		req     deleteRoleRequest
+		wantErr bool
 
 		mockArgs *mockArgs
 	}{
 		{
-			name:     "ok_no_replacement",
-			req:      &admin.DeleteRoleRequest{Id: 1},
-			wantCode: codes.OK,
+			name:   "ok_no_replacement",
+			roleID: "1",
 			mockArgs: &mockArgs{
 				req: types.DeleteRoleRequest{RoleID: 1},
 			},
 		},
 		{
-			name: "ok_with_replacement",
-			req: &admin.DeleteRoleRequest{
-				Id:                1,
-				ReplacementRoleId: &replacementID,
+			name:   "ok_with_replacement",
+			roleID: "1",
+			req: deleteRoleRequest{
+				ReplacementRoleID: &replacementID,
 			},
-			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				req: types.DeleteRoleRequest{
 					RoleID:            1,
@@ -398,9 +431,9 @@ func TestDeleteRole(t *testing.T) {
 			},
 		},
 		{
-			name:     "err_svc",
-			req:      &admin.DeleteRoleRequest{Id: 1},
-			wantCode: codes.Internal,
+			name:    "err_svc",
+			roleID:  "1",
+			wantErr: true,
 			mockArgs: &mockArgs{
 				req: types.DeleteRoleRequest{RoleID: 1},
 				err: errSomethingWrong,
@@ -421,13 +454,19 @@ func TestDeleteRole(t *testing.T) {
 					Times(1)
 			}
 
-			_, err := api.DeleteRole(context.Background(), tt.req)
-			require.Equal(t, tt.wantCode, status.Code(err))
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[deleteRoleRequest, struct{}]{
+				Method:  http.MethodDelete,
+				Target:  "/admin/v1/roles/" + tt.roleID,
+				Req:     tt.req,
+				Handler: withRoleID(api.serveDeleteRole, tt.roleID),
+				NoResp:  true,
+				WantErr: tt.wantErr,
+			})
 		})
 	}
 }
 
-func TestDeleteUsersFromRole(t *testing.T) {
+func TestServeDeleteUsersFromRole(t *testing.T) {
 	type mockArgs struct {
 		req types.DeleteUsersFromRoleRequest
 		err error
@@ -436,18 +475,18 @@ func TestDeleteUsersFromRole(t *testing.T) {
 	tests := []struct {
 		name string
 
-		req      *admin.DeleteUsersFromRoleRequest
-		wantCode codes.Code
+		roleID  string
+		req     deleteUsersFromRoleRequest
+		wantErr bool
 
 		mockArgs *mockArgs
 	}{
 		{
-			name: "ok",
-			req: &admin.DeleteUsersFromRoleRequest{
-				RoleId:    1,
+			name:   "ok",
+			roleID: "1",
+			req: deleteUsersFromRoleRequest{
 				Usernames: []string{"user1", "user2"},
 			},
-			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				req: types.DeleteUsersFromRoleRequest{
 					RoleID:    1,
@@ -456,12 +495,12 @@ func TestDeleteUsersFromRole(t *testing.T) {
 			},
 		},
 		{
-			name: "err_svc",
-			req: &admin.DeleteUsersFromRoleRequest{
-				RoleId:    1,
+			name:   "err_svc",
+			roleID: "1",
+			req: deleteUsersFromRoleRequest{
 				Usernames: []string{"user1"},
 			},
-			wantCode: codes.Internal,
+			wantErr: true,
 			mockArgs: &mockArgs{
 				req: types.DeleteUsersFromRoleRequest{
 					RoleID:    1,
@@ -485,8 +524,14 @@ func TestDeleteUsersFromRole(t *testing.T) {
 					Times(1)
 			}
 
-			_, err := api.DeleteUsersFromRole(context.Background(), tt.req)
-			require.Equal(t, tt.wantCode, status.Code(err))
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[deleteUsersFromRoleRequest, struct{}]{
+				Method:  http.MethodDelete,
+				Target:  "/admin/v1/roles/" + tt.roleID + "/users",
+				Req:     tt.req,
+				Handler: withRoleID(api.serveDeleteUsersFromRole, tt.roleID),
+				NoResp:  true,
+				WantErr: tt.wantErr,
+			})
 		})
 	}
 }

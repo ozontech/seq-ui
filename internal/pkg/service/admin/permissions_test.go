@@ -4,10 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ozontech/seq-ui/internal/app/types"
-	mock "github.com/ozontech/seq-ui/internal/pkg/repository/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+
+	"github.com/ozontech/seq-ui/internal/app/types"
+	mock "github.com/ozontech/seq-ui/internal/pkg/repository/mock"
 )
 
 func TestCheckAccess(t *testing.T) {

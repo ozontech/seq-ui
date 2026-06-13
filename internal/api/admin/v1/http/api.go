@@ -2,6 +2,7 @@ package http
 
 import (
 	"github.com/go-chi/chi/v5"
+
 	"github.com/ozontech/seq-ui/internal/app/types"
 	adminservice "github.com/ozontech/seq-ui/internal/pkg/service/admin"
 )

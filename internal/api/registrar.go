@@ -14,9 +14,9 @@ package api
 
 import (
 	"github.com/go-chi/chi/v5"
-	admin_v1_api "github.com/ozontech/seq-ui/internal/api/admin/v1"
 	"google.golang.org/grpc"
 
+	admin_v1_api "github.com/ozontech/seq-ui/internal/api/admin/v1"
 	dashboards_v1_api "github.com/ozontech/seq-ui/internal/api/dashboards/v1"
 	errorgroups_v1_api "github.com/ozontech/seq-ui/internal/api/errorgroups/v1"
 	massexport_v1_api "github.com/ozontech/seq-ui/internal/api/massexport/v1"
