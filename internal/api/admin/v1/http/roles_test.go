@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
 	"go.uber.org/mock/gomock"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	mock "github.com/ozontech/seq-ui/internal/pkg/service/admin/mock"
