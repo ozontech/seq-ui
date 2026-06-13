@@ -10,7 +10,7 @@ import (
 // serveGetLimits go doc.
 //
 //	@Router		/seqapi/v1/limits [get]
-//	@ID			seqapi_v1_getLimits
+//	@ID			seqapi_v1_get_limits
 //	@Tags		seqapi_v1
 //	@Param		env		query		string				false	"Environment"
 //	@Success	200		{object}	getLimitsResponse	"A successful response"

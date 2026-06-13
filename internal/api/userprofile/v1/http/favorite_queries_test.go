@@ -84,7 +84,6 @@ func TestServeGetFavoriteQueries(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -96,7 +95,7 @@ func TestServeGetFavoriteQueries(t *testing.T) {
 					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
 			}
 			if !tt.noUser {
-				req = req.WithContext(context.WithValue(req.Context(), types.UserKey{}, userName))
+				req = req.WithContext(types.SetUserKey(req.Context(), userName))
 				api.profiles.SetID(userName, profileID)
 			}
 
@@ -118,12 +117,12 @@ func TestServeCreateFavoriteQuery(t *testing.T) {
 
 	formatReqBody := func(query, name, relativeFrom string) string {
 		var sb strings.Builder
-		sb.WriteString(fmt.Sprintf(`{"query":%q`, query))
+		fmt.Fprintf(&sb, `{"query":%q`, query)
 		if name != "" {
-			sb.WriteString(fmt.Sprintf(`,"name":%q`, name))
+			fmt.Fprintf(&sb, `,"name":%q`, name)
 		}
 		if relativeFrom != "" {
-			sb.WriteString(fmt.Sprintf(`,"relativeFrom":%q`, relativeFrom))
+			fmt.Fprintf(&sb, `,"relativeFrom":%q`, relativeFrom)
 		}
 		sb.WriteString("}")
 		return sb.String()
@@ -209,7 +208,6 @@ func TestServeCreateFavoriteQuery(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -221,7 +219,7 @@ func TestServeCreateFavoriteQuery(t *testing.T) {
 					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
 			}
 			if !tt.noUser {
-				req = req.WithContext(context.WithValue(req.Context(), types.UserKey{}, userName))
+				req = req.WithContext(types.SetUserKey(req.Context(), userName))
 				api.profiles.SetID(userName, profileID)
 			}
 
@@ -295,7 +293,6 @@ func TestServeDeleteFavoriteQuery(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -310,7 +307,7 @@ func TestServeDeleteFavoriteQuery(t *testing.T) {
 					Return(tt.mockArgs.err).Times(1)
 			}
 			if !tt.noUser {
-				req = req.WithContext(context.WithValue(req.Context(), types.UserKey{}, userName))
+				req = req.WithContext(types.SetUserKey(req.Context(), userName))
 				api.profiles.SetID(userName, profileID)
 			}
 

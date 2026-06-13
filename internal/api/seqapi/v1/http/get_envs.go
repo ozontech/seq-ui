@@ -20,7 +20,7 @@ func (a *API) serveGetEnvs(w http.ResponseWriter, r *http.Request) {
 
 type getEnvsResponse struct {
 	Envs []envInfo `json:"envs"`
-} // @name seqapi.v1.GetEnvsResponse
+} //	@name	seqapi.v1.GetEnvsResponse
 
 type envInfo struct {
 	Env                       string `json:"env,omitempty"`
@@ -29,4 +29,4 @@ type envInfo struct {
 	MaxParallelExportRequests uint32 `json:"max_parallel_export_requests"`
 	MaxAggregationsPerRequest uint32 `json:"max_aggregations_per_request"`
 	SeqCliMaxSearchLimit      uint32 `json:"seq_cli_max_search_limit"`
-} // @name seqapi.v1.EnvInfo
+} //	@name	seqapi.v1.EnvInfo

@@ -147,7 +147,7 @@ func TestServeCancelAsyncSearch(t *testing.T) {
 				fmt.Sprintf("/seqapi/v1/async_search/%s/cancel", tt.mockArgs.proxyReq.SearchId),
 				http.NoBody,
 			)
-			req = req.WithContext(context.WithValue(req.Context(), types.UserKey{}, tt.mockArgs.userName))
+			req = req.WithContext(types.SetUserKey(req.Context(), tt.mockArgs.userName))
 			rCtx := chi.NewRouteContext()
 			rCtx.URLParams.Add("id", tt.mockArgs.proxyReq.SearchId)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rCtx))

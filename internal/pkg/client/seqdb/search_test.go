@@ -25,12 +25,12 @@ func Test_GRPCClient_Search(t *testing.T) {
 	eventTime := timestamppb.New(time.Date(2024, time.December, 31, 10, 20, 30, 400000, time.UTC))
 
 	events := make([]*seqapi.Event, limit)
-	for i := 0; i < len(events); i++ {
+	for i := range events {
 		events[i] = makeEvent(fmt.Sprintf("test%d", i+1), i+1, eventTime)
 	}
 
 	docs := make([]*seqproxyapi.Document, 0, len(events))
-	for i := 0; i < len(events); i++ {
+	for i := range events {
 		data, err := json.Marshal(events[i].Data)
 		assert.NoError(t, err)
 		docs = append(docs, &seqproxyapi.Document{
@@ -273,7 +273,6 @@ func Test_GRPCClient_Search(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()

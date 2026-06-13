@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -71,7 +70,6 @@ func TestServeGetUserProfile(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -83,7 +81,7 @@ func TestServeGetUserProfile(t *testing.T) {
 					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
 			}
 			if !tt.noUser {
-				req = req.WithContext(context.WithValue(req.Context(), types.UserKey{}, userName))
+				req = req.WithContext(types.SetUserKey(req.Context(), userName))
 			}
 
 			httputil.DoTestHTTP(t, httputil.TestDataHTTP{
@@ -107,20 +105,20 @@ func TestServeUpdateUserProfile(t *testing.T) {
 		var sb strings.Builder
 		sb.WriteString("{")
 		if timezone != "" {
-			sb.WriteString(fmt.Sprintf(`"timezone":%q`, timezone))
+			fmt.Fprintf(&sb, `"timezone":%q`, timezone)
 		}
 		if onboardingVersion != "" {
 			if sb.Len() > 1 {
 				sb.WriteString(",")
 			}
-			sb.WriteString(fmt.Sprintf(`"onboardingVersion":%q`, onboardingVersion))
+			fmt.Fprintf(&sb, `"onboardingVersion":%q`, onboardingVersion)
 		}
 		if logColumns != nil {
 			if sb.Len() > 1 {
 				sb.WriteString(",")
 			}
 			v, _ := json.Marshal(logColumns)
-			sb.WriteString(fmt.Sprintf(`"log_columns":{"columns":%s}`, v))
+			fmt.Fprintf(&sb, `"log_columns":{"columns":%s}`, v)
 		}
 		sb.WriteString("}")
 		return sb.String()
@@ -245,7 +243,6 @@ func TestServeUpdateUserProfile(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -257,7 +254,7 @@ func TestServeUpdateUserProfile(t *testing.T) {
 					Return(tt.mockArgs.err).Times(1)
 			}
 			if !tt.noUser {
-				req = req.WithContext(context.WithValue(req.Context(), types.UserKey{}, userName))
+				req = req.WithContext(types.SetUserKey(req.Context(), userName))
 			}
 
 			httputil.DoTestHTTP(t, httputil.TestDataHTTP{

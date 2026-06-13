@@ -120,7 +120,6 @@ func TestServeGetEvent(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
@@ -379,13 +378,11 @@ func TestGetEventWithMasking(t *testing.T) {
 	}
 
 	eventsData := make([]eventData, 0, len(tests))
-	for i := 0; i < len(tests); i++ {
+	for i := range tests {
 		eventsData = append(eventsData, formEventData(i, tests[i].shouldMask))
 	}
 
 	for i, tt := range tests {
-		i := i
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)

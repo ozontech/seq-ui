@@ -122,6 +122,10 @@ mock:
 		-destination=internal/app/auth/mock/auth.go \
 		github.com/ozontech/seq-ui/internal/app/auth \
 		OIDCProvider,JWTProvider
+	PATH="$(LOCAL_BIN):$(PATH)" mockgen \
+		-destination=internal/pkg/service/admin/mock/service.go \
+		github.com/ozontech/seq-ui/internal/pkg/service/admin \
+		Service
 
 .PHONY: protoc
 protoc:

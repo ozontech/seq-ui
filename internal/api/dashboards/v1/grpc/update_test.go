@@ -163,7 +163,6 @@ func TestUpdate(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -176,7 +175,7 @@ func TestUpdate(t *testing.T) {
 
 			ctx := context.Background()
 			if !tt.noUser {
-				ctx = context.WithValue(ctx, types.UserKey{}, userName)
+				ctx = types.SetUserKey(ctx, userName)
 				api.profiles.SetID(userName, profileID)
 			}
 

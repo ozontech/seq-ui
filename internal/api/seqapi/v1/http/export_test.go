@@ -29,16 +29,16 @@ func TestServeExport(t *testing.T) {
 
 	formatReqBody := func(limit int, format exportFormat, fields []string) string {
 		var sb strings.Builder
-		sb.WriteString(fmt.Sprintf(`{"query":%q,"from":%q,"to":%q,"offset":0,"limit":%d`,
-			query, from.Format(time.RFC3339), to.Format(time.RFC3339), limit))
+		fmt.Fprintf(&sb, `{"query":%q,"from":%q,"to":%q,"offset":0,"limit":%d`,
+			query, from.Format(time.RFC3339), to.Format(time.RFC3339), limit)
 
 		if format != "" {
-			sb.WriteString(fmt.Sprintf(`,"format":%q`, format))
+			fmt.Fprintf(&sb, `,"format":%q`, format)
 		}
 		if len(fields) > 0 {
 			fieldsRaw, err := json.Marshal(fields)
 			assert.NoError(t, err)
-			sb.WriteString(fmt.Sprintf(`,"fields":%s`, fieldsRaw))
+			fmt.Fprintf(&sb, `,"fields":%s`, fieldsRaw)
 		}
 
 		sb.WriteString("}")
@@ -161,7 +161,6 @@ func TestServeExport(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 

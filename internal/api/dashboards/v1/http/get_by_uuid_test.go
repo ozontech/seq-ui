@@ -80,7 +80,6 @@ func TestServeGetByUUID(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -95,7 +94,7 @@ func TestServeGetByUUID(t *testing.T) {
 					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
 			}
 			if !tt.noUser {
-				req = req.WithContext(context.WithValue(req.Context(), types.UserKey{}, userName))
+				req = req.WithContext(types.SetUserKey(req.Context(), userName))
 				api.profiles.SetID(userName, profileID)
 			}
 

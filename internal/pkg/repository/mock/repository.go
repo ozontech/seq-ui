@@ -360,3 +360,143 @@ func (mr *MockAsyncSearchesMockRecorder) SaveAsyncSearch(arg0, arg1 any) *gomock
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveAsyncSearch", reflect.TypeOf((*MockAsyncSearches)(nil).SaveAsyncSearch), arg0, arg1)
 }
+
+// MockAdmin is a mock of Admin interface.
+type MockAdmin struct {
+	ctrl     *gomock.Controller
+	recorder *MockAdminMockRecorder
+	isgomock struct{}
+}
+
+// MockAdminMockRecorder is the mock recorder for MockAdmin.
+type MockAdminMockRecorder struct {
+	mock *MockAdmin
+}
+
+// NewMockAdmin creates a new mock instance.
+func NewMockAdmin(ctrl *gomock.Controller) *MockAdmin {
+	mock := &MockAdmin{ctrl: ctrl}
+	mock.recorder = &MockAdminMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockAdmin) EXPECT() *MockAdminMockRecorder {
+	return m.recorder
+}
+
+// AddUsersToRole mocks base method.
+func (m *MockAdmin) AddUsersToRole(arg0 context.Context, arg1 types.AddUsersToRoleRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddUsersToRole", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddUsersToRole indicates an expected call of AddUsersToRole.
+func (mr *MockAdminMockRecorder) AddUsersToRole(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUsersToRole", reflect.TypeOf((*MockAdmin)(nil).AddUsersToRole), arg0, arg1)
+}
+
+// CreateRole mocks base method.
+func (m *MockAdmin) CreateRole(arg0 context.Context, arg1 types.CreateRoleRepoRequest) (int32, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateRole", arg0, arg1)
+	ret0, _ := ret[0].(int32)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateRole indicates an expected call of CreateRole.
+func (mr *MockAdminMockRecorder) CreateRole(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRole", reflect.TypeOf((*MockAdmin)(nil).CreateRole), arg0, arg1)
+}
+
+// DeleteRole mocks base method.
+func (m *MockAdmin) DeleteRole(arg0 context.Context, arg1 types.DeleteRoleRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteRole", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteRole indicates an expected call of DeleteRole.
+func (mr *MockAdminMockRecorder) DeleteRole(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRole", reflect.TypeOf((*MockAdmin)(nil).DeleteRole), arg0, arg1)
+}
+
+// DeleteUsersFromRole mocks base method.
+func (m *MockAdmin) DeleteUsersFromRole(arg0 context.Context, arg1 types.DeleteUsersFromRoleRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteUsersFromRole", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteUsersFromRole indicates an expected call of DeleteUsersFromRole.
+func (mr *MockAdminMockRecorder) DeleteUsersFromRole(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUsersFromRole", reflect.TypeOf((*MockAdmin)(nil).DeleteUsersFromRole), arg0, arg1)
+}
+
+// GetRole mocks base method.
+func (m *MockAdmin) GetRole(arg0 context.Context, arg1 types.GetRoleRequest) (types.RoleInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRole", arg0, arg1)
+	ret0, _ := ret[0].(types.RoleInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRole indicates an expected call of GetRole.
+func (mr *MockAdminMockRecorder) GetRole(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRole", reflect.TypeOf((*MockAdmin)(nil).GetRole), arg0, arg1)
+}
+
+// GetRoles mocks base method.
+func (m *MockAdmin) GetRoles(arg0 context.Context) ([]types.RoleRepo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRoles", arg0)
+	ret0, _ := ret[0].([]types.RoleRepo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRoles indicates an expected call of GetRoles.
+func (mr *MockAdminMockRecorder) GetRoles(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRoles", reflect.TypeOf((*MockAdmin)(nil).GetRoles), arg0)
+}
+
+// GetUserPermissions mocks base method.
+func (m *MockAdmin) GetUserPermissions(arg0 context.Context, arg1 types.GetUserPermissionsRequest) (uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserPermissions", arg0, arg1)
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserPermissions indicates an expected call of GetUserPermissions.
+func (mr *MockAdminMockRecorder) GetUserPermissions(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserPermissions", reflect.TypeOf((*MockAdmin)(nil).GetUserPermissions), arg0, arg1)
+}
+
+// UpdateRole mocks base method.
+func (m *MockAdmin) UpdateRole(arg0 context.Context, arg1 types.UpdateRoleRepoRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateRole", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateRole indicates an expected call of UpdateRole.
+func (mr *MockAdminMockRecorder) UpdateRole(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRole", reflect.TypeOf((*MockAdmin)(nil).UpdateRole), arg0, arg1)
+}

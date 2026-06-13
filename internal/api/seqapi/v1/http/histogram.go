@@ -18,7 +18,7 @@ import (
 // serveGetHistogram go doc.
 //
 //	@Router		/seqapi/v1/histogram [post]
-//	@ID			seqapi_v1_getHistogram
+//	@ID			seqapi_v1_get_histogram
 //	@Tags		seqapi_v1
 //	@Param		env		query		string					false	"Environment"
 //	@Param		body	body		getHistogramRequest		true	"Request body"
