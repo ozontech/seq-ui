@@ -1,41 +1,51 @@
-package service
+package dashboards
 
 import (
 	"context"
 
 	"github.com/gofrs/uuid"
-
 	"github.com/ozontech/seq-ui/internal/app/types"
+	"github.com/ozontech/seq-ui/internal/pkg/repository"
 )
 
-// GetAllDashboards from underlying repository.
+type Service interface {
+	GetAllDashboards(context.Context, types.GetAllDashboardsRequest) (types.DashboardInfosWithOwner, error)
+	GetMyDashboards(context.Context, types.GetUserDashboardsRequest) (types.DashboardInfos, error)
+	GetDashboardByUUID(context.Context, string) (types.Dashboard, error)
+	CreateDashboard(context.Context, types.CreateDashboardRequest) (string, error)
+	UpdateDashboard(context.Context, types.UpdateDashboardRequest) error
+	DeleteDashboard(context.Context, types.DeleteDashboardRequest) error
+	SearchDashboards(context.Context, types.SearchDashboardsRequest) (types.DashboardInfosWithOwner, error)
+}
+
+type service struct {
+	repo repository.Dashboards
+}
+
 func (s *service) GetAllDashboards(ctx context.Context, req types.GetAllDashboardsRequest) (types.DashboardInfosWithOwner, error) {
 	if err := checkLimitOffset(req.Limit, req.Offset); err != nil {
 		return nil, err
 	}
 
-	return s.repo.Dashboards.GetAll(ctx, req)
+	return s.repo.GetAll(ctx, req)
 }
 
-// GetMyDashboards from underlying repository.
 func (s *service) GetMyDashboards(ctx context.Context, req types.GetUserDashboardsRequest) (types.DashboardInfos, error) {
 	if err := checkLimitOffset(req.Limit, req.Offset); err != nil {
 		return nil, err
 	}
 
-	return s.repo.Dashboards.GetMy(ctx, req)
+	return s.repo.GetMy(ctx, req)
 }
 
-// GetDashboardByUUID from underlying repository.
 func (s *service) GetDashboardByUUID(ctx context.Context, id string) (types.Dashboard, error) {
 	if err := checkUUID(id); err != nil {
 		return types.Dashboard{}, err
 	}
 
-	return s.repo.Dashboards.GetByUUID(ctx, id)
+	return s.repo.GetByUUID(ctx, id)
 }
 
-// CreateDashboard in underlying repository.
 func (s *service) CreateDashboard(ctx context.Context, req types.CreateDashboardRequest) (string, error) {
 	if req.Name == "" {
 		return "", types.NewErrInvalidRequestField("empty 'name'")
@@ -44,10 +54,9 @@ func (s *service) CreateDashboard(ctx context.Context, req types.CreateDashboard
 		return "", types.NewErrInvalidRequestField("empty 'meta'")
 	}
 
-	return s.repo.Dashboards.Create(ctx, req)
+	return s.repo.Create(ctx, req)
 }
 
-// UpdateDashboard in underlying repository.
 func (s *service) UpdateDashboard(ctx context.Context, req types.UpdateDashboardRequest) error {
 	if err := checkUUID(req.UUID); err != nil {
 		return err
@@ -56,24 +65,22 @@ func (s *service) UpdateDashboard(ctx context.Context, req types.UpdateDashboard
 		return types.ErrEmptyUpdateRequest
 	}
 
-	return s.repo.Dashboards.Update(ctx, req)
+	return s.repo.Update(ctx, req)
 }
 
-// DeleteDashboard in underlying repository.
 func (s *service) DeleteDashboard(ctx context.Context, req types.DeleteDashboardRequest) error {
 	if err := checkUUID(req.UUID); err != nil {
 		return err
 	}
 
-	return s.repo.Dashboards.Delete(ctx, req)
+	return s.repo.Delete(ctx, req)
 }
 
-// SearchDashboards in underlying repository.
 func (s *service) SearchDashboards(ctx context.Context, req types.SearchDashboardsRequest) (types.DashboardInfosWithOwner, error) {
 	if err := checkLimitOffset(req.Limit, req.Offset); err != nil {
 		return nil, err
 	}
-	return s.repo.Dashboards.Search(ctx, req)
+	return s.repo.Search(ctx, req)
 }
 
 func checkUUID(v string) error {

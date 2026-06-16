@@ -5,15 +5,15 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/profiles"
 	"github.com/ozontech/seq-ui/internal/app/types"
-	"github.com/ozontech/seq-ui/internal/pkg/service"
+	dashboardsservice "github.com/ozontech/seq-ui/internal/pkg/service/dashboards"
 )
 
 type API struct {
-	service  service.Service
+	service  dashboardsservice.Service
 	profiles *profiles.Profiles
 }
 
-func New(svc service.Service, p *profiles.Profiles) *API {
+func New(svc dashboardsservice.Service, p *profiles.Profiles) *API {
 	return &API{
 		service:  svc,
 		profiles: p,
