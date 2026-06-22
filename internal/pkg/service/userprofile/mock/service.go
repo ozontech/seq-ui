@@ -6,8 +6,8 @@
 //	mockgen -destination=internal/pkg/service/userprofile/mock/service.go github.com/ozontech/seq-ui/internal/pkg/service/userprofile Service
 //
 
-// Package mock_userprofiles is a generated GoMock package.
-package mock_userprofiles
+// Package mock_userprofile is a generated GoMock package.
+package mock_userprofile
 
 import (
 	context "context"
