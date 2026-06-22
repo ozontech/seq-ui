@@ -125,7 +125,7 @@ func TestGetFields(t *testing.T) {
 				},
 			}
 
-			api := setupAPI(seqData)
+			api := setupTestAPI(seqData)
 			resp, err := api.GetFields(context.Background(), nil)
 
 			require.Equal(t, tt.clientErr, err)
@@ -135,6 +135,9 @@ func TestGetFields(t *testing.T) {
 }
 
 func TestGetFieldsCached(t *testing.T) {
+	var (
+		ttl = 10 * time.Millisecond
+	)
 	responses := []*seqapi.GetFieldsResponse{
 		{
 			Fields: []*seqapi.Field{
@@ -179,7 +182,7 @@ func TestGetFieldsCached(t *testing.T) {
 		},
 	}
 
-	api := setupAPI(seqData)
+	api := setupTestAPI(seqData)
 
 	for _, r := range responses {
 		resp, err := api.GetFields(context.Background(), nil)
@@ -225,7 +228,7 @@ func TestGetPinnedFields(t *testing.T) {
 				},
 			}
 
-			api := setupAPI(seqData)
+			api := setupTestAPI(seqData)
 
 			resp, err := api.GetPinnedFields(context.Background(), nil)
 			require.NoError(t, err)

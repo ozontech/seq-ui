@@ -5,7 +5,7 @@ import (
 
 	grpc_api "github.com/ozontech/seq-ui/internal/api/userprofile/v1/grpc"
 	http_api "github.com/ozontech/seq-ui/internal/api/userprofile/v1/http"
-	userprofile "github.com/ozontech/seq-ui/internal/pkg/service/userprofile"
+	"github.com/ozontech/seq-ui/internal/pkg/service/userprofile"
 )
 
 type UserProfile struct {

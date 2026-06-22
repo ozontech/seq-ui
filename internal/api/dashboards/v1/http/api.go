@@ -4,14 +4,14 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/ozontech/seq-ui/internal/app/types"
-	dashboardsservice "github.com/ozontech/seq-ui/internal/pkg/service/dashboards"
+	"github.com/ozontech/seq-ui/internal/pkg/service/dashboards"
 )
 
 type API struct {
-	service dashboardsservice.Service
+	service dashboards.Service
 }
 
-func New(svc dashboardsservice.Service) *API {
+func New(svc dashboards.Service) *API {
 	return &API{
 		service: svc,
 	}

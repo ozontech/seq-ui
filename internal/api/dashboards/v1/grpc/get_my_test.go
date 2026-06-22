@@ -32,8 +32,8 @@ func TestGetMy(t *testing.T) {
 		{
 			name: "ok",
 			req: &dashboards.GetMyRequest{
-				Limit:  int32(limit),
-				Offset: int32(offset),
+				Limit:  int32(testLimit),
+				Offset: int32(testOffset),
 			},
 			want: &dashboards.GetMyResponse{
 				Dashboards: []*dashboards.GetMyResponse_Dashboard{
@@ -44,8 +44,8 @@ func TestGetMy(t *testing.T) {
 			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				req: types.GetUserDashboardsRequest{
-					Limit:  limit,
-					Offset: offset,
+					Limit:  testLimit,
+					Offset: testOffset,
 				},
 				resp: types.DashboardInfos{
 					{UUID: "064dc707-02b8-7000-8201-02a7f396738a", Name: "dashboard1"},
@@ -56,14 +56,14 @@ func TestGetMy(t *testing.T) {
 		{
 			name: "err_svc",
 			req: &dashboards.GetMyRequest{
-				Limit:  int32(limit),
-				Offset: int32(offset),
+				Limit:  int32(testLimit),
+				Offset: int32(testOffset),
 			},
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
 				req: types.GetUserDashboardsRequest{
-					Limit:  limit,
-					Offset: offset,
+					Limit:  testLimit,
+					Offset: testOffset,
 				},
 				err: errSomethingWrong,
 			},
@@ -74,7 +74,7 @@ func TestGetMy(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().

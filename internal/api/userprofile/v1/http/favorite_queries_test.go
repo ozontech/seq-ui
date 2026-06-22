@@ -13,6 +13,10 @@ import (
 )
 
 func TestServeGetFavoriteQueries(t *testing.T) {
+	var (
+		relativeFrom = "300"
+	)
+
 	type mockArgs struct {
 		req  types.GetFavoriteQueriesRequest
 		resp types.FavoriteQueries
@@ -59,7 +63,7 @@ func TestServeGetFavoriteQueries(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().
@@ -80,6 +84,12 @@ func TestServeGetFavoriteQueries(t *testing.T) {
 }
 
 func TestServeCreateFavoriteQuery(t *testing.T) {
+	var (
+		relativeFrom = "300"
+		query        = "test"
+		queryName    = "my query"
+	)
+
 	type mockArgs struct {
 		req  types.GetOrCreateFavoriteQueryRequest
 		resp int64
@@ -127,7 +137,7 @@ func TestServeCreateFavoriteQuery(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().
@@ -185,7 +195,7 @@ func TestServeDeleteFavoriteQuery(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().

@@ -7,36 +7,19 @@ import (
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
 	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
+	asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches"
 )
 
+// Shared test data.
 var (
-	errSomethingWrong       = errors.New("something happened wrong")
-	errCache                = errors.New("test error")
-	errorMsg                = "some err"
-	mockSearchID            = "69e4a4a6-0922-43bd-952d-060a86c2b622"
-	mockSearchID2           = "9e4c068e-d4f4-4a5d-be27-a6524a70d70d"
-	mockUserName1           = "some_user_1"
-	mockUserName2           = "some_user_2"
-	id1                     = "test1"
-	id2                     = "test2"
-	id3                     = "test3"
-	id4                     = "test4"
-	query                   = "message:error"
-	cacheKey                = "logs_lifespan"
-	targetBucketRate        = "3s"
-	interval                = "2s"
-	resultStr               = "36000" // 10(h) * 60(min/h) * 60(sec/min)
-	meta                    = `{"some":"meta"}`
-	someMoment              = time.Now()
-	from                    = time.Now()
-	to                      = from.Add(time.Second)
-	cacheTTL                = time.Minute
-	ttl                     = 10 * time.Millisecond
-	result                  = 10 * time.Hour
-	limit             int32 = 3
+	errSomethingWrong = errors.New("something happened wrong")
+	testSearchID      = "69e4a4a6-0922-43bd-952d-060a86c2b622"
+	testSomeMoment    = time.Date(2023, time.September, 25, 10, 20, 30, 0, time.UTC)
+	testFrom          = time.Date(2023, time.September, 25, 10, 20, 30, 0, time.UTC)
+	testTo            = testFrom.Add(time.Second)
 )
 
-func setupAPI(data test.APITestData) *API {
+func setupTestAPI(data test.APITestData) *API {
 	// when test cases don't explicitly provide configuration
 	if data.Cfg.SeqAPIOptions == nil {
 		data.Cfg.SeqAPIOptions = &config.SeqAPIOptions{}
@@ -48,16 +31,10 @@ func setupAPI(data test.APITestData) *API {
 		seqDBClients[envConfig.SeqDB] = data.Mocks.SeqDB
 	}
 
-	return New(data.Cfg, seqDBClients, data.Mocks.Cache, data.Mocks.Cache, nil)
-}
-
-func setupAPIWithAsyncSearches(data test.APITestData) *API {
-	if data.Cfg.SeqAPIOptions == nil {
-		data.Cfg.SeqAPIOptions = &config.SeqAPIOptions{}
-	}
-	seqDBClients := map[string]seqdb.Client{
-		config.DefaultSeqDBClientID: data.Mocks.SeqDB,
+	var asyncSvc asyncsearches.Service
+	if data.Mocks.AsyncSearchesSvc != nil {
+		asyncSvc = data.Mocks.AsyncSearchesSvc
 	}
 
-	return New(data.Cfg, seqDBClients, data.Mocks.Cache, data.Mocks.Cache, data.Mocks.AsyncSearchesSvc)
+	return New(data.Cfg, seqDBClients, data.Mocks.Cache, data.Mocks.Cache, asyncSvc)
 }

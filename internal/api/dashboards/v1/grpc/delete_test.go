@@ -31,25 +31,25 @@ func TestDelete(t *testing.T) {
 		{
 			name: "ok",
 			req: &dashboards.DeleteRequest{
-				Uuid: dashboardUUID,
+				Uuid: testDashboardUUID,
 			},
 			want:     &dashboards.DeleteResponse{},
 			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				req: types.DeleteDashboardRequest{
-					UUID: dashboardUUID,
+					UUID: testDashboardUUID,
 				},
 			},
 		},
 		{
 			name: "err_svc",
 			req: &dashboards.DeleteRequest{
-				Uuid: dashboardUUID,
+				Uuid: testDashboardUUID,
 			},
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
 				req: types.DeleteDashboardRequest{
-					UUID: dashboardUUID,
+					UUID: testDashboardUUID,
 				},
 				err: errSomethingWrong,
 			},
@@ -60,7 +60,7 @@ func TestDelete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().

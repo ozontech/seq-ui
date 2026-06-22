@@ -11,20 +11,12 @@ import (
 	mock "github.com/ozontech/seq-ui/internal/pkg/service/userprofile/mock"
 )
 
+// Shared test data.
 var (
-	errSomethingWrong        = errors.New("something happened wrong")
-	queryID           int64  = 1
-	relativeFrom      uint64 = 300
-	userName                 = "unnamed"
-	query                    = "test"
-	queryName                = "my query"
-	timezone                 = "UTC"
-	validTimezone            = "Europe/Moscow"
-	onboardingVersion        = `{"name1": "ver1", "name2": "ver2"}`
-	logColumns               = []string{"val1", "val2"}
+	errSomethingWrong = errors.New("something happened wrong")
 )
 
-func setupAPI(t *testing.T) (*API, *mock.MockService) {
+func setupTestAPI(t *testing.T) (*API, *mock.MockService) {
 	ctrl := gomock.NewController(t)
 	mockedSvc := mock.NewMockService(ctrl)
 	return New(mockedSvc), mockedSvc

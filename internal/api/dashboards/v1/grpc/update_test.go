@@ -31,33 +31,33 @@ func TestUpdate(t *testing.T) {
 		{
 			name: "ok",
 			req: &dashboards.UpdateRequest{
-				Uuid: dashboardUUID,
-				Name: &dashboardName,
-				Meta: &dashboardMeta,
+				Uuid: testDashboardUUID,
+				Name: &testDashboardName,
+				Meta: &testDashboardMeta,
 			},
 			want:     &dashboards.UpdateResponse{},
 			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				req: types.UpdateDashboardRequest{
-					UUID: dashboardUUID,
-					Name: &dashboardName,
-					Meta: &dashboardMeta,
+					UUID: testDashboardUUID,
+					Name: &testDashboardName,
+					Meta: &testDashboardMeta,
 				},
 			},
 		},
 		{
 			name: "err_svc",
 			req: &dashboards.UpdateRequest{
-				Uuid: dashboardUUID,
-				Name: &dashboardName,
-				Meta: &dashboardMeta,
+				Uuid: testDashboardUUID,
+				Name: &testDashboardName,
+				Meta: &testDashboardMeta,
 			},
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
 				req: types.UpdateDashboardRequest{
-					UUID: dashboardUUID,
-					Name: &dashboardName,
-					Meta: &dashboardMeta,
+					UUID: testDashboardUUID,
+					Name: &testDashboardName,
+					Meta: &testDashboardMeta,
 				},
 				err: errSomethingWrong,
 			},
@@ -68,7 +68,7 @@ func TestUpdate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().

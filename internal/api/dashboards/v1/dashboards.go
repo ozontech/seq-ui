@@ -5,7 +5,7 @@ import (
 
 	grpc_api "github.com/ozontech/seq-ui/internal/api/dashboards/v1/grpc"
 	http_api "github.com/ozontech/seq-ui/internal/api/dashboards/v1/http"
-	dashboards "github.com/ozontech/seq-ui/internal/pkg/service/dashboards"
+	"github.com/ozontech/seq-ui/internal/pkg/service/dashboards"
 )
 
 type Dashboards struct {

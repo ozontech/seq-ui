@@ -34,12 +34,12 @@ func TestDeleteAsyncSearch(t *testing.T) {
 		{
 			name: "ok",
 			req: &seqapi.DeleteAsyncSearchRequest{
-				SearchId: mockSearchID,
+				SearchId: testSearchID,
 			},
 			want: &seqapi.DeleteAsyncSearchResponse{},
 			mockArgs: &mockArgs{
 				req: &seqapi.DeleteAsyncSearchRequest{
-					SearchId: mockSearchID,
+					SearchId: testSearchID,
 				},
 				resp: &seqapi.DeleteAsyncSearchResponse{},
 			},
@@ -54,12 +54,12 @@ func TestDeleteAsyncSearch(t *testing.T) {
 		{
 			name: "err_svc",
 			req: &seqapi.DeleteAsyncSearchRequest{
-				SearchId: mockSearchID,
+				SearchId: testSearchID,
 			},
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
 				req: &seqapi.DeleteAsyncSearchRequest{
-					SearchId: mockSearchID,
+					SearchId: testSearchID,
 				},
 				err: errSomethingWrong,
 			},
@@ -70,21 +70,20 @@ func TestDeleteAsyncSearch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctrl := gomock.NewController(t)
+			svcMock := mock_asyncsearches.NewMockService(ctrl)
+
 			seqData := test.APITestData{}
+			seqData.Mocks.AsyncSearchesSvc = svcMock
 
 			if tt.mockArgs != nil {
-				ctrl := gomock.NewController(t)
-
-				svcMock := mock_asyncsearches.NewMockService(ctrl)
 				svcMock.EXPECT().
 					DeleteAsyncSearch(gomock.Any(), tt.mockArgs.req).
 					Return(tt.mockArgs.resp, tt.mockArgs.err).
 					Times(1)
-
-				seqData.Mocks.AsyncSearchesSvc = svcMock
 			}
 
-			api := setupAPIWithAsyncSearches(seqData)
+			api := setupTestAPI(seqData)
 			got, err := api.DeleteAsyncSearch(context.Background(), tt.req)
 
 			require.Equal(t, tt.wantCode, status.Code(err))
@@ -98,9 +97,9 @@ func TestDeleteAsyncSearch(t *testing.T) {
 
 func TestServeDeleteAsyncSearch_Disabled(t *testing.T) {
 	seqData := test.APITestData{}
-	api := setupAPI(seqData)
+	api := setupTestAPI(seqData)
 
-	_, err := api.DeleteAsyncSearch(context.Background(), &seqapi.DeleteAsyncSearchRequest{})
+	_, err := api.DeleteAsyncSearch(context.Background(), &seqapi.DeleteAsyncSearchRequest{SearchId: testSearchID})
 	require.Error(t, err)
 	require.Equal(t, status.Error(codes.Unimplemented, types.ErrAsyncSearchesDisabled.Error()), err)
 }

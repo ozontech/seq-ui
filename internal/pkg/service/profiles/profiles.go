@@ -7,31 +7,35 @@ import (
 	"github.com/ozontech/seq-ui/internal/app/types"
 )
 
-type UserProfileService interface {
+type userProfileService interface {
 	GetOrCreateUserProfile(context.Context, types.GetOrCreateUserProfileRequest) (types.UserProfile, error)
 }
 
-var profile *Profiles
+var profile *profiles
 
-func InitProfiles(svc UserProfileService) {
-	profile = New(svc)
-}
-
-type Profiles struct {
-	idByName map[string]int64 // map UserName->UserProfileId
-	mx       sync.RWMutex
-
-	service UserProfileService
-}
-
-func New(svc UserProfileService) *Profiles {
-	return &Profiles{
+func InitProfiles(svc userProfileService) {
+	profile = &profiles{
 		idByName: make(map[string]int64),
 		service:  svc,
 	}
 }
 
-func (p *Profiles) GeIDFromContext(ctx context.Context) (int64, error) {
+type profiles struct {
+	idByName map[string]int64 // map UserName->UserProfileId
+	mx       sync.RWMutex
+
+	service userProfileService
+}
+
+func GetIDFromContext(ctx context.Context) (int64, error) {
+	return profile.GeIDFromContext(ctx)
+}
+
+func SetID(userName string, userProfileID int64) {
+	profile.SetID(userName, userProfileID)
+}
+
+func (p *profiles) GeIDFromContext(ctx context.Context) (int64, error) {
 	userName, err := types.GetUserKey(ctx)
 	if err != nil {
 		return 0, err
@@ -45,7 +49,7 @@ func (p *Profiles) GeIDFromContext(ctx context.Context) (int64, error) {
 	return id, nil
 }
 
-func (p *Profiles) GetID(userName string) (int64, error) {
+func (p *profiles) GetID(userName string) (int64, error) {
 	p.mx.RLock()
 	id, ok := p.idByName[userName]
 	p.mx.RUnlock()
@@ -71,7 +75,7 @@ func (p *Profiles) GetID(userName string) (int64, error) {
 	return id, nil
 }
 
-func (p *Profiles) SetID(userName string, userProfileID int64) {
+func (p *profiles) SetID(userName string, userProfileID int64) {
 	p.mx.RLock()
 	_, ok := p.idByName[userName]
 	p.mx.RUnlock()
@@ -85,12 +89,4 @@ func (p *Profiles) SetID(userName string, userProfileID int64) {
 	if !ok {
 		p.idByName[userName] = userProfileID
 	}
-}
-
-func GetIDFromContext(ctx context.Context) (int64, error) {
-	return profile.GeIDFromContext(ctx)
-}
-
-func SetID(userName string, userProfileID int64) {
-	profile.SetID(userName, userProfileID)
 }

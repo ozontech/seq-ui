@@ -14,6 +14,11 @@ import (
 )
 
 func TestGetFavoriteQueries(t *testing.T) {
+	var (
+		relativeFrom uint64 = 300
+		queryName           = "my query"
+	)
+
 	type mockArgs struct {
 		req  types.GetFavoriteQueriesRequest
 		resp types.FavoriteQueries
@@ -97,7 +102,7 @@ func TestGetFavoriteQueries(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().
@@ -119,6 +124,13 @@ func TestGetFavoriteQueries(t *testing.T) {
 }
 
 func TestCreateFavoriteQuery(t *testing.T) {
+	var (
+		queryID      int64  = 1
+		relativeFrom uint64 = 300
+		query               = "test"
+		queryName           = "my query"
+	)
+
 	type mockArgs struct {
 		req  types.GetOrCreateFavoriteQueryRequest
 		resp int64
@@ -171,7 +183,7 @@ func TestCreateFavoriteQuery(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().
@@ -193,6 +205,10 @@ func TestCreateFavoriteQuery(t *testing.T) {
 }
 
 func TestDeleteFavoriteQuery(t *testing.T) {
+	var (
+		queryID int64 = 1
+	)
+
 	type mockArgs struct {
 		req types.DeleteFavoriteQueryRequest
 		err error
@@ -239,7 +255,7 @@ func TestDeleteFavoriteQuery(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().

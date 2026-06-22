@@ -15,6 +15,10 @@ import (
 )
 
 func TestGetHistogram(t *testing.T) {
+	var (
+		query    = "message:error"
+		interval = "2s"
+	)
 	tests := []struct {
 		name string
 
@@ -27,8 +31,8 @@ func TestGetHistogram(t *testing.T) {
 			name: "ok",
 			req: &seqapi.GetHistogramRequest{
 				Query:    query,
-				From:     timestamppb.New(from),
-				To:       timestamppb.New(to),
+				From:     timestamppb.New(testFrom),
+				To:       timestamppb.New(testTo),
 				Interval: interval,
 			},
 			want: &seqapi.GetHistogramResponse{
@@ -62,7 +66,7 @@ func TestGetHistogram(t *testing.T) {
 				Times(1)
 			seqData.Mocks.SeqDB = seqDbMock
 
-			api := setupAPI(seqData)
+			api := setupTestAPI(seqData)
 			resp, err := api.GetHistogram(context.Background(), tt.req)
 
 			require.Equal(t, tt.clientErr, err)

@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,6 +18,11 @@ import (
 
 func TestServeGetAsyncSearchesList(t *testing.T) {
 	statusDone := asyncSearchStatus("done")
+	mockUserName1 := "some_user_1"
+	mockUserName2 := "some_user_2"
+	tooLongQuery := strings.Repeat("message:error and level:3", 41)
+	errorMsg := "some error"
+	mockSearchID2 := "9e4c068e-d4f4-4a5d-be27-a6524a70d70d"
 
 	type mockArgs struct {
 		req  *seqapi.GetAsyncSearchesListRequest
@@ -39,18 +45,18 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 			want: getAsyncSearchesListResponseFromProto(&seqapi.GetAsyncSearchesListResponse{
 				Searches: []*seqapi.GetAsyncSearchesListResponse_ListItem{
 					{
-						SearchId: mockSearchID,
+						SearchId: testSearchID,
 						Status:   seqapi.AsyncSearchStatus_ASYNC_SEARCH_STATUS_DONE,
 						Request: &seqapi.StartAsyncSearchRequest{
 							Retention: durationpb.New(60 * time.Second),
 							Query:     "message:error",
-							From:      timestamppb.New(someMoment.Add(-15 * time.Minute)),
-							To:        timestamppb.New(someMoment),
+							From:      timestamppb.New(testSomeMoment.Add(-15 * time.Minute)),
+							To:        timestamppb.New(testSomeMoment),
 							WithDocs:  true,
 							Size:      100,
 						},
-						StartedAt: timestamppb.New(someMoment.Add(-30 * time.Second)),
-						ExpiresAt: timestamppb.New(someMoment.Add(30 * time.Second)),
+						StartedAt: timestamppb.New(testSomeMoment.Add(-30 * time.Second)),
+						ExpiresAt: timestamppb.New(testSomeMoment.Add(30 * time.Second)),
 						Progress:  1,
 						DiskUsage: 512,
 						OwnerName: mockUserName1,
@@ -62,8 +68,8 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 						Request: &seqapi.StartAsyncSearchRequest{
 							Retention: durationpb.New(360 * time.Second),
 							Query:     "message:error and level:3",
-							From:      timestamppb.New(someMoment.Add(-1 * time.Hour)),
-							To:        timestamppb.New(someMoment),
+							From:      timestamppb.New(testSomeMoment.Add(-1 * time.Hour)),
+							To:        timestamppb.New(testSomeMoment),
 							Aggs: []*seqapi.AggregationQuery{
 								{
 									Field:    "x",
@@ -77,9 +83,9 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 							},
 							WithDocs: false,
 						},
-						StartedAt:  timestamppb.New(someMoment.Add(-60 * time.Second)),
-						ExpiresAt:  timestamppb.New(someMoment.Add(300 * time.Second)),
-						CanceledAt: timestamppb.New(someMoment),
+						StartedAt:  timestamppb.New(testSomeMoment.Add(-60 * time.Second)),
+						ExpiresAt:  timestamppb.New(testSomeMoment.Add(300 * time.Second)),
+						CanceledAt: timestamppb.New(testSomeMoment),
 						Progress:   1,
 						DiskUsage:  256,
 						OwnerName:  mockUserName2,
@@ -94,18 +100,18 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 				resp: &seqapi.GetAsyncSearchesListResponse{
 					Searches: []*seqapi.GetAsyncSearchesListResponse_ListItem{
 						{
-							SearchId: mockSearchID,
+							SearchId: testSearchID,
 							Status:   seqapi.AsyncSearchStatus_ASYNC_SEARCH_STATUS_DONE,
 							Request: &seqapi.StartAsyncSearchRequest{
 								Retention: durationpb.New(60 * time.Second),
 								Query:     "message:error",
-								From:      timestamppb.New(someMoment.Add(-15 * time.Minute)),
-								To:        timestamppb.New(someMoment),
+								From:      timestamppb.New(testSomeMoment.Add(-15 * time.Minute)),
+								To:        timestamppb.New(testSomeMoment),
 								WithDocs:  true,
 								Size:      100,
 							},
-							StartedAt: timestamppb.New(someMoment.Add(-30 * time.Second)),
-							ExpiresAt: timestamppb.New(someMoment.Add(30 * time.Second)),
+							StartedAt: timestamppb.New(testSomeMoment.Add(-30 * time.Second)),
+							ExpiresAt: timestamppb.New(testSomeMoment.Add(30 * time.Second)),
 							Progress:  1,
 							DiskUsage: 512,
 							OwnerName: mockUserName1,
@@ -117,8 +123,8 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 							Request: &seqapi.StartAsyncSearchRequest{
 								Retention: durationpb.New(360 * time.Second),
 								Query:     "message:error and level:3",
-								From:      timestamppb.New(someMoment.Add(-1 * time.Hour)),
-								To:        timestamppb.New(someMoment),
+								From:      timestamppb.New(testSomeMoment.Add(-1 * time.Hour)),
+								To:        timestamppb.New(testSomeMoment),
 								Aggs: []*seqapi.AggregationQuery{
 									{
 										Field:    "x",
@@ -132,9 +138,9 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 								},
 								WithDocs: false,
 							},
-							StartedAt:  timestamppb.New(someMoment.Add(-60 * time.Second)),
-							ExpiresAt:  timestamppb.New(someMoment.Add(300 * time.Second)),
-							CanceledAt: timestamppb.New(someMoment),
+							StartedAt:  timestamppb.New(testSomeMoment.Add(-60 * time.Second)),
+							ExpiresAt:  timestamppb.New(testSomeMoment.Add(300 * time.Second)),
+							CanceledAt: timestamppb.New(testSomeMoment),
 							Progress:   1,
 							DiskUsage:  256,
 							OwnerName:  mockUserName2,
@@ -157,18 +163,18 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 			want: getAsyncSearchesListResponseFromProto(&seqapi.GetAsyncSearchesListResponse{
 				Searches: []*seqapi.GetAsyncSearchesListResponse_ListItem{
 					{
-						SearchId: mockSearchID,
+						SearchId: testSearchID,
 						Status:   seqapi.AsyncSearchStatus_ASYNC_SEARCH_STATUS_DONE,
 						Request: &seqapi.StartAsyncSearchRequest{
 							Retention: durationpb.New(60 * time.Second),
 							Query:     "message:error",
-							From:      timestamppb.New(someMoment.Add(-15 * time.Minute)),
-							To:        timestamppb.New(someMoment),
+							From:      timestamppb.New(testSomeMoment.Add(-15 * time.Minute)),
+							To:        timestamppb.New(testSomeMoment),
 							WithDocs:  true,
 							Size:      100,
 						},
-						StartedAt: timestamppb.New(someMoment.Add(-30 * time.Second)),
-						ExpiresAt: timestamppb.New(someMoment.Add(30 * time.Second)),
+						StartedAt: timestamppb.New(testSomeMoment.Add(-30 * time.Second)),
+						ExpiresAt: timestamppb.New(testSomeMoment.Add(30 * time.Second)),
 						Progress:  1,
 						DiskUsage: 512,
 						OwnerName: mockUserName1,
@@ -188,18 +194,18 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 				resp: &seqapi.GetAsyncSearchesListResponse{
 					Searches: []*seqapi.GetAsyncSearchesListResponse_ListItem{
 						{
-							SearchId: mockSearchID,
+							SearchId: testSearchID,
 							Status:   seqapi.AsyncSearchStatus_ASYNC_SEARCH_STATUS_DONE,
 							Request: &seqapi.StartAsyncSearchRequest{
 								Retention: durationpb.New(60 * time.Second),
 								Query:     "message:error",
-								From:      timestamppb.New(someMoment.Add(-15 * time.Minute)),
-								To:        timestamppb.New(someMoment),
+								From:      timestamppb.New(testSomeMoment.Add(-15 * time.Minute)),
+								To:        timestamppb.New(testSomeMoment),
 								WithDocs:  true,
 								Size:      100,
 							},
-							StartedAt: timestamppb.New(someMoment.Add(-30 * time.Second)),
-							ExpiresAt: timestamppb.New(someMoment.Add(30 * time.Second)),
+							StartedAt: timestamppb.New(testSomeMoment.Add(-30 * time.Second)),
+							ExpiresAt: timestamppb.New(testSomeMoment.Add(30 * time.Second)),
 							Progress:  1,
 							DiskUsage: 512,
 							OwnerName: mockUserName1,
@@ -217,18 +223,18 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 			want: getAsyncSearchesListResponseFromProto(&seqapi.GetAsyncSearchesListResponse{
 				Searches: []*seqapi.GetAsyncSearchesListResponse_ListItem{
 					{
-						SearchId: mockSearchID,
+						SearchId: testSearchID,
 						Status:   seqapi.AsyncSearchStatus_ASYNC_SEARCH_STATUS_DONE,
 						Request: &seqapi.StartAsyncSearchRequest{
 							Retention: durationpb.New(60 * time.Second),
 							Query:     "message:error",
-							From:      timestamppb.New(someMoment.Add(-15 * time.Minute)),
-							To:        timestamppb.New(someMoment),
+							From:      timestamppb.New(testSomeMoment.Add(-15 * time.Minute)),
+							To:        timestamppb.New(testSomeMoment),
 							WithDocs:  true,
 							Size:      100,
 						},
-						StartedAt: timestamppb.New(someMoment.Add(-30 * time.Second)),
-						ExpiresAt: timestamppb.New(someMoment.Add(30 * time.Second)),
+						StartedAt: timestamppb.New(testSomeMoment.Add(-30 * time.Second)),
+						ExpiresAt: timestamppb.New(testSomeMoment.Add(30 * time.Second)),
 						Progress:  1,
 						DiskUsage: 512,
 						OwnerName: mockUserName1,
@@ -244,18 +250,18 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 				resp: &seqapi.GetAsyncSearchesListResponse{
 					Searches: []*seqapi.GetAsyncSearchesListResponse_ListItem{
 						{
-							SearchId: mockSearchID,
+							SearchId: testSearchID,
 							Status:   seqapi.AsyncSearchStatus_ASYNC_SEARCH_STATUS_DONE,
 							Request: &seqapi.StartAsyncSearchRequest{
 								Retention: durationpb.New(60 * time.Second),
 								Query:     "message:error",
-								From:      timestamppb.New(someMoment.Add(-15 * time.Minute)),
-								To:        timestamppb.New(someMoment),
+								From:      timestamppb.New(testSomeMoment.Add(-15 * time.Minute)),
+								To:        timestamppb.New(testSomeMoment),
 								WithDocs:  true,
 								Size:      100,
 							},
-							StartedAt: timestamppb.New(someMoment.Add(-30 * time.Second)),
-							ExpiresAt: timestamppb.New(someMoment.Add(30 * time.Second)),
+							StartedAt: timestamppb.New(testSomeMoment.Add(-30 * time.Second)),
+							ExpiresAt: timestamppb.New(testSomeMoment.Add(30 * time.Second)),
 							Progress:  1,
 							DiskUsage: 512,
 							OwnerName: mockUserName1,
@@ -290,18 +296,18 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 			want: getAsyncSearchesListResponseFromProto(&seqapi.GetAsyncSearchesListResponse{
 				Searches: []*seqapi.GetAsyncSearchesListResponse_ListItem{
 					{
-						SearchId: mockSearchID,
+						SearchId: testSearchID,
 						Status:   seqapi.AsyncSearchStatus_ASYNC_SEARCH_STATUS_DONE,
 						Request: &seqapi.StartAsyncSearchRequest{
 							Retention: durationpb.New(60 * time.Second),
 							Query:     tooLongQuery,
-							From:      timestamppb.New(someMoment.Add(-15 * time.Minute)),
-							To:        timestamppb.New(someMoment),
+							From:      timestamppb.New(testSomeMoment.Add(-15 * time.Minute)),
+							To:        timestamppb.New(testSomeMoment),
 							WithDocs:  true,
 							Size:      100,
 						},
-						StartedAt: timestamppb.New(someMoment.Add(-30 * time.Second)),
-						ExpiresAt: timestamppb.New(someMoment.Add(30 * time.Second)),
+						StartedAt: timestamppb.New(testSomeMoment.Add(-30 * time.Second)),
+						ExpiresAt: timestamppb.New(testSomeMoment.Add(30 * time.Second)),
 						Progress:  1,
 						DiskUsage: 512,
 						OwnerName: mockUserName1,
@@ -317,18 +323,18 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 				resp: &seqapi.GetAsyncSearchesListResponse{
 					Searches: []*seqapi.GetAsyncSearchesListResponse_ListItem{
 						{
-							SearchId: mockSearchID,
+							SearchId: testSearchID,
 							Status:   seqapi.AsyncSearchStatus_ASYNC_SEARCH_STATUS_DONE,
 							Request: &seqapi.StartAsyncSearchRequest{
 								Retention: durationpb.New(60 * time.Second),
 								Query:     tooLongQuery,
-								From:      timestamppb.New(someMoment.Add(-15 * time.Minute)),
-								To:        timestamppb.New(someMoment),
+								From:      timestamppb.New(testSomeMoment.Add(-15 * time.Minute)),
+								To:        timestamppb.New(testSomeMoment),
 								WithDocs:  true,
 								Size:      100,
 							},
-							StartedAt: timestamppb.New(someMoment.Add(-30 * time.Second)),
-							ExpiresAt: timestamppb.New(someMoment.Add(30 * time.Second)),
+							StartedAt: timestamppb.New(testSomeMoment.Add(-30 * time.Second)),
+							ExpiresAt: timestamppb.New(testSomeMoment.Add(30 * time.Second)),
 							Progress:  1,
 							DiskUsage: 512,
 							OwnerName: mockUserName1,
@@ -347,20 +353,19 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctrl := gomock.NewController(t)
+			svcMock := mock_asyncsearches.NewMockService(ctrl)
 			seqData := test.APITestData{}
+			seqData.Mocks.AsyncSearchesSvc = svcMock
 
 			if tt.mockArgs != nil {
-				ctrl := gomock.NewController(t)
-
-				svcMock := mock_asyncsearches.NewMockService(ctrl)
 				svcMock.EXPECT().
 					GetAsyncSearchesList(gomock.Any(), tt.mockArgs.req).
 					Return(tt.mockArgs.resp, tt.mockArgs.err).
 					Times(1)
-				seqData.Mocks.AsyncSearchesSvc = svcMock
 			}
 
-			api := setupAPIWithAsyncSearches(seqData)
+			api := setupTestAPI(seqData)
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[getAsyncSearchesListRequest, getAsyncSearchesListResponse]{
 				Method:  http.MethodPost,
@@ -376,7 +381,7 @@ func TestServeGetAsyncSearchesList(t *testing.T) {
 
 func TestServeGetAsyncSearchesList_Disabled(t *testing.T) {
 	seqData := test.APITestData{}
-	api := setupAPI(seqData)
+	api := setupTestAPI(seqData)
 
 	httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[getAsyncSearchesListRequest, struct{}]{
 		Method:  http.MethodPost,

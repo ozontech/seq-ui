@@ -32,8 +32,8 @@ func TestGetAll(t *testing.T) {
 		{
 			name: "ok",
 			req: &dashboards.GetAllRequest{
-				Limit:  int32(limit),
-				Offset: int32(offset),
+				Limit:  int32(testLimit),
+				Offset: int32(testOffset),
 			},
 			want: &dashboards.GetAllResponse{
 				Dashboards: []*dashboards.GetAllResponse_Dashboard{
@@ -44,8 +44,8 @@ func TestGetAll(t *testing.T) {
 			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				req: types.GetAllDashboardsRequest{
-					Limit:  limit,
-					Offset: offset,
+					Limit:  testLimit,
+					Offset: testOffset,
 				},
 				resp: types.DashboardInfosWithOwner{
 					{
@@ -68,14 +68,14 @@ func TestGetAll(t *testing.T) {
 		{
 			name: "err_svc",
 			req: &dashboards.GetAllRequest{
-				Limit:  int32(limit),
-				Offset: int32(offset),
+				Limit:  int32(testLimit),
+				Offset: int32(testOffset),
 			},
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
 				req: types.GetAllDashboardsRequest{
-					Limit:  limit,
-					Offset: offset,
+					Limit:  testLimit,
+					Offset: testOffset,
 				},
 				err: errSomethingWrong,
 			},
@@ -86,7 +86,7 @@ func TestGetAll(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().

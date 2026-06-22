@@ -14,6 +14,9 @@ import (
 )
 
 func TestGetByUUID(t *testing.T) {
+	var (
+		dashboardOwner = "owner"
+	)
 	type mockArgs struct {
 		uuid string
 		resp types.Dashboard
@@ -32,19 +35,19 @@ func TestGetByUUID(t *testing.T) {
 		{
 			name: "ok",
 			req: &dashboards.GetByUUIDRequest{
-				Uuid: dashboardUUID,
+				Uuid: testDashboardUUID,
 			},
 			want: &dashboards.GetByUUIDResponse{
-				Name:      dashboardName,
-				Meta:      dashboardMeta,
+				Name:      testDashboardName,
+				Meta:      testDashboardMeta,
 				OwnerName: dashboardOwner,
 			},
 			wantCode: codes.OK,
 			mockArgs: &mockArgs{
-				uuid: dashboardUUID,
+				uuid: testDashboardUUID,
 				resp: types.Dashboard{
-					Name:      dashboardName,
-					Meta:      dashboardMeta,
+					Name:      testDashboardName,
+					Meta:      testDashboardMeta,
 					OwnerName: dashboardOwner,
 				},
 			},
@@ -52,11 +55,11 @@ func TestGetByUUID(t *testing.T) {
 		{
 			name: "err_svc",
 			req: &dashboards.GetByUUIDRequest{
-				Uuid: dashboardUUID,
+				Uuid: testDashboardUUID,
 			},
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
-				uuid: dashboardUUID,
+				uuid: testDashboardUUID,
 				err:  errSomethingWrong,
 			},
 		},
@@ -66,7 +69,7 @@ func TestGetByUUID(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().

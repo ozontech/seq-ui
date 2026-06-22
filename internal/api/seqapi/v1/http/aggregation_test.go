@@ -35,16 +35,16 @@ func TestServeGetAggregation(t *testing.T) {
 		{
 			name: "ok_single_agg",
 			req: getAggregationRequest{
-				Query:    query,
-				From:     from,
-				To:       to,
+				Query:    testQuery,
+				From:     testFrom,
+				To:       testTo,
 				AggField: "test_single",
 			},
 			mockArgs: &mockArgs{
 				req: &seqapi.GetAggregationRequest{
-					Query:    query,
-					From:     timestamppb.New(from),
-					To:       timestamppb.New(to),
+					Query:    testQuery,
+					From:     timestamppb.New(testFrom),
+					To:       timestamppb.New(testTo),
 					AggField: "test_single",
 				},
 				resp: &seqapi.GetAggregationResponse{
@@ -70,9 +70,9 @@ func TestServeGetAggregation(t *testing.T) {
 		{
 			name: "ok_multi_agg",
 			req: getAggregationRequest{
-				Query: query,
-				From:  from,
-				To:    to,
+				Query: testQuery,
+				From:  testFrom,
+				To:    testTo,
 				Aggregations: aggregationQueries{
 					{Field: "test_multi1"},
 					{Field: "test_multi2"},
@@ -81,9 +81,9 @@ func TestServeGetAggregation(t *testing.T) {
 			},
 			mockArgs: &mockArgs{
 				req: &seqapi.GetAggregationRequest{
-					Query: query,
-					From:  timestamppb.New(from),
-					To:    timestamppb.New(to),
+					Query: testQuery,
+					From:  timestamppb.New(testFrom),
+					To:    timestamppb.New(testTo),
 					Aggregations: []*seqapi.AggregationQuery{
 						{Field: "test_multi1"},
 						{Field: "test_multi2"},
@@ -114,9 +114,9 @@ func TestServeGetAggregation(t *testing.T) {
 		{
 			name: "ok_agg_quantile",
 			req: getAggregationRequest{
-				Query: query,
-				From:  from,
-				To:    to,
+				Query: testQuery,
+				From:  testFrom,
+				To:    testTo,
 				Aggregations: aggregationQueries{
 					{
 						Field:     "test_multi1",
@@ -128,9 +128,9 @@ func TestServeGetAggregation(t *testing.T) {
 			},
 			mockArgs: &mockArgs{
 				req: &seqapi.GetAggregationRequest{
-					Query: query,
-					From:  timestamppb.New(from),
-					To:    timestamppb.New(to),
+					Query: testQuery,
+					From:  timestamppb.New(testFrom),
+					To:    timestamppb.New(testTo),
 					Aggregations: []*seqapi.AggregationQuery{
 						{
 							Field:     "test_multi1",
@@ -175,16 +175,16 @@ func TestServeGetAggregation(t *testing.T) {
 		{
 			name: "err_partial_response",
 			req: getAggregationRequest{
-				Query:    query,
-				From:     from,
-				To:       to,
+				Query:    testQuery,
+				From:     testFrom,
+				To:       testTo,
 				AggField: "test_err_partial",
 			},
 			mockArgs: &mockArgs{
 				req: &seqapi.GetAggregationRequest{
-					Query:    query,
-					From:     timestamppb.New(from),
-					To:       timestamppb.New(to),
+					Query:    testQuery,
+					From:     timestamppb.New(testFrom),
+					To:       timestamppb.New(testTo),
 					AggField: "test_err_partial",
 				},
 				resp: &seqapi.GetAggregationResponse{
@@ -210,9 +210,9 @@ func TestServeGetAggregation(t *testing.T) {
 		{
 			name: "err_aggs_limit_max",
 			req: getAggregationRequest{
-				Query:        query,
-				From:         from,
-				To:           to,
+				Query:        testQuery,
+				From:         testFrom,
+				To:           testTo,
 				Aggregations: aggregationQueries{{}, {}, {}},
 			},
 			wantErr: true,
@@ -225,16 +225,16 @@ func TestServeGetAggregation(t *testing.T) {
 		{
 			name: "err_client",
 			req: getAggregationRequest{
-				Query:    query,
-				From:     from,
-				To:       to,
+				Query:    testQuery,
+				From:     testFrom,
+				To:       testTo,
 				AggField: "test_err_client",
 			},
 			mockArgs: &mockArgs{
 				req: &seqapi.GetAggregationRequest{
-					Query:    query,
-					From:     timestamppb.New(from),
-					To:       timestamppb.New(to),
+					Query:    testQuery,
+					From:     timestamppb.New(testFrom),
+					To:       timestamppb.New(testTo),
 					AggField: "test_err_client",
 				},
 				err: errors.New("client error"),
@@ -268,7 +268,7 @@ func TestServeGetAggregation(t *testing.T) {
 				seqData.Mocks.SeqDB = seqDbMock
 			}
 
-			api := setupAPI(seqData)
+			api := setupTestAPI(seqData)
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[getAggregationRequest, getAggregationResponse]{
 				Method:  http.MethodPost,

@@ -33,9 +33,9 @@ func TestServeGetHistogram(t *testing.T) {
 		{
 			name: "ok",
 			req: getHistogramRequest{
-				Query:    query,
-				From:     from,
-				To:       to,
+				Query:    testQuery,
+				From:     testFrom,
+				To:       testTo,
 				Interval: "5s",
 			},
 			want: getHistogramResponse{
@@ -50,9 +50,9 @@ func TestServeGetHistogram(t *testing.T) {
 			},
 			mockArgs: &mockArgs{
 				req: &seqapi.GetHistogramRequest{
-					Query:    query,
-					From:     timestamppb.New(from),
-					To:       timestamppb.New(to),
+					Query:    testQuery,
+					From:     timestamppb.New(testFrom),
+					To:       timestamppb.New(testTo),
 					Interval: "5s",
 				},
 				resp: &seqapi.GetHistogramResponse{
@@ -66,9 +66,9 @@ func TestServeGetHistogram(t *testing.T) {
 		{
 			name: "err_partial_response",
 			req: getHistogramRequest{
-				Query:    query,
-				From:     from,
-				To:       to,
+				Query:    testQuery,
+				From:     testFrom,
+				To:       testTo,
 				Interval: "10s",
 			},
 			want: getHistogramResponse{
@@ -80,9 +80,9 @@ func TestServeGetHistogram(t *testing.T) {
 			},
 			mockArgs: &mockArgs{
 				req: &seqapi.GetHistogramRequest{
-					Query:    query,
-					From:     timestamppb.New(from),
-					To:       timestamppb.New(to),
+					Query:    testQuery,
+					From:     timestamppb.New(testFrom),
+					To:       timestamppb.New(testTo),
 					Interval: "10s",
 				},
 				resp: &seqapi.GetHistogramResponse{
@@ -97,17 +97,17 @@ func TestServeGetHistogram(t *testing.T) {
 		{
 			name: "err_client",
 			req: getHistogramRequest{
-				Query:    query,
-				From:     from,
-				To:       to,
+				Query:    testQuery,
+				From:     testFrom,
+				To:       testTo,
 				Interval: "20s",
 			},
 			wantErr: true,
 			mockArgs: &mockArgs{
 				req: &seqapi.GetHistogramRequest{
-					Query:    query,
-					From:     timestamppb.New(from),
-					To:       timestamppb.New(to),
+					Query:    testQuery,
+					From:     timestamppb.New(testFrom),
+					To:       timestamppb.New(testTo),
 					Interval: "20s",
 				},
 				err: errors.New("client error"),
@@ -133,7 +133,7 @@ func TestServeGetHistogram(t *testing.T) {
 				seqData.Mocks.SeqDB = seqDbMock
 			}
 
-			api := setupAPI(seqData)
+			api := setupTestAPI(seqData)
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[getHistogramRequest, getHistogramResponse]{
 				Method:  http.MethodPost,

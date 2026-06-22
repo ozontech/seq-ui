@@ -35,38 +35,38 @@ func TestStatus(t *testing.T) {
 			name: "ok",
 			want: &seqapi.StatusResponse{
 				NumberOfStores:    3,
-				OldestStorageTime: timestamppb.New(someMoment),
+				OldestStorageTime: timestamppb.New(testSomeMoment),
 				Stores: []*seqapi.StoreStatus{
 					{
 						Host:   "host-0",
-						Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(someMoment)},
+						Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testSomeMoment)},
 					},
 					{
 						Host:   "host-1",
-						Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(someMoment.Add(1 * time.Hour))},
+						Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testSomeMoment.Add(1 * time.Hour))},
 					},
 					{
 						Host:   "host-2",
-						Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(someMoment.Add(2 * time.Hour))},
+						Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testSomeMoment.Add(2 * time.Hour))},
 					},
 				},
 			},
 			mockArgs: &mockArgs{
 				resp: &seqapi.StatusResponse{
 					NumberOfStores:    3,
-					OldestStorageTime: timestamppb.New(someMoment),
+					OldestStorageTime: timestamppb.New(testSomeMoment),
 					Stores: []*seqapi.StoreStatus{
 						{
 							Host:   "host-0",
-							Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(someMoment)},
+							Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testSomeMoment)},
 						},
 						{
 							Host:   "host-1",
-							Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(someMoment.Add(1 * time.Hour))},
+							Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testSomeMoment.Add(1 * time.Hour))},
 						},
 						{
 							Host:   "host-2",
-							Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(someMoment.Add(2 * time.Hour))},
+							Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testSomeMoment.Add(2 * time.Hour))},
 						},
 					},
 				},
@@ -99,7 +99,7 @@ func TestStatus(t *testing.T) {
 				},
 			}
 
-			api := setupAPI(seqData)
+			api := setupTestAPI(seqData)
 
 			got, err := api.Status(context.Background(), nil)
 

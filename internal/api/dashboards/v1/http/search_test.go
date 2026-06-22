@@ -11,6 +11,9 @@ import (
 )
 
 func TestServeSearch(t *testing.T) {
+	userName := "unnamed"
+	query := "test-query"
+
 	type mockArgs struct {
 		req  types.SearchDashboardsRequest
 		resp types.DashboardInfosWithOwner
@@ -28,7 +31,7 @@ func TestServeSearch(t *testing.T) {
 	}{
 		{
 			name: "ok",
-			req:  searchRequest{Query: query, Limit: limit, Offset: offset},
+			req:  searchRequest{Query: query, Limit: testLimit, Offset: testOffset},
 			want: searchResponse{
 				Dashboards: infosWithOwner{
 					{info: info{UUID: "064dc707-02b8-7000-8201-02a7f396738a", Name: "my test dashboard"}, OwnerName: "user1"},
@@ -38,8 +41,8 @@ func TestServeSearch(t *testing.T) {
 			mockArgs: &mockArgs{
 				req: types.SearchDashboardsRequest{
 					Query:  query,
-					Limit:  limit,
-					Offset: offset,
+					Limit:  testLimit,
+					Offset: testOffset,
 				},
 				resp: types.DashboardInfosWithOwner{
 					{
@@ -63,8 +66,8 @@ func TestServeSearch(t *testing.T) {
 			name: "ok_filter",
 			req: searchRequest{
 				Query:  query,
-				Limit:  limit,
-				Offset: offset,
+				Limit:  testLimit,
+				Offset: testOffset,
 				Filter: &searchFilter{OwnerName: &userName},
 			},
 			want: searchResponse{
@@ -75,8 +78,8 @@ func TestServeSearch(t *testing.T) {
 			mockArgs: &mockArgs{
 				req: types.SearchDashboardsRequest{
 					Query:  query,
-					Limit:  limit,
-					Offset: offset,
+					Limit:  testLimit,
+					Offset: testOffset,
 					Filter: &types.SearchDashboardsFilter{
 						OwnerName: &userName,
 					},
@@ -94,13 +97,13 @@ func TestServeSearch(t *testing.T) {
 		},
 		{
 			name:    "err_svc",
-			req:     searchRequest{Query: query, Limit: limit, Offset: offset},
+			req:     searchRequest{Query: query, Limit: testLimit, Offset: testOffset},
 			wantErr: true,
 			mockArgs: &mockArgs{
 				req: types.SearchDashboardsRequest{
 					Query:  query,
-					Limit:  limit,
-					Offset: offset,
+					Limit:  testLimit,
+					Offset: testOffset,
 				},
 				err: errSomethingWrong,
 			},
@@ -111,7 +114,7 @@ func TestServeSearch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().

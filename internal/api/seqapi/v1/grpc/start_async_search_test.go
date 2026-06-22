@@ -19,6 +19,10 @@ import (
 )
 
 func TestServeStartAsyncSearch(t *testing.T) {
+	var (
+		query = "message:error"
+		meta  = `{"some":"meta"}`
+	)
 	type mockArgs struct {
 		resp *seqapi.StartAsyncSearchResponse
 		err  error
@@ -38,8 +42,8 @@ func TestServeStartAsyncSearch(t *testing.T) {
 			req: &seqapi.StartAsyncSearchRequest{
 				Retention: durationpb.New(60 * time.Second),
 				Query:     query,
-				From:      timestamppb.New(from),
-				To:        timestamppb.New(to),
+				From:      timestamppb.New(testFrom),
+				To:        timestamppb.New(testTo),
 				WithDocs:  true,
 				Size:      100,
 				Hist: &seqapi.StartAsyncSearchRequest_HistQuery{
@@ -56,11 +60,11 @@ func TestServeStartAsyncSearch(t *testing.T) {
 				Meta: meta,
 			},
 			want: &seqapi.StartAsyncSearchResponse{
-				SearchId: mockSearchID,
+				SearchId: testSearchID,
 			},
 			mockArgs: &mockArgs{
 				resp: &seqapi.StartAsyncSearchResponse{
-					SearchId: mockSearchID,
+					SearchId: testSearchID,
 				},
 			},
 		},
@@ -69,8 +73,8 @@ func TestServeStartAsyncSearch(t *testing.T) {
 			req: &seqapi.StartAsyncSearchRequest{
 				Retention: durationpb.New(60 * time.Second),
 				Query:     query,
-				From:      timestamppb.New(from),
-				To:        timestamppb.New(to),
+				From:      timestamppb.New(testFrom),
+				To:        timestamppb.New(testTo),
 				WithDocs:  true,
 				Size:      100,
 				Hist: &seqapi.StartAsyncSearchRequest_HistQuery{
@@ -111,7 +115,7 @@ func TestServeStartAsyncSearch(t *testing.T) {
 				seqData.Mocks.AsyncSearchesSvc = svcMock
 			}
 
-			api := setupAPIWithAsyncSearches(seqData)
+			api := setupTestAPI(seqData)
 			got, err := api.StartAsyncSearch(context.Background(), tt.req)
 
 			require.Equal(t, tt.wantCode, status.Code(err))
@@ -125,7 +129,7 @@ func TestServeStartAsyncSearch(t *testing.T) {
 
 func TestServeStartAsyncSearch_Disabled(t *testing.T) {
 	seqData := test.APITestData{}
-	api := setupAPI(seqData)
+	api := setupTestAPI(seqData)
 
 	_, err := api.StartAsyncSearch(context.Background(), &seqapi.StartAsyncSearchRequest{})
 	require.Error(t, err)

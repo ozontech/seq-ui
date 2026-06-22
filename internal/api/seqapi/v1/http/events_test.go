@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -20,11 +21,19 @@ import (
 )
 
 func TestServeGetEvent(t *testing.T) {
-	event1 := test.MakeEvent(id1, 1, someMoment)
+	var (
+		id1      = "test1"
+		id2      = "test2"
+		id3      = "test3"
+		id4      = "test4"
+		cacheTTL = time.Minute
+	)
+
+	event1 := test.MakeEvent(id1, 1, testSomeMoment)
 	event1json, _ := proto.Marshal(event1)
-	event2 := test.MakeEvent(id2, 2, someMoment)
+	event2 := test.MakeEvent(id2, 2, testSomeMoment)
 	event2json, _ := proto.Marshal(event2)
-	event3 := test.MakeEvent(id3, 0, someMoment)
+	event3 := test.MakeEvent(id3, 0, testSomeMoment)
 	event3json, _ := proto.Marshal(event3)
 
 	type mockArgs struct {
@@ -141,12 +150,12 @@ func TestServeGetEvent(t *testing.T) {
 				}
 			}
 
-			api := setupAPI(seqData)
+			api := setupTestAPI(seqData)
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getEventResponse]{
 				Method:  http.MethodGet,
 				Target:  fmt.Sprintf("/seqapi/v1/events/%s", tt.id),
-				Handler: withEventID(api.serveGetEvent, tt.id),
+				Handler: withQueryParamID(api.serveGetEvent, tt.id),
 				Want:    tt.want,
 				WantErr: tt.wantErr,
 			})
@@ -155,6 +164,10 @@ func TestServeGetEvent(t *testing.T) {
 }
 
 func TestGetEventWithMasking(t *testing.T) {
+	var (
+		errCache = errors.New("test error")
+		cacheTTL = time.Minute
+	)
 	type mockArgs struct {
 		req  *seqapi.GetEventRequest
 		resp *seqapi.GetEventResponse
@@ -338,7 +351,7 @@ func TestGetEventWithMasking(t *testing.T) {
 			Data: map[string]string{
 				eventField: eventVal,
 			},
-			Time: timestamppb.New(someMoment),
+			Time: timestamppb.New(testSomeMoment),
 		}
 		if shouldMask {
 			event.Data[eventField] = "***"
@@ -413,12 +426,12 @@ func TestGetEventWithMasking(t *testing.T) {
 			}
 			seqData.Mocks.SeqDB = seqDbMock
 
-			api := setupAPI(seqData)
+			api := setupTestAPI(seqData)
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getEventResponse]{
 				Method:  http.MethodGet,
 				Target:  fmt.Sprintf("/seqapi/v1/events/%s", curEID),
-				Handler: withEventID(api.serveGetEvent, curEID),
+				Handler: withQueryParamID(api.serveGetEvent, curEID),
 				Want:    curEData.want,
 				WantErr: tt.wantErr,
 			})

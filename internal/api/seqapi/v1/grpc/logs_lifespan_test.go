@@ -21,6 +21,12 @@ import (
 )
 
 func TestGetLogsLifespan(t *testing.T) {
+	var (
+		resultStr = "36000" // 10(h) * 60(min/h) * 60(sec/min)
+		cacheKey  = "logs_lifespan"
+		result    = 10 * time.Hour
+		cacheTTL  = time.Minute
+	)
 	unparsable := func(s string) bool {
 		_, err := strconv.Atoi(s)
 		return err != nil
@@ -55,7 +61,7 @@ func TestGetLogsLifespan(t *testing.T) {
 				Value: resultStr,
 			},
 			clientResp: &seqapi.StatusResponse{
-				OldestStorageTime: timestamppb.New(someMoment),
+				OldestStorageTime: timestamppb.New(testSomeMoment),
 			},
 			resp: &seqapi.GetLogsLifespanResponse{
 				Lifespan: durationpb.New(result),
@@ -70,7 +76,7 @@ func TestGetLogsLifespan(t *testing.T) {
 				Value: resultStr,
 			},
 			clientResp: &seqapi.StatusResponse{
-				OldestStorageTime: timestamppb.New(someMoment),
+				OldestStorageTime: timestamppb.New(testSomeMoment),
 			},
 			resp: &seqapi.GetLogsLifespanResponse{
 				Lifespan: durationpb.New(result),
@@ -132,9 +138,9 @@ func TestGetLogsLifespan(t *testing.T) {
 				}
 			}
 
-			s := setupAPI(seqData)
+			s := setupTestAPI(seqData)
 			s.nowFn = func() time.Time {
-				return someMoment.Add(result)
+				return testSomeMoment.Add(result)
 			}
 
 			resp, err := s.GetLogsLifespan(context.Background(), nil)

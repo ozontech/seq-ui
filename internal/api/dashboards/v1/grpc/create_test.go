@@ -32,32 +32,32 @@ func TestCreate(t *testing.T) {
 		{
 			name: "ok",
 			req: &dashboards.CreateRequest{
-				Name: dashboardName,
-				Meta: dashboardMeta,
+				Name: testDashboardName,
+				Meta: testDashboardMeta,
 			},
 			want: &dashboards.CreateResponse{
-				Uuid: dashboardUUID,
+				Uuid: testDashboardUUID,
 			},
 			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				req: types.CreateDashboardRequest{
-					Name: dashboardName,
-					Meta: dashboardMeta,
+					Name: testDashboardName,
+					Meta: testDashboardMeta,
 				},
-				resp: dashboardUUID,
+				resp: testDashboardUUID,
 			},
 		},
 		{
 			name: "err_svc",
 			req: &dashboards.CreateRequest{
-				Name: dashboardName,
-				Meta: dashboardMeta,
+				Name: testDashboardName,
+				Meta: testDashboardMeta,
 			},
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
 				req: types.CreateDashboardRequest{
-					Name: dashboardName,
-					Meta: dashboardMeta,
+					Name: testDashboardName,
+					Meta: testDashboardMeta,
 				},
 				err: errSomethingWrong,
 			},
@@ -68,7 +68,7 @@ func TestCreate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().

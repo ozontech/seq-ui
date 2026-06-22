@@ -17,6 +17,10 @@ import (
 )
 
 func TestSearch(t *testing.T) {
+	var (
+		query       = "message:error"
+		limit int32 = 3
+	)
 	tests := []struct {
 		name string
 
@@ -33,8 +37,8 @@ func TestSearch(t *testing.T) {
 			name: "ok",
 			req: &seqapi.SearchRequest{
 				Query:     query,
-				From:      timestamppb.New(from),
-				To:        timestamppb.New(to),
+				From:      timestamppb.New(testFrom),
+				To:        timestamppb.New(testTo),
 				Limit:     limit,
 				Offset:    0,
 				WithTotal: true,
@@ -48,7 +52,7 @@ func TestSearch(t *testing.T) {
 				Order: seqapi.Order_ORDER_ASC,
 			},
 			resp: &seqapi.SearchResponse{
-				Events:       test.MakeEvents(int(limit), someMoment),
+				Events:       test.MakeEvents(int(limit), testSomeMoment),
 				Total:        int64(limit),
 				Histogram:    test.MakeHistogram(2),
 				Aggregations: test.MakeAggregations(2, 2, nil),
@@ -104,8 +108,8 @@ func TestSearch(t *testing.T) {
 			name: "err_offset_too_high",
 			req: &seqapi.SearchRequest{
 				Query:  query,
-				From:   timestamppb.New(from),
-				To:     timestamppb.New(to),
+				From:   timestamppb.New(testFrom),
+				To:     timestamppb.New(testTo),
 				Limit:  limit,
 				Offset: 11,
 			},
@@ -121,18 +125,18 @@ func TestSearch(t *testing.T) {
 			name: "err_total_too_high",
 			req: &seqapi.SearchRequest{
 				Query:     query,
-				From:      timestamppb.New(from),
-				To:        timestamppb.New(to),
+				From:      timestamppb.New(testFrom),
+				To:        timestamppb.New(testTo),
 				Limit:     limit,
 				Offset:    0,
 				WithTotal: true,
 			},
 			resp: &seqapi.SearchResponse{
-				Events: test.MakeEvents(int(limit), someMoment),
+				Events: test.MakeEvents(int(limit), testSomeMoment),
 				Total:  int64(limit) + 1,
 			},
 			wantResp: &seqapi.SearchResponse{
-				Events: test.MakeEvents(int(limit), someMoment),
+				Events: test.MakeEvents(int(limit), testSomeMoment),
 				Total:  int64(limit) + 1,
 				Error: &seqapi.Error{
 					Code:    seqapi.ErrorCode_ERROR_CODE_QUERY_TOO_HEAVY,
@@ -150,8 +154,8 @@ func TestSearch(t *testing.T) {
 			name: "err_client",
 			req: &seqapi.SearchRequest{
 				Query:  query,
-				From:   timestamppb.New(from),
-				To:     timestamppb.New(to),
+				From:   timestamppb.New(testFrom),
+				To:     timestamppb.New(testTo),
 				Limit:  limit,
 				Offset: 0,
 			},
@@ -184,7 +188,7 @@ func TestSearch(t *testing.T) {
 				seqData.Mocks.SeqDB = seqDbMock
 			}
 
-			api := setupAPI(seqData)
+			api := setupTestAPI(seqData)
 			resp, err := api.Search(context.Background(), tt.req)
 			if tt.apiErr {
 				require.NotNil(t, err)

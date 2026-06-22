@@ -17,6 +17,9 @@ import (
 )
 
 func TestGetAggregation(t *testing.T) {
+	var (
+		query = "message:error"
+	)
 	tests := []struct {
 		name string
 
@@ -32,8 +35,8 @@ func TestGetAggregation(t *testing.T) {
 			name: "ok_multi_agg",
 			req: &seqapi.GetAggregationRequest{
 				Query: query,
-				From:  timestamppb.New(from),
-				To:    timestamppb.New(to),
+				From:  timestamppb.New(testFrom),
+				To:    timestamppb.New(testTo),
 				Aggregations: []*seqapi.AggregationQuery{
 					{Field: "test1"},
 					{Field: "test2"},
@@ -71,8 +74,8 @@ func TestGetAggregation(t *testing.T) {
 			name: "err_client",
 			req: &seqapi.GetAggregationRequest{
 				Query: query,
-				From:  timestamppb.New(from),
-				To:    timestamppb.New(to),
+				From:  timestamppb.New(testFrom),
+				To:    timestamppb.New(testTo),
 				Aggregations: []*seqapi.AggregationQuery{
 					{Field: "test2"},
 				},
@@ -106,7 +109,7 @@ func TestGetAggregation(t *testing.T) {
 				seqData.Mocks.SeqDB = seqDbMock
 			}
 
-			api := setupAPI(seqData)
+			api := setupTestAPI(seqData)
 
 			resp, err := api.GetAggregation(context.Background(), tt.req)
 			if tt.apiErr {
@@ -121,6 +124,11 @@ func TestGetAggregation(t *testing.T) {
 }
 
 func TestGetAggregationWithNormalization(t *testing.T) {
+	var (
+		query            = "message:error"
+		interval         = "2s"
+		targetBucketRate = "3s"
+	)
 	tests := []struct {
 		name string
 
@@ -137,8 +145,8 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 			name: "ok_count",
 			req: &seqapi.GetAggregationRequest{
 				Query: query,
-				From:  timestamppb.New(from),
-				To:    timestamppb.New(to),
+				From:  timestamppb.New(testFrom),
+				To:    timestamppb.New(testTo),
 				Aggregations: []*seqapi.AggregationQuery{
 					{Field: "test1", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval},
 					{Field: "test2", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval},
@@ -178,8 +186,8 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 			name: "ok_normalize_count",
 			req: &seqapi.GetAggregationRequest{
 				Query: query,
-				From:  timestamppb.New(from),
-				To:    timestamppb.New(to),
+				From:  timestamppb.New(testFrom),
+				To:    timestamppb.New(testTo),
 				Aggregations: []*seqapi.AggregationQuery{
 					{Field: "test1", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval, TargetBucketRate: &targetBucketRate},
 					{Field: "test2", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval, TargetBucketRate: &targetBucketRate},
@@ -237,7 +245,7 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 				seqData.Mocks.SeqDB = seqDbMock
 			}
 
-			api := setupAPI(seqData)
+			api := setupTestAPI(seqData)
 
 			resp, err := api.GetAggregation(context.Background(), tt.req)
 			if tt.apiErr {

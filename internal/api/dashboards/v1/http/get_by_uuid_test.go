@@ -12,6 +12,8 @@ import (
 )
 
 func TestServeGetByUUID(t *testing.T) {
+	dashboardUUID := "064dc707-02b8-7000-8201-02a7f396738a"
+
 	type mockArgs struct {
 		uuid string
 		resp types.Dashboard
@@ -56,7 +58,7 @@ func TestServeGetByUUID(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().

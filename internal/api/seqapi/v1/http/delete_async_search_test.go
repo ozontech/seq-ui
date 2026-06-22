@@ -31,11 +31,11 @@ func TestServeDeleteAsyncSearch(t *testing.T) {
 	}{
 		{
 			name:     "ok",
-			searchID: mockSearchID,
+			searchID: testSearchID,
 			noResp:   true,
 			mockArgs: &mockArgs{
 				req: &seqapi.DeleteAsyncSearchRequest{
-					SearchId: mockSearchID,
+					SearchId: testSearchID,
 				},
 				resp: &seqapi.DeleteAsyncSearchResponse{},
 			},
@@ -47,11 +47,11 @@ func TestServeDeleteAsyncSearch(t *testing.T) {
 		},
 		{
 			name:     "err_svc",
-			searchID: mockSearchID,
+			searchID: testSearchID,
 			wantErr:  true,
 			mockArgs: &mockArgs{
 				req: &seqapi.DeleteAsyncSearchRequest{
-					SearchId: mockSearchID,
+					SearchId: testSearchID,
 				},
 				err: errSomethingWrong,
 			},
@@ -76,12 +76,12 @@ func TestServeDeleteAsyncSearch(t *testing.T) {
 				seqData.Mocks.AsyncSearchesSvc = svcMock
 			}
 
-			api := setupAPIWithAsyncSearches(seqData)
+			api := setupTestAPI(seqData)
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, struct{}]{
 				Method:  http.MethodDelete,
-				Target:  fmt.Sprintf("/seqapi/v1/async_search/%s", mockSearchID),
-				Handler: withAsyncSearchID(api.serveDeleteAsyncSearch, tt.searchID),
+				Target:  fmt.Sprintf("/seqapi/v1/async_search/%s", testSearchID),
+				Handler: withQueryParamID(api.serveDeleteAsyncSearch, tt.searchID),
 				WantErr: tt.wantErr,
 				NoResp:  tt.noResp,
 			})
@@ -91,11 +91,11 @@ func TestServeDeleteAsyncSearch(t *testing.T) {
 
 func TestServeDeleteAsyncSearch_Disabled(t *testing.T) {
 	seqData := test.APITestData{}
-	api := setupAPI(seqData)
+	api := setupTestAPI(seqData)
 
 	httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, struct{}]{
 		Method:  http.MethodDelete,
-		Target:  "/seqapi/v1/async_search/c9a34cf8-4c66-484e-9cc2-42979d848656",
+		Target:  fmt.Sprintf("/seqapi/v1/async_search/%s", testSearchID),
 		Handler: api.serveDeleteAsyncSearch,
 		WantErr: true,
 	})

@@ -152,7 +152,7 @@ func TestServeGetEnvs(t *testing.T) {
 				Cfg: tt.cfg,
 			}
 
-			api := setupAPI(seqData)
+			api := setupTestAPI(seqData)
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getEnvsResponse]{
 				Method:  http.MethodGet,

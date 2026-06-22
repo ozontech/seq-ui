@@ -3,7 +3,7 @@ package http
 import (
 	"github.com/go-chi/chi/v5"
 
-	userprofile "github.com/ozontech/seq-ui/internal/pkg/service/userprofile"
+	"github.com/ozontech/seq-ui/internal/pkg/service/userprofile"
 )
 
 type API struct {

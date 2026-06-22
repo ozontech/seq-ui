@@ -14,6 +14,10 @@ import (
 )
 
 func TestSearch(t *testing.T) {
+	var (
+		userName = "unnamed"
+	)
+
 	type mockArgs struct {
 		req  types.SearchDashboardsRequest
 		resp types.DashboardInfosWithOwner
@@ -33,8 +37,8 @@ func TestSearch(t *testing.T) {
 			name: "ok",
 			req: &dashboards.SearchRequest{
 				Query:  "test",
-				Limit:  int32(limit),
-				Offset: int32(offset),
+				Limit:  int32(testLimit),
+				Offset: int32(testOffset),
 			},
 			want: &dashboards.SearchResponse{
 				Dashboards: []*dashboards.SearchResponse_Dashboard{
@@ -46,8 +50,8 @@ func TestSearch(t *testing.T) {
 			mockArgs: &mockArgs{
 				req: types.SearchDashboardsRequest{
 					Query:  "test",
-					Limit:  limit,
-					Offset: offset,
+					Limit:  testLimit,
+					Offset: testOffset,
 				},
 				resp: types.DashboardInfosWithOwner{
 					{
@@ -71,8 +75,8 @@ func TestSearch(t *testing.T) {
 			name: "ok_with_filter",
 			req: &dashboards.SearchRequest{
 				Query:  "test",
-				Limit:  int32(limit),
-				Offset: int32(offset),
+				Limit:  int32(testLimit),
+				Offset: int32(testOffset),
 				Filter: &dashboards.SearchRequest_Filter{
 					OwnerName: &userName,
 				},
@@ -86,9 +90,11 @@ func TestSearch(t *testing.T) {
 			mockArgs: &mockArgs{
 				req: types.SearchDashboardsRequest{
 					Query:  "test",
-					Limit:  limit,
-					Offset: offset,
-					Filter: filter,
+					Limit:  testLimit,
+					Offset: testOffset,
+					Filter: &types.SearchDashboardsFilter{
+						OwnerName: &userName,
+					},
 				},
 				resp: types.DashboardInfosWithOwner{
 					{
@@ -105,15 +111,15 @@ func TestSearch(t *testing.T) {
 			name: "err_svc",
 			req: &dashboards.SearchRequest{
 				Query:  "test",
-				Limit:  int32(limit),
-				Offset: int32(offset),
+				Limit:  int32(testLimit),
+				Offset: int32(testOffset),
 			},
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
 				req: types.SearchDashboardsRequest{
 					Query:  "test",
-					Limit:  limit,
-					Offset: offset,
+					Limit:  testLimit,
+					Offset: testOffset,
 				},
 				err: errSomethingWrong,
 			},
@@ -124,7 +130,7 @@ func TestSearch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().

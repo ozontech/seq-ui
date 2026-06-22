@@ -30,23 +30,23 @@ func TestStatus(t *testing.T) {
 		{
 			name: "ok",
 			want: statusResponse{
-				OldestStorageTime: &someMoment,
+				OldestStorageTime: &testSomeMoment,
 				NumberOfStores:    1,
 				Stores: []storeStatus{
 					{
 						Host:   "host-0",
-						Values: &storeStatusValues{OldestTime: &someMoment},
+						Values: &storeStatusValues{OldestTime: &testSomeMoment},
 					},
 				},
 			},
 			mockArgs: &mockArgs{
 				resp: &seqapi.StatusResponse{
 					NumberOfStores:    1,
-					OldestStorageTime: timestamppb.New(someMoment),
+					OldestStorageTime: timestamppb.New(testSomeMoment),
 					Stores: []*seqapi.StoreStatus{
 						{
 							Host:   "host-0",
-							Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(someMoment)},
+							Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testSomeMoment)},
 						},
 					},
 				},
@@ -75,7 +75,7 @@ func TestStatus(t *testing.T) {
 				Times(1)
 
 			seqData.Mocks.SeqDB = seqDbMock
-			api := setupAPI(seqData)
+			api := setupTestAPI(seqData)
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, statusResponse]{
 				Method:  http.MethodGet,

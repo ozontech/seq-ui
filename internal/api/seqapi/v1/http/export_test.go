@@ -32,9 +32,9 @@ func TestServeExport(t *testing.T) {
 		{
 			name: "ok_jsonl",
 			req: exportRequest{
-				Query:  query,
-				From:   from,
-				To:     to,
+				Query:  testQuery,
+				From:   testFrom,
+				To:     testTo,
 				Limit:  50,
 				Offset: 0,
 			},
@@ -46,9 +46,9 @@ func TestServeExport(t *testing.T) {
 			},
 			mockArgs: &mockArgs{
 				req: &seqapi.ExportRequest{
-					Query:  query,
-					From:   timestamppb.New(from),
-					To:     timestamppb.New(to),
+					Query:  testQuery,
+					From:   timestamppb.New(testFrom),
+					To:     timestamppb.New(testTo),
 					Limit:  50,
 					Offset: 0,
 				},
@@ -57,9 +57,9 @@ func TestServeExport(t *testing.T) {
 		{
 			name: "ok_csv",
 			req: exportRequest{
-				Query:  query,
-				From:   from,
-				To:     to,
+				Query:  testQuery,
+				From:   testFrom,
+				To:     testTo,
 				Limit:  50,
 				Offset: 0,
 				Format: efCSV,
@@ -73,9 +73,9 @@ func TestServeExport(t *testing.T) {
 			},
 			mockArgs: &mockArgs{
 				req: &seqapi.ExportRequest{
-					Query:  query,
-					From:   timestamppb.New(from),
-					To:     timestamppb.New(to),
+					Query:  testQuery,
+					From:   timestamppb.New(testFrom),
+					To:     timestamppb.New(testTo),
 					Limit:  50,
 					Offset: 0,
 					Format: seqapi.ExportFormat_EXPORT_FORMAT_CSV,
@@ -86,9 +86,9 @@ func TestServeExport(t *testing.T) {
 		{
 			name: "err_parallel_limited",
 			req: exportRequest{
-				Query:  query,
-				From:   from,
-				To:     to,
+				Query:  testQuery,
+				From:   testFrom,
+				To:     testTo,
 				Limit:  0,
 				Offset: 0,
 			},
@@ -102,9 +102,9 @@ func TestServeExport(t *testing.T) {
 		{
 			name: "err_export_limit_max",
 			req: exportRequest{
-				Query:  query,
-				From:   from,
-				To:     to,
+				Query:  testQuery,
+				From:   testFrom,
+				To:     testTo,
 				Limit:  10,
 				Offset: 0,
 			},
@@ -119,9 +119,9 @@ func TestServeExport(t *testing.T) {
 		{
 			name: "err_csv_empty_fields",
 			req: exportRequest{
-				Query:  query,
-				From:   from,
-				To:     to,
+				Query:  testQuery,
+				From:   testFrom,
+				To:     testTo,
 				Limit:  10,
 				Offset: 0,
 				Format: efCSV,
@@ -137,9 +137,9 @@ func TestServeExport(t *testing.T) {
 		{
 			name: "err_client",
 			req: exportRequest{
-				Query:  query,
-				From:   from,
-				To:     to,
+				Query:  testQuery,
+				From:   testFrom,
+				To:     testTo,
 				Limit:  50,
 				Offset: 0,
 			},
@@ -152,9 +152,9 @@ func TestServeExport(t *testing.T) {
 			wantErr: true,
 			mockArgs: &mockArgs{
 				req: &seqapi.ExportRequest{
-					Query:  query,
-					From:   timestamppb.New(from),
-					To:     timestamppb.New(to),
+					Query:  testQuery,
+					From:   timestamppb.New(testFrom),
+					To:     timestamppb.New(testTo),
 					Limit:  50,
 					Offset: 0,
 				},
@@ -183,7 +183,7 @@ func TestServeExport(t *testing.T) {
 				seqData.Mocks.SeqDB = seqDbMock
 			}
 
-			api := setupAPI(seqData)
+			api := setupTestAPI(seqData)
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[exportRequest, struct{}]{
 				Method:  http.MethodPost,

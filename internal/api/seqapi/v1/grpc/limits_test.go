@@ -51,7 +51,7 @@ func TestGetLimits(t *testing.T) {
 			seqData := test.APITestData{
 				Cfg: tt.cfg,
 			}
-			s := setupAPI(seqData)
+			s := setupTestAPI(seqData)
 			resp, err := s.GetLimits(context.Background(), nil)
 
 			require.NoError(t, err)

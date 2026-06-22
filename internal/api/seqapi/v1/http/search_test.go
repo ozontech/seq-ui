@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -16,6 +17,10 @@ import (
 )
 
 func TestServeSearch(t *testing.T) {
+	var (
+		eventTime = testFrom.Add(time.Millisecond)
+	)
+
 	type mockArgs struct {
 		req  *seqapi.SearchRequest
 		resp *seqapi.SearchResponse
@@ -35,9 +40,9 @@ func TestServeSearch(t *testing.T) {
 		{
 			name: "ok_simple",
 			req: searchRequest{
-				Query: query,
-				From:  from,
-				To:    to,
+				Query: testQuery,
+				From:  testFrom,
+				To:    testTo,
 				Limit: 3,
 			},
 			want: searchResponse{
@@ -52,9 +57,9 @@ func TestServeSearch(t *testing.T) {
 			}),
 			mockArgs: &mockArgs{
 				req: &seqapi.SearchRequest{
-					Query:  query,
-					From:   timestamppb.New(from),
-					To:     timestamppb.New(to),
+					Query:  testQuery,
+					From:   timestamppb.New(testFrom),
+					To:     timestamppb.New(testTo),
 					Limit:  3,
 					Offset: 0,
 				},
@@ -69,9 +74,9 @@ func TestServeSearch(t *testing.T) {
 		{
 			name: "ok_with_total",
 			req: searchRequest{
-				Query:     query,
-				From:      from,
-				To:        to,
+				Query:     testQuery,
+				From:      testFrom,
+				To:        testTo,
 				Limit:     3,
 				WithTotal: true,
 			},
@@ -88,9 +93,9 @@ func TestServeSearch(t *testing.T) {
 			}),
 			mockArgs: &mockArgs{
 				req: &seqapi.SearchRequest{
-					Query:     query,
-					From:      timestamppb.New(from),
-					To:        timestamppb.New(to),
+					Query:     testQuery,
+					From:      timestamppb.New(testFrom),
+					To:        timestamppb.New(testTo),
 					Limit:     3,
 					Offset:    0,
 					WithTotal: true,
@@ -107,9 +112,9 @@ func TestServeSearch(t *testing.T) {
 		{
 			name: "ok_order_asc",
 			req: searchRequest{
-				Query: query,
-				From:  from,
-				To:    to,
+				Query: testQuery,
+				From:  testFrom,
+				To:    testTo,
 				Limit: 3,
 				Order: oASC,
 			},
@@ -125,9 +130,9 @@ func TestServeSearch(t *testing.T) {
 			}),
 			mockArgs: &mockArgs{
 				req: &seqapi.SearchRequest{
-					Query:  query,
-					From:   timestamppb.New(from),
-					To:     timestamppb.New(to),
+					Query:  testQuery,
+					From:   timestamppb.New(testFrom),
+					To:     timestamppb.New(testTo),
 					Limit:  3,
 					Offset: 0,
 					Order:  seqapi.Order_ORDER_ASC,
@@ -143,9 +148,9 @@ func TestServeSearch(t *testing.T) {
 		{
 			name: "ok_with_hist",
 			req: searchRequest{
-				Query: query,
-				From:  from,
-				To:    to,
+				Query: testQuery,
+				From:  testFrom,
+				To:    testTo,
 				Limit: 3,
 				Histogram: struct {
 					Interval string "json:\"interval\""
@@ -164,9 +169,9 @@ func TestServeSearch(t *testing.T) {
 			}),
 			mockArgs: &mockArgs{
 				req: &seqapi.SearchRequest{
-					Query:  query,
-					From:   timestamppb.New(from),
-					To:     timestamppb.New(to),
+					Query:  testQuery,
+					From:   timestamppb.New(testFrom),
+					To:     timestamppb.New(testTo),
 					Limit:  3,
 					Offset: 0,
 					Histogram: &seqapi.SearchRequest_Histogram{
@@ -185,9 +190,9 @@ func TestServeSearch(t *testing.T) {
 		{
 			name: "ok_with_aggs",
 			req: searchRequest{
-				Query: query,
-				From:  from,
-				To:    to,
+				Query: testQuery,
+				From:  testFrom,
+				To:    testTo,
 				Limit: 3,
 				Aggregations: aggregationQueries{
 					{
@@ -212,9 +217,9 @@ func TestServeSearch(t *testing.T) {
 			}),
 			mockArgs: &mockArgs{
 				req: &seqapi.SearchRequest{
-					Query:  query,
-					From:   timestamppb.New(from),
-					To:     timestamppb.New(to),
+					Query:  testQuery,
+					From:   timestamppb.New(testFrom),
+					To:     timestamppb.New(testTo),
 					Limit:  3,
 					Offset: 0,
 					Aggregations: []*seqapi.AggregationQuery{
@@ -239,9 +244,9 @@ func TestServeSearch(t *testing.T) {
 		{
 			name: "ok_empty_events",
 			req: searchRequest{
-				Query: query,
-				From:  from,
-				To:    to,
+				Query: testQuery,
+				From:  testFrom,
+				To:    testTo,
 				Limit: 3,
 			},
 			want: searchResponse{
@@ -256,9 +261,9 @@ func TestServeSearch(t *testing.T) {
 			}),
 			mockArgs: &mockArgs{
 				req: &seqapi.SearchRequest{
-					Query:  query,
-					From:   timestamppb.New(from),
-					To:     timestamppb.New(to),
+					Query:  testQuery,
+					From:   timestamppb.New(testFrom),
+					To:     timestamppb.New(testTo),
 					Limit:  3,
 					Offset: 0,
 				},
@@ -273,9 +278,9 @@ func TestServeSearch(t *testing.T) {
 		{
 			name: "err_partial_response",
 			req: searchRequest{
-				Query: query,
-				From:  from,
-				To:    to,
+				Query: testQuery,
+				From:  testFrom,
+				To:    testTo,
 				Limit: 3,
 			},
 			want: searchResponse{
@@ -290,9 +295,9 @@ func TestServeSearch(t *testing.T) {
 			}),
 			mockArgs: &mockArgs{
 				req: &seqapi.SearchRequest{
-					Query:  query,
-					From:   timestamppb.New(from),
-					To:     timestamppb.New(to),
+					Query:  testQuery,
+					From:   timestamppb.New(testFrom),
+					To:     timestamppb.New(testTo),
 					Limit:  3,
 					Offset: 0,
 				},
@@ -309,9 +314,9 @@ func TestServeSearch(t *testing.T) {
 		{
 			name: "err_search_limit_zero",
 			req: searchRequest{
-				Query: query,
-				From:  from,
-				To:    to,
+				Query: testQuery,
+				From:  testFrom,
+				To:    testTo,
 				Limit: 0,
 			},
 			wantErr: true,
@@ -319,9 +324,9 @@ func TestServeSearch(t *testing.T) {
 		{
 			name: "err_search_limit_max",
 			req: searchRequest{
-				Query: query,
-				From:  from,
-				To:    to,
+				Query: testQuery,
+				From:  testFrom,
+				To:    testTo,
 				Limit: 10,
 			},
 			cfg: config.SeqAPI{
@@ -334,9 +339,9 @@ func TestServeSearch(t *testing.T) {
 		{
 			name: "err_aggs_limit_max",
 			req: searchRequest{
-				Query:        query,
-				From:         from,
-				To:           to,
+				Query:        testQuery,
+				From:         testFrom,
+				To:           testTo,
 				Limit:        3,
 				Aggregations: aggregationQueries{{}, {}, {}},
 			},
@@ -351,9 +356,9 @@ func TestServeSearch(t *testing.T) {
 		{
 			name: "err_offset_too_high",
 			req: searchRequest{
-				Query:  query,
-				From:   from,
-				To:     to,
+				Query:  testQuery,
+				From:   testFrom,
+				To:     testTo,
 				Limit:  3,
 				Offset: 11,
 			},
@@ -368,9 +373,9 @@ func TestServeSearch(t *testing.T) {
 		{
 			name: "err_total_too_high",
 			req: searchRequest{
-				Query:     query,
-				From:      from,
-				To:        to,
+				Query:     testQuery,
+				From:      testFrom,
+				To:        testTo,
 				Limit:     3,
 				WithTotal: true,
 			},
@@ -388,9 +393,9 @@ func TestServeSearch(t *testing.T) {
 			}),
 			mockArgs: &mockArgs{
 				req: &seqapi.SearchRequest{
-					Query:     query,
-					From:      timestamppb.New(from),
-					To:        timestamppb.New(to),
+					Query:     testQuery,
+					From:      timestamppb.New(testFrom),
+					To:        timestamppb.New(testTo),
 					Limit:     3,
 					Offset:    0,
 					WithTotal: true,
@@ -408,9 +413,9 @@ func TestServeSearch(t *testing.T) {
 		{
 			name: "err_client",
 			req: searchRequest{
-				Query: query,
-				From:  from,
-				To:    to,
+				Query: testQuery,
+				From:  testFrom,
+				To:    testTo,
 				Limit: 3,
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
@@ -421,9 +426,9 @@ func TestServeSearch(t *testing.T) {
 			wantErr: true,
 			mockArgs: &mockArgs{
 				req: &seqapi.SearchRequest{
-					Query:  query,
-					From:   timestamppb.New(from),
-					To:     timestamppb.New(to),
+					Query:  testQuery,
+					From:   timestamppb.New(testFrom),
+					To:     timestamppb.New(testTo),
 					Limit:  3,
 					Offset: 0,
 				},
@@ -452,7 +457,7 @@ func TestServeSearch(t *testing.T) {
 				seqData.Mocks.SeqDB = seqDbMock
 			}
 
-			api := setupAPI(seqData)
+			api := setupTestAPI(seqData)
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[searchRequest, searchResponse]{
 				Method:  http.MethodPost,

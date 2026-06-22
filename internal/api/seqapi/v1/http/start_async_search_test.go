@@ -16,6 +16,10 @@ import (
 )
 
 func TestServeStartAsyncSearch(t *testing.T) {
+	var (
+		meta = `{"some":"meta"}`
+	)
+
 	type mockArgs struct {
 		req  *seqapi.StartAsyncSearchRequest
 		resp *seqapi.StartAsyncSearchResponse
@@ -35,9 +39,9 @@ func TestServeStartAsyncSearch(t *testing.T) {
 			name: "ok",
 			req: startAsyncSearchRequest{
 				Retention: "60s",
-				Query:     query,
-				From:      from,
-				To:        to,
+				Query:     testQuery,
+				From:      testFrom,
+				To:        testTo,
 				WithDocs:  true,
 				Size:      100,
 				Meta:      meta,
@@ -57,14 +61,14 @@ func TestServeStartAsyncSearch(t *testing.T) {
 				},
 			},
 			want: startAsyncSearchResponse{
-				SearchID: mockSearchID,
+				SearchID: testSearchID,
 			},
 			mockArgs: &mockArgs{
 				req: &seqapi.StartAsyncSearchRequest{
 					Retention: durationpb.New(60 * time.Second),
-					Query:     query,
-					From:      timestamppb.New(from),
-					To:        timestamppb.New(to),
+					Query:     testQuery,
+					From:      timestamppb.New(testFrom),
+					To:        timestamppb.New(testTo),
 					WithDocs:  true,
 					Size:      100,
 					Hist: &seqapi.StartAsyncSearchRequest_HistQuery{
@@ -82,7 +86,7 @@ func TestServeStartAsyncSearch(t *testing.T) {
 					Meta: meta,
 				},
 				resp: &seqapi.StartAsyncSearchResponse{
-					SearchId: mockSearchID,
+					SearchId: testSearchID,
 				},
 			},
 		},
@@ -90,9 +94,9 @@ func TestServeStartAsyncSearch(t *testing.T) {
 			name: "err_svc",
 			req: startAsyncSearchRequest{
 				Retention: "60s",
-				Query:     query,
-				From:      from,
-				To:        to,
+				Query:     testQuery,
+				From:      testFrom,
+				To:        testTo,
 				WithDocs:  true,
 				Size:      100,
 				Meta:      meta,
@@ -115,9 +119,9 @@ func TestServeStartAsyncSearch(t *testing.T) {
 			mockArgs: &mockArgs{
 				req: &seqapi.StartAsyncSearchRequest{
 					Retention: durationpb.New(60 * time.Second),
-					Query:     query,
-					From:      timestamppb.New(from),
-					To:        timestamppb.New(to),
+					Query:     testQuery,
+					From:      timestamppb.New(testFrom),
+					To:        timestamppb.New(testTo),
 					WithDocs:  true,
 					Size:      100,
 					Hist: &seqapi.StartAsyncSearchRequest_HistQuery{
@@ -157,7 +161,7 @@ func TestServeStartAsyncSearch(t *testing.T) {
 				seqData.Mocks.AsyncSearchesSvc = svcMock
 			}
 
-			api := setupAPIWithAsyncSearches(seqData)
+			api := setupTestAPI(seqData)
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[startAsyncSearchRequest, startAsyncSearchResponse]{
 				Method:  http.MethodPost,
@@ -173,7 +177,7 @@ func TestServeStartAsyncSearch(t *testing.T) {
 
 func TestServeStartAsyncSearch_Disabled(t *testing.T) {
 	seqData := test.APITestData{}
-	api := setupAPI(seqData)
+	api := setupTestAPI(seqData)
 
 	httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[startAsyncSearchRequest, struct{}]{
 		Method:  http.MethodPost,

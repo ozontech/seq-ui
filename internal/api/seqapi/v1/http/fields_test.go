@@ -121,7 +121,7 @@ func TestServeGetFields(t *testing.T) {
 				Times(1)
 			seqData.Mocks.SeqDB = seqDbMock
 
-			api := setupAPI(seqData)
+			api := setupTestAPI(seqData)
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getFieldsResponse]{
 				Method:  http.MethodGet,
@@ -135,6 +135,10 @@ func TestServeGetFields(t *testing.T) {
 }
 
 func TestServeGetFieldsCached(t *testing.T) {
+	var (
+		ttl = 5 * time.Millisecond
+	)
+
 	tests := []struct {
 		name string
 
@@ -203,7 +207,7 @@ func TestServeGetFieldsCached(t *testing.T) {
 				},
 			}
 
-			api := setupAPI(seqData)
+			api := setupTestAPI(seqData)
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getFieldsResponse]{
 				Method:  http.MethodGet,
@@ -258,7 +262,7 @@ func TestServeGetPinnedFields(t *testing.T) {
 				},
 			}
 
-			api := setupAPI(seqData)
+			api := setupTestAPI(seqData)
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getFieldsResponse]{
 				Method:  http.MethodGet,

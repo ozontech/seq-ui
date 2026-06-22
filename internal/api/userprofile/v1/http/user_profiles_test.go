@@ -11,6 +11,13 @@ import (
 )
 
 func TestServeGetUserProfile(t *testing.T) {
+	var (
+		userName          = "unnamed"
+		timezone          = "UTC"
+		onboardingVersion = `{"name1": "ver1", "name2": "ver2"}`
+		logColumns        = []string{"val1", "val2"}
+	)
+
 	type mockArgs struct {
 		req  types.GetOrCreateUserProfileRequest
 		resp types.UserProfile
@@ -61,7 +68,7 @@ func TestServeGetUserProfile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().
@@ -82,6 +89,13 @@ func TestServeGetUserProfile(t *testing.T) {
 }
 
 func TestServeUpdateUserProfile(t *testing.T) {
+	var (
+		userName          = "unnamed"
+		validTimezone     = "Europe/Moscow"
+		onboardingVersion = `{"name1": "ver1", "name2": "ver2"}`
+		logColumns        = []string{"val1", "val2"}
+	)
+
 	type mockArgs struct {
 		req types.UpdateUserProfileRequest
 		err error
@@ -139,7 +153,7 @@ func TestServeUpdateUserProfile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().

@@ -20,6 +20,13 @@ import (
 )
 
 func TestServeGetLogsLifespan(t *testing.T) {
+	var (
+		resultStr = "36000" // 10(h) * 60(min/h) * 60(sec/min)
+		cacheKey  = "logs_lifespan"
+		result    = 10 * time.Hour
+		cacheTTL  = time.Minute
+	)
+
 	unparsable := func(s string) bool {
 		_, err := strconv.Atoi(s)
 		return err != nil
@@ -53,7 +60,7 @@ func TestServeGetLogsLifespan(t *testing.T) {
 				Value: resultStr,
 			},
 			clientResp: &seqapi.StatusResponse{
-				OldestStorageTime: timestamppb.New(someMoment),
+				OldestStorageTime: timestamppb.New(testSomeMoment),
 			},
 			want: getLogsLifespanResponse{Lifespan: 36000},
 		},
@@ -66,7 +73,7 @@ func TestServeGetLogsLifespan(t *testing.T) {
 				Value: resultStr,
 			},
 			clientResp: &seqapi.StatusResponse{
-				OldestStorageTime: timestamppb.New(someMoment),
+				OldestStorageTime: timestamppb.New(testSomeMoment),
 			},
 			want: getLogsLifespanResponse{Lifespan: 36000},
 		},
@@ -128,9 +135,9 @@ func TestServeGetLogsLifespan(t *testing.T) {
 				}
 			}
 
-			api := setupAPI(seqData)
+			api := setupTestAPI(seqData)
 			api.nowFn = func() time.Time {
-				return someMoment.Add(result)
+				return testSomeMoment.Add(result)
 			}
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getLogsLifespanResponse]{

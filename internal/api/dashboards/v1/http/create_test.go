@@ -11,6 +11,12 @@ import (
 )
 
 func TestServeCreate(t *testing.T) {
+	var (
+		dashboardUUID = "064dc707-02b8-7000-8201-02a7f396738a"
+		dashboardMeta = "my_meta"
+		dashboardName = "my_dashboard"
+	)
+
 	type mockArgs struct {
 		req  types.CreateDashboardRequest
 		resp string
@@ -56,7 +62,7 @@ func TestServeCreate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().

@@ -52,7 +52,7 @@ func TestServeGetLimits(t *testing.T) {
 				Cfg: tt.cfg,
 			}
 
-			api := setupAPI(seqData)
+			api := setupTestAPI(seqData)
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getLimitsResponse]{
 				Method:  http.MethodGet,

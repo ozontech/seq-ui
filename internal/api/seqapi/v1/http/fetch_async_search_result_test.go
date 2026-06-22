@@ -34,7 +34,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 		{
 			name: "ok",
 			req: fetchAsyncSearchResultRequest{
-				SearchID: mockSearchID,
+				SearchID: testSearchID,
 				Limit:    2,
 				Offset:   10,
 				Order:    oDESC,
@@ -44,8 +44,8 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 				Request: &seqapi.StartAsyncSearchRequest{
 					Retention: durationpb.New(60 * time.Second),
 					Query:     "message:error",
-					From:      timestamppb.New(someMoment.Add(-15 * time.Minute)),
-					To:        timestamppb.New(someMoment),
+					From:      timestamppb.New(testSomeMoment.Add(-15 * time.Minute)),
+					To:        timestamppb.New(testSomeMoment),
 					Aggs: []*seqapi.AggregationQuery{
 						{
 							Field:     "x",
@@ -75,7 +75,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 								"message": "some error",
 								"x":       "2",
 							},
-							Time: timestamppb.New(someMoment.Add(-1 * time.Minute)),
+							Time: timestamppb.New(testSomeMoment.Add(-1 * time.Minute)),
 						},
 						{
 							Id: "017a854298010000-8502fe7f2aa33df3",
@@ -84,7 +84,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 								"message": "some error 2",
 								"x":       "8",
 							},
-							Time: timestamppb.New(someMoment.Add(-2 * time.Minute)),
+							Time: timestamppb.New(testSomeMoment.Add(-2 * time.Minute)),
 						},
 					},
 					Total: 2,
@@ -123,19 +123,19 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 									Key:       "33",
 									Value:     pointerTo[float64](2),
 									NotExists: 0,
-									Ts:        timestamppb.New(someMoment.Add(-30 * time.Second)),
+									Ts:        timestamppb.New(testSomeMoment.Add(-30 * time.Second)),
 								},
 								{
 									Key:       "33",
 									Value:     pointerTo[float64](5),
 									NotExists: 0,
-									Ts:        timestamppb.New(someMoment),
+									Ts:        timestamppb.New(testSomeMoment),
 								},
 								{
 									Key:       "22",
 									Value:     pointerTo[float64](8),
 									NotExists: 1,
-									Ts:        timestamppb.New(someMoment.Add(-1 * time.Minute)),
+									Ts:        timestamppb.New(testSomeMoment.Add(-1 * time.Minute)),
 								},
 							},
 							NotExists: 2,
@@ -146,8 +146,8 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 						Message: "some error",
 					},
 				},
-				StartedAt: timestamppb.New(someMoment.Add(-30 * time.Second)),
-				ExpiresAt: timestamppb.New(someMoment.Add(30 * time.Second)),
+				StartedAt: timestamppb.New(testSomeMoment.Add(-30 * time.Second)),
+				ExpiresAt: timestamppb.New(testSomeMoment.Add(30 * time.Second)),
 				Progress:  1,
 				DiskUsage: 512,
 				Error: &seqapi.Error{
@@ -156,7 +156,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 			}),
 			mockArgs: &mockArgs{
 				req: &seqapi.FetchAsyncSearchResultRequest{
-					SearchId: mockSearchID,
+					SearchId: testSearchID,
 					Limit:    2,
 					Offset:   10,
 					Order:    seqapi.Order_ORDER_DESC,
@@ -166,8 +166,8 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 					Request: &seqapi.StartAsyncSearchRequest{
 						Retention: durationpb.New(60 * time.Second),
 						Query:     "message:error",
-						From:      timestamppb.New(someMoment.Add(-15 * time.Minute)),
-						To:        timestamppb.New(someMoment),
+						From:      timestamppb.New(testSomeMoment.Add(-15 * time.Minute)),
+						To:        timestamppb.New(testSomeMoment),
 						Aggs: []*seqapi.AggregationQuery{
 							{
 								Field:     "x",
@@ -197,7 +197,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 									"message": "some error",
 									"x":       "2",
 								},
-								Time: timestamppb.New(someMoment.Add(-1 * time.Minute)),
+								Time: timestamppb.New(testSomeMoment.Add(-1 * time.Minute)),
 							},
 							{
 								Id: "017a854298010000-8502fe7f2aa33df3",
@@ -206,7 +206,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 									"message": "some error 2",
 									"x":       "8",
 								},
-								Time: timestamppb.New(someMoment.Add(-2 * time.Minute)),
+								Time: timestamppb.New(testSomeMoment.Add(-2 * time.Minute)),
 							},
 						},
 						Total: 2,
@@ -245,19 +245,19 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 										Key:       "33",
 										Value:     pointerTo[float64](2),
 										NotExists: 0,
-										Ts:        timestamppb.New(someMoment.Add(-30 * time.Second)),
+										Ts:        timestamppb.New(testSomeMoment.Add(-30 * time.Second)),
 									},
 									{
 										Key:       "33",
 										Value:     pointerTo[float64](5),
 										NotExists: 0,
-										Ts:        timestamppb.New(someMoment),
+										Ts:        timestamppb.New(testSomeMoment),
 									},
 									{
 										Key:       "22",
 										Value:     pointerTo[float64](8),
 										NotExists: 1,
-										Ts:        timestamppb.New(someMoment.Add(-1 * time.Minute)),
+										Ts:        timestamppb.New(testSomeMoment.Add(-1 * time.Minute)),
 									},
 								},
 								NotExists: 2,
@@ -268,8 +268,8 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 							Message: "some error",
 						},
 					},
-					StartedAt: timestamppb.New(someMoment.Add(-30 * time.Second)),
-					ExpiresAt: timestamppb.New(someMoment.Add(30 * time.Second)),
+					StartedAt: timestamppb.New(testSomeMoment.Add(-30 * time.Second)),
+					ExpiresAt: timestamppb.New(testSomeMoment.Add(30 * time.Second)),
 					Progress:  1,
 					DiskUsage: 512,
 					Error: &seqapi.Error{
@@ -281,7 +281,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 		{
 			name: "partial_response",
 			req: fetchAsyncSearchResultRequest{
-				SearchID: mockSearchID,
+				SearchID: testSearchID,
 				Limit:    2,
 				Offset:   10,
 				Order:    oDESC,
@@ -291,8 +291,8 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 				Request: &seqapi.StartAsyncSearchRequest{
 					Retention: durationpb.New(60 * time.Second),
 					Query:     "message:error",
-					From:      timestamppb.New(someMoment.Add(-15 * time.Minute)),
-					To:        timestamppb.New(someMoment),
+					From:      timestamppb.New(testSomeMoment.Add(-15 * time.Minute)),
+					To:        timestamppb.New(testSomeMoment),
 					WithDocs:  true,
 					Size:      100,
 				},
@@ -305,7 +305,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 								"message": "some error",
 								"x":       "2",
 							},
-							Time: timestamppb.New(someMoment.Add(-1 * time.Minute)),
+							Time: timestamppb.New(testSomeMoment.Add(-1 * time.Minute)),
 						},
 						{
 							Id: "017a854298010000-8502fe7f2aa33df3",
@@ -314,7 +314,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 								"message": "some error 2",
 								"x":       "8",
 							},
-							Time: timestamppb.New(someMoment.Add(-2 * time.Minute)),
+							Time: timestamppb.New(testSomeMoment.Add(-2 * time.Minute)),
 						},
 					},
 					Total: 2,
@@ -323,8 +323,8 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 						Message: "some error",
 					},
 				},
-				StartedAt: timestamppb.New(someMoment.Add(-30 * time.Second)),
-				ExpiresAt: timestamppb.New(someMoment.Add(30 * time.Second)),
+				StartedAt: timestamppb.New(testSomeMoment.Add(-30 * time.Second)),
+				ExpiresAt: timestamppb.New(testSomeMoment.Add(30 * time.Second)),
 				Progress:  1,
 				DiskUsage: 512,
 				Error: &seqapi.Error{
@@ -334,7 +334,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 			}),
 			mockArgs: &mockArgs{
 				req: &seqapi.FetchAsyncSearchResultRequest{
-					SearchId: mockSearchID,
+					SearchId: testSearchID,
 					Limit:    2,
 					Offset:   10,
 					Order:    seqapi.Order_ORDER_DESC,
@@ -344,8 +344,8 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 					Request: &seqapi.StartAsyncSearchRequest{
 						Retention: durationpb.New(60 * time.Second),
 						Query:     "message:error",
-						From:      timestamppb.New(someMoment.Add(-15 * time.Minute)),
-						To:        timestamppb.New(someMoment),
+						From:      timestamppb.New(testSomeMoment.Add(-15 * time.Minute)),
+						To:        timestamppb.New(testSomeMoment),
 						WithDocs:  true,
 						Size:      100,
 					},
@@ -358,7 +358,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 									"message": "some error",
 									"x":       "2",
 								},
-								Time: timestamppb.New(someMoment.Add(-1 * time.Minute)),
+								Time: timestamppb.New(testSomeMoment.Add(-1 * time.Minute)),
 							},
 							{
 								Id: "017a854298010000-8502fe7f2aa33df3",
@@ -367,7 +367,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 									"message": "some error 2",
 									"x":       "8",
 								},
-								Time: timestamppb.New(someMoment.Add(-2 * time.Minute)),
+								Time: timestamppb.New(testSomeMoment.Add(-2 * time.Minute)),
 							},
 						},
 						Total: 2,
@@ -376,8 +376,8 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 							Message: "some error",
 						},
 					},
-					StartedAt: timestamppb.New(someMoment.Add(-30 * time.Second)),
-					ExpiresAt: timestamppb.New(someMoment.Add(30 * time.Second)),
+					StartedAt: timestamppb.New(testSomeMoment.Add(-30 * time.Second)),
+					ExpiresAt: timestamppb.New(testSomeMoment.Add(30 * time.Second)),
 					Progress:  1,
 					DiskUsage: 512,
 					Error: &seqapi.Error{
@@ -390,7 +390,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 		{
 			name: "err_limit",
 			req: fetchAsyncSearchResultRequest{
-				SearchID: mockSearchID,
+				SearchID: testSearchID,
 				Limit:    -10,
 				Offset:   20,
 			},
@@ -399,7 +399,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 		{
 			name: "err_offset",
 			req: fetchAsyncSearchResultRequest{
-				SearchID: mockSearchID,
+				SearchID: testSearchID,
 				Limit:    10,
 				Offset:   -20,
 			},
@@ -418,21 +418,20 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctrl := gomock.NewController(t)
+			svcMock := mock_asyncsearches.NewMockService(ctrl)
+
 			seqData := test.APITestData{}
+			seqData.Mocks.AsyncSearchesSvc = svcMock
 
 			if tt.mockArgs != nil {
-				ctrl := gomock.NewController(t)
-				svcMock := mock_asyncsearches.NewMockService(ctrl)
-
 				svcMock.EXPECT().
 					FetchAsyncSearchResult(gomock.Any(), tt.mockArgs.req).
 					Return(tt.mockArgs.resp, tt.mockArgs.err).
 					Times(1)
-
-				seqData.Mocks.AsyncSearchesSvc = svcMock
 			}
 
-			api := setupAPIWithAsyncSearches(seqData)
+			api := setupTestAPI(seqData)
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[fetchAsyncSearchResultRequest, fetchAsyncSearchResultResponse]{
 				Method:  http.MethodPost,
@@ -448,7 +447,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 
 func TestServeFetchAsyncSearchResult_Disabled(t *testing.T) {
 	seqData := test.APITestData{}
-	api := setupAPI(seqData)
+	api := setupTestAPI(seqData)
 
 	httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[fetchAsyncSearchResultRequest, struct{}]{
 		Method:  http.MethodPost,

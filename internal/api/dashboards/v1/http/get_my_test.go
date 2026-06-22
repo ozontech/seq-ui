@@ -28,7 +28,7 @@ func TestServeGetMy(t *testing.T) {
 	}{
 		{
 			name: "ok",
-			req:  getMyRequest{Limit: limit, Offset: offset},
+			req:  getMyRequest{Limit: testLimit, Offset: testOffset},
 			want: getMyResponse{
 				Dashboards: infos{
 					{UUID: "064dc707-02b8-7000-8201-02a7f396738a", Name: "dashboard1"},
@@ -37,8 +37,8 @@ func TestServeGetMy(t *testing.T) {
 			},
 			mockArgs: &mockArgs{
 				req: types.GetUserDashboardsRequest{
-					Limit:  limit,
-					Offset: offset,
+					Limit:  testLimit,
+					Offset: testOffset,
 				},
 				resp: types.DashboardInfos{
 					{UUID: "064dc707-02b8-7000-8201-02a7f396738a", Name: "dashboard1"},
@@ -48,12 +48,12 @@ func TestServeGetMy(t *testing.T) {
 		},
 		{
 			name:    "err_svc",
-			req:     getMyRequest{Limit: limit, Offset: offset},
+			req:     getMyRequest{Limit: testLimit, Offset: testOffset},
 			wantErr: true,
 			mockArgs: &mockArgs{
 				req: types.GetUserDashboardsRequest{
-					Limit:  limit,
-					Offset: offset,
+					Limit:  testLimit,
+					Offset: testOffset,
 				},
 				err: errSomethingWrong,
 			},
@@ -64,7 +64,7 @@ func TestServeGetMy(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedRepo := setupAPI(t)
+			api, mockedRepo := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedRepo.EXPECT().

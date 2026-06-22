@@ -31,11 +31,11 @@ func TestServeCancelAsyncSearch(t *testing.T) {
 	}{
 		{
 			name:     "ok",
-			searchID: mockSearchID,
+			searchID: testSearchID,
 			noResp:   true,
 			mockArgs: &mockArgs{
 				req: &seqapi.CancelAsyncSearchRequest{
-					SearchId: mockSearchID,
+					SearchId: testSearchID,
 				},
 				resp: &seqapi.CancelAsyncSearchResponse{},
 			},
@@ -47,11 +47,11 @@ func TestServeCancelAsyncSearch(t *testing.T) {
 		},
 		{
 			name:     "err_svc",
-			searchID: mockSearchID,
+			searchID: testSearchID,
 			wantErr:  true,
 			mockArgs: &mockArgs{
 				req: &seqapi.CancelAsyncSearchRequest{
-					SearchId: mockSearchID,
+					SearchId: testSearchID,
 				},
 				err: errSomethingWrong,
 			},
@@ -78,12 +78,12 @@ func TestServeCancelAsyncSearch(t *testing.T) {
 				seqData.Mocks.AsyncSearchesSvc = svcMock
 			}
 
-			api := setupAPIWithAsyncSearches(seqData)
+			api := setupTestAPI(seqData)
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, struct{}]{
 				Method:  http.MethodPost,
-				Target:  fmt.Sprintf("/seqapi/v1/async_search/%s/cancel", mockSearchID),
-				Handler: withAsyncSearchID(api.serveCancelAsyncSearch, tt.searchID),
+				Target:  fmt.Sprintf("/seqapi/v1/async_search/%s/cancel", testSearchID),
+				Handler: withQueryParamID(api.serveCancelAsyncSearch, tt.searchID),
 				WantErr: tt.wantErr,
 				NoResp:  tt.noResp,
 			})
@@ -93,11 +93,11 @@ func TestServeCancelAsyncSearch(t *testing.T) {
 
 func TestServeCancelAsyncSearch_Disabled(t *testing.T) {
 	seqData := test.APITestData{}
-	api := setupAPI(seqData)
+	api := setupTestAPI(seqData)
 
 	httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, struct{}]{
 		Method:  http.MethodPost,
-		Target:  "/seqapi/v1/async_search/c9a34cf8-4c66-484e-9cc2-42979d848656/cancel",
+		Target:  fmt.Sprintf("/seqapi/v1/async_search/%s/cancel", testSearchID),
 		Handler: api.serveCancelAsyncSearch,
 		WantErr: true,
 	})

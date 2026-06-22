@@ -21,9 +21,15 @@ import (
 )
 
 func TestGetEvent(t *testing.T) {
-	event1 := test.MakeEvent(id1, 1, someMoment)
+	var (
+		id1 = "test1"
+		id2 = "test2"
+		id3 = "test3"
+		id4 = "test4"
+	)
+	event1 := test.MakeEvent(id1, 1, testSomeMoment)
 	event1json, _ := proto.Marshal(event1)
-	event2 := test.MakeEvent(id2, 2, someMoment)
+	event2 := test.MakeEvent(id2, 2, testSomeMoment)
 	event2json, _ := proto.Marshal(event2)
 	event3 := &seqapi.Event{}
 	event3json, _ := proto.Marshal(event3)
@@ -128,7 +134,7 @@ func TestGetEvent(t *testing.T) {
 				}
 			}
 
-			s := setupAPI(seqData)
+			s := setupTestAPI(seqData)
 
 			md := metadata.New(map[string]string{"env": "test"})
 			ctx := metadata.NewIncomingContext(context.Background(), md)
@@ -146,6 +152,11 @@ func TestGetEvent(t *testing.T) {
 }
 
 func TestGetEventWithMasking(t *testing.T) {
+	var (
+		cacheTTL = time.Minute
+		errCache = errors.New("test error")
+	)
+
 	type seqDBArgs struct {
 		req  *seqapi.GetEventRequest
 		resp *seqapi.GetEventResponse
@@ -328,7 +339,7 @@ func TestGetEventWithMasking(t *testing.T) {
 			Data: map[string]string{
 				eventField: eventVal,
 			},
-			Time: timestamppb.New(someMoment),
+			Time: timestamppb.New(testSomeMoment),
 		}
 		if shouldMask {
 			event.Data[eventField] = "***"
@@ -398,7 +409,7 @@ func TestGetEventWithMasking(t *testing.T) {
 					Times(1)
 			}
 
-			api := setupAPI(seqData)
+			api := setupTestAPI(seqData)
 			req := &seqapi.GetEventRequest{Id: curEID}
 
 			resp, err := api.GetEvent(context.Background(), req)
