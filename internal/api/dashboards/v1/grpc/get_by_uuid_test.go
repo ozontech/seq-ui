@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,13 +14,6 @@ import (
 )
 
 func TestGetByUUID(t *testing.T) {
-	userName := "unnamed"
-	var profileID int64 = 1
-	dashboardUUID := "064dc707-02b8-7000-8201-02a7f396738a"
-	dashboardName := "my_dashboard"
-	dashboardMeta := "my_meta"
-	dashboardOwner := "owner"
-
 	type mockArgs struct {
 		uuid string
 		resp types.Dashboard
@@ -36,10 +28,9 @@ func TestGetByUUID(t *testing.T) {
 		wantCode codes.Code
 
 		mockArgs *mockArgs
-		noUser   bool
 	}{
 		{
-			name: "success",
+			name: "ok",
 			req: &dashboards.GetByUUIDRequest{
 				Uuid: dashboardUUID,
 			},
@@ -59,59 +50,32 @@ func TestGetByUUID(t *testing.T) {
 			},
 		},
 		{
-			name:     "err_no_user",
-			wantCode: codes.Unauthenticated,
-			noUser:   true,
-		},
-		{
-			name: "err_svc_invalid_uuid",
-			req: &dashboards.GetByUUIDRequest{
-				Uuid: "invalid-uuid",
-			},
-			wantCode: codes.InvalidArgument,
-		},
-		{
-			name: "err_repo_not_found",
-			req: &dashboards.GetByUUIDRequest{
-				Uuid: dashboardUUID,
-			},
-			wantCode: codes.NotFound,
-			mockArgs: &mockArgs{
-				uuid: dashboardUUID,
-				err:  types.ErrNotFound,
-			},
-		},
-		{
-			name: "err_repo_random",
+			name: "err_svc",
 			req: &dashboards.GetByUUIDRequest{
 				Uuid: dashboardUUID,
 			},
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
 				uuid: dashboardUUID,
-				err:  errors.New("random repo err"),
+				err:  errSomethingWrong,
 			},
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedRepo := newTestData(t)
+			api, mockedSvc := setupAPI(t)
 
 			if tt.mockArgs != nil {
-				mockedRepo.EXPECT().GetByUUID(gomock.Any(), tt.mockArgs.uuid).
-					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
+				mockedSvc.EXPECT().
+					GetDashboardByUUID(gomock.Any(), tt.mockArgs.uuid).
+					Return(tt.mockArgs.resp, tt.mockArgs.err).
+					Times(1)
 			}
 
-			ctx := context.Background()
-			if !tt.noUser {
-				ctx = context.WithValue(ctx, types.UserKey{}, userName)
-				api.profiles.SetID(userName, profileID)
-			}
-
-			got, err := api.GetByUUID(ctx, tt.req)
+			got, err := api.GetByUUID(context.Background(), tt.req)
 
 			require.Equal(t, tt.wantCode, status.Code(err))
 			if tt.wantCode != codes.OK {

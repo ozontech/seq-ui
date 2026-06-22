@@ -32,12 +32,6 @@ func (a *API) serveGetByUUID(w http.ResponseWriter, r *http.Request) {
 		Value: attribute.StringValue(uuid),
 	})
 
-	// check auth and create profile if its doesn't exist
-	if _, err := a.profiles.GeIDFromContext(ctx); err != nil {
-		httputil.ProcessError(wr, err)
-		return
-	}
-
 	d, err := a.service.GetDashboardByUUID(ctx, uuid)
 	if err != nil {
 		httputil.ProcessError(wr, err)

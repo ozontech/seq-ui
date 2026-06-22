@@ -2,7 +2,6 @@ package http
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
@@ -12,10 +11,11 @@ import (
 
 func TestServeGetLimits(t *testing.T) {
 	tests := []struct {
-		name         string
-		env          string
-		cfg          config.SeqAPI
-		wantRespBody string
+		name string
+
+		env  string
+		cfg  config.SeqAPI
+		want getLimitsResponse
 	}{
 		{
 			name: "ok",
@@ -29,16 +29,22 @@ func TestServeGetLimits(t *testing.T) {
 					SeqCLIMaxSearchLimit:      10000,
 				},
 			},
-			wantRespBody: `{"maxSearchLimit":100,"maxExportLimit":200,"maxParallelExportRequests":2,"maxAggregationsPerRequest":5,"seqCliMaxSearchLimit":10000}`,
+			want: getLimitsResponse{
+				MaxSearchLimit:            100,
+				MaxExportLimit:            200,
+				MaxParallelExportRequests: 2,
+				MaxAggregationsPerRequest: 5,
+				SeqCliMaxSearchLimit:      10000,
+			},
 		},
 		{
-			name:         "empty",
-			env:          "default",
-			wantRespBody: `{"maxSearchLimit":0,"maxExportLimit":0,"maxParallelExportRequests":0,"maxAggregationsPerRequest":0,"seqCliMaxSearchLimit":0}`,
+			name: "empty",
+			env:  "default",
+			want: getLimitsResponse{},
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -46,14 +52,13 @@ func TestServeGetLimits(t *testing.T) {
 				Cfg: tt.cfg,
 			}
 
-			api := initTestAPI(seqData)
-			req := httptest.NewRequest(http.MethodGet, "/seqapi/v1/limits", http.NoBody)
+			api := setupAPI(seqData)
 
-			httputil.DoTestHTTP(t, httputil.TestDataHTTP{
-				Req:          req,
-				Handler:      api.serveGetLimits,
-				WantRespBody: tt.wantRespBody,
-				WantStatus:   http.StatusOK,
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getLimitsResponse]{
+				Method:  http.MethodGet,
+				Target:  "/seqapi/v1/limits",
+				Handler: api.serveGetLimits,
+				Want:    tt.want,
 			})
 		})
 	}

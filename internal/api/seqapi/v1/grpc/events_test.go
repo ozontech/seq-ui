@@ -21,18 +21,12 @@ import (
 )
 
 func TestGetEvent(t *testing.T) {
-	eventTime := time.Date(2024, time.December, 31, 10, 20, 30, 400000, time.UTC)
-	id1 := "test1"
-	id2 := "test2"
-	id3 := "test3"
-	id4 := "test4"
-	event1 := test.MakeEvent(id1, 1, eventTime)
+	event1 := test.MakeEvent(id1, 1, someMoment)
 	event1json, _ := proto.Marshal(event1)
-	event2 := test.MakeEvent(id2, 2, eventTime)
+	event2 := test.MakeEvent(id2, 2, someMoment)
 	event2json, _ := proto.Marshal(event2)
 	event3 := &seqapi.Event{}
 	event3json, _ := proto.Marshal(event3)
-	err := errors.New("test error")
 	cacheTTL := time.Minute
 
 	tests := []struct {
@@ -55,7 +49,7 @@ func TestGetEvent(t *testing.T) {
 			cacheArgs: test.CacheMockArgs{
 				Key:   id1,
 				Value: string(event1json),
-				Err:   err,
+				Err:   errSomethingWrong,
 			},
 		},
 		{
@@ -82,7 +76,7 @@ func TestGetEvent(t *testing.T) {
 			cacheArgs: test.CacheMockArgs{
 				Key:   id3,
 				Value: string(event3json),
-				Err:   err,
+				Err:   errSomethingWrong,
 			},
 		},
 		{
@@ -92,13 +86,13 @@ func TestGetEvent(t *testing.T) {
 			},
 			cacheArgs: test.CacheMockArgs{
 				Key: id4,
-				Err: err,
+				Err: errSomethingWrong,
 			},
 			clientErr: errors.New("client error"),
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -112,23 +106,29 @@ func TestGetEvent(t *testing.T) {
 			ctrl := gomock.NewController(t)
 
 			cacheMock := mock_cache.NewMockCache(ctrl)
-			cacheMock.EXPECT().Get(gomock.Any(), tt.cacheArgs.Key).
-				Return(tt.cacheArgs.Value, tt.cacheArgs.Err).Times(1)
+			cacheMock.EXPECT().
+				Get(gomock.Any(), tt.cacheArgs.Key).
+				Return(tt.cacheArgs.Value, tt.cacheArgs.Err).
+				Times(1)
 			seqData.Mocks.Cache = cacheMock
 
 			if tt.cacheArgs.Err != nil {
 				seqDbMock := mock_seqdb.NewMockClient(ctrl)
-				seqDbMock.EXPECT().GetEvent(gomock.Any(), proto.Clone(tt.req)).
-					Return(proto.Clone(tt.resp), tt.clientErr).Times(1)
+				seqDbMock.EXPECT().
+					GetEvent(gomock.Any(), proto.Clone(tt.req)).
+					Return(proto.Clone(tt.resp), tt.clientErr).
+					Times(1)
 				seqData.Mocks.SeqDB = seqDbMock
 
 				if tt.clientErr == nil {
-					cacheMock.EXPECT().SetWithTTL(gomock.Any(), tt.cacheArgs.Key, tt.cacheArgs.Value, cacheTTL).
-						Return(nil).Times(1)
+					cacheMock.EXPECT().
+						SetWithTTL(gomock.Any(), tt.cacheArgs.Key, tt.cacheArgs.Value, cacheTTL).
+						Return(nil).
+						Times(1)
 				}
 			}
 
-			s := initTestAPI(seqData)
+			s := setupAPI(seqData)
 
 			md := metadata.New(map[string]string{"env": "test"})
 			ctx := metadata.NewIncomingContext(context.Background(), md)
@@ -151,17 +151,11 @@ func TestGetEventWithMasking(t *testing.T) {
 		resp *seqapi.GetEventResponse
 	}
 
-	eventTime := time.Date(2024, time.December, 31, 10, 20, 30, 400000, time.UTC)
-
-	cacheErr := errors.New("test error")
-	cacheTTL := time.Minute
-
 	tests := []struct {
 		name string
 
 		shouldMask bool
 		isCached   bool
-		wantErr    error
 
 		maskingCfg *config.Masking
 	}{
@@ -334,7 +328,7 @@ func TestGetEventWithMasking(t *testing.T) {
 			Data: map[string]string{
 				eventField: eventVal,
 			},
-			Time: timestamppb.New(eventTime),
+			Time: timestamppb.New(someMoment),
 		}
 		if shouldMask {
 			event.Data[eventField] = "***"
@@ -351,13 +345,11 @@ func TestGetEventWithMasking(t *testing.T) {
 	}
 
 	eventsData := make([]eventData, 0, len(tests))
-	for i := 0; i < len(tests); i++ {
+	for i := range len(tests) {
 		eventsData = append(eventsData, formEventData(i, tests[i].shouldMask))
 	}
 
 	for i, tt := range tests {
-		i := i
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -372,18 +364,20 @@ func TestGetEventWithMasking(t *testing.T) {
 					},
 				},
 			}
-			ctrl := gomock.NewController(t)
 
+			ctrl := gomock.NewController(t)
 			cacheMock := mock_cache.NewMockCache(ctrl)
 			cacheArgs := test.CacheMockArgs{
 				Key:   curEID,
 				Value: string(curEData.eventJson),
 			}
 			if !tt.isCached {
-				cacheArgs.Err = cacheErr
+				cacheArgs.Err = errCache
 			}
-			cacheMock.EXPECT().Get(gomock.Any(), cacheArgs.Key).
-				Return(cacheArgs.Value, cacheArgs.Err).Times(1)
+			cacheMock.EXPECT().
+				Get(gomock.Any(), cacheArgs.Key).
+				Return(cacheArgs.Value, cacheArgs.Err).
+				Times(1)
 			seqData.Mocks.Cache = cacheMock
 
 			if !tt.isCached {
@@ -392,25 +386,23 @@ func TestGetEventWithMasking(t *testing.T) {
 					resp: &seqapi.GetEventResponse{Event: curEData.event},
 				}
 				seqDbMock := mock_seqdb.NewMockClient(ctrl)
-				seqDbMock.EXPECT().GetEvent(gomock.Any(), seqDBArgs.req).
-					Return(seqDBArgs.resp, nil).Times(1)
+				seqDbMock.EXPECT().
+					GetEvent(gomock.Any(), seqDBArgs.req).
+					Return(seqDBArgs.resp, nil).
+					Times(1)
 				seqData.Mocks.SeqDB = seqDbMock
 
-				cacheMock.EXPECT().SetWithTTL(gomock.Any(), cacheArgs.Key, cacheArgs.Value, cacheTTL).
-					Return(nil).Times(1)
+				cacheMock.EXPECT().
+					SetWithTTL(gomock.Any(), cacheArgs.Key, cacheArgs.Value, cacheTTL).
+					Return(nil).
+					Times(1)
 			}
 
-			s := initTestAPI(seqData)
-
+			api := setupAPI(seqData)
 			req := &seqapi.GetEventRequest{Id: curEID}
 
-			resp, err := s.GetEvent(context.Background(), req)
-
-			require.Equal(t, tt.wantErr, err)
-			if tt.wantErr != nil {
-				return
-			}
-
+			resp, err := api.GetEvent(context.Background(), req)
+			require.NoError(t, err)
 			require.True(t, proto.Equal(curEData.wantResp, resp))
 		})
 	}

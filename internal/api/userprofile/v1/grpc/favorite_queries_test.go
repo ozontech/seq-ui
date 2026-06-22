@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,11 +14,6 @@ import (
 )
 
 func TestGetFavoriteQueries(t *testing.T) {
-	userName := "unnamed"
-	var profileID int64 = 1
-	queryName := "my query"
-	var relativeFrom uint64 = 300
-
 	type mockArgs struct {
 		req  types.GetFavoriteQueriesRequest
 		resp types.FavoriteQueries
@@ -33,10 +27,9 @@ func TestGetFavoriteQueries(t *testing.T) {
 		wantCode codes.Code
 
 		mockArgs *mockArgs
-		noUser   bool
 	}{
 		{
-			name: "success",
+			name: "ok",
 			want: &userprofile.GetFavoriteQueriesResponse{
 				Queries: []*userprofile.GetFavoriteQueriesResponse_Query{
 					{
@@ -65,9 +58,6 @@ func TestGetFavoriteQueries(t *testing.T) {
 			},
 			wantCode: codes.OK,
 			mockArgs: &mockArgs{
-				req: types.GetFavoriteQueriesRequest{
-					ProfileID: profileID,
-				},
 				resp: types.FavoriteQueries{
 					{
 						ID:           1,
@@ -95,40 +85,28 @@ func TestGetFavoriteQueries(t *testing.T) {
 			},
 		},
 		{
-			name:     "err_no_user",
-			wantCode: codes.Unauthenticated,
-			noUser:   true,
-		},
-		{
-			name:     "err_repo_random",
+			name:     "err_svc",
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
-				req: types.GetFavoriteQueriesRequest{
-					ProfileID: profileID,
-				},
-				err: errors.New("random repo err"),
+				err: errSomethingWrong,
 			},
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedRepo := newFavoriteQueriesTestData(t)
+			api, mockedSvc := setupAPI(t)
 
 			if tt.mockArgs != nil {
-				mockedRepo.EXPECT().GetAll(gomock.Any(), tt.mockArgs.req).
-					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
+				mockedSvc.EXPECT().
+					GetFavoriteQueries(gomock.Any(), tt.mockArgs.req).
+					Return(tt.mockArgs.resp, tt.mockArgs.err).
+					Times(1)
 			}
 
-			ctx := context.Background()
-			if !tt.noUser {
-				ctx = context.WithValue(ctx, types.UserKey{}, userName)
-				api.profiles.SetID(userName, profileID)
-			}
-
-			got, err := api.GetFavoriteQueries(ctx, &userprofile.GetFavoriteQueriesRequest{})
+			got, err := api.GetFavoriteQueries(context.Background(), &userprofile.GetFavoriteQueriesRequest{})
 
 			require.Equal(t, tt.wantCode, status.Code(err))
 			if tt.wantCode != codes.OK {
@@ -141,13 +119,6 @@ func TestGetFavoriteQueries(t *testing.T) {
 }
 
 func TestCreateFavoriteQuery(t *testing.T) {
-	userName := "unnamed"
-	var profileID int64 = 1
-	var queryID int64 = 1
-	query := "test"
-	queryName := "my query"
-	var relativeFrom uint64 = 300
-
 	type mockArgs struct {
 		req  types.GetOrCreateFavoriteQueryRequest
 		resp int64
@@ -162,10 +133,9 @@ func TestCreateFavoriteQuery(t *testing.T) {
 		wantCode codes.Code
 
 		mockArgs *mockArgs
-		noUser   bool
 	}{
 		{
-			name: "success",
+			name: "ok",
 			req: &userprofile.CreateFavoriteQueryRequest{
 				Query:        query,
 				Name:         &queryName,
@@ -177,7 +147,6 @@ func TestCreateFavoriteQuery(t *testing.T) {
 			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				req: types.GetOrCreateFavoriteQueryRequest{
-					ProfileID:    profileID,
 					Query:        query,
 					Name:         queryName,
 					RelativeFrom: relativeFrom,
@@ -186,66 +155,32 @@ func TestCreateFavoriteQuery(t *testing.T) {
 			},
 		},
 		{
-			name: "success_only_query",
-			req: &userprofile.CreateFavoriteQueryRequest{
-				Query: query,
-			},
-			want: &userprofile.CreateFavoriteQueryResponse{
-				Id: queryID,
-			},
-			wantCode: codes.OK,
-			mockArgs: &mockArgs{
-				req: types.GetOrCreateFavoriteQueryRequest{
-					ProfileID: profileID,
-					Query:     query,
-				},
-				resp: queryID,
-			},
-		},
-		{
-			name:     "err_no_user",
-			wantCode: codes.Unauthenticated,
-			noUser:   true,
-		},
-		{
-			name:     "err_svc_empty_query",
-			req:      &userprofile.CreateFavoriteQueryRequest{},
-			wantCode: codes.InvalidArgument,
-		},
-		{
-			name: "err_repo_random",
+			name: "err_svc",
 			req: &userprofile.CreateFavoriteQueryRequest{
 				Query: query,
 			},
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
-				req: types.GetOrCreateFavoriteQueryRequest{
-					ProfileID: profileID,
-					Query:     query,
-				},
-				err: errors.New("random repo err"),
+				req: types.GetOrCreateFavoriteQueryRequest{Query: query},
+				err: errSomethingWrong,
 			},
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedRepo := newFavoriteQueriesTestData(t)
+			api, mockedSvc := setupAPI(t)
 
 			if tt.mockArgs != nil {
-				mockedRepo.EXPECT().GetOrCreate(gomock.Any(), tt.mockArgs.req).
-					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
+				mockedSvc.EXPECT().
+					GetOrCreateFavoriteQuery(gomock.Any(), tt.mockArgs.req).
+					Return(tt.mockArgs.resp, tt.mockArgs.err).
+					Times(1)
 			}
 
-			ctx := context.Background()
-			if !tt.noUser {
-				ctx = context.WithValue(ctx, types.UserKey{}, userName)
-				api.profiles.SetID(userName, profileID)
-			}
-
-			got, err := api.CreateFavoriteQuery(ctx, tt.req)
+			got, err := api.CreateFavoriteQuery(context.Background(), tt.req)
 
 			require.Equal(t, tt.wantCode, status.Code(err))
 			if tt.wantCode != codes.OK {
@@ -258,10 +193,6 @@ func TestCreateFavoriteQuery(t *testing.T) {
 }
 
 func TestDeleteFavoriteQuery(t *testing.T) {
-	userName := "unnamed"
-	var profileID int64 = 1
-	var queryID int64 = 100
-
 	type mockArgs struct {
 		req types.DeleteFavoriteQueryRequest
 		err error
@@ -275,10 +206,9 @@ func TestDeleteFavoriteQuery(t *testing.T) {
 		wantCode codes.Code
 
 		mockArgs *mockArgs
-		noUser   bool
 	}{
 		{
-			name: "success",
+			name: "ok",
 			req: &userprofile.DeleteFavoriteQueryRequest{
 				Id: queryID,
 			},
@@ -286,57 +216,39 @@ func TestDeleteFavoriteQuery(t *testing.T) {
 			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				req: types.DeleteFavoriteQueryRequest{
-					ID:        queryID,
-					ProfileID: profileID,
+					ID: queryID,
 				},
 			},
 		},
 		{
-			name:     "err_no_user",
-			wantCode: codes.Unauthenticated,
-			noUser:   true,
-		},
-		{
-			name: "err_svc_invalid_id",
-			req: &userprofile.DeleteFavoriteQueryRequest{
-				Id: -100,
-			},
-			wantCode: codes.InvalidArgument,
-		},
-		{
-			name: "err_repo_random",
+			name: "err_svc",
 			req: &userprofile.DeleteFavoriteQueryRequest{
 				Id: queryID,
 			},
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
 				req: types.DeleteFavoriteQueryRequest{
-					ID:        queryID,
-					ProfileID: profileID,
+					ID: queryID,
 				},
-				err: errors.New("random repo err"),
+				err: errSomethingWrong,
 			},
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedRepo := newFavoriteQueriesTestData(t)
+			api, mockedSvc := setupAPI(t)
 
 			if tt.mockArgs != nil {
-				mockedRepo.EXPECT().Delete(gomock.Any(), tt.mockArgs.req).
-					Return(tt.mockArgs.err).Times(1)
+				mockedSvc.EXPECT().
+					DeleteFavoriteQuery(gomock.Any(), tt.mockArgs.req).
+					Return(tt.mockArgs.err).
+					Times(1)
 			}
 
-			ctx := context.Background()
-			if !tt.noUser {
-				ctx = context.WithValue(ctx, types.UserKey{}, userName)
-				api.profiles.SetID(userName, profileID)
-			}
-
-			got, err := api.DeleteFavoriteQuery(ctx, tt.req)
+			got, err := api.DeleteFavoriteQuery(context.Background(), tt.req)
 
 			require.Equal(t, tt.wantCode, status.Code(err))
 			if tt.wantCode != codes.OK {

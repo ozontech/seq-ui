@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -169,10 +170,8 @@ func (p *oidcProvider) checkClients(clients []string) error {
 	}
 
 	for _, client := range clients {
-		for _, allowedClient := range p.allowedClients {
-			if client == allowedClient {
-				return nil
-			}
+		if slices.Contains(p.allowedClients, client) {
+			return nil
 		}
 	}
 

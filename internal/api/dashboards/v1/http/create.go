@@ -40,17 +40,11 @@ func (a *API) serveCreate(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 
-	profileID, err := a.profiles.GeIDFromContext(ctx)
-	if err != nil {
-		httputil.ProcessError(wr, err)
-		return
+	req := types.CreateDashboardRequest{
+		Name: httpReq.Name,
+		Meta: httpReq.Meta,
 	}
 
-	req := types.CreateDashboardRequest{
-		ProfileID: profileID,
-		Name:      httpReq.Name,
-		Meta:      httpReq.Meta,
-	}
 	uuid, err := a.service.CreateDashboard(ctx, req)
 	if err != nil {
 		httputil.ProcessError(wr, err)

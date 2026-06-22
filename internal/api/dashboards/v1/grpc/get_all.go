@@ -26,15 +26,11 @@ func (a *API) GetAll(ctx context.Context, req *dashboards.GetAllRequest) (*dashb
 		},
 	)
 
-	// check auth and create profile if its doesn't exist
-	if _, err := a.profiles.GeIDFromContext(ctx); err != nil {
-		return nil, grpcutil.ProcessError(err)
-	}
-
 	request := types.GetAllDashboardsRequest{
 		Limit:  int(req.Limit),
 		Offset: int(req.Offset),
 	}
+
 	dis, err := a.service.GetAllDashboards(ctx, request)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)

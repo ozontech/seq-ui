@@ -2,9 +2,7 @@ package grpc
 
 import (
 	"context"
-	"errors"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -17,16 +15,11 @@ import (
 )
 
 func TestGetHistogram(t *testing.T) {
-	query := "message:error"
-	from := time.Now()
-	to := from.Add(time.Second)
-	interval := "5s"
-
 	tests := []struct {
 		name string
 
 		req  *seqapi.GetHistogramRequest
-		resp *seqapi.GetHistogramResponse
+		want *seqapi.GetHistogramResponse
 
 		clientErr error
 	}{
@@ -38,7 +31,7 @@ func TestGetHistogram(t *testing.T) {
 				To:       timestamppb.New(to),
 				Interval: interval,
 			},
-			resp: &seqapi.GetHistogramResponse{
+			want: &seqapi.GetHistogramResponse{
 				Histogram: test.MakeHistogram(5),
 				Error: &seqapi.Error{
 					Code: seqapi.ErrorCode_ERROR_CODE_NO,
@@ -50,11 +43,11 @@ func TestGetHistogram(t *testing.T) {
 			req: &seqapi.GetHistogramRequest{
 				Interval: interval,
 			},
-			clientErr: errors.New("client error"),
+			clientErr: errSomethingWrong,
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -63,16 +56,17 @@ func TestGetHistogram(t *testing.T) {
 			ctrl := gomock.NewController(t)
 
 			seqDbMock := mock_seqdb.NewMockClient(ctrl)
-			seqDbMock.EXPECT().GetHistogram(gomock.Any(), proto.Clone(tt.req)).
-				Return(proto.Clone(tt.resp), tt.clientErr).Times(1)
-
+			seqDbMock.EXPECT().
+				GetHistogram(gomock.Any(), proto.Clone(tt.req)).
+				Return(proto.Clone(tt.want), tt.clientErr).
+				Times(1)
 			seqData.Mocks.SeqDB = seqDbMock
-			s := initTestAPI(seqData)
 
-			resp, err := s.GetHistogram(context.Background(), tt.req)
+			api := setupAPI(seqData)
+			resp, err := api.GetHistogram(context.Background(), tt.req)
 
 			require.Equal(t, tt.clientErr, err)
-			require.True(t, proto.Equal(tt.resp, resp))
+			require.True(t, proto.Equal(tt.want, resp))
 		})
 	}
 }

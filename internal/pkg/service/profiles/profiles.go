@@ -5,17 +5,26 @@ import (
 	"sync"
 
 	"github.com/ozontech/seq-ui/internal/app/types"
-	"github.com/ozontech/seq-ui/internal/pkg/service"
 )
+
+type UserProfileService interface {
+	GetOrCreateUserProfile(context.Context, types.GetOrCreateUserProfileRequest) (types.UserProfile, error)
+}
+
+var profile *Profiles
+
+func InitProfiles(svc UserProfileService) {
+	profile = New(svc)
+}
 
 type Profiles struct {
 	idByName map[string]int64 // map UserName->UserProfileId
 	mx       sync.RWMutex
 
-	service service.Service
+	service UserProfileService
 }
 
-func New(svc service.Service) *Profiles {
+func New(svc UserProfileService) *Profiles {
 	return &Profiles{
 		idByName: make(map[string]int64),
 		service:  svc,
@@ -76,4 +85,12 @@ func (p *Profiles) SetID(userName string, userProfileID int64) {
 	if !ok {
 		p.idByName[userName] = userProfileID
 	}
+}
+
+func GetIDFromContext(ctx context.Context) (int64, error) {
+	return profile.GeIDFromContext(ctx)
+}
+
+func SetID(userName string, userProfileID int64) {
+	profile.SetID(userName, userProfileID)
 }

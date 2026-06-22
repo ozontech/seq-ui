@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -18,15 +17,11 @@ import (
 )
 
 func TestGetAggregation(t *testing.T) {
-	query := "message:error"
-	from := time.Now()
-	to := from.Add(time.Second)
-
 	tests := []struct {
 		name string
 
 		req  *seqapi.GetAggregationRequest
-		resp *seqapi.GetAggregationResponse
+		want *seqapi.GetAggregationResponse
 
 		apiErr    bool
 		clientErr error
@@ -44,7 +39,7 @@ func TestGetAggregation(t *testing.T) {
 					{Field: "test2"},
 				},
 			},
-			resp: &seqapi.GetAggregationResponse{
+			want: &seqapi.GetAggregationResponse{
 				Aggregations: test.MakeAggregations(2, 3, nil),
 				Error: &seqapi.Error{
 					Code: seqapi.ErrorCode_ERROR_CODE_NO,
@@ -90,8 +85,8 @@ func TestGetAggregation(t *testing.T) {
 			clientErr: errors.New("client error"),
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -103,39 +98,35 @@ func TestGetAggregation(t *testing.T) {
 				ctrl := gomock.NewController(t)
 
 				seqDbMock := mock_seqdb.NewMockClient(ctrl)
-				seqDbMock.EXPECT().GetAggregation(gomock.Any(), proto.Clone(tt.req)).
-					Return(proto.Clone(tt.resp), tt.clientErr).Times(1)
+				seqDbMock.EXPECT().
+					GetAggregation(gomock.Any(), proto.Clone(tt.req)).
+					Return(proto.Clone(tt.want), tt.clientErr).
+					Times(1)
 
 				seqData.Mocks.SeqDB = seqDbMock
 			}
 
-			s := initTestAPI(seqData)
+			api := setupAPI(seqData)
 
-			resp, err := s.GetAggregation(context.Background(), tt.req)
+			resp, err := api.GetAggregation(context.Background(), tt.req)
 			if tt.apiErr {
 				require.True(t, err != nil)
 				return
 			}
 
 			require.Equal(t, tt.clientErr, err)
-			require.True(t, proto.Equal(resp, tt.resp))
+			require.True(t, proto.Equal(resp, tt.want))
 		})
 	}
 }
 
 func TestGetAggregationWithNormalization(t *testing.T) {
-	query := "message:error"
-	from := time.Now()
-	to := from.Add(time.Second)
-	targetBucketRate := "3s"
-	interval := "2s"
-
 	tests := []struct {
 		name string
 
-		req             *seqapi.GetAggregationRequest
-		resp            *seqapi.GetAggregationResponse
-		normalized_resp *seqapi.GetAggregationResponse
+		req            *seqapi.GetAggregationRequest
+		want           *seqapi.GetAggregationResponse
+		wantNormalized *seqapi.GetAggregationResponse
 
 		apiErr    bool
 		clientErr error
@@ -153,7 +144,7 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 					{Field: "test2", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval},
 				},
 			},
-			resp: &seqapi.GetAggregationResponse{
+			want: &seqapi.GetAggregationResponse{
 				Aggregations: test.MakeAggregations(2, 3, &test.MakeAggOpts{
 					Values: []float64{
 						1,
@@ -165,7 +156,7 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 					Code: seqapi.ErrorCode_ERROR_CODE_NO,
 				},
 			},
-			normalized_resp: &seqapi.GetAggregationResponse{
+			wantNormalized: &seqapi.GetAggregationResponse{
 				Aggregations: test.MakeAggregations(2, 3, &test.MakeAggOpts{
 					Values: []float64{
 						1,
@@ -194,7 +185,7 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 					{Field: "test2", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval, TargetBucketRate: &targetBucketRate},
 				},
 			},
-			resp: &seqapi.GetAggregationResponse{
+			want: &seqapi.GetAggregationResponse{
 				Aggregations: test.MakeAggregations(2, 3, &test.MakeAggOpts{
 					TargetBucketRate: targetBucketRate,
 					Values: []float64{
@@ -207,7 +198,7 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 					Code: seqapi.ErrorCode_ERROR_CODE_NO,
 				},
 			},
-			normalized_resp: &seqapi.GetAggregationResponse{
+			wantNormalized: &seqapi.GetAggregationResponse{
 				Aggregations: test.MakeAggregations(2, 3, &test.MakeAggOpts{
 					TargetBucketRate: targetBucketRate,
 					Values: []float64{
@@ -227,8 +218,8 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -241,21 +232,21 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 
 				seqDbMock := mock_seqdb.NewMockClient(ctrl)
 				seqDbMock.EXPECT().GetAggregation(gomock.Any(), proto.Clone(tt.req)).
-					Return(proto.Clone(tt.resp), tt.clientErr).Times(1)
+					Return(proto.Clone(tt.want), tt.clientErr).Times(1)
 
 				seqData.Mocks.SeqDB = seqDbMock
 			}
 
-			s := initTestAPI(seqData)
+			api := setupAPI(seqData)
 
-			resp, err := s.GetAggregation(context.Background(), tt.req)
+			resp, err := api.GetAggregation(context.Background(), tt.req)
 			if tt.apiErr {
 				require.True(t, err != nil)
 				return
 			}
 
 			require.Equal(t, tt.clientErr, err)
-			require.True(t, proto.Equal(resp, tt.normalized_resp))
+			require.True(t, proto.Equal(resp, tt.wantNormalized))
 		})
 	}
 }

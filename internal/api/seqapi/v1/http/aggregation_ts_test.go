@@ -23,9 +23,6 @@ import (
 )
 
 func TestServeGetAggregationTs(t *testing.T) {
-	query := "message:error"
-	from := time.Date(2023, time.September, 25, 10, 20, 30, 0, time.UTC)
-	to := from.Add(5 * time.Second)
 	interval := "1s"
 	interval2 := "3000ms"
 	targetBucketRate := "2s"
@@ -283,7 +280,7 @@ func TestServeGetAggregationTs(t *testing.T) {
 			cfg: config.SeqAPI{
 				SeqAPIOptions: &config.SeqAPIOptions{
 					MaxAggregationsPerRequest:  3,
-					MaxBucketsPerAggregationTs: 8,
+					MaxBucketsPerAggregationTs: 1,
 				},
 			},
 		},
@@ -324,7 +321,7 @@ func TestServeGetAggregationTs(t *testing.T) {
 				seqData.Mocks.SeqDB = seqDbMock
 			}
 
-			api := initTestAPI(seqData)
+			api := setupAPI(seqData)
 			req := httptest.NewRequest(http.MethodPost, "/seqapi/v1/aggregation_ts", strings.NewReader(tt.reqBody))
 
 			httputil.DoTestHTTP(t, httputil.TestDataHTTP{

@@ -47,15 +47,7 @@ func (a *API) serveCancelAsyncSearch(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 
-	profileID, err := a.profiles.GeIDFromContext(ctx)
-	if err != nil {
-		httputil.ProcessError(wr, err)
-		return
-	}
-
-	_, err = a.asyncSearches.CancelAsyncSearch(ctx, profileID, &seqapi.CancelAsyncSearchRequest{
-		SearchId: searchID,
-	})
+	_, err := a.asyncSearches.CancelAsyncSearch(ctx, &seqapi.CancelAsyncSearchRequest{SearchId: searchID})
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, types.ErrPermissionDenied) {

@@ -43,15 +43,15 @@ func TestGetLimits(t *testing.T) {
 			want: &seqapi.GetLimitsResponse{},
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			seqData := test.APITestData{
 				Cfg: tt.cfg,
 			}
-			s := initTestAPI(seqData)
+			s := setupAPI(seqData)
 			resp, err := s.GetLimits(context.Background(), nil)
 
 			require.NoError(t, err)

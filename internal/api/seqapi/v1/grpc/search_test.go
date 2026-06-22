@@ -2,9 +2,7 @@ package grpc
 
 import (
 	"context"
-	"errors"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -19,13 +17,6 @@ import (
 )
 
 func TestSearch(t *testing.T) {
-	query := "message:error"
-	from := time.Now()
-	to := from.Add(time.Second)
-	var limit int32 = 3
-
-	eventTime := time.Date(2024, time.December, 31, 10, 20, 30, 400000, time.UTC)
-
 	tests := []struct {
 		name string
 
@@ -57,7 +48,7 @@ func TestSearch(t *testing.T) {
 				Order: seqapi.Order_ORDER_ASC,
 			},
 			resp: &seqapi.SearchResponse{
-				Events:       test.MakeEvents(int(limit), eventTime),
+				Events:       test.MakeEvents(int(limit), someMoment),
 				Total:        int64(limit),
 				Histogram:    test.MakeHistogram(2),
 				Aggregations: test.MakeAggregations(2, 2, nil),
@@ -137,11 +128,11 @@ func TestSearch(t *testing.T) {
 				WithTotal: true,
 			},
 			resp: &seqapi.SearchResponse{
-				Events: test.MakeEvents(int(limit), eventTime),
+				Events: test.MakeEvents(int(limit), someMoment),
 				Total:  int64(limit) + 1,
 			},
 			wantResp: &seqapi.SearchResponse{
-				Events: test.MakeEvents(int(limit), eventTime),
+				Events: test.MakeEvents(int(limit), someMoment),
 				Total:  int64(limit) + 1,
 				Error: &seqapi.Error{
 					Code:    seqapi.ErrorCode_ERROR_CODE_QUERY_TOO_HEAVY,
@@ -169,11 +160,11 @@ func TestSearch(t *testing.T) {
 					MaxSearchLimit: 5,
 				},
 			}),
-			clientErr: errors.New("client error"),
+			clientErr: errSomethingWrong,
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -185,14 +176,16 @@ func TestSearch(t *testing.T) {
 				ctrl := gomock.NewController(t)
 
 				seqDbMock := mock_seqdb.NewMockClient(ctrl)
-				seqDbMock.EXPECT().Search(gomock.Any(), proto.Clone(tt.req)).
-					Return(proto.Clone(tt.resp), tt.clientErr).Times(1)
+				seqDbMock.EXPECT().
+					Search(gomock.Any(), proto.Clone(tt.req)).
+					Return(proto.Clone(tt.resp), tt.clientErr).
+					Times(1)
 
 				seqData.Mocks.SeqDB = seqDbMock
 			}
 
-			s := initTestAPI(seqData)
-			resp, err := s.Search(context.Background(), tt.req)
+			api := setupAPI(seqData)
+			resp, err := api.Search(context.Background(), tt.req)
 			if tt.apiErr {
 				require.NotNil(t, err)
 				return
