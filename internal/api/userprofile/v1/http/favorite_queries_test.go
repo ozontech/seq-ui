@@ -13,7 +13,6 @@ import (
 )
 
 func TestServeGetFavoriteQueries(t *testing.T) {
-
 	type mockArgs struct {
 		req  types.GetFavoriteQueriesRequest
 		resp types.FavoriteQueries
