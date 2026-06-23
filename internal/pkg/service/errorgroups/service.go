@@ -54,11 +54,10 @@ func (s *service) GetNewErrorGroups(
 	ctx context.Context,
 	req types.GetErrorGroupsRequest,
 ) ([]types.ErrorGroup, uint64, error) {
-	// If the release and duration are not specified,
+	// If the release and time range are not specified,
 	// then we are looking for errors for all time and releases.
 	// In this case, we believe that there are no new errors.
-	if (req.Release == nil || *req.Release == "") &&
-		(req.Duration == nil || *req.Duration == 0) {
+	if (req.Release == nil || *req.Release == "") && req.TimeRange.IsEmpty() {
 		return nil, 0, nil
 	}
 
@@ -73,6 +72,10 @@ func getErrorGroups(
 ) ([]types.ErrorGroup, uint64, error) {
 	if req.Service == "" {
 		return nil, 0, types.NewErrInvalidRequestField("'service' must not be empty")
+	}
+
+	if err := validateTimeRange(req.TimeRange); err != nil {
+		return nil, 0, types.NewErrInvalidRequestField(err.Error())
 	}
 
 	if req.Limit == 0 {
@@ -109,6 +112,10 @@ func (s *service) GetTopErrorGroups(
 	ctx context.Context,
 	req types.GetTopErrorGroupsRequest,
 ) ([]types.TopErrorGroup, uint64, error) {
+	if err := validateTimeRange(req.TimeRange); err != nil {
+		return nil, 0, types.NewErrInvalidRequestField(err.Error())
+	}
+
 	if req.Limit == 0 {
 		req.Limit = defaultLimit
 	}
@@ -143,6 +150,10 @@ func (s *service) GetHist(
 	ctx context.Context,
 	req types.GetErrorHistRequest,
 ) (types.ErrorHist, error) {
+	if err := validateTimeRange(req.TimeRange); err != nil {
+		return types.ErrorHist{}, types.NewErrInvalidRequestField(err.Error())
+	}
+
 	return s.repo.GetErrorHist(ctx, req)
 }
 
@@ -291,4 +302,30 @@ func (s *service) DiffByReleases(
 	}
 
 	return groups, total, err
+}
+
+func validateTimeRange(tr *types.TimeRange) error {
+	if tr == nil {
+		return nil
+	}
+
+	err := func(s string) error {
+		return fmt.Errorf("validate timerange failed: %s", s)
+	}
+
+	if tr.Duration != 0 && (!tr.From.IsZero() || !tr.To.IsZero()) {
+		return err("only one of 'duration' or 'from'/'to' must be specified")
+	}
+	if tr.Duration == 0 {
+		if tr.From.IsZero() && tr.To.IsZero() {
+			return err("at least one of 'duration' or 'from'/'to' must be specified")
+		}
+		if tr.From.IsZero() && !tr.To.IsZero() || !tr.From.IsZero() && tr.To.IsZero() {
+			return err("both 'from'/'to' must be specified")
+		}
+		if tr.From.Equal(tr.To) || tr.From.After(tr.To) {
+			return err("'from' should be before 'to'")
+		}
+	}
+	return nil
 }

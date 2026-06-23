@@ -2,8 +2,8 @@ package grpc
 
 import (
 	"context"
+	"encoding/json"
 	"strconv"
-	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -39,13 +39,11 @@ func (a *API) GetHist(ctx context.Context, req *errorgroups.GetHistRequest) (*er
 	if req.Source != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "source", Value: attribute.StringValue(*req.Source)})
 	}
-	span.SetAttributes(attributes...)
-
-	var duration *time.Duration
-	if req.Duration != nil {
-		parsedDuration := req.Duration.AsDuration()
-		duration = &parsedDuration
+	if req.TimeRange != nil {
+		trRaw, _ := json.Marshal(req.TimeRange)
+		attributes = append(attributes, attribute.KeyValue{Key: "time_range", Value: attribute.StringValue(string(trRaw))})
 	}
+	span.SetAttributes(attributes...)
 
 	request := types.GetErrorHistRequest{
 		Service:   req.Service,
@@ -53,7 +51,7 @@ func (a *API) GetHist(ctx context.Context, req *errorgroups.GetHistRequest) (*er
 		Env:       req.Env,
 		Source:    req.Source,
 		Release:   req.Release,
-		Duration:  duration,
+		TimeRange: parseTimeRange(req),
 	}
 	hist, err := a.service.GetHist(ctx, request)
 	if err != nil {

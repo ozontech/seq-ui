@@ -15,11 +15,13 @@ import (
 
 func TestServeGetTopGroups(t *testing.T) {
 	var (
-		env         = "test-env"
-		source      = "test-source"
-		durationStr = "2m"
-		duration    = 2 * time.Minute
-		someErr     = errors.New("some err")
+		env           = "test-env"
+		source        = "test-source"
+		durationStr   = "2m"
+		duration      = 2 * time.Minute
+		now           = time.Now().Truncate(0).UTC()
+		twoMinutesAgo = now.Add(-2 * time.Minute)
+		someErr       = errors.New("some err")
 	)
 
 	type mockArgs struct {
@@ -40,7 +42,7 @@ func TestServeGetTopGroups(t *testing.T) {
 		mockArgs *mockArgs
 	}{
 		{
-			name: "ok",
+			name: "ok_duration",
 
 			req: getTopGroupsRequest{
 				Env:       &env,
@@ -70,9 +72,11 @@ func TestServeGetTopGroups(t *testing.T) {
 
 			mockArgs: &mockArgs{
 				req: types.GetTopErrorGroupsRequest{
-					Env:       &env,
-					Source:    &source,
-					Duration:  &duration,
+					Env:    &env,
+					Source: &source,
+					TimeRange: &types.TimeRange{
+						Duration: duration,
+					},
 					Limit:     2,
 					Offset:    0,
 					WithTotal: true,
@@ -95,7 +99,122 @@ func TestServeGetTopGroups(t *testing.T) {
 				total: 10,
 			},
 		},
+		{
+			name: "ok_timerange",
 
+			req: getTopGroupsRequest{
+				Env:    &env,
+				Source: &source,
+				TimeRange: &timeRange{
+					From: twoMinutesAgo,
+					To:   now,
+				},
+				Limit:     2,
+				Offset:    0,
+				WithTotal: true,
+			},
+			want: getTopGroupsResponse{
+				Total: 10,
+				Groups: []topGroup{
+					{
+						Hash:      "123",
+						Message:   "some error 1",
+						Source:    source,
+						SeenTotal: 5,
+					},
+					{
+						Hash:      "456",
+						Message:   "some error 2",
+						Source:    source,
+						SeenTotal: 10,
+					},
+				},
+			},
+
+			mockArgs: &mockArgs{
+				req: types.GetTopErrorGroupsRequest{
+					Env:    &env,
+					Source: &source,
+					TimeRange: &types.TimeRange{
+						From: twoMinutesAgo,
+						To:   now,
+					},
+					Limit:     2,
+					Offset:    0,
+					WithTotal: true,
+				},
+
+				groups: []types.TopErrorGroup{
+					{
+						Hash:    123,
+						Message: "some error 1",
+						Source:  source,
+						Count:   5,
+					},
+					{
+						Hash:    456,
+						Message: "some error 2",
+						Source:  source,
+						Count:   10,
+					},
+				},
+				total: 10,
+			},
+		},
+		{
+			name: "ok_no_timerange",
+
+			req: getTopGroupsRequest{
+				Env:       &env,
+				Source:    &source,
+				Limit:     2,
+				Offset:    0,
+				WithTotal: true,
+			},
+			want: getTopGroupsResponse{
+				Total: 10,
+				Groups: []topGroup{
+					{
+						Hash:      "123",
+						Message:   "some error 1",
+						Source:    source,
+						SeenTotal: 5,
+					},
+					{
+						Hash:      "456",
+						Message:   "some error 2",
+						Source:    source,
+						SeenTotal: 10,
+					},
+				},
+			},
+
+			mockArgs: &mockArgs{
+				req: types.GetTopErrorGroupsRequest{
+					Env:       &env,
+					Source:    &source,
+					Limit:     2,
+					Offset:    0,
+					WithTotal: true,
+				},
+
+				groups: []types.TopErrorGroup{
+					{
+						Hash:    123,
+						Message: "some error 1",
+						Source:  source,
+						Count:   5,
+					},
+					{
+						Hash:    456,
+						Message: "some error 2",
+						Source:  source,
+						Count:   10,
+					},
+				},
+				total: 10,
+			},
+		},
 		{
 			name: "err_svc",
 

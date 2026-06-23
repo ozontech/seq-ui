@@ -3,7 +3,6 @@ package grpc
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -41,20 +40,18 @@ func (a *API) GetGroups(ctx context.Context, req *errorgroups.GetGroupsRequest) 
 		filterRaw, _ := json.Marshal(req.Filter)
 		attributes = append(attributes, attribute.KeyValue{Key: "filter", Value: attribute.StringValue(string(filterRaw))})
 	}
-	span.SetAttributes(attributes...)
-
-	var duration *time.Duration
-	if req.Duration != nil {
-		parsedDuration := req.Duration.AsDuration()
-		duration = &parsedDuration
+	if req.TimeRange != nil {
+		trRaw, _ := json.Marshal(req.TimeRange)
+		attributes = append(attributes, attribute.KeyValue{Key: "time_range", Value: attribute.StringValue(string(trRaw))})
 	}
+	span.SetAttributes(attributes...)
 
 	request := types.GetErrorGroupsRequest{
 		Service:   req.Service,
 		Env:       req.Env,
 		Source:    req.Source,
 		Release:   req.Release,
-		Duration:  duration,
+		TimeRange: parseTimeRange(req),
 		Limit:     req.Limit,
 		Offset:    req.Offset,
 		Order:     types.ErrorGroupsOrder(req.Order),
