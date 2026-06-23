@@ -23,7 +23,7 @@ func TestServeGetHist(t *testing.T) {
 		release       = "test-release"
 		durationStr   = "2m"
 		duration      = 2 * time.Minute
-		now           = time.Now().Truncate(0)
+		now           = time.Now().Truncate(0).UTC()
 		oneMinuteAgo  = now.Add(-1 * time.Minute)
 		twoMinutesAgo = now.Add(-2 * time.Minute)
 		someErr       = errors.New("some err")

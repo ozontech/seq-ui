@@ -19,7 +19,7 @@ func TestServeGetTopGroups(t *testing.T) {
 		source        = "test-source"
 		durationStr   = "2m"
 		duration      = 2 * time.Minute
-		now           = time.Now().Truncate(0)
+		now           = time.Now().Truncate(0).UTC()
 		twoMinutesAgo = now.Add(-2 * time.Minute)
 		someErr       = errors.New("some err")
 	)
