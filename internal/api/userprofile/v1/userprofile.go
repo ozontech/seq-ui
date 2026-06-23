@@ -13,10 +13,10 @@ type UserProfile struct {
 	httpAPI *http_api.API
 }
 
-func New(up userprofile.Service) *UserProfile {
+func New(svc userprofile.Service) *UserProfile {
 	return &UserProfile{
-		grpcAPI: grpc_api.New(up),
-		httpAPI: http_api.New(up),
+		grpcAPI: grpc_api.New(svc),
+		httpAPI: http_api.New(svc),
 	}
 }
 
