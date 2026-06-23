@@ -27,9 +27,9 @@ func TestGetEvent(t *testing.T) {
 		id3 = "test3"
 		id4 = "test4"
 	)
-	event1 := test.MakeEvent(id1, 1, testSomeMoment)
+	event1 := test.MakeEvent(id1, 1, testTimestamp)
 	event1json, _ := proto.Marshal(event1)
-	event2 := test.MakeEvent(id2, 2, testSomeMoment)
+	event2 := test.MakeEvent(id2, 2, testTimestamp)
 	event2json, _ := proto.Marshal(event2)
 	event3 := &seqapi.Event{}
 	event3json, _ := proto.Marshal(event3)
@@ -339,7 +339,7 @@ func TestGetEventWithMasking(t *testing.T) {
 			Data: map[string]string{
 				eventField: eventVal,
 			},
-			Time: timestamppb.New(testSomeMoment),
+			Time: timestamppb.New(testTimestamp),
 		}
 		if shouldMask {
 			event.Data[eventField] = "***"

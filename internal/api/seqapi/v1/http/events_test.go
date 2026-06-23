@@ -29,11 +29,11 @@ func TestServeGetEvent(t *testing.T) {
 		cacheTTL = time.Minute
 	)
 
-	event1 := test.MakeEvent(id1, 1, testSomeMoment)
+	event1 := test.MakeEvent(id1, 1, testTimestamp)
 	event1json, _ := proto.Marshal(event1)
-	event2 := test.MakeEvent(id2, 2, testSomeMoment)
+	event2 := test.MakeEvent(id2, 2, testTimestamp)
 	event2json, _ := proto.Marshal(event2)
-	event3 := test.MakeEvent(id3, 0, testSomeMoment)
+	event3 := test.MakeEvent(id3, 0, testTimestamp)
 	event3json, _ := proto.Marshal(event3)
 
 	type mockArgs struct {
@@ -351,7 +351,7 @@ func TestGetEventWithMasking(t *testing.T) {
 			Data: map[string]string{
 				eventField: eventVal,
 			},
-			Time: timestamppb.New(testSomeMoment),
+			Time: timestamppb.New(testTimestamp),
 		}
 		if shouldMask {
 			event.Data[eventField] = "***"

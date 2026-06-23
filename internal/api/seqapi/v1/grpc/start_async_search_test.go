@@ -42,8 +42,8 @@ func TestServeStartAsyncSearch(t *testing.T) {
 			req: &seqapi.StartAsyncSearchRequest{
 				Retention: durationpb.New(60 * time.Second),
 				Query:     query,
-				From:      timestamppb.New(testFrom),
-				To:        timestamppb.New(testTo),
+				From:      timestamppb.New(testTimestamp),
+				To:        timestamppb.New(testTimestamp.Add(time.Second)),
 				WithDocs:  true,
 				Size:      100,
 				Hist: &seqapi.StartAsyncSearchRequest_HistQuery{
@@ -73,8 +73,8 @@ func TestServeStartAsyncSearch(t *testing.T) {
 			req: &seqapi.StartAsyncSearchRequest{
 				Retention: durationpb.New(60 * time.Second),
 				Query:     query,
-				From:      timestamppb.New(testFrom),
-				To:        timestamppb.New(testTo),
+				From:      timestamppb.New(testTimestamp),
+				To:        timestamppb.New(testTimestamp.Add(time.Second)),
 				WithDocs:  true,
 				Size:      100,
 				Hist: &seqapi.StartAsyncSearchRequest_HistQuery{

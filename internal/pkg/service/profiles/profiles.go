@@ -28,20 +28,20 @@ type profiles struct {
 }
 
 func GetIDFromContext(ctx context.Context) (int64, error) {
-	return profile.GeIDFromContext(ctx)
+	return profile.getIDFromContext(ctx)
 }
 
 func SetID(userName string, userProfileID int64) {
-	profile.SetID(userName, userProfileID)
+	profile.setID(userName, userProfileID)
 }
 
-func (p *profiles) GeIDFromContext(ctx context.Context) (int64, error) {
+func (p *profiles) getIDFromContext(ctx context.Context) (int64, error) {
 	userName, err := types.GetUserKey(ctx)
 	if err != nil {
 		return 0, err
 	}
 
-	id, err := p.GetID(userName)
+	id, err := p.getID(userName)
 	if err != nil {
 		return 0, err
 	}
@@ -49,7 +49,7 @@ func (p *profiles) GeIDFromContext(ctx context.Context) (int64, error) {
 	return id, nil
 }
 
-func (p *profiles) GetID(userName string) (int64, error) {
+func (p *profiles) getID(userName string) (int64, error) {
 	p.mx.RLock()
 	id, ok := p.idByName[userName]
 	p.mx.RUnlock()
@@ -75,7 +75,7 @@ func (p *profiles) GetID(userName string) (int64, error) {
 	return id, nil
 }
 
-func (p *profiles) SetID(userName string, userProfileID int64) {
+func (p *profiles) setID(userName string, userProfileID int64) {
 	p.mx.RLock()
 	_, ok := p.idByName[userName]
 	p.mx.RUnlock()

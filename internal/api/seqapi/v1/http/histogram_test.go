@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"testing"
+	"time"
 
 	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -34,8 +35,8 @@ func TestServeGetHistogram(t *testing.T) {
 			name: "ok",
 			req: getHistogramRequest{
 				Query:    testQuery,
-				From:     testFrom,
-				To:       testTo,
+				From:     testTimestamp,
+				To:       testTimestamp.Add(time.Second),
 				Interval: "5s",
 			},
 			want: getHistogramResponse{
@@ -51,8 +52,8 @@ func TestServeGetHistogram(t *testing.T) {
 			mockArgs: &mockArgs{
 				req: &seqapi.GetHistogramRequest{
 					Query:    testQuery,
-					From:     timestamppb.New(testFrom),
-					To:       timestamppb.New(testTo),
+					From:     timestamppb.New(testTimestamp),
+					To:       timestamppb.New(testTimestamp.Add(time.Second)),
 					Interval: "5s",
 				},
 				resp: &seqapi.GetHistogramResponse{
@@ -67,8 +68,8 @@ func TestServeGetHistogram(t *testing.T) {
 			name: "err_partial_response",
 			req: getHistogramRequest{
 				Query:    testQuery,
-				From:     testFrom,
-				To:       testTo,
+				From:     testTimestamp,
+				To:       testTimestamp.Add(time.Second),
 				Interval: "10s",
 			},
 			want: getHistogramResponse{
@@ -81,8 +82,8 @@ func TestServeGetHistogram(t *testing.T) {
 			mockArgs: &mockArgs{
 				req: &seqapi.GetHistogramRequest{
 					Query:    testQuery,
-					From:     timestamppb.New(testFrom),
-					To:       timestamppb.New(testTo),
+					From:     timestamppb.New(testTimestamp),
+					To:       timestamppb.New(testTimestamp.Add(time.Second)),
 					Interval: "10s",
 				},
 				resp: &seqapi.GetHistogramResponse{
@@ -98,16 +99,16 @@ func TestServeGetHistogram(t *testing.T) {
 			name: "err_client",
 			req: getHistogramRequest{
 				Query:    testQuery,
-				From:     testFrom,
-				To:       testTo,
+				From:     testTimestamp,
+				To:       testTimestamp.Add(time.Second),
 				Interval: "20s",
 			},
 			wantErr: true,
 			mockArgs: &mockArgs{
 				req: &seqapi.GetHistogramRequest{
 					Query:    testQuery,
-					From:     timestamppb.New(testFrom),
-					To:       timestamppb.New(testTo),
+					From:     timestamppb.New(testTimestamp),
+					To:       timestamppb.New(testTimestamp.Add(time.Second)),
 					Interval: "20s",
 				},
 				err: errors.New("client error"),

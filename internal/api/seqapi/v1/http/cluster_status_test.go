@@ -30,23 +30,23 @@ func TestStatus(t *testing.T) {
 		{
 			name: "ok",
 			want: statusResponse{
-				OldestStorageTime: &testSomeMoment,
+				OldestStorageTime: &testTimestamp,
 				NumberOfStores:    1,
 				Stores: []storeStatus{
 					{
 						Host:   "host-0",
-						Values: &storeStatusValues{OldestTime: &testSomeMoment},
+						Values: &storeStatusValues{OldestTime: &testTimestamp},
 					},
 				},
 			},
 			mockArgs: &mockArgs{
 				resp: &seqapi.StatusResponse{
 					NumberOfStores:    1,
-					OldestStorageTime: timestamppb.New(testSomeMoment),
+					OldestStorageTime: timestamppb.New(testTimestamp),
 					Stores: []*seqapi.StoreStatus{
 						{
 							Host:   "host-0",
-							Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testSomeMoment)},
+							Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testTimestamp)},
 						},
 					},
 				},

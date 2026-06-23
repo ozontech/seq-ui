@@ -35,38 +35,38 @@ func TestStatus(t *testing.T) {
 			name: "ok",
 			want: &seqapi.StatusResponse{
 				NumberOfStores:    3,
-				OldestStorageTime: timestamppb.New(testSomeMoment),
+				OldestStorageTime: timestamppb.New(testTimestamp),
 				Stores: []*seqapi.StoreStatus{
 					{
 						Host:   "host-0",
-						Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testSomeMoment)},
+						Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testTimestamp)},
 					},
 					{
 						Host:   "host-1",
-						Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testSomeMoment.Add(1 * time.Hour))},
+						Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testTimestamp.Add(1 * time.Hour))},
 					},
 					{
 						Host:   "host-2",
-						Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testSomeMoment.Add(2 * time.Hour))},
+						Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testTimestamp.Add(2 * time.Hour))},
 					},
 				},
 			},
 			mockArgs: &mockArgs{
 				resp: &seqapi.StatusResponse{
 					NumberOfStores:    3,
-					OldestStorageTime: timestamppb.New(testSomeMoment),
+					OldestStorageTime: timestamppb.New(testTimestamp),
 					Stores: []*seqapi.StoreStatus{
 						{
 							Host:   "host-0",
-							Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testSomeMoment)},
+							Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testTimestamp)},
 						},
 						{
 							Host:   "host-1",
-							Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testSomeMoment.Add(1 * time.Hour))},
+							Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testTimestamp.Add(1 * time.Hour))},
 						},
 						{
 							Host:   "host-2",
-							Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testSomeMoment.Add(2 * time.Hour))},
+							Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testTimestamp.Add(2 * time.Hour))},
 						},
 					},
 				},

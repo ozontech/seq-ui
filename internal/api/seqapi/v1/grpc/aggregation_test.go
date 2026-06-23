@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -35,8 +36,8 @@ func TestGetAggregation(t *testing.T) {
 			name: "ok_multi_agg",
 			req: &seqapi.GetAggregationRequest{
 				Query: query,
-				From:  timestamppb.New(testFrom),
-				To:    timestamppb.New(testTo),
+				From:  timestamppb.New(testTimestamp),
+				To:    timestamppb.New(testTimestamp.Add(time.Second)),
 				Aggregations: []*seqapi.AggregationQuery{
 					{Field: "test1"},
 					{Field: "test2"},
@@ -74,8 +75,8 @@ func TestGetAggregation(t *testing.T) {
 			name: "err_client",
 			req: &seqapi.GetAggregationRequest{
 				Query: query,
-				From:  timestamppb.New(testFrom),
-				To:    timestamppb.New(testTo),
+				From:  timestamppb.New(testTimestamp),
+				To:    timestamppb.New(testTimestamp.Add(time.Second)),
 				Aggregations: []*seqapi.AggregationQuery{
 					{Field: "test2"},
 				},
@@ -145,8 +146,8 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 			name: "ok_count",
 			req: &seqapi.GetAggregationRequest{
 				Query: query,
-				From:  timestamppb.New(testFrom),
-				To:    timestamppb.New(testTo),
+				From:  timestamppb.New(testTimestamp),
+				To:    timestamppb.New(testTimestamp.Add(time.Second)),
 				Aggregations: []*seqapi.AggregationQuery{
 					{Field: "test1", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval},
 					{Field: "test2", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval},
@@ -186,8 +187,8 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 			name: "ok_normalize_count",
 			req: &seqapi.GetAggregationRequest{
 				Query: query,
-				From:  timestamppb.New(testFrom),
-				To:    timestamppb.New(testTo),
+				From:  timestamppb.New(testTimestamp),
+				To:    timestamppb.New(testTimestamp.Add(time.Second)),
 				Aggregations: []*seqapi.AggregationQuery{
 					{Field: "test1", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval, TargetBucketRate: &targetBucketRate},
 					{Field: "test2", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval, TargetBucketRate: &targetBucketRate},

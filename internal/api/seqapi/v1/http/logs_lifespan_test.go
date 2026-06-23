@@ -60,7 +60,7 @@ func TestServeGetLogsLifespan(t *testing.T) {
 				Value: resultStr,
 			},
 			clientResp: &seqapi.StatusResponse{
-				OldestStorageTime: timestamppb.New(testSomeMoment),
+				OldestStorageTime: timestamppb.New(testTimestamp),
 			},
 			want: getLogsLifespanResponse{Lifespan: 36000},
 		},
@@ -73,7 +73,7 @@ func TestServeGetLogsLifespan(t *testing.T) {
 				Value: resultStr,
 			},
 			clientResp: &seqapi.StatusResponse{
-				OldestStorageTime: timestamppb.New(testSomeMoment),
+				OldestStorageTime: timestamppb.New(testTimestamp),
 			},
 			want: getLogsLifespanResponse{Lifespan: 36000},
 		},
@@ -137,7 +137,7 @@ func TestServeGetLogsLifespan(t *testing.T) {
 
 			api := setupTestAPI(seqData)
 			api.nowFn = func() time.Time {
-				return testSomeMoment.Add(result)
+				return testTimestamp.Add(result)
 			}
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getLogsLifespanResponse]{

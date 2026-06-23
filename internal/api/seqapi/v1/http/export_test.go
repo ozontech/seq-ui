@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -33,8 +34,8 @@ func TestServeExport(t *testing.T) {
 			name: "ok_jsonl",
 			req: exportRequest{
 				Query:  testQuery,
-				From:   testFrom,
-				To:     testTo,
+				From:   testTimestamp,
+				To:     testTimestamp.Add(time.Second),
 				Limit:  50,
 				Offset: 0,
 			},
@@ -47,8 +48,8 @@ func TestServeExport(t *testing.T) {
 			mockArgs: &mockArgs{
 				req: &seqapi.ExportRequest{
 					Query:  testQuery,
-					From:   timestamppb.New(testFrom),
-					To:     timestamppb.New(testTo),
+					From:   timestamppb.New(testTimestamp),
+					To:     timestamppb.New(testTimestamp.Add(time.Second)),
 					Limit:  50,
 					Offset: 0,
 				},
@@ -58,8 +59,8 @@ func TestServeExport(t *testing.T) {
 			name: "ok_csv",
 			req: exportRequest{
 				Query:  testQuery,
-				From:   testFrom,
-				To:     testTo,
+				From:   testTimestamp,
+				To:     testTimestamp.Add(time.Second),
 				Limit:  50,
 				Offset: 0,
 				Format: efCSV,
@@ -74,8 +75,8 @@ func TestServeExport(t *testing.T) {
 			mockArgs: &mockArgs{
 				req: &seqapi.ExportRequest{
 					Query:  testQuery,
-					From:   timestamppb.New(testFrom),
-					To:     timestamppb.New(testTo),
+					From:   timestamppb.New(testTimestamp),
+					To:     timestamppb.New(testTimestamp.Add(time.Second)),
 					Limit:  50,
 					Offset: 0,
 					Format: seqapi.ExportFormat_EXPORT_FORMAT_CSV,
@@ -87,8 +88,8 @@ func TestServeExport(t *testing.T) {
 			name: "err_parallel_limited",
 			req: exportRequest{
 				Query:  testQuery,
-				From:   testFrom,
-				To:     testTo,
+				From:   testTimestamp,
+				To:     testTimestamp.Add(time.Second),
 				Limit:  0,
 				Offset: 0,
 			},
@@ -103,8 +104,8 @@ func TestServeExport(t *testing.T) {
 			name: "err_export_limit_max",
 			req: exportRequest{
 				Query:  testQuery,
-				From:   testFrom,
-				To:     testTo,
+				From:   testTimestamp,
+				To:     testTimestamp.Add(time.Second),
 				Limit:  10,
 				Offset: 0,
 			},
@@ -120,8 +121,8 @@ func TestServeExport(t *testing.T) {
 			name: "err_csv_empty_fields",
 			req: exportRequest{
 				Query:  testQuery,
-				From:   testFrom,
-				To:     testTo,
+				From:   testTimestamp,
+				To:     testTimestamp.Add(time.Second),
 				Limit:  10,
 				Offset: 0,
 				Format: efCSV,
@@ -138,8 +139,8 @@ func TestServeExport(t *testing.T) {
 			name: "err_client",
 			req: exportRequest{
 				Query:  testQuery,
-				From:   testFrom,
-				To:     testTo,
+				From:   testTimestamp,
+				To:     testTimestamp.Add(time.Second),
 				Limit:  50,
 				Offset: 0,
 			},
@@ -153,8 +154,8 @@ func TestServeExport(t *testing.T) {
 			mockArgs: &mockArgs{
 				req: &seqapi.ExportRequest{
 					Query:  testQuery,
-					From:   timestamppb.New(testFrom),
-					To:     timestamppb.New(testTo),
+					From:   timestamppb.New(testTimestamp),
+					To:     timestamppb.New(testTimestamp.Add(time.Second)),
 					Limit:  50,
 					Offset: 0,
 				},

@@ -19,9 +19,7 @@ var (
 	errSomethingWrong = errors.New("something happened wrong")
 	testSearchID      = "69e4a4a6-0922-43bd-952d-060a86c2b622"
 	testQuery         = "message:error"
-	testFrom          = time.Date(2023, time.September, 25, 10, 20, 30, 0, time.UTC)
-	testTo            = testFrom.Add(time.Second)
-	testSomeMoment    = time.Date(2023, time.September, 25, 10, 20, 30, 0, time.UTC)
+	testTimestamp     = time.Date(2023, time.September, 25, 10, 20, 30, 0, time.UTC)
 )
 
 func setupTestAPI(data test.APITestData) *API {

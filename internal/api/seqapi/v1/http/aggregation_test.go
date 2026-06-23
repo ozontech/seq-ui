@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"testing"
+	"time"
 
 	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -36,15 +37,15 @@ func TestServeGetAggregation(t *testing.T) {
 			name: "ok_single_agg",
 			req: getAggregationRequest{
 				Query:    testQuery,
-				From:     testFrom,
-				To:       testTo,
+				From:     testTimestamp,
+				To:       testTimestamp.Add(time.Second),
 				AggField: "test_single",
 			},
 			mockArgs: &mockArgs{
 				req: &seqapi.GetAggregationRequest{
 					Query:    testQuery,
-					From:     timestamppb.New(testFrom),
-					To:       timestamppb.New(testTo),
+					From:     timestamppb.New(testTimestamp),
+					To:       timestamppb.New(testTimestamp.Add(time.Second)),
 					AggField: "test_single",
 				},
 				resp: &seqapi.GetAggregationResponse{
@@ -71,8 +72,8 @@ func TestServeGetAggregation(t *testing.T) {
 			name: "ok_multi_agg",
 			req: getAggregationRequest{
 				Query: testQuery,
-				From:  testFrom,
-				To:    testTo,
+				From:  testTimestamp,
+				To:    testTimestamp.Add(time.Second),
 				Aggregations: aggregationQueries{
 					{Field: "test_multi1"},
 					{Field: "test_multi2"},
@@ -82,8 +83,8 @@ func TestServeGetAggregation(t *testing.T) {
 			mockArgs: &mockArgs{
 				req: &seqapi.GetAggregationRequest{
 					Query: testQuery,
-					From:  timestamppb.New(testFrom),
-					To:    timestamppb.New(testTo),
+					From:  timestamppb.New(testTimestamp),
+					To:    timestamppb.New(testTimestamp.Add(time.Second)),
 					Aggregations: []*seqapi.AggregationQuery{
 						{Field: "test_multi1"},
 						{Field: "test_multi2"},
@@ -115,8 +116,8 @@ func TestServeGetAggregation(t *testing.T) {
 			name: "ok_agg_quantile",
 			req: getAggregationRequest{
 				Query: testQuery,
-				From:  testFrom,
-				To:    testTo,
+				From:  testTimestamp,
+				To:    testTimestamp.Add(time.Second),
 				Aggregations: aggregationQueries{
 					{
 						Field:     "test_multi1",
@@ -129,8 +130,8 @@ func TestServeGetAggregation(t *testing.T) {
 			mockArgs: &mockArgs{
 				req: &seqapi.GetAggregationRequest{
 					Query: testQuery,
-					From:  timestamppb.New(testFrom),
-					To:    timestamppb.New(testTo),
+					From:  timestamppb.New(testTimestamp),
+					To:    timestamppb.New(testTimestamp.Add(time.Second)),
 					Aggregations: []*seqapi.AggregationQuery{
 						{
 							Field:     "test_multi1",
@@ -176,15 +177,15 @@ func TestServeGetAggregation(t *testing.T) {
 			name: "err_partial_response",
 			req: getAggregationRequest{
 				Query:    testQuery,
-				From:     testFrom,
-				To:       testTo,
+				From:     testTimestamp,
+				To:       testTimestamp.Add(time.Second),
 				AggField: "test_err_partial",
 			},
 			mockArgs: &mockArgs{
 				req: &seqapi.GetAggregationRequest{
 					Query:    testQuery,
-					From:     timestamppb.New(testFrom),
-					To:       timestamppb.New(testTo),
+					From:     timestamppb.New(testTimestamp),
+					To:       timestamppb.New(testTimestamp.Add(time.Second)),
 					AggField: "test_err_partial",
 				},
 				resp: &seqapi.GetAggregationResponse{
@@ -211,8 +212,8 @@ func TestServeGetAggregation(t *testing.T) {
 			name: "err_aggs_limit_max",
 			req: getAggregationRequest{
 				Query:        testQuery,
-				From:         testFrom,
-				To:           testTo,
+				From:         testTimestamp,
+				To:           testTimestamp.Add(time.Second),
 				Aggregations: aggregationQueries{{}, {}, {}},
 			},
 			wantErr: true,
@@ -226,15 +227,15 @@ func TestServeGetAggregation(t *testing.T) {
 			name: "err_client",
 			req: getAggregationRequest{
 				Query:    testQuery,
-				From:     testFrom,
-				To:       testTo,
+				From:     testTimestamp,
+				To:       testTimestamp.Add(time.Second),
 				AggField: "test_err_client",
 			},
 			mockArgs: &mockArgs{
 				req: &seqapi.GetAggregationRequest{
 					Query:    testQuery,
-					From:     timestamppb.New(testFrom),
-					To:       timestamppb.New(testTo),
+					From:     timestamppb.New(testTimestamp),
+					To:       timestamppb.New(testTimestamp.Add(time.Second)),
 					AggField: "test_err_client",
 				},
 				err: errors.New("client error"),

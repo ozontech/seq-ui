@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -37,8 +38,8 @@ func TestSearch(t *testing.T) {
 			name: "ok",
 			req: &seqapi.SearchRequest{
 				Query:     query,
-				From:      timestamppb.New(testFrom),
-				To:        timestamppb.New(testTo),
+				From:      timestamppb.New(testTimestamp),
+				To:        timestamppb.New(testTimestamp.Add(time.Second)),
 				Limit:     limit,
 				Offset:    0,
 				WithTotal: true,
@@ -52,7 +53,7 @@ func TestSearch(t *testing.T) {
 				Order: seqapi.Order_ORDER_ASC,
 			},
 			resp: &seqapi.SearchResponse{
-				Events:       test.MakeEvents(int(limit), testSomeMoment),
+				Events:       test.MakeEvents(int(limit), testTimestamp),
 				Total:        int64(limit),
 				Histogram:    test.MakeHistogram(2),
 				Aggregations: test.MakeAggregations(2, 2, nil),
@@ -108,8 +109,8 @@ func TestSearch(t *testing.T) {
 			name: "err_offset_too_high",
 			req: &seqapi.SearchRequest{
 				Query:  query,
-				From:   timestamppb.New(testFrom),
-				To:     timestamppb.New(testTo),
+				From:   timestamppb.New(testTimestamp),
+				To:     timestamppb.New(testTimestamp.Add(time.Second)),
 				Limit:  limit,
 				Offset: 11,
 			},
@@ -125,18 +126,18 @@ func TestSearch(t *testing.T) {
 			name: "err_total_too_high",
 			req: &seqapi.SearchRequest{
 				Query:     query,
-				From:      timestamppb.New(testFrom),
-				To:        timestamppb.New(testTo),
+				From:      timestamppb.New(testTimestamp),
+				To:        timestamppb.New(testTimestamp.Add(time.Second)),
 				Limit:     limit,
 				Offset:    0,
 				WithTotal: true,
 			},
 			resp: &seqapi.SearchResponse{
-				Events: test.MakeEvents(int(limit), testSomeMoment),
+				Events: test.MakeEvents(int(limit), testTimestamp),
 				Total:  int64(limit) + 1,
 			},
 			wantResp: &seqapi.SearchResponse{
-				Events: test.MakeEvents(int(limit), testSomeMoment),
+				Events: test.MakeEvents(int(limit), testTimestamp),
 				Total:  int64(limit) + 1,
 				Error: &seqapi.Error{
 					Code:    seqapi.ErrorCode_ERROR_CODE_QUERY_TOO_HEAVY,
@@ -154,8 +155,8 @@ func TestSearch(t *testing.T) {
 			name: "err_client",
 			req: &seqapi.SearchRequest{
 				Query:  query,
-				From:   timestamppb.New(testFrom),
-				To:     timestamppb.New(testTo),
+				From:   timestamppb.New(testTimestamp),
+				To:     timestamppb.New(testTimestamp.Add(time.Second)),
 				Limit:  limit,
 				Offset: 0,
 			},

@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -31,8 +32,8 @@ func TestGetHistogram(t *testing.T) {
 			name: "ok",
 			req: &seqapi.GetHistogramRequest{
 				Query:    query,
-				From:     timestamppb.New(testFrom),
-				To:       timestamppb.New(testTo),
+				From:     timestamppb.New(testTimestamp),
+				To:       timestamppb.New(testTimestamp.Add(time.Second)),
 				Interval: interval,
 			},
 			want: &seqapi.GetHistogramResponse{
