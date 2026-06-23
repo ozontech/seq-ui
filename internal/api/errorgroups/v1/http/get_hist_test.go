@@ -100,7 +100,6 @@ func TestServeGetHist(t *testing.T) {
 				Env:       &env,
 				Source:    &source,
 				Release:   &release,
-				Duration:  &durationStr,
 				TimeRange: &timeRange{
 					From: twoMinutesAgo,
 					To:   now,

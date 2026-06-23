@@ -103,9 +103,8 @@ func TestServeGetTopGroups(t *testing.T) {
 			name: "ok_timerange",
 
 			req: getTopGroupsRequest{
-				Env:      &env,
-				Source:   &source,
-				Duration: &durationStr,
+				Env:    &env,
+				Source: &source,
 				TimeRange: &timeRange{
 					From: twoMinutesAgo,
 					To:   now,

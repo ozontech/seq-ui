@@ -120,11 +120,10 @@ func TestServeGetGroups(t *testing.T) {
 			name: "ok_timerange",
 
 			req: getGroupsRequest{
-				Service:  service,
-				Env:      &env,
-				Source:   &source,
-				Release:  &release,
-				Duration: &durationStr,
+				Service: service,
+				Env:     &env,
+				Source:  &source,
+				Release: &release,
 				TimeRange: &timeRange{
 					From: twoMinutesAgo,
 					To:   now,
