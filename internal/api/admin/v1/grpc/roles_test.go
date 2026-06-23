@@ -19,7 +19,7 @@ var (
 	errSomethingWrong = errors.New("something happened wrong")
 )
 
-func setupAPI(t *testing.T) (*API, *mock.MockService) {
+func setupTestAPI(t *testing.T) (*API, *mock.MockService) {
 	ctrl := gomock.NewController(t)
 	mockedSvc := mock.NewMockService(ctrl)
 	return New(mockedSvc), mockedSvc
@@ -45,14 +45,14 @@ func TestCreateRole(t *testing.T) {
 			name: "ok",
 			req: &admin.CreateRoleRequest{
 				Name:        "manager",
-				Permissions: []uint64{1},
+				Permissions: []string{"roles:create"},
 			},
 			want:     &admin.CreateRoleResponse{RoleId: 1},
 			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				req: types.CreateRoleRequest{
 					Name:        "manager",
-					Permissions: []uint64{1},
+					Permissions: []string{"roles:create"},
 				},
 				roleID: 1,
 			},
@@ -61,13 +61,13 @@ func TestCreateRole(t *testing.T) {
 			name: "err_svc",
 			req: &admin.CreateRoleRequest{
 				Name:        "manager",
-				Permissions: []uint64{1},
+				Permissions: []string{"roles:create"},
 			},
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
 				req: types.CreateRoleRequest{
 					Name:        "manager",
-					Permissions: []uint64{1},
+					Permissions: []string{"roles:create"},
 				},
 				err: errSomethingWrong,
 			},
@@ -78,7 +78,7 @@ func TestCreateRole(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().
@@ -147,7 +147,7 @@ func TestAddUsersToRole(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().
@@ -180,17 +180,26 @@ func TestGetRoles(t *testing.T) {
 			name: "ok",
 			want: &admin.GetRolesResponse{
 				Roles: []*admin.Role{
-					{Id: 1, Name: "manager", Permissions: []uint64{1}},
+					{Id: 1, Name: "manager", Permissions: []string{"roles:create", "roles:update", "roles:read"}},
 				},
 				AvailablePermissions: []*admin.GetRolesResponse_Permission{
-					{Value: 1, Name: "manage_roles", Description: "Manage roles"},
+					{Id: 1, Value: "roles:create"},
+					{Id: 2, Value: "roles:read"},
+					{Id: 3, Value: "roles:update"},
+					{Id: 4, Value: "roles:delete"},
 				},
 			},
 			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				resp: types.GetRolesResponse{
 					Roles: []types.Role{
-						{ID: 1, Name: "manager", Permissions: []uint64{1}},
+						{ID: 1, Name: "manager", Permissions: []string{"roles:create", "roles:update", "roles:read"}},
+					},
+					AvailablePermissions: []types.Permission{
+						{ID: 1, Value: "roles:create"},
+						{ID: 2, Value: "roles:read"},
+						{ID: 3, Value: "roles:update"},
+						{ID: 4, Value: "roles:delete"},
 					},
 				},
 			},
@@ -208,7 +217,7 @@ func TestGetRoles(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().
@@ -271,7 +280,7 @@ func TestGetRole(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().
@@ -312,14 +321,14 @@ func TestUpdateRole(t *testing.T) {
 			req: &admin.UpdateRoleRequest{
 				Id:          1,
 				Name:        &name,
-				Permissions: []uint64{1},
+				Permissions: []string{"roles:delete"},
 			},
 			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				req: types.UpdateRoleRequest{
 					RoleID:      1,
 					Name:        &name,
-					Permissions: []uint64{1},
+					Permissions: []string{"roles:delete"},
 				},
 			},
 		},
@@ -344,7 +353,7 @@ func TestUpdateRole(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().
@@ -412,7 +421,7 @@ func TestDeleteRole(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().
@@ -476,7 +485,7 @@ func TestDeleteUsersFromRole(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupAPI(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
 				mockedSvc.EXPECT().

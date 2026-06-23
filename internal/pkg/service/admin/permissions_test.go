@@ -14,44 +14,46 @@ import (
 func TestCheckAccess(t *testing.T) {
 	type mockArgs struct {
 		req   types.GetUserPermissionsRequest
-		perms uint64
+		perms []string
 		err   error
 	}
 
 	tests := []struct {
-		name         string
+		name string
+
 		username     string
-		requiredPerm uint64
+		requiredPerm string
 		wantErr      error
-		mockArgs     *mockArgs
+
+		mockArgs *mockArgs
 	}{
 		{
 			name:         "ok_super_user",
 			username:     defaultSuperUser,
-			requiredPerm: permissionManageRoles,
+			requiredPerm: permissionCreateRoles,
 		},
 		{
 			name:         "err_no_auth",
-			requiredPerm: permissionManageRoles,
+			requiredPerm: permissionCreateRoles,
 			wantErr:      types.ErrUnauthenticated,
 		},
 		{
 			name:         "err_permission_denied",
 			username:     "typical bad boy",
-			requiredPerm: permissionManageRoles,
+			requiredPerm: permissionCreateRoles,
 			wantErr:      types.ErrPermissionDenied,
 			mockArgs: &mockArgs{
 				req:   types.GetUserPermissionsRequest{Username: "typical bad boy"},
-				perms: 0,
+				perms: []string{},
 			},
 		},
 		{
 			name:         "ok_allowed",
 			username:     "typical good boy",
-			requiredPerm: permissionManageRoles,
+			requiredPerm: permissionCreateRoles,
 			mockArgs: &mockArgs{
 				req:   types.GetUserPermissionsRequest{Username: "typical good boy"},
-				perms: permissionManageRoles,
+				perms: []string{permissionCreateRoles},
 			},
 		},
 	}
@@ -90,46 +92,46 @@ func TestCheckAccess(t *testing.T) {
 func TestGetUserPermissions(t *testing.T) {
 	type mockArgs struct {
 		req   types.GetUserPermissionsRequest
-		perms uint64
+		perms []string
 		err   error
 	}
 
 	tests := []struct {
 		name      string
 		req       types.GetUserPermissionsRequest
-		wantPerms uint64
+		wantPerms []string
 		wantErr   bool
 		mockArgs  *mockArgs
 	}{
 		{
 			name:      "ok",
 			req:       types.GetUserPermissionsRequest{Username: "user1"},
-			wantPerms: permissionManageRoles,
+			wantPerms: []string{permissionCreateRoles, permissionDeleteRoles},
 			mockArgs: &mockArgs{
 				req:   types.GetUserPermissionsRequest{Username: "user1"},
-				perms: permissionManageRoles,
+				perms: []string{permissionCreateRoles, permissionDeleteRoles},
 			},
 		},
 		{
 			name:      "ok_no_permissions",
 			req:       types.GetUserPermissionsRequest{Username: "user1"},
-			wantPerms: 0,
+			wantPerms: []string{},
 			mockArgs: &mockArgs{
 				req:   types.GetUserPermissionsRequest{Username: "user1"},
-				perms: 0,
+				perms: []string{},
 			},
 		},
 		{
-			name:      "err_repo",
-			req:       types.GetUserPermissionsRequest{Username: "user1"},
-			wantPerms: 0,
-			wantErr:   true,
+			name:    "err_repo",
+			req:     types.GetUserPermissionsRequest{Username: "user1"},
+			wantErr: true,
 			mockArgs: &mockArgs{
 				req: types.GetUserPermissionsRequest{Username: "user1"},
 				err: errSomethingWrong,
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
@@ -163,60 +165,29 @@ func TestGetUserPermissions(t *testing.T) {
 	}
 }
 
-func TestMaskUnmaskPermissions(t *testing.T) {
-	tests := []struct {
-		name  string
-		perms []uint64
-		mask  uint64
-	}{
-		{
-			name:  "single_permission",
-			perms: []uint64{permissionManageRoles},
-			mask:  permissionManageRoles,
-		},
-		{
-			name:  "empty_permission",
-			perms: []uint64{},
-			mask:  0,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			masked := maskPermissions(tt.perms)
-			require.Equal(t, tt.mask, masked)
-
-			unmasked := unmaskPermissions(masked)
-			require.Equal(t, tt.perms, unmasked)
-		})
-	}
-}
-
 func TestValidatePermissions(t *testing.T) {
 	tests := []struct {
 		name    string
-		perms   []uint64
+		perms   []string
 		wantErr bool
 	}{
 		{
 			name:  "ok",
-			perms: []uint64{permissionManageRoles},
+			perms: []string{permissionCreateRoles},
 		},
 		{
 			name:    "err_empty",
-			perms:   []uint64{},
+			perms:   []string{},
 			wantErr: true,
 		},
 		{
 			name:    "err_unknown",
-			perms:   []uint64{52},
+			perms:   []string{"roles:unknownOperation"},
 			wantErr: true,
 		},
 		{
 			name:    "err_mixed",
-			perms:   []uint64{permissionManageRoles, 52},
+			perms:   []string{permissionCreateRoles, "roles:unknownOperation"},
 			wantErr: true,
 		},
 	}
@@ -225,7 +196,18 @@ func TestValidatePermissions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := validatePermissions(tt.perms)
+			ctrl := gomock.NewController(t)
+			repo := mock.NewMockAdmin(ctrl)
+			svc := New(repo, adminCfg).(*service)
+
+			if len(tt.perms) > 0 {
+				repo.EXPECT().
+					GetAvailablePermissions(gomock.Any()).
+					Return(testAvailablePermissions, nil).
+					Times(1)
+			}
+
+			err := svc.validatePermissions(context.Background(), tt.perms)
 			require.Equal(t, tt.wantErr, err != nil)
 		})
 	}

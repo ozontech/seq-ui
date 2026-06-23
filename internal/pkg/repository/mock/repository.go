@@ -400,7 +400,7 @@ func (mr *MockAdminMockRecorder) AddUsersToRole(arg0, arg1 any) *gomock.Call {
 }
 
 // CreateRole mocks base method.
-func (m *MockAdmin) CreateRole(arg0 context.Context, arg1 types.CreateRoleRepoRequest) (int32, error) {
+func (m *MockAdmin) CreateRole(arg0 context.Context, arg1 types.CreateRoleRequest) (int32, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateRole", arg0, arg1)
 	ret0, _ := ret[0].(int32)
@@ -442,6 +442,21 @@ func (mr *MockAdminMockRecorder) DeleteUsersFromRole(arg0, arg1 any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUsersFromRole", reflect.TypeOf((*MockAdmin)(nil).DeleteUsersFromRole), arg0, arg1)
 }
 
+// GetAvailablePermissions mocks base method.
+func (m *MockAdmin) GetAvailablePermissions(arg0 context.Context) ([]types.Permission, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAvailablePermissions", arg0)
+	ret0, _ := ret[0].([]types.Permission)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAvailablePermissions indicates an expected call of GetAvailablePermissions.
+func (mr *MockAdminMockRecorder) GetAvailablePermissions(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAvailablePermissions", reflect.TypeOf((*MockAdmin)(nil).GetAvailablePermissions), arg0)
+}
+
 // GetRole mocks base method.
 func (m *MockAdmin) GetRole(arg0 context.Context, arg1 types.GetRoleRequest) (types.RoleInfo, error) {
 	m.ctrl.T.Helper()
@@ -458,10 +473,10 @@ func (mr *MockAdminMockRecorder) GetRole(arg0, arg1 any) *gomock.Call {
 }
 
 // GetRoles mocks base method.
-func (m *MockAdmin) GetRoles(arg0 context.Context) ([]types.RoleRepo, error) {
+func (m *MockAdmin) GetRoles(arg0 context.Context) ([]types.Role, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRoles", arg0)
-	ret0, _ := ret[0].([]types.RoleRepo)
+	ret0, _ := ret[0].([]types.Role)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -473,10 +488,10 @@ func (mr *MockAdminMockRecorder) GetRoles(arg0 any) *gomock.Call {
 }
 
 // GetUserPermissions mocks base method.
-func (m *MockAdmin) GetUserPermissions(arg0 context.Context, arg1 types.GetUserPermissionsRequest) (uint64, error) {
+func (m *MockAdmin) GetUserPermissions(arg0 context.Context, arg1 types.GetUserPermissionsRequest) ([]string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserPermissions", arg0, arg1)
-	ret0, _ := ret[0].(uint64)
+	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -488,7 +503,7 @@ func (mr *MockAdminMockRecorder) GetUserPermissions(arg0, arg1 any) *gomock.Call
 }
 
 // UpdateRole mocks base method.
-func (m *MockAdmin) UpdateRole(arg0 context.Context, arg1 types.UpdateRoleRepoRequest) error {
+func (m *MockAdmin) UpdateRole(arg0 context.Context, arg1 types.UpdateRoleRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateRole", arg0, arg1)
 	ret0, _ := ret[0].(error)

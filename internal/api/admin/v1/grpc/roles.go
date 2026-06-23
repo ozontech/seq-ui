@@ -74,7 +74,7 @@ func (a *API) GetRoles(ctx context.Context, _ *admin.GetRolesRequest) (*admin.Ge
 
 	return &admin.GetRolesResponse{
 		Roles:                rolesToProto(resp.Roles),
-		AvailablePermissions: a.availablePermissions,
+		AvailablePermissions: availablePermissionsToProto(resp.AvailablePermissions),
 	}, nil
 }
 
@@ -197,4 +197,15 @@ func rolesToProto(source []types.Role) []*admin.Role {
 		})
 	}
 	return roles
+}
+
+func availablePermissionsToProto(source []types.Permission) []*admin.GetRolesResponse_Permission {
+	availablePermissions := make([]*admin.GetRolesResponse_Permission, 0, len(source))
+	for _, aPermission := range source {
+		availablePermissions = append(availablePermissions, &admin.GetRolesResponse_Permission{
+			Id:    aPermission.ID,
+			Value: aPermission.Value,
+		})
+	}
+	return availablePermissions
 }

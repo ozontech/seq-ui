@@ -132,7 +132,7 @@ func (a *API) serveGetRoles(w http.ResponseWriter, r *http.Request) {
 
 	wr.WriteJson(getRolesResponse{
 		Roles:                parseRoles(resp.Roles),
-		AvailablePermissions: a.availablePermissions,
+		AvailablePermissions: parsePermissions(resp.AvailablePermissions),
 	})
 }
 
@@ -361,21 +361,31 @@ func parseRoles(source []types.Role) []role {
 	return roles
 }
 
+func parsePermissions(source []types.Permission) []permission {
+	permissions := make([]permission, 0, len(source))
+	for _, s := range source {
+		permissions = append(permissions, permission{
+			ID:    s.ID,
+			Value: s.Value,
+		})
+	}
+	return permissions
+}
+
 type role struct {
 	ID          int32    `json:"id"`
 	Name        string   `json:"name"`
-	Permissions []uint64 `json:"permissions"`
+	Permissions []string `json:"permissions"`
 } //	@name	admin.v1.Role
 
 type permission struct {
-	Value       uint64 `json:"value"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	ID    int32  `json:"id"`
+	Value string `json:"value"`
 } //	@name	admin.v1.Permission
 
 type createRoleRequest struct {
 	Name        string   `json:"name"`
-	Permissions []uint64 `json:"permissions"`
+	Permissions []string `json:"permissions"`
 } //	@name	admin.v1.CreateRoleRequest
 
 type createRoleResponse struct {
@@ -397,7 +407,7 @@ type getRoleResponse struct {
 
 type updateRoleRequest struct {
 	Name        *string  `json:"name"`
-	Permissions []uint64 `json:"permissions"`
+	Permissions []string `json:"permissions"`
 } //	@name	admin.v1.UpdateRoleResponse
 
 type deleteRoleRequest struct {

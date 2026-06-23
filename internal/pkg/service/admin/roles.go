@@ -8,7 +8,7 @@ import (
 )
 
 func (s *service) CreateRole(ctx context.Context, req types.CreateRoleRequest) (int32, error) {
-	if err := s.checkAccess(ctx, permissionManageRoles); err != nil {
+	if err := s.checkAccess(ctx, permissionCreateRoles); err != nil {
 		return 0, err
 	}
 
@@ -16,14 +16,11 @@ func (s *service) CreateRole(ctx context.Context, req types.CreateRoleRequest) (
 		return 0, types.NewErrInvalidRequestField("empty role name")
 	}
 
-	if err := validatePermissions(req.Permissions); err != nil {
+	if err := s.validatePermissions(ctx, req.Permissions); err != nil {
 		return 0, err
 	}
 
-	roleID, err := s.repo.CreateRole(ctx, types.CreateRoleRepoRequest{
-		Name:        req.Name,
-		Permissions: maskPermissions(req.Permissions),
-	})
+	roleID, err := s.repo.CreateRole(ctx, req)
 	if err != nil {
 		return 0, err
 	}
@@ -34,7 +31,7 @@ func (s *service) CreateRole(ctx context.Context, req types.CreateRoleRequest) (
 }
 
 func (s *service) AddUsersToRole(ctx context.Context, req types.AddUsersToRoleRequest) error {
-	if err := s.checkAccess(ctx, permissionManageRoles); err != nil {
+	if err := s.checkAccess(ctx, permissionUpdateRoles); err != nil {
 		return err
 	}
 
@@ -60,41 +57,37 @@ func (s *service) AddUsersToRole(ctx context.Context, req types.AddUsersToRoleRe
 }
 
 func (s *service) GetRoles(ctx context.Context) (types.GetRolesResponse, error) {
-	if err := s.checkAccess(ctx, permissionManageRoles); err != nil {
+	if err := s.checkAccess(ctx, permissionReadRoles); err != nil {
+		return types.GetRolesResponse{}, err
+	}
+
+	available, err := s.GetAvailablePermissions(ctx)
+	if err != nil {
 		return types.GetRolesResponse{}, err
 	}
 
 	if roles, ok := s.cache.getRoles(); ok {
 		return types.GetRolesResponse{
 			Roles:                roles,
-			AvailablePermissions: availablePermissions,
+			AvailablePermissions: available,
 		}, nil
 	}
 
-	repoRoles, err := s.repo.GetRoles(ctx)
+	roles, err := s.repo.GetRoles(ctx)
 	if err != nil {
 		return types.GetRolesResponse{}, err
-	}
-
-	roles := make([]types.Role, 0, len(repoRoles))
-	for _, role := range repoRoles {
-		roles = append(roles, types.Role{
-			ID:          role.ID,
-			Name:        role.Name,
-			Permissions: unmaskPermissions(role.Permissions),
-		})
 	}
 
 	s.cache.setRoles(roles)
 
 	return types.GetRolesResponse{
 		Roles:                roles,
-		AvailablePermissions: availablePermissions,
+		AvailablePermissions: available,
 	}, nil
 }
 
 func (s *service) GetRole(ctx context.Context, req types.GetRoleRequest) (types.RoleInfo, error) {
-	if err := s.checkAccess(ctx, permissionManageRoles); err != nil {
+	if err := s.checkAccess(ctx, permissionReadRoles); err != nil {
 		return types.RoleInfo{}, err
 	}
 
@@ -106,7 +99,7 @@ func (s *service) GetRole(ctx context.Context, req types.GetRoleRequest) (types.
 }
 
 func (s *service) UpdateRole(ctx context.Context, req types.UpdateRoleRequest) error {
-	if err := s.checkAccess(ctx, permissionManageRoles); err != nil {
+	if err := s.checkAccess(ctx, permissionUpdateRoles); err != nil {
 		return err
 	}
 
@@ -118,27 +111,19 @@ func (s *service) UpdateRole(ctx context.Context, req types.UpdateRoleRequest) e
 		return types.ErrEmptyUpdateRequest
 	}
 
-	var permissions *uint64
 	if len(req.Permissions) > 0 {
-		if err := validatePermissions(req.Permissions); err != nil {
+		if err := s.validatePermissions(ctx, req.Permissions); err != nil {
 			return err
 		}
-
-		value := maskPermissions(req.Permissions)
-		permissions = &value
 	}
 
-	if err := s.repo.UpdateRole(ctx, types.UpdateRoleRepoRequest{
-		RoleID:      req.RoleID,
-		Name:        req.Name,
-		Permissions: permissions,
-	}); err != nil {
+	if err := s.repo.UpdateRole(ctx, req); err != nil {
 		return err
 	}
 
 	s.cache.resetRoles()
 
-	if permissions != nil {
+	if len(req.Permissions) > 0 {
 		s.cache.resetAllPermissions()
 	}
 
@@ -146,7 +131,7 @@ func (s *service) UpdateRole(ctx context.Context, req types.UpdateRoleRequest) e
 }
 
 func (s *service) DeleteRole(ctx context.Context, req types.DeleteRoleRequest) error {
-	if err := s.checkAccess(ctx, permissionManageRoles); err != nil {
+	if err := s.checkAccess(ctx, permissionDeleteRoles); err != nil {
 		return err
 	}
 
@@ -174,7 +159,7 @@ func (s *service) DeleteRole(ctx context.Context, req types.DeleteRoleRequest) e
 }
 
 func (s *service) DeleteUsersFromRole(ctx context.Context, req types.DeleteUsersFromRoleRequest) error {
-	if err := s.checkAccess(ctx, permissionManageRoles); err != nil {
+	if err := s.checkAccess(ctx, permissionDeleteRoles); err != nil {
 		return err
 	}
 

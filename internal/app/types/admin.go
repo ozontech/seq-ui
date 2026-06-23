@@ -3,13 +3,7 @@ package types
 type Role struct {
 	ID          int32
 	Name        string
-	Permissions []uint64
-}
-
-type RoleRepo struct {
-	ID          int32
-	Name        string
-	Permissions uint64
+	Permissions []string
 }
 
 type RoleInfo struct {
@@ -17,19 +11,13 @@ type RoleInfo struct {
 }
 
 type Permission struct {
-	Value       uint64
-	Name        string
-	Description string
+	ID    int32
+	Value string
 }
 
 type CreateRoleRequest struct {
 	Name        string
-	Permissions []uint64
-}
-
-type CreateRoleRepoRequest struct {
-	Name        string
-	Permissions uint64
+	Permissions []string
 }
 
 type CreateRoleResponse struct {
@@ -57,13 +45,7 @@ type GetRoleResponse struct {
 type UpdateRoleRequest struct {
 	RoleID      int32
 	Name        *string
-	Permissions []uint64
-}
-
-type UpdateRoleRepoRequest struct {
-	RoleID      int32
-	Name        *string
-	Permissions *uint64
+	Permissions []string
 }
 
 type DeleteRoleRequest struct {
@@ -76,7 +58,7 @@ type GetUserPermissionsRequest struct {
 }
 
 type GetUserPermissionsResponse struct {
-	Permissions uint64
+	Permissions []string
 }
 
 type DeleteUsersFromRoleRequest struct {

@@ -32,7 +32,7 @@ import (
 	"github.com/ozontech/seq-ui/internal/pkg/repository"
 	repositorych "github.com/ozontech/seq-ui/internal/pkg/repository_ch"
 	"github.com/ozontech/seq-ui/internal/pkg/service"
-	adminservice "github.com/ozontech/seq-ui/internal/pkg/service/admin"
+	"github.com/ozontech/seq-ui/internal/pkg/service/admin"
 	asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches"
 	"github.com/ozontech/seq-ui/internal/pkg/service/errorgroups"
 	"github.com/ozontech/seq-ui/internal/pkg/service/massexport"
@@ -170,7 +170,7 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 		asyncSearchesService = asyncsearches.New(ctx, repo, defaultClient, cfg.Handlers.AsyncSearch)
 
 		if cfg.Handlers.Admin != nil {
-			adminSvc := adminservice.New(repo, cfg.Handlers.Admin)
+			adminSvc := admin.New(repo, redisCache, cfg.Handlers.Admin)
 			adminV1 = admin_v1.New(adminSvc)
 		}
 	}

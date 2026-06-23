@@ -3,28 +3,19 @@ package admin
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/ozontech/seq-ui/internal/app/types"
 )
 
 const (
-	permissionManageRoles uint64 = 1 << iota
+	permissionCreateRoles = "roles:create"
+	permissionReadRoles   = "roles:read"
+	permissionUpdateRoles = "roles:update"
+	permissionDeleteRoles = "roles:delete"
 )
 
-var availablePermissions = []types.Permission{
-	{
-		Value:       permissionManageRoles,
-		Name:        "manage_roles",
-		Description: "Manage roles",
-	},
-}
-
-var availablePermissionsMap = map[uint64]struct{}{
-	permissionManageRoles: {},
-}
-
-//nolint:unparam
-func (s *service) checkAccess(ctx context.Context, requiredPermission uint64) error {
+func (s *service) checkAccess(ctx context.Context, requiredPermission string) error {
 	username, err := types.GetUserKey(ctx)
 	if err != nil {
 		return types.ErrUnauthenticated
@@ -39,21 +30,21 @@ func (s *service) checkAccess(ctx context.Context, requiredPermission uint64) er
 		return fmt.Errorf("can't get user permissions: %w", err)
 	}
 
-	if permissions&requiredPermission == 0 {
+	if !slices.Contains(permissions, requiredPermission) {
 		return types.ErrPermissionDenied
 	}
 
 	return nil
 }
 
-func (s *service) GetUserPermissions(ctx context.Context, req types.GetUserPermissionsRequest) (uint64, error) {
+func (s *service) GetUserPermissions(ctx context.Context, req types.GetUserPermissionsRequest) ([]string, error) {
 	if perms, ok := s.cache.getPermissions(req.Username); ok {
 		return perms, nil
 	}
 
 	perms, err := s.repo.GetUserPermissions(ctx, req)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	s.cache.setPermissions(req.Username, perms)
@@ -61,40 +52,38 @@ func (s *service) GetUserPermissions(ctx context.Context, req types.GetUserPermi
 	return perms, nil
 }
 
-func GetAvailablePermissions() []types.Permission {
-	return availablePermissions
-}
-
-func unmaskPermissions(value uint64) []uint64 {
-	permissions := make([]uint64, 0)
-
-	for _, permission := range availablePermissions {
-		if value&permission.Value != 0 {
-			permissions = append(permissions, permission.Value)
-		}
+func (s *service) GetAvailablePermissions(ctx context.Context) ([]types.Permission, error) {
+	if perms, ok := s.cache.getAvailablePermissions(); ok {
+		return perms, nil
 	}
 
-	return permissions
+	perms, err := s.repo.GetAvailablePermissions(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	s.cache.setAvailablePermissions(perms)
+
+	return perms, nil
 }
 
-func validatePermissions(permissions []uint64) error {
+func (s *service) validatePermissions(ctx context.Context, permissions []string) error {
 	if len(permissions) == 0 {
 		return types.NewErrInvalidRequestField("empty permissions")
 	}
 
+	available, err := s.GetAvailablePermissions(ctx)
+	if err != nil {
+		return fmt.Errorf("can't get available permissions: %w", err)
+	}
+
 	for _, permission := range permissions {
-		if _, ok := availablePermissionsMap[permission]; !ok {
-			return fmt.Errorf("unknown permission: %d", permission)
+		if !slices.ContainsFunc(available, func(aPermission types.Permission) bool {
+			return aPermission.Value == permission
+		}) {
+			return fmt.Errorf("unknown permission: %s", permission)
 		}
 	}
 
 	return nil
-}
-
-func maskPermissions(permissions []uint64) uint64 {
-	var value uint64
-	for _, permission := range permissions {
-		value |= permission
-	}
-	return value
 }

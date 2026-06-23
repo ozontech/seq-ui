@@ -23,12 +23,12 @@ service AdminService {
 message Role {
   int32 id = 1;
   string name = 2;
-  repeated uint64 permissions = 3;
+  repeated string permissions = 3;
 }
 
 message CreateRoleRequest {
   string name = 1;
-  repeated uint64 permissions = 2;
+  repeated string permissions = 2;
 }
 
 message CreateRoleResponse {
@@ -46,9 +46,8 @@ message GetRolesRequest {}
 
 message GetRolesResponse {
   message Permission {
-    uint64 value = 1;
-    string name = 2;
-    string description = 3;
+    int32 id = 1;
+    string value = 2;
   }
 
   repeated Role roles = 1;
@@ -66,7 +65,7 @@ message GetRoleResponse {
 message UpdateRoleRequest {
   int32 id = 1;
   optional string name = 2;
-  repeated uint64 permissions = 3;
+  repeated string permissions = 3;
 }
 
 message UpdateRoleResponse {}
