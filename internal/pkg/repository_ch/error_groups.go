@@ -33,7 +33,7 @@ func (r *repository) GetErrorGroups(
 		where["release"] = *req.Release
 	}
 
-	if req.Duration != nil && *req.Duration != 0 {
+	if !req.TimeRange.IsEmpty() {
 		var (
 			hashes []uint64 // ordered
 			infos  errorInfos
@@ -44,11 +44,11 @@ func (r *repository) GetErrorGroups(
 
 		if req.Order == types.OrderFrequent {
 			counts, err = r.getErrorCounts(ctx, getErrorCountsParams{
-				duration: req.Duration,
-				where:    where,
-				orderBy:  "count DESC",
-				limit:    uint64(req.Limit),
-				offset:   uint64(req.Offset),
+				tr:      req.TimeRange,
+				where:   where,
+				orderBy: "count DESC",
+				limit:   uint64(req.Limit),
+				offset:  uint64(req.Offset),
 			})
 			if err != nil {
 				return nil, err
@@ -76,12 +76,12 @@ func (r *repository) GetErrorGroups(
 			}
 		} else {
 			subQuery := r.getHashSubQuery(getHashSubQueryParams{
-				table:    "error_groups",
-				where:    where,
-				duration: req.Duration,
-				orderBy:  orderBy(req.Order, true),
-				limit:    uint64(req.Limit),
-				offset:   uint64(req.Offset),
+				table:   "error_groups",
+				where:   where,
+				tr:      req.TimeRange,
+				orderBy: orderBy(req.Order, true),
+				limit:   uint64(req.Limit),
+				offset:  uint64(req.Offset),
 			})
 
 			infos, err = r.getErrorInfos(ctx, getErrorInfosParams{
@@ -108,8 +108,8 @@ func (r *repository) GetErrorGroups(
 
 			where["_group_hash"] = hashes
 			counts, err = r.getErrorCounts(ctx, getErrorCountsParams{
-				duration: req.Duration,
-				where:    where,
+				tr:    req.TimeRange,
+				where: where,
 			})
 			if err != nil {
 				return nil, err
@@ -136,12 +136,11 @@ func (r *repository) GetErrorGroups(
 	}
 
 	subQ := r.getHashSubQuery(getHashSubQueryParams{
-		table:    "error_groups",
-		where:    where,
-		duration: req.Duration,
-		orderBy:  orderBy(req.Order, true),
-		limit:    uint64(req.Limit),
-		offset:   uint64(req.Offset),
+		table:   "error_groups",
+		where:   where,
+		orderBy: orderBy(req.Order, true),
+		limit:   uint64(req.Limit),
+		offset:  uint64(req.Offset),
 	})
 
 	infos, err := r.getErrorInfos(ctx, getErrorInfosParams{
@@ -197,9 +196,9 @@ func (r *repository) GetErrorGroupsTotal(
 	}
 
 	return r.getTotal(ctx, getTotalParams{
-		where:    where,
-		table:    "error_groups",
-		duration: req.Duration,
+		where: where,
+		table: "error_groups",
+		tr:    req.TimeRange,
 	})
 }
 
@@ -227,13 +226,13 @@ func (r *repository) GetNewErrorGroups(
 		limit:   uint64(req.Limit),
 		offset:  uint64(req.Offset),
 	})
-	if req.Release != nil && *req.Release != "" { // new by releases, ignore duration
+	if req.Release != nil && *req.Release != "" { // new by releases, ignore time range
 		subQ = subQ.Having(sq.Eq{
 			"any(release)": *req.Release,
 			"count()":      1,
 		})
-	} else if req.Duration != nil && *req.Duration != 0 { // new by duration
-		subQ = subQ.Having(sq.GtOrEq{"minMerge(first_seen_at)": r.nowFn().Add(-req.Duration.Abs())})
+	} else if !req.TimeRange.IsEmpty() { // new by time range
+		subQ = subQ.Having(r.timeRangeCond("minMerge(first_seen_at)", req.TimeRange))
 	}
 
 	infos, err := r.getErrorInfos(ctx, getErrorInfosParams{
@@ -288,13 +287,13 @@ func (r *repository) GetNewErrorGroupsTotal(
 		subQ = subQ.Where(sq.Eq{"source": *req.Source})
 	}
 
-	if req.Release != nil && *req.Release != "" { // new by releases, ignore duration
+	if req.Release != nil && *req.Release != "" { // new by releases, ignore time range
 		subQ = subQ.Having(sq.Eq{
 			"any(release)": *req.Release,
 			"count()":      1,
 		})
-	} else if req.Duration != nil && *req.Duration != 0 { // new by duration
-		subQ = subQ.Having(sq.GtOrEq{"minMerge(first_seen_at)": r.nowFn().Add(-req.Duration.Abs())})
+	} else if !req.TimeRange.IsEmpty() { // new by time range
+		subQ = subQ.Having(r.timeRangeCond("minMerge(first_seen_at)", req.TimeRange))
 	}
 
 	q := sq.Select("count()").FromSelect(subQ, "subQ")
@@ -330,13 +329,13 @@ func (r *repository) GetTopErrorGroups(
 		where["source"] = *req.Source
 	}
 
-	if req.Duration != nil && *req.Duration != 0 {
+	if !req.TimeRange.IsEmpty() {
 		counts, err := r.getErrorCounts(ctx, getErrorCountsParams{
-			duration: req.Duration,
-			where:    where,
-			orderBy:  "count DESC",
-			limit:    uint64(req.Limit),
-			offset:   uint64(req.Offset),
+			tr:      req.TimeRange,
+			where:   where,
+			orderBy: "count DESC",
+			limit:   uint64(req.Limit),
+			offset:  uint64(req.Offset),
 		})
 		if err != nil {
 			return nil, err
@@ -427,9 +426,9 @@ func (r *repository) GetTopErrorGroupsTotal(
 	}
 
 	return r.getTotal(ctx, getTotalParams{
-		table:    "error_groups_brief",
-		where:    where,
-		duration: req.Duration,
+		table: "error_groups_brief",
+		where: where,
+		tr:    req.TimeRange,
 	})
 }
 
@@ -437,7 +436,7 @@ func (r *repository) GetErrorHist(
 	ctx context.Context,
 	req types.GetErrorHistRequest,
 ) (types.ErrorHist, error) {
-	histData := getHistData(req.Duration)
+	histData := r.getHistData(req.TimeRange)
 
 	q := sq.
 		Select(
@@ -466,8 +465,8 @@ func (r *repository) GetErrorHist(
 	if req.Release != nil && *req.Release != "" {
 		q = q.Where(sq.Eq{"release": *req.Release})
 	}
-	if req.Duration != nil && *req.Duration != 0 {
-		q = q.Where(sq.GtOrEq{histData.column: r.nowFn().Add(-req.Duration.Abs())})
+	if !req.TimeRange.IsEmpty() {
+		q = q.Where(r.timeRangeCond(histData.column, req.TimeRange))
 	}
 
 	query, args := q.MustSql()
@@ -858,12 +857,12 @@ func (r *repository) DiffByReleasesTotal(
 }
 
 type getHashSubQueryParams struct {
-	table    string
-	where    sq.Eq
-	duration *time.Duration
-	orderBy  string
-	limit    uint64
-	offset   uint64
+	table   string
+	where   sq.Eq
+	tr      *types.TimeRange
+	orderBy string
+	limit   uint64
+	offset  uint64
 }
 
 func (r *repository) getHashSubQuery(params getHashSubQueryParams) sq.SelectBuilder {
@@ -876,8 +875,8 @@ func (r *repository) getHashSubQuery(params getHashSubQueryParams) sq.SelectBuil
 		Limit(params.limit).
 		Offset(params.offset)
 
-	if params.duration != nil && *params.duration != 0 {
-		subQ = subQ.Having(sq.GtOrEq{"maxMerge(last_seen_at)": r.nowFn().Add(-params.duration.Abs())})
+	if !params.tr.IsEmpty() {
+		subQ = subQ.Having(r.timeRangeCond("maxMerge(last_seen_at)", params.tr))
 	}
 	if r.sharded {
 		subQ = subQ.Distinct()
@@ -887,9 +886,9 @@ func (r *repository) getHashSubQuery(params getHashSubQueryParams) sq.SelectBuil
 }
 
 type getTotalParams struct {
-	table    string
-	where    sq.Eq
-	duration *time.Duration
+	table string
+	where sq.Eq
+	tr    *types.TimeRange
 }
 
 func (r *repository) getTotal(
@@ -901,9 +900,9 @@ func (r *repository) getTotal(
 		Where(params.where)
 
 	var table string
-	if dur := params.duration; dur != nil && *dur != 0 {
-		histData := getHistData(dur)
-		q = q.Where(sq.GtOrEq{histData.column: r.nowFn().Add(-dur.Abs())})
+	if tr := params.tr; !tr.IsEmpty() {
+		histData := r.getHistData(tr)
+		q = q.Where(r.timeRangeCond(histData.column, tr))
 
 		table = histData.table
 	} else {
@@ -1022,18 +1021,18 @@ func (c errorCounts) mapByHash() map[uint64]errorCount {
 }
 
 type getErrorCountsParams struct {
-	duration *time.Duration
-	where    sq.Eq
-	orderBy  string
-	limit    uint64
-	offset   uint64
+	tr      *types.TimeRange
+	where   sq.Eq
+	orderBy string
+	limit   uint64
+	offset  uint64
 }
 
 func (r *repository) getErrorCounts(
 	ctx context.Context,
 	params getErrorCountsParams,
 ) (errorCounts, error) {
-	histData := getHistData(params.duration)
+	histData := r.getHistData(params.tr)
 
 	q := sq.
 		Select(
@@ -1042,7 +1041,7 @@ func (r *repository) getErrorCounts(
 		).
 		From(histData.table).
 		Where(params.where).
-		Where(sq.GtOrEq{histData.column: r.nowFn().Add(-params.duration.Abs())}).
+		Where(r.timeRangeCond(histData.column, params.tr)).
 		GroupBy("_group_hash")
 
 	if params.orderBy != "" {
@@ -1082,6 +1081,87 @@ func (r *repository) in() string {
 	return "IN"
 }
 
+type histData struct {
+	table    string
+	column   string
+	interval uint64
+}
+
+func (r *repository) getHistData(tr *types.TimeRange) histData {
+	const (
+		table_10min = "agg_events_10min"
+		table_1d    = "agg_events_1d"
+
+		startDate    = "start_date"
+		startOfHour  = "toStartOfHour(start_date)"
+		startOfDay   = "toStartOfDay(start_date)"
+		startOfWeek  = "toStartOfWeek(start_date)"
+		startOfMonth = "toStartOfMonth(start_date)"
+
+		_10min = 10 * time.Minute
+		hour   = time.Hour
+		day    = 24 * hour
+		week   = 7 * day
+		month  = 31 * day
+
+		table_10min_TTL = 90 * day
+	)
+
+	data := func(table, column string, interval time.Duration) histData {
+		return histData{table: table, column: column, interval: uint64(interval.Seconds())}
+	}
+
+	if tr.IsEmpty() {
+		return data(table_1d, startOfMonth, month)
+	}
+
+	// try get ~30 buckets
+	var d time.Duration
+	if tr.IsAbsolute() {
+		d = tr.AbsoluteDuration()
+		if r.nowFn().Sub(tr.From) > table_10min_TTL {
+			switch {
+			case d <= month:
+				return data(table_1d, startDate, day)
+			case d <= 7*month:
+				return data(table_1d, startOfWeek, week)
+			default:
+				return data(table_1d, startOfMonth, month)
+			}
+		}
+	} else {
+		d = tr.Duration
+	}
+
+	switch {
+	case d <= 5*time.Hour:
+		return data(table_10min, startDate, _10min)
+	case d <= day:
+		return data(table_10min, startOfHour, hour)
+	case d <= month:
+		return data(table_10min, startOfDay, day)
+	case d <= 7*month:
+		return data(table_1d, startOfWeek, week)
+	default:
+		return data(table_1d, startOfMonth, month)
+	}
+}
+
+func (r *repository) timeRangeCond(column string, tr *types.TimeRange) any {
+	if tr.IsEmpty() {
+		return nil
+	}
+
+	if tr.IsAbsolute() {
+		return sq.And{
+			sq.GtOrEq{column: tr.From},
+			sq.LtOrEq{column: tr.To},
+		}
+	}
+
+	return sq.GtOrEq{column: r.nowFn().Add(-tr.Duration.Abs())}
+}
+
 func orderBy(o types.ErrorGroupsOrder, sub bool) string {
 	seenTotal := "seen_total DESC"
 	lastSeenAt := "last_seen_at DESC"
@@ -1101,52 +1181,4 @@ func orderBy(o types.ErrorGroupsOrder, sub bool) string {
 		return firstSeenAt
 	}
 	return seenTotal
-}
-
-type histData struct {
-	table    string
-	column   string
-	interval uint64
-}
-
-func getHistData(duration *time.Duration) histData {
-	const (
-		table_10min = "agg_events_10min"
-		table_1d    = "agg_events_1d"
-
-		startDate    = "start_date"
-		startOfHour  = "toStartOfHour(start_date)"
-		startOfDay   = "toStartOfDay(start_date)"
-		startOfWeek  = "toStartOfWeek(start_date)"
-		startOfMonth = "toStartOfMonth(start_date)"
-
-		_10min = 10 * time.Minute
-		hour   = time.Hour
-		day    = 24 * hour
-		week   = 7 * day
-		month  = 31 * day
-	)
-
-	data := func(table, column string, interval time.Duration) histData {
-		return histData{table: table, column: column, interval: uint64(interval.Seconds())}
-	}
-
-	if duration == nil || *duration == 0 {
-		return data(table_1d, startOfMonth, month)
-	}
-
-	// try get ~30 buckets
-	d := *duration
-	switch {
-	case d <= 5*time.Hour:
-		return data(table_10min, startDate, _10min)
-	case d <= day:
-		return data(table_10min, startOfHour, hour)
-	case d <= month:
-		return data(table_10min, startOfDay, day)
-	case d <= 7*month:
-		return data(table_1d, startOfWeek, week)
-	default:
-		return data(table_1d, startOfMonth, month)
-	}
 }

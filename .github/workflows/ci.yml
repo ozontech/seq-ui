@@ -54,7 +54,7 @@ jobs:
           GOFLAGS: ${{ matrix.flags }}
           LOG_LEVEL: error
         run: |
-          go test -coverprofile=profile${{ matrix.flags }}.out -covermode=atomic -v -coverpkg=./... ./... -json | tee test-report${{ matrix.flags }}.json
+          go test -v -count=1 -coverprofile=profile${{ matrix.flags }}.out -covermode=atomic -coverpkg=./... ./... -json | tee test-report${{ matrix.flags }}.json
 
       - name: Coverage report
         run: |

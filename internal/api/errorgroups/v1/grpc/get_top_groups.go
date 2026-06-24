@@ -2,7 +2,7 @@ package grpc
 
 import (
 	"context"
-	"time"
+	"encoding/json"
 
 	"go.opentelemetry.io/otel/attribute"
 
@@ -30,18 +30,16 @@ func (a *API) GetTopGroups(ctx context.Context, req *errorgroups.GetTopGroupsReq
 	if req.Duration != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "duration", Value: attribute.StringValue(req.Duration.String())})
 	}
-	span.SetAttributes(attributes...)
-
-	var duration *time.Duration
-	if req.Duration != nil {
-		parsedDuration := req.Duration.AsDuration()
-		duration = &parsedDuration
+	if req.TimeRange != nil {
+		trRaw, _ := json.Marshal(req.TimeRange)
+		attributes = append(attributes, attribute.KeyValue{Key: "time_range", Value: attribute.StringValue(string(trRaw))})
 	}
+	span.SetAttributes(attributes...)
 
 	request := types.GetTopErrorGroupsRequest{
 		Env:       req.Env,
 		Source:    req.Source,
-		Duration:  duration,
+		TimeRange: parseTimeRange(req),
 		Limit:     req.Limit,
 		Offset:    req.Offset,
 		WithTotal: req.WithTotal,
