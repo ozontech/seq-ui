@@ -103,13 +103,7 @@ func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
 
 	span.SetAttributes(spanAttributes...)
 
-	profileID, err := a.profiles.GeIDFromContext(ctx)
-	if err != nil {
-		httputil.ProcessError(wr, err)
-		return
-	}
-
-	resp, err := a.asyncSearches.StartAsyncSearch(ctx, profileID, httpReq.toProto(parsedRetention))
+	resp, err := a.asyncSearches.StartAsyncSearch(ctx, httpReq.toProto(parsedRetention))
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return

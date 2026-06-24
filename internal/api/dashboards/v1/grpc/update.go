@@ -26,18 +26,13 @@ func (a *API) Update(ctx context.Context, req *dashboards.UpdateRequest) (*dashb
 		},
 	)
 
-	profileID, err := a.profiles.GeIDFromContext(ctx)
-	if err != nil {
-		return nil, grpcutil.ProcessError(err)
+	request := types.UpdateDashboardRequest{
+		UUID: req.Uuid,
+		Name: req.Name,
+		Meta: req.Meta,
 	}
 
-	request := types.UpdateDashboardRequest{
-		UUID:      req.Uuid,
-		ProfileID: profileID,
-		Name:      req.Name,
-		Meta:      req.Meta,
-	}
-	if err = a.service.UpdateDashboard(ctx, request); err != nil {
+	if err := a.service.UpdateDashboard(ctx, request); err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}
 

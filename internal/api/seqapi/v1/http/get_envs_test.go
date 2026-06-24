@@ -1,22 +1,19 @@
 package http
 
 import (
-	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
+	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
 	"github.com/ozontech/seq-ui/internal/app/config"
 )
 
 func TestServeGetEnvs(t *testing.T) {
 	tests := []struct {
-		name     string
-		cfg      config.SeqAPI
-		wantEnvs []envInfo
+		name string
+		cfg  config.SeqAPI
+		want getEnvsResponse
 	}{
 		{
 			name: "single_env",
@@ -29,14 +26,16 @@ func TestServeGetEnvs(t *testing.T) {
 					SeqCLIMaxSearchLimit:      10000,
 				},
 			},
-			wantEnvs: []envInfo{
-				{
-					Env:                       "",
-					MaxSearchLimit:            100,
-					MaxExportLimit:            200,
-					MaxParallelExportRequests: 2,
-					MaxAggregationsPerRequest: 5,
-					SeqCliMaxSearchLimit:      10000,
+			want: getEnvsResponse{
+				[]envInfo{
+					{
+						Env:                       "",
+						MaxSearchLimit:            100,
+						MaxExportLimit:            200,
+						MaxParallelExportRequests: 2,
+						MaxAggregationsPerRequest: 5,
+						SeqCliMaxSearchLimit:      10000,
+					},
 				},
 			},
 		},
@@ -98,53 +97,54 @@ func TestServeGetEnvs(t *testing.T) {
 				},
 				DefaultEnv: "cluster-10",
 			},
-			wantEnvs: []envInfo{
-				{
-					Env:                       "cluster-10",
-					MaxSearchLimit:            1000,
-					MaxExportLimit:            500,
-					MaxParallelExportRequests: 10,
-					MaxAggregationsPerRequest: 5,
-					SeqCliMaxSearchLimit:      2000,
-				},
-				{
-					Env:                       "cluster-102",
-					MaxSearchLimit:            500,
-					MaxExportLimit:            250,
-					MaxParallelExportRequests: 5,
-					MaxAggregationsPerRequest: 3,
-					SeqCliMaxSearchLimit:      1000,
-				},
-				{
-					Env:                       "cluster-220",
-					MaxSearchLimit:            1000,
-					MaxExportLimit:            500,
-					MaxParallelExportRequests: 10,
-					MaxAggregationsPerRequest: 5,
-					SeqCliMaxSearchLimit:      2000,
-				},
-				{
-					Env:                       "prod",
-					MaxSearchLimit:            500,
-					MaxExportLimit:            250,
-					MaxParallelExportRequests: 5,
-					MaxAggregationsPerRequest: 3,
-					SeqCliMaxSearchLimit:      1000,
-				},
-				{
-					Env:                       "wyanki",
-					MaxSearchLimit:            500,
-					MaxExportLimit:            250,
-					MaxParallelExportRequests: 5,
-					MaxAggregationsPerRequest: 3,
-					SeqCliMaxSearchLimit:      1000,
+			want: getEnvsResponse{
+				[]envInfo{
+					{
+						Env:                       "cluster-10",
+						MaxSearchLimit:            1000,
+						MaxExportLimit:            500,
+						MaxParallelExportRequests: 10,
+						MaxAggregationsPerRequest: 5,
+						SeqCliMaxSearchLimit:      2000,
+					},
+					{
+						Env:                       "cluster-102",
+						MaxSearchLimit:            500,
+						MaxExportLimit:            250,
+						MaxParallelExportRequests: 5,
+						MaxAggregationsPerRequest: 3,
+						SeqCliMaxSearchLimit:      1000,
+					},
+					{
+						Env:                       "cluster-220",
+						MaxSearchLimit:            1000,
+						MaxExportLimit:            500,
+						MaxParallelExportRequests: 10,
+						MaxAggregationsPerRequest: 5,
+						SeqCliMaxSearchLimit:      2000,
+					},
+					{
+						Env:                       "prod",
+						MaxSearchLimit:            500,
+						MaxExportLimit:            250,
+						MaxParallelExportRequests: 5,
+						MaxAggregationsPerRequest: 3,
+						SeqCliMaxSearchLimit:      1000,
+					},
+					{
+						Env:                       "wyanki",
+						MaxSearchLimit:            500,
+						MaxExportLimit:            250,
+						MaxParallelExportRequests: 5,
+						MaxAggregationsPerRequest: 3,
+						SeqCliMaxSearchLimit:      1000,
+					},
 				},
 			},
 		},
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -152,16 +152,14 @@ func TestServeGetEnvs(t *testing.T) {
 				Cfg: tt.cfg,
 			}
 
-			api := initTestAPI(seqData)
+			api := setupTestAPI(seqData)
 
-			req := httptest.NewRequest(http.MethodGet, "/seqapi/v1/envs", http.NoBody)
-			w := httptest.NewRecorder()
-			api.serveGetEnvs(w, req)
-
-			var response getEnvsResponse
-			err := json.NewDecoder(w.Body).Decode(&response)
-			require.NoError(t, err, "failed to decode response")
-			require.ElementsMatch(t, tt.wantEnvs, response.Envs, "Returned envs do not match expected")
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getEnvsResponse]{
+				Method:  http.MethodGet,
+				Target:  "/seqapi/v1/envs",
+				Handler: api.serveGetEnvs,
+				Want:    tt.want,
+			})
 		})
 	}
 }
