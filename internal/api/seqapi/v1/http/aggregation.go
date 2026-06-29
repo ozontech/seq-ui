@@ -63,6 +63,10 @@ func (a *API) serveGetAggregation(w http.ResponseWriter, r *http.Request) {
 			Key:   "aggregations",
 			Value: attribute.StringValue(string(aggsRaw)),
 		},
+		{
+			Key:   "downsample",
+			Value: attribute.IntValue(int(httpReq.Downsample)),
+		},
 	}
 
 	if env != "" {
@@ -202,6 +206,7 @@ type getAggregationRequest struct {
 	To           time.Time          `json:"to" format:"date-time"`
 	AggField     string             `json:"aggField"`
 	Aggregations aggregationQueries `json:"aggregations"`
+	Downsample   uint32             `json:"downsample"`
 } //	@name	seqapi.v1.GetAggregationRequest
 
 func (r getAggregationRequest) toProto() *seqapi.GetAggregationRequest {
@@ -211,6 +216,7 @@ func (r getAggregationRequest) toProto() *seqapi.GetAggregationRequest {
 		To:           timestamppb.New(r.To),
 		AggField:     r.AggField,
 		Aggregations: r.Aggregations.toProto(),
+		Downsample:   r.Downsample,
 	}
 }
 

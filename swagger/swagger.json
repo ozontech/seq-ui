@@ -2720,6 +2720,9 @@
                         "$ref": "#/definitions/seqapi.v1.AggregationQuery"
                     }
                 },
+                "downsample": {
+                    "type": "integer"
+                },
                 "from": {
                     "type": "string",
                     "format": "date-time"
@@ -2867,6 +2870,9 @@
         "seqapi.v1.GetHistogramRequest": {
             "type": "object",
             "properties": {
+                "downsample": {
+                    "type": "integer"
+                },
                 "from": {
                     "type": "string",
                     "format": "date-time"
@@ -2973,6 +2979,9 @@
                     "items": {
                         "$ref": "#/definitions/seqapi.v1.AggregationQuery"
                     }
+                },
+                "downsample": {
+                    "type": "integer"
                 },
                 "from": {
                     "type": "string",

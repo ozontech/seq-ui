@@ -55,18 +55,20 @@ func Test_GRPCClient_GetFields(t *testing.T) {
 			wantErr: errors.New("proxy error"),
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
 
 			mArgs := prepareMockArgs(tt.wantFields, tt.wantErr)
-
 			ctrl := gomock.NewController(t)
 			seqProxyMock := mock.NewMockSeqProxyApiClient(ctrl)
-			seqProxyMock.EXPECT().Mapping(ctx, &seqproxyapi.MappingRequest{}).
-				Return(mArgs.resp, mArgs.err).Times(1)
+
+			seqProxyMock.EXPECT().
+				Mapping(ctx, &seqproxyapi.MappingRequest{}).
+				Return(mArgs.resp, mArgs.err).
+				Times(1)
 
 			c := initGRPCClient(seqProxyMock)
 

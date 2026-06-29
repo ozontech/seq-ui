@@ -39,7 +39,7 @@ func Test_GRPCClient_Export(t *testing.T) {
 
 		if req != nil {
 			proxyReq = &seqproxyapi.ExportRequest{
-				Query:  makeProxySearchQuery(req.Query, req.From, req.To),
+				Query:  makeProxySearchQuery(req.Query, req.From, req.To, 0),
 				Size:   int64(req.Limit),
 				Offset: int64(req.Offset),
 			}
@@ -185,18 +185,20 @@ func Test_GRPCClient_Export(t *testing.T) {
 			wantErr: streamErrRecv,
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
 			ctrl := gomock.NewController(t)
 
 			mArgs := prepareMockArgs(ctrl, tt.req, tt.docs, tt.wantErr)
-
 			seqProxyMock := mock.NewMockSeqProxyApiClient(ctrl)
-			seqProxyMock.EXPECT().Export(ctx, mArgs.req).
-				Return(mArgs.resp, mArgs.err).Times(1)
+
+			seqProxyMock.EXPECT().
+				Export(ctx, mArgs.req).
+				Return(mArgs.resp, mArgs.err).
+				Times(1)
 
 			c := initGRPCClient(seqProxyMock)
 

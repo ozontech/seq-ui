@@ -31,7 +31,7 @@ func Test_GRPCClient_GetHistogram(t *testing.T) {
 
 		if req != nil {
 			proxyReq = &seqproxyapi.GetHistogramRequest{
-				Query: makeProxySearchQuery(req.Query, req.From, req.To),
+				Query: makeProxySearchQuery(req.Query, req.From, req.To, req.Downsample),
 				Hist: &seqproxyapi.HistQuery{
 					Interval: req.Interval,
 				},
@@ -90,6 +90,22 @@ func Test_GRPCClient_GetHistogram(t *testing.T) {
 			},
 		},
 		{
+			name: "ok_downsample",
+			req: &seqapi.GetHistogramRequest{
+				Query:      "test_downsample",
+				From:       timestamppb.New(from),
+				To:         timestamppb.New(to),
+				Interval:   "5s",
+				Downsample: 3,
+			},
+			wantResp: &seqapi.GetHistogramResponse{
+				Histogram: makeHistogram(2),
+				Error: &seqapi.Error{
+					Code: seqapi.ErrorCode_ERROR_CODE_NO,
+				},
+			},
+		},
+		{
 			name: "ok_partial_response",
 			req: &seqapi.GetHistogramRequest{
 				Query:    "test_ok_partial_resp",
@@ -115,18 +131,20 @@ func Test_GRPCClient_GetHistogram(t *testing.T) {
 			wantErr: errors.New("proxy error"),
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
 
 			mArgs := prepareMockArgs(tt.req, tt.wantResp, tt.wantErr)
-
 			ctrl := gomock.NewController(t)
 			seqProxyMock := mock.NewMockSeqProxyApiClient(ctrl)
-			seqProxyMock.EXPECT().GetHistogram(ctx, mArgs.req).
-				Return(mArgs.resp, mArgs.err).Times(1)
+
+			seqProxyMock.EXPECT().
+				GetHistogram(ctx, mArgs.req).
+				Return(mArgs.resp, mArgs.err).
+				Times(1)
 
 			c := initGRPCClient(seqProxyMock)
 

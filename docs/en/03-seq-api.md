@@ -72,6 +72,8 @@ Returns a list of events that satisfy the [search query](https://github.com/ozon
 - `offset` (*int*, *optional*): Search offset.
 - `withTotal` (*bool*, *optional*): If set, returns the total number of events found.
 - `order` (*enum*, *optional*): Search order. One of `"desc"|"asc"` (`"desc"` by default).
+- `offset_id` (*string*, *optional*): Pagination cursor. The response contains events that come after specified identifier. Mutually exclusive with offset: only one of these fields can be set per request.
+- `downsample` (*uint32*, *optional*): Random sampling coefficient. Higher values yield a smaller fraction of returned events.
 
 #### Request
 
@@ -252,6 +254,7 @@ Calculates aggregations based on events that satisfy the search query.
   - `field` (*string*, *required*): Aggregation calculation field.
   - `group_by` (*string*, *optional*): Field for grouping the aggregation results.
   - `quantiles` (*[]int*, *optional*): List of quantiles (only for `agg_func:quantile`, must be non-empty in this case).
+- `downsample` (*uint32*, *optional*): Random sampling coefficient. Higher values yield a smaller fraction of returned events.
 
 #### Request
 
@@ -414,6 +417,7 @@ Calculates histogram based on events that satisfy the search query.
 - `from` (*string*, *required*): Timestamp of the start of search in `date-time` format.
 - `to` (*string*, *required*): Timestamp of the end of search in `date-time` format.
 - `interval` (*string*, *required*): Interval for calculating the bucket in `duration` format.
+- `downsample` (*uint32*, *optional*): Random sampling coefficient. Higher values yield a smaller fraction of returned events.
 
 #### Request
 

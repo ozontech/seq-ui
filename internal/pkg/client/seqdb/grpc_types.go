@@ -143,6 +143,7 @@ type (
 		GetQuery() string
 		GetFrom() *timestamppb.Timestamp
 		GetTo() *timestamppb.Timestamp
+		GetDownsample() uint32
 	}
 
 	seqAPIHistQ interface {
@@ -152,9 +153,10 @@ type (
 
 func newProxySearchQuery(q seqAPISearchQ) *seqproxyapi.SearchQuery {
 	return &seqproxyapi.SearchQuery{
-		Query: q.GetQuery(),
-		From:  q.GetFrom(),
-		To:    q.GetTo(),
+		Query:      q.GetQuery(),
+		From:       q.GetFrom(),
+		To:         q.GetTo(),
+		Downsample: q.GetDownsample(),
 	}
 }
 
@@ -308,7 +310,11 @@ func (p *proxySearchResp) toProto() (*seqapi.SearchResponse, error) {
 
 func newProxyExportReq(req *seqapi.ExportRequest) *seqproxyapi.ExportRequest {
 	return &seqproxyapi.ExportRequest{
-		Query:  newProxySearchQuery(req),
+		Query: &seqproxyapi.SearchQuery{
+			Query: req.Query,
+			From:  req.From,
+			To:    req.To,
+		},
 		Size:   int64(req.Limit),
 		Offset: int64(req.Offset),
 	}
