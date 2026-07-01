@@ -844,6 +844,10 @@ Configuration for `/admin` API.
 
   List of users with full access to admin features.
 
++ **`cache_ttl`** *`string`* *`default="5m"`*
+
+  Cache TTL for roles and user permissions. If not set or set to zero, then it will be reset to `default`.
+
 ## Tracing
 
 The tracing configuration is set through environment variables.
