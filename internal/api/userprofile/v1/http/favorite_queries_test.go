@@ -1,15 +1,11 @@
 package http
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
-	"strings"
+	"strconv"
 	"testing"
 
-	"github.com/go-chi/chi/v5"
 	"go.uber.org/mock/gomock"
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
@@ -17,8 +13,9 @@ import (
 )
 
 func TestServeGetFavoriteQueries(t *testing.T) {
-	userName := "unnamed"
-	var profileID int64 = 1
+	var (
+		relativeFrom = "300"
+	)
 
 	type mockArgs struct {
 		req  types.GetFavoriteQueriesRequest
@@ -29,104 +26,69 @@ func TestServeGetFavoriteQueries(t *testing.T) {
 	tests := []struct {
 		name string
 
-		wantRespBody string
-		wantStatus   int
+		want    getFavoriteQueriesResponse
+		wantErr bool
 
 		mockArgs *mockArgs
-		noUser   bool
 	}{
 		{
-			name:         "success",
-			wantRespBody: `{"queries":[{"id":"1","query":"test1","name":"my query 1","relativeFrom":"300"},{"id":"2","query":"test2","name":"my query 2"},{"id":"3","query":"test3","relativeFrom":"900"},{"id":"4","query":"test4"}]}`,
-			wantStatus:   http.StatusOK,
-			mockArgs: &mockArgs{
-				req: types.GetFavoriteQueriesRequest{
-					ProfileID: profileID,
+			name: "ok",
+			want: getFavoriteQueriesResponse{
+				Queries: favoriteQueries{
+					{ID: "1", Query: "test1", Name: "my query 1", RelativeFrom: relativeFrom},
+					{ID: "2", Query: "test2", Name: "my query 2"},
+					{ID: "3", Query: "test3", RelativeFrom: relativeFrom},
+					{ID: "4", Query: "test4"},
 				},
+			},
+			mockArgs: &mockArgs{
 				resp: types.FavoriteQueries{
-					{
-						ID:           1,
-						Query:        "test1",
-						Name:         "my query 1",
-						RelativeFrom: 300,
-					},
-					{
-						ID:    2,
-						Query: "test2",
-						Name:  "my query 2",
-					},
-					{
-						ID:           3,
-						Query:        "test3",
-						RelativeFrom: 900,
-					},
-					{
-						ID:    4,
-						Query: "test4",
-					},
+					{ID: 1, Query: "test1", Name: "my query 1", RelativeFrom: 300},
+					{ID: 2, Query: "test2", Name: "my query 2"},
+					{ID: 3, Query: "test3", RelativeFrom: 300},
+					{ID: 4, Query: "test4"},
 				},
 			},
 		},
 		{
-			name:       "err_no_user",
-			wantStatus: http.StatusUnauthorized,
-			noUser:     true,
-		},
-		{
-			name:       "err_repo_random",
-			wantStatus: http.StatusInternalServerError,
+			name:    "err_svc",
+			wantErr: true,
 			mockArgs: &mockArgs{
-				req: types.GetFavoriteQueriesRequest{
-					ProfileID: profileID,
-				},
-				err: errors.New("random repo err"),
+				err: errSomethingWrong,
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedRepo := newFavoriteQueriesTestData(t)
-			req := httptest.NewRequest(http.MethodGet, "/userprofile/v1/queries/favorite", http.NoBody)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
-				mockedRepo.EXPECT().GetAll(gomock.Any(), tt.mockArgs.req).
-					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
-			}
-			if !tt.noUser {
-				req = req.WithContext(types.SetUserKey(req.Context(), userName))
-				api.profiles.SetID(userName, profileID)
+				mockedSvc.EXPECT().
+					GetFavoriteQueries(gomock.Any(), tt.mockArgs.req).
+					Return(tt.mockArgs.resp, tt.mockArgs.err).
+					Times(1)
 			}
 
-			httputil.DoTestHTTP(t, httputil.TestDataHTTP{
-				Req:          req,
-				Handler:      api.serveGetFavoriteQueries,
-				WantRespBody: tt.wantRespBody,
-				WantStatus:   tt.wantStatus,
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getFavoriteQueriesResponse]{
+				Method:  http.MethodGet,
+				Target:  "/userprofile/v1/queries/favorite",
+				Handler: api.serveGetFavoriteQueries,
+				Want:    tt.want,
+				WantErr: tt.wantErr,
 			})
 		})
 	}
 }
 
 func TestServeCreateFavoriteQuery(t *testing.T) {
-	userName := "unnamed"
-	var profileID int64 = 1
-	var queryID int64 = 1
-	query := "test"
-
-	formatReqBody := func(query, name, relativeFrom string) string {
-		var sb strings.Builder
-		fmt.Fprintf(&sb, `{"query":%q`, query)
-		if name != "" {
-			fmt.Fprintf(&sb, `,"name":%q`, name)
-		}
-		if relativeFrom != "" {
-			fmt.Fprintf(&sb, `,"relativeFrom":%q`, relativeFrom)
-		}
-		sb.WriteString("}")
-		return sb.String()
-	}
+	var (
+		relativeFrom = "300"
+		query        = "test"
+		queryName    = "my query"
+	)
 
 	type mockArgs struct {
 		req  types.GetOrCreateFavoriteQueryRequest
@@ -137,106 +99,66 @@ func TestServeCreateFavoriteQuery(t *testing.T) {
 	tests := []struct {
 		name string
 
-		reqBody      string
-		wantRespBody string
-		wantStatus   int
+		req     createFavoriteQueryRequest
+		want    createFavoriteQueryResponse
+		wantErr bool
 
 		mockArgs *mockArgs
-		noUser   bool
 	}{
 		{
-			name:         "success",
-			reqBody:      formatReqBody(query, "my query", "300"),
-			wantRespBody: fmt.Sprintf(`{"id":"%d"}`, queryID),
-			wantStatus:   http.StatusOK,
+			name: "ok",
+			req:  createFavoriteQueryRequest{Query: query, Name: &queryName, RelativeFrom: &relativeFrom},
+			want: createFavoriteQueryResponse{ID: "1"},
 			mockArgs: &mockArgs{
 				req: types.GetOrCreateFavoriteQueryRequest{
-					ProfileID:    profileID,
 					Query:        query,
 					Name:         "my query",
 					RelativeFrom: 300,
 				},
-				resp: queryID,
+				resp: 1,
 			},
 		},
 		{
-			name:         "success_only_query",
-			reqBody:      formatReqBody(query, "", ""),
-			wantRespBody: fmt.Sprintf(`{"id":"%d"}`, queryID),
-			wantStatus:   http.StatusOK,
+			name:    "err_svc",
+			req:     createFavoriteQueryRequest{Query: query, Name: &queryName, RelativeFrom: &relativeFrom},
+			wantErr: true,
 			mockArgs: &mockArgs{
 				req: types.GetOrCreateFavoriteQueryRequest{
-					ProfileID: profileID,
-					Query:     query,
+					Query:        query,
+					Name:         "my query",
+					RelativeFrom: 300,
 				},
-				resp: queryID,
-			},
-		},
-		{
-			name:       "err_invalid_request",
-			reqBody:    "invalid-request",
-			wantStatus: http.StatusBadRequest,
-			noUser:     true,
-		},
-		{
-			name:       "err_no_user",
-			reqBody:    formatReqBody(query, "", ""),
-			wantStatus: http.StatusUnauthorized,
-			noUser:     true,
-		},
-		{
-			name:       "err_invalid_relative_from_format",
-			reqBody:    formatReqBody(query, "", "not_number"),
-			wantStatus: http.StatusBadRequest,
-		},
-		{
-			name:       "err_svc_empty_query",
-			reqBody:    formatReqBody("", "", ""),
-			wantStatus: http.StatusBadRequest,
-		},
-		{
-			name:       "err_repo_random",
-			reqBody:    formatReqBody(query, "", ""),
-			wantStatus: http.StatusInternalServerError,
-			mockArgs: &mockArgs{
-				req: types.GetOrCreateFavoriteQueryRequest{
-					ProfileID: profileID,
-					Query:     query,
-				},
-				err: errors.New("random repo err"),
+				err: errSomethingWrong,
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedRepo := newFavoriteQueriesTestData(t)
-			req := httptest.NewRequest(http.MethodPost, "/userprofile/v1/queries/favorite", strings.NewReader(tt.reqBody))
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
-				mockedRepo.EXPECT().GetOrCreate(gomock.Any(), tt.mockArgs.req).
-					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
-			}
-			if !tt.noUser {
-				req = req.WithContext(types.SetUserKey(req.Context(), userName))
-				api.profiles.SetID(userName, profileID)
+				mockedSvc.EXPECT().
+					GetOrCreateFavoriteQuery(gomock.Any(), tt.mockArgs.req).
+					Return(tt.mockArgs.resp, tt.mockArgs.err).
+					Times(1)
 			}
 
-			httputil.DoTestHTTP(t, httputil.TestDataHTTP{
-				Req:          req,
-				Handler:      api.serveCreateFavoriteQuery,
-				WantRespBody: tt.wantRespBody,
-				WantStatus:   tt.wantStatus,
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[createFavoriteQueryRequest, createFavoriteQueryResponse]{
+				Method:  http.MethodPost,
+				Target:  "/userprofile/v1/queries/favorite",
+				Req:     tt.req,
+				Handler: api.serveCreateFavoriteQuery,
+				Want:    tt.want,
+				WantErr: tt.wantErr,
 			})
 		})
 	}
 }
 
 func TestServeDeleteFavoriteQuery(t *testing.T) {
-	userName := "unnamed"
-	var profileID int64 = 1
-
 	type mockArgs struct {
 		req types.DeleteFavoriteQueryRequest
 		err error
@@ -245,76 +167,52 @@ func TestServeDeleteFavoriteQuery(t *testing.T) {
 	tests := []struct {
 		name string
 
-		id         string
-		wantStatus int
+		wantErr bool
 
 		mockArgs *mockArgs
-		noUser   bool
 	}{
 		{
-			name:       "success",
-			id:         "100",
-			wantStatus: http.StatusOK,
+			name: "ok",
 			mockArgs: &mockArgs{
 				req: types.DeleteFavoriteQueryRequest{
-					ID:        100,
-					ProfileID: profileID,
+					ID: 100,
 				},
 			},
 		},
 		{
-			name:       "err_invalid_id_format",
-			id:         "not_number",
-			wantStatus: http.StatusBadRequest,
-			noUser:     true,
-		},
-		{
-			name:       "err_no_user",
-			id:         "100",
-			wantStatus: http.StatusUnauthorized,
-			noUser:     true,
-		},
-		{
-			name:       "err_svc_invalid_id",
-			id:         "-100",
-			wantStatus: http.StatusBadRequest,
-		},
-		{
-			name:       "err_repo_random",
-			id:         "100",
-			wantStatus: http.StatusInternalServerError,
+			name:    "err_svc",
+			wantErr: true,
 			mockArgs: &mockArgs{
 				req: types.DeleteFavoriteQueryRequest{
-					ID:        100,
-					ProfileID: profileID,
+					ID: 100,
 				},
-				err: errors.New("random repo err"),
+				err: errSomethingWrong,
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedRepo := newFavoriteQueriesTestData(t)
-			req := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/userprofile/v1/queries/favorite/%s", tt.id), http.NoBody)
-			rCtx := chi.NewRouteContext()
-			rCtx.URLParams.Add("id", tt.id)
-			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rCtx))
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
-				mockedRepo.EXPECT().Delete(gomock.Any(), tt.mockArgs.req).
-					Return(tt.mockArgs.err).Times(1)
-			}
-			if !tt.noUser {
-				req = req.WithContext(types.SetUserKey(req.Context(), userName))
-				api.profiles.SetID(userName, profileID)
+				mockedSvc.EXPECT().
+					DeleteFavoriteQuery(gomock.Any(), tt.mockArgs.req).
+					Return(tt.mockArgs.err).
+					Times(1)
 			}
 
-			httputil.DoTestHTTP(t, httputil.TestDataHTTP{
-				Req:        req,
-				Handler:    api.serveDeleteFavoriteQuery,
-				WantStatus: tt.wantStatus,
+			id := strconv.FormatInt(tt.mockArgs.req.ID, 10)
+			handler := withID(api.serveDeleteFavoriteQuery, id)
+
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, struct{}]{
+				Method:  http.MethodDelete,
+				Target:  fmt.Sprintf("/userprofile/v1/queries/favorite/%s", id),
+				Handler: handler,
+				NoResp:  true,
+				WantErr: tt.wantErr,
 			})
 		})
 	}

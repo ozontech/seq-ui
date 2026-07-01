@@ -1,12 +1,7 @@
 package http
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
 	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"go.uber.org/mock/gomock"
@@ -16,10 +11,12 @@ import (
 )
 
 func TestServeGetUserProfile(t *testing.T) {
-	userName := "unnamed"
-	timezone := "UTC"
-	onboardingVersion := `{"name1": "ver1", "name2": "ver2"}`
-	logColumns := []string{"val1", "val2"}
+	var (
+		userName          = "unnamed"
+		timezone          = "UTC"
+		onboardingVersion = `{"name1": "ver1", "name2": "ver2"}`
+		logColumns        = []string{"val1", "val2"}
+	)
 
 	type mockArgs struct {
 		req  types.GetOrCreateUserProfileRequest
@@ -30,16 +27,18 @@ func TestServeGetUserProfile(t *testing.T) {
 	tests := []struct {
 		name string
 
-		wantRespBody string
-		wantStatus   int
+		want    userProfile
+		wantErr bool
 
 		mockArgs *mockArgs
-		noUser   bool
 	}{
 		{
-			name:         "success",
-			wantRespBody: `{"timezone":"UTC","onboardingVersion":"{\"name1\": \"ver1\", \"name2\": \"ver2\"}","log_columns":["val1","val2"]}`,
-			wantStatus:   http.StatusOK,
+			name: "ok",
+			want: userProfile{
+				Timezone:          timezone,
+				OnboardingVersion: onboardingVersion,
+				LogColumns:        logColumns,
+			},
 			mockArgs: &mockArgs{
 				req: types.GetOrCreateUserProfileRequest{
 					UserName: userName,
@@ -54,75 +53,48 @@ func TestServeGetUserProfile(t *testing.T) {
 			},
 		},
 		{
-			name:       "err_no_user",
-			wantStatus: http.StatusUnauthorized,
-			noUser:     true,
-		},
-		{
-			name:       "err_repo_random",
-			wantStatus: http.StatusInternalServerError,
+			name:    "err_svc",
+			wantErr: true,
 			mockArgs: &mockArgs{
 				req: types.GetOrCreateUserProfileRequest{
 					UserName: userName,
 				},
-				err: errors.New("random repo err"),
+				err: errSomethingWrong,
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedRepo := newUserProfilesTestData(t)
-			req := httptest.NewRequest(http.MethodGet, "/userprofile/v1/profile", http.NoBody)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
-				mockedRepo.EXPECT().GetOrCreate(gomock.Any(), tt.mockArgs.req).
-					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
-			}
-			if !tt.noUser {
-				req = req.WithContext(types.SetUserKey(req.Context(), userName))
+				mockedSvc.EXPECT().
+					GetOrCreateUserProfile(gomock.Any(), tt.mockArgs.req).
+					Return(tt.mockArgs.resp, tt.mockArgs.err).
+					Times(1)
 			}
 
-			httputil.DoTestHTTP(t, httputil.TestDataHTTP{
-				Req:          req,
-				Handler:      api.serveGetUserProfile,
-				WantRespBody: tt.wantRespBody,
-				WantStatus:   tt.wantStatus,
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, userProfile]{
+				Method:  http.MethodGet,
+				Target:  "/userprofile/v1/profile",
+				Handler: withUser(api.serveGetUserProfile, userName),
+				Want:    tt.want,
+				WantErr: tt.wantErr,
 			})
 		})
 	}
 }
 
 func TestServeUpdateUserProfile(t *testing.T) {
-	userName := "unnamed"
-	validTimezone := "Europe/Moscow"
-	invalidTimezone := "invalid timezone"
-	onboardingVersion := `{"name1": "ver1", "name2": "ver2"}`
-	logColumns := []string{"val1", "val2"}
-
-	formatReqBody := func(timezone, onboardingVersion string, logColumns []string) string {
-		var sb strings.Builder
-		sb.WriteString("{")
-		if timezone != "" {
-			fmt.Fprintf(&sb, `"timezone":%q`, timezone)
-		}
-		if onboardingVersion != "" {
-			if sb.Len() > 1 {
-				sb.WriteString(",")
-			}
-			fmt.Fprintf(&sb, `"onboardingVersion":%q`, onboardingVersion)
-		}
-		if logColumns != nil {
-			if sb.Len() > 1 {
-				sb.WriteString(",")
-			}
-			v, _ := json.Marshal(logColumns)
-			fmt.Fprintf(&sb, `"log_columns":{"columns":%s}`, v)
-		}
-		sb.WriteString("}")
-		return sb.String()
-	}
+	var (
+		userName          = "unnamed"
+		validTimezone     = "Europe/Moscow"
+		onboardingVersion = `{"name1": "ver1", "name2": "ver2"}`
+		logColumns        = []string{"val1", "val2"}
+	)
 
 	type mockArgs struct {
 		req types.UpdateUserProfileRequest
@@ -132,16 +104,20 @@ func TestServeUpdateUserProfile(t *testing.T) {
 	tests := []struct {
 		name string
 
-		reqBody    string
-		wantStatus int
+		req     updateUserProfileRequest
+		wantErr bool
 
 		mockArgs *mockArgs
-		noUser   bool
 	}{
 		{
-			name:       "success_all",
-			reqBody:    formatReqBody(validTimezone, onboardingVersion, logColumns),
-			wantStatus: http.StatusOK,
+			name: "ok",
+			req: updateUserProfileRequest{
+				Timezone:          &validTimezone,
+				OnboardingVersion: &onboardingVersion,
+				LogColumns: &struct {
+					Columns []string "json:\"columns\""
+				}{Columns: logColumns},
+			},
 			mockArgs: &mockArgs{
 				req: types.UpdateUserProfileRequest{
 					UserName:          userName,
@@ -152,115 +128,47 @@ func TestServeUpdateUserProfile(t *testing.T) {
 			},
 		},
 		{
-			name:       "success_only_timezone",
-			reqBody:    formatReqBody(validTimezone, "", nil),
-			wantStatus: http.StatusOK,
-			mockArgs: &mockArgs{
-				req: types.UpdateUserProfileRequest{
-					UserName: userName,
-					Timezone: &validTimezone,
-				},
+			name: "err_svc",
+			req: updateUserProfileRequest{
+				Timezone:          &validTimezone,
+				OnboardingVersion: &onboardingVersion,
+				LogColumns: &struct {
+					Columns []string "json:\"columns\""
+				}{Columns: logColumns},
 			},
-		},
-		{
-			name:       "success_only_onboarding_ver",
-			reqBody:    formatReqBody("", onboardingVersion, nil),
-			wantStatus: http.StatusOK,
+			wantErr: true,
 			mockArgs: &mockArgs{
 				req: types.UpdateUserProfileRequest{
 					UserName:          userName,
+					Timezone:          &validTimezone,
 					OnboardingVersion: &onboardingVersion,
+					LogColumns:        &types.LogColumns{LogColumns: logColumns},
 				},
-			},
-		},
-		{
-			name:       "success_only_log_columns",
-			reqBody:    formatReqBody("", "", logColumns),
-			wantStatus: http.StatusOK,
-			mockArgs: &mockArgs{
-				req: types.UpdateUserProfileRequest{
-					UserName:   userName,
-					LogColumns: &types.LogColumns{LogColumns: logColumns},
-				},
-			},
-		},
-		{
-			name:       "success_empty_log_columns",
-			reqBody:    formatReqBody("", "", []string{}),
-			wantStatus: http.StatusOK,
-			mockArgs: &mockArgs{
-				req: types.UpdateUserProfileRequest{
-					UserName:   userName,
-					LogColumns: &types.LogColumns{LogColumns: []string{}},
-				},
-			},
-		},
-		{
-			name:       "err_invalid_request",
-			reqBody:    "invalid-request",
-			wantStatus: http.StatusBadRequest,
-			noUser:     true,
-		},
-		{
-			name:       "err_no_user",
-			reqBody:    formatReqBody(validTimezone, "", nil),
-			wantStatus: http.StatusUnauthorized,
-			noUser:     true,
-		},
-		{
-			name:       "err_svc_empty_request",
-			reqBody:    `{}`,
-			wantStatus: http.StatusBadRequest,
-		},
-		{
-			name:       "err_svc_invalid_timezone_format",
-			reqBody:    formatReqBody(invalidTimezone, "", nil),
-			wantStatus: http.StatusBadRequest,
-		},
-		{
-			name:       "err_repo_not_found",
-			reqBody:    formatReqBody(validTimezone, "", nil),
-			wantStatus: http.StatusNotFound,
-			mockArgs: &mockArgs{
-				req: types.UpdateUserProfileRequest{
-					UserName: userName,
-					Timezone: &validTimezone,
-				},
-				err: types.ErrNotFound,
-			},
-		},
-		{
-			name:       "err_repo_random",
-			reqBody:    formatReqBody(validTimezone, "", nil),
-			wantStatus: http.StatusInternalServerError,
-			mockArgs: &mockArgs{
-				req: types.UpdateUserProfileRequest{
-					UserName: userName,
-					Timezone: &validTimezone,
-				},
-				err: errors.New("random repo err"),
+				err: errSomethingWrong,
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedRepo := newUserProfilesTestData(t)
-			req := httptest.NewRequest(http.MethodPatch, "/userprofile/v1/profile", strings.NewReader(tt.reqBody))
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
-				mockedRepo.EXPECT().Update(gomock.Any(), tt.mockArgs.req).
-					Return(tt.mockArgs.err).Times(1)
-			}
-			if !tt.noUser {
-				req = req.WithContext(types.SetUserKey(req.Context(), userName))
+				mockedSvc.EXPECT().
+					UpdateUserProfile(gomock.Any(), tt.mockArgs.req).
+					Return(tt.mockArgs.err).
+					Times(1)
 			}
 
-			httputil.DoTestHTTP(t, httputil.TestDataHTTP{
-				Req:        req,
-				Handler:    api.serveUpdateUserProfile,
-				WantStatus: tt.wantStatus,
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[updateUserProfileRequest, struct{}]{
+				Method:  http.MethodPatch,
+				Target:  "/userprofile/v1/profile",
+				Req:     tt.req,
+				Handler: withUser(api.serveUpdateUserProfile, userName),
+				NoResp:  true,
+				WantErr: tt.wantErr,
 			})
 		})
 	}

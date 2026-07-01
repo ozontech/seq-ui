@@ -103,15 +103,18 @@ func TestGetFields(t *testing.T) {
 			clientErr: errors.New("client error"),
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-
 			seqDbMock := mock_seqdb.NewMockClient(ctrl)
-			seqDbMock.EXPECT().GetFields(gomock.Any(), nil).
-				Return(proto.Clone(tt.seqDBResp), tt.clientErr).Times(1)
+
+			seqDbMock.EXPECT().
+				GetFields(gomock.Any(), nil).
+				Return(proto.Clone(tt.seqDBResp), tt.clientErr).
+				Times(1)
 
 			seqData := test.APITestData{
 				Mocks: test.Mocks{
@@ -122,11 +125,8 @@ func TestGetFields(t *testing.T) {
 				},
 			}
 
-			s := initTestAPI(seqData)
-
-			ctx := context.Background()
-
-			resp, err := s.GetFields(ctx, nil)
+			api := setupTestAPI(seqData)
+			resp, err := api.GetFields(context.Background(), nil)
 
 			require.Equal(t, tt.clientErr, err)
 			require.True(t, proto.Equal(tt.wantResp, resp))
@@ -135,6 +135,9 @@ func TestGetFields(t *testing.T) {
 }
 
 func TestGetFieldsCached(t *testing.T) {
+	var (
+		ttl = 10 * time.Millisecond
+	)
 	responses := []*seqapi.GetFieldsResponse{
 		{
 			Fields: []*seqapi.Field{
@@ -162,11 +165,11 @@ func TestGetFieldsCached(t *testing.T) {
 	seqDbMock := mock_seqdb.NewMockClient(ctrl)
 
 	for _, r := range responses {
-		seqDbMock.EXPECT().GetFields(gomock.Any(), nil).
-			Return(proto.Clone(r), nil).Times(1)
+		seqDbMock.EXPECT().
+			GetFields(gomock.Any(), nil).
+			Return(proto.Clone(r), nil).
+			Times(1)
 	}
-
-	const ttl = 20 * time.Millisecond
 
 	seqData := test.APITestData{
 		Cfg: config.SeqAPI{
@@ -178,16 +181,17 @@ func TestGetFieldsCached(t *testing.T) {
 			SeqDB: seqDbMock,
 		},
 	}
-	s := initTestAPI(seqData)
+
+	api := setupTestAPI(seqData)
 
 	for _, r := range responses {
-		resp, err := s.GetFields(context.Background(), nil)
+		resp, err := api.GetFields(context.Background(), nil)
 		require.NoError(t, err)
 		require.True(t, proto.Equal(r, resp))
 
 		time.Sleep(ttl / 2)
 
-		resp, err = s.GetFields(context.Background(), nil)
+		resp, err = api.GetFields(context.Background(), nil)
 		require.NoError(t, err)
 		require.True(t, proto.Equal(r, resp))
 
@@ -211,6 +215,7 @@ func TestGetPinnedFields(t *testing.T) {
 			name: "empty",
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
@@ -222,9 +227,10 @@ func TestGetPinnedFields(t *testing.T) {
 					},
 				},
 			}
-			s := initTestAPI(seqData)
 
-			resp, err := s.GetPinnedFields(context.Background(), nil)
+			api := setupTestAPI(seqData)
+
+			resp, err := api.GetPinnedFields(context.Background(), nil)
 			require.NoError(t, err)
 
 			require.Equal(t, len(tt.fields), len(resp.Fields))

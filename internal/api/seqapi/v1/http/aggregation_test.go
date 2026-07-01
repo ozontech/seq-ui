@@ -1,16 +1,11 @@
 package http
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -22,21 +17,6 @@ import (
 )
 
 func TestServeGetAggregation(t *testing.T) {
-	query := "message:error"
-	from := time.Date(2023, time.September, 25, 10, 20, 30, 0, time.UTC)
-	to := from.Add(time.Second)
-
-	formatReqBody := func(aggField string, aggQueries aggregationQueries) string {
-		if len(aggQueries) > 0 {
-			aggQueriesRaw, err := json.Marshal(aggQueries)
-			assert.NoError(t, err)
-			return fmt.Sprintf(`{"query":%q,"from":%q,"to":%q,"aggField":%q,"aggregations":%s}`,
-				query, from.Format(time.RFC3339), to.Format(time.RFC3339), aggField, aggQueriesRaw)
-		}
-		return fmt.Sprintf(`{"query":%q,"from":%q,"to":%q,"aggField":%q}`,
-			query, from.Format(time.RFC3339), to.Format(time.RFC3339), aggField)
-	}
-
 	type mockArgs struct {
 		req  *seqapi.GetAggregationRequest
 		resp *seqapi.GetAggregationResponse
@@ -46,21 +26,26 @@ func TestServeGetAggregation(t *testing.T) {
 	tests := []struct {
 		name string
 
-		reqBody      string
-		wantRespBody string
-		wantStatus   int
+		req     getAggregationRequest
+		want    getAggregationResponse
+		wantErr bool
 
 		mockArgs *mockArgs
 		cfg      config.SeqAPI
 	}{
 		{
-			name:    "ok_single_agg",
-			reqBody: formatReqBody("test_single", nil),
+			name: "ok_single_agg",
+			req: getAggregationRequest{
+				Query:    testQuery,
+				From:     testTimestamp,
+				To:       testTimestamp.Add(time.Second),
+				AggField: "test_single",
+			},
 			mockArgs: &mockArgs{
 				req: &seqapi.GetAggregationRequest{
-					Query:    query,
-					From:     timestamppb.New(from),
-					To:       timestamppb.New(to),
+					Query:    testQuery,
+					From:     timestamppb.New(testTimestamp),
+					To:       timestamppb.New(testTimestamp.Add(time.Second)),
 					AggField: "test_single",
 				},
 				resp: &seqapi.GetAggregationResponse{
@@ -71,8 +56,12 @@ func TestServeGetAggregation(t *testing.T) {
 					},
 				},
 			},
-			wantRespBody: `{"aggregation":{"buckets":[{"key":"test1","value":1},{"key":"test2","value":2}]},"aggregations":[{"buckets":[{"key":"test1","value":1},{"key":"test2","value":2}]}],"error":{"code":"ERROR_CODE_NO"},"partialResponse":false}`,
-			wantStatus:   http.StatusOK,
+			want: getAggregationResponse{
+				Aggregation:     aggregationFromProto(test.MakeAggregation(2, nil)),
+				Aggregations:    aggregationsFromProto(test.MakeAggregations(1, 2, nil), true),
+				Error:           apiError{Code: aecNo},
+				PartialResponse: false,
+			},
 			cfg: config.SeqAPI{
 				SeqAPIOptions: &config.SeqAPIOptions{
 					MaxAggregationsPerRequest: 3,
@@ -81,16 +70,21 @@ func TestServeGetAggregation(t *testing.T) {
 		},
 		{
 			name: "ok_multi_agg",
-			reqBody: formatReqBody("", aggregationQueries{
-				{Field: "test_multi1"},
-				{Field: "test_multi2"},
-				{Field: "test_multi3"},
-			}),
+			req: getAggregationRequest{
+				Query: testQuery,
+				From:  testTimestamp,
+				To:    testTimestamp.Add(time.Second),
+				Aggregations: aggregationQueries{
+					{Field: "test_multi1"},
+					{Field: "test_multi2"},
+					{Field: "test_multi3"},
+				},
+			},
 			mockArgs: &mockArgs{
 				req: &seqapi.GetAggregationRequest{
-					Query: query,
-					From:  timestamppb.New(from),
-					To:    timestamppb.New(to),
+					Query: testQuery,
+					From:  timestamppb.New(testTimestamp),
+					To:    timestamppb.New(testTimestamp.Add(time.Second)),
 					Aggregations: []*seqapi.AggregationQuery{
 						{Field: "test_multi1"},
 						{Field: "test_multi2"},
@@ -105,8 +99,12 @@ func TestServeGetAggregation(t *testing.T) {
 					},
 				},
 			},
-			wantRespBody: `{"aggregation":{"buckets":[{"key":"test1","value":1},{"key":"test2","value":2},{"key":"test3","value":3}]},"aggregations":[{"buckets":[{"key":"test1","value":1},{"key":"test2","value":2},{"key":"test3","value":3}]},{"buckets":[{"key":"test1","value":1},{"key":"test2","value":2},{"key":"test3","value":3}]}],"error":{"code":"ERROR_CODE_NO"},"partialResponse":false}`,
-			wantStatus:   http.StatusOK,
+			want: getAggregationResponse{
+				Aggregation:     aggregationFromProto(test.MakeAggregation(3, nil)),
+				Aggregations:    aggregationsFromProto(test.MakeAggregations(2, 3, nil), true),
+				Error:           apiError{Code: aecNo},
+				PartialResponse: false,
+			},
 			cfg: config.SeqAPI{
 				SeqAPIOptions: &config.SeqAPIOptions{
 					MaxAggregationsPerRequest: 3,
@@ -116,19 +114,24 @@ func TestServeGetAggregation(t *testing.T) {
 
 		{
 			name: "ok_agg_quantile",
-			reqBody: formatReqBody("", aggregationQueries{
-				{
-					Field:     "test_multi1",
-					GroupBy:   "service",
-					Func:      afQuantile,
-					Quantiles: []float64{0.95, 0.99},
+			req: getAggregationRequest{
+				Query: testQuery,
+				From:  testTimestamp,
+				To:    testTimestamp.Add(time.Second),
+				Aggregations: aggregationQueries{
+					{
+						Field:     "test_multi1",
+						GroupBy:   "service",
+						Func:      afQuantile,
+						Quantiles: []float64{0.95, 0.99},
+					},
 				},
-			}),
+			},
 			mockArgs: &mockArgs{
 				req: &seqapi.GetAggregationRequest{
-					Query: query,
-					From:  timestamppb.New(from),
-					To:    timestamppb.New(to),
+					Query: testQuery,
+					From:  timestamppb.New(testTimestamp),
+					To:    timestamppb.New(testTimestamp.Add(time.Second)),
 					Aggregations: []*seqapi.AggregationQuery{
 						{
 							Field:     "test_multi1",
@@ -152,8 +155,18 @@ func TestServeGetAggregation(t *testing.T) {
 					},
 				},
 			},
-			wantRespBody: `{"aggregation":{"buckets":[{"key":"test1","value":1,"not_exists":10,"quantiles":[100,150]},{"key":"test2","value":2,"not_exists":10,"quantiles":[100,150]},{"key":"test3","value":3,"not_exists":10,"quantiles":[100,150]}]},"aggregations":[{"buckets":[{"key":"test1","value":1,"not_exists":10,"quantiles":[100,150]},{"key":"test2","value":2,"not_exists":10,"quantiles":[100,150]},{"key":"test3","value":3,"not_exists":10,"quantiles":[100,150]}]},{"buckets":[{"key":"test1","value":1,"not_exists":10,"quantiles":[100,150]},{"key":"test2","value":2,"not_exists":10,"quantiles":[100,150]},{"key":"test3","value":3,"not_exists":10,"quantiles":[100,150]}]}],"error":{"code":"ERROR_CODE_NO"},"partialResponse":false}`,
-			wantStatus:   http.StatusOK,
+			want: getAggregationResponse{
+				Aggregation: aggregationFromProto(test.MakeAggregation(3, &test.MakeAggOpts{
+					NotExists: 10,
+					Quantiles: []float64{100, 150},
+				})),
+				Aggregations: aggregationsFromProto(test.MakeAggregations(2, 3, &test.MakeAggOpts{
+					NotExists: 10,
+					Quantiles: []float64{100, 150},
+				}), true),
+				Error:           apiError{Code: aecNo},
+				PartialResponse: false,
+			},
 			cfg: config.SeqAPI{
 				SeqAPIOptions: &config.SeqAPIOptions{
 					MaxAggregationsPerRequest: 3,
@@ -161,13 +174,18 @@ func TestServeGetAggregation(t *testing.T) {
 			},
 		},
 		{
-			name:    "err_partial_response",
-			reqBody: formatReqBody("test_err_partial", nil),
+			name: "err_partial_response",
+			req: getAggregationRequest{
+				Query:    testQuery,
+				From:     testTimestamp,
+				To:       testTimestamp.Add(time.Second),
+				AggField: "test_err_partial",
+			},
 			mockArgs: &mockArgs{
 				req: &seqapi.GetAggregationRequest{
-					Query:    query,
-					From:     timestamppb.New(from),
-					To:       timestamppb.New(to),
+					Query:    testQuery,
+					From:     timestamppb.New(testTimestamp),
+					To:       timestamppb.New(testTimestamp.Add(time.Second)),
 					AggField: "test_err_partial",
 				},
 				resp: &seqapi.GetAggregationResponse{
@@ -178,8 +196,12 @@ func TestServeGetAggregation(t *testing.T) {
 					PartialResponse: true,
 				},
 			},
-			wantRespBody: `{"aggregation":{"buckets":[]},"aggregations":[],"error":{"code":"ERROR_CODE_PARTIAL_RESPONSE","message":"partial response"},"partialResponse":true}`,
-			wantStatus:   http.StatusOK,
+			want: getAggregationResponse{
+				Aggregation:     aggregationFromProto(nil),
+				Aggregations:    aggregationsFromProto(nil, true),
+				Error:           apiError{Code: aecPartialResponse, Message: "partial response"},
+				PartialResponse: true,
+			},
 			cfg: config.SeqAPI{
 				SeqAPIOptions: &config.SeqAPIOptions{
 					MaxAggregationsPerRequest: 3,
@@ -187,14 +209,14 @@ func TestServeGetAggregation(t *testing.T) {
 			},
 		},
 		{
-			name:       "err_invalid_request",
-			reqBody:    "invalid-request",
-			wantStatus: http.StatusBadRequest,
-		},
-		{
-			name:       "err_aggs_limit_max",
-			reqBody:    formatReqBody("", aggregationQueries{{}, {}, {}}),
-			wantStatus: http.StatusBadRequest,
+			name: "err_aggs_limit_max",
+			req: getAggregationRequest{
+				Query:        testQuery,
+				From:         testTimestamp,
+				To:           testTimestamp.Add(time.Second),
+				Aggregations: aggregationQueries{{}, {}, {}},
+			},
+			wantErr: true,
 			cfg: config.SeqAPI{
 				SeqAPIOptions: &config.SeqAPIOptions{
 					MaxAggregationsPerRequest: 2,
@@ -202,18 +224,23 @@ func TestServeGetAggregation(t *testing.T) {
 			},
 		},
 		{
-			name:    "err_client",
-			reqBody: formatReqBody("test_err_client", nil),
+			name: "err_client",
+			req: getAggregationRequest{
+				Query:    testQuery,
+				From:     testTimestamp,
+				To:       testTimestamp.Add(time.Second),
+				AggField: "test_err_client",
+			},
 			mockArgs: &mockArgs{
 				req: &seqapi.GetAggregationRequest{
-					Query:    query,
-					From:     timestamppb.New(from),
-					To:       timestamppb.New(to),
+					Query:    testQuery,
+					From:     timestamppb.New(testTimestamp),
+					To:       timestamppb.New(testTimestamp.Add(time.Second)),
 					AggField: "test_err_client",
 				},
 				err: errors.New("client error"),
 			},
-			wantStatus: http.StatusInternalServerError,
+			wantErr: true,
 			cfg: config.SeqAPI{
 				SeqAPIOptions: &config.SeqAPIOptions{
 					MaxAggregationsPerRequest: 3,
@@ -221,6 +248,7 @@ func TestServeGetAggregation(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
@@ -231,21 +259,25 @@ func TestServeGetAggregation(t *testing.T) {
 
 			if tt.mockArgs != nil {
 				ctrl := gomock.NewController(t)
-
 				seqDbMock := mock_seqdb.NewMockClient(ctrl)
-				seqDbMock.EXPECT().GetAggregation(gomock.Any(), tt.mockArgs.req).
-					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
+
+				seqDbMock.EXPECT().
+					GetAggregation(gomock.Any(), tt.mockArgs.req).
+					Return(tt.mockArgs.resp, tt.mockArgs.err).
+					Times(1)
 
 				seqData.Mocks.SeqDB = seqDbMock
 			}
 
-			api := initTestAPI(seqData)
-			req := httptest.NewRequest(http.MethodPost, "/seqapi/v1/aggregation", strings.NewReader(tt.reqBody))
-			httputil.DoTestHTTP(t, httputil.TestDataHTTP{
-				Req:          req,
-				Handler:      api.serveGetAggregation,
-				WantRespBody: tt.wantRespBody,
-				WantStatus:   tt.wantStatus,
+			api := setupTestAPI(seqData)
+
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[getAggregationRequest, getAggregationResponse]{
+				Method:  http.MethodPost,
+				Target:  "/seqapi/v1/aggregation",
+				Req:     tt.req,
+				Handler: api.serveGetAggregation,
+				Want:    tt.want,
+				WantErr: tt.wantErr,
 			})
 		})
 	}

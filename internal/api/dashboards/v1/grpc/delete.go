@@ -22,16 +22,11 @@ func (a *API) Delete(ctx context.Context, req *dashboards.DeleteRequest) (*dashb
 		},
 	)
 
-	profileID, err := a.profiles.GeIDFromContext(ctx)
-	if err != nil {
-		return nil, grpcutil.ProcessError(err)
+	request := types.DeleteDashboardRequest{
+		UUID: req.Uuid,
 	}
 
-	request := types.DeleteDashboardRequest{
-		UUID:      req.Uuid,
-		ProfileID: profileID,
-	}
-	if err = a.service.DeleteDashboard(ctx, request); err != nil {
+	if err := a.service.DeleteDashboard(ctx, request); err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}
 

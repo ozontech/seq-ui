@@ -123,8 +123,25 @@ mock:
 		github.com/ozontech/seq-ui/internal/app/auth \
 		OIDCProvider,JWTProvider
 	PATH="$(LOCAL_BIN):$(PATH)" mockgen \
+<<<<<<< HEAD
 		-destination=internal/pkg/service/admin/mock/service.go \
 		github.com/ozontech/seq-ui/internal/pkg/service/admin \
+=======
+		-destination=internal/pkg/service/dashboards/mock/service.go \
+		github.com/ozontech/seq-ui/internal/pkg/service/dashboards \
+		Service
+	PATH="$(LOCAL_BIN):$(PATH)" mockgen \
+		-destination=internal/pkg/service/async_searches/mock/service.go \
+		github.com/ozontech/seq-ui/internal/pkg/service/async_searches \
+		Service
+	PATH="$(LOCAL_BIN):$(PATH)" mockgen \
+		-destination=internal/pkg/service/userprofile/mock/service.go \
+		github.com/ozontech/seq-ui/internal/pkg/service/userprofile \
+		Service
+	PATH="$(LOCAL_BIN):$(PATH)" mockgen \
+		-destination=internal/pkg/service/massexport/mock/service.go \
+		github.com/ozontech/seq-ui/internal/pkg/service/massexport \
+>>>>>>> main
 		Service
 
 .PHONY: protoc

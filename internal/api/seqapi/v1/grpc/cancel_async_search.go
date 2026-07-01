@@ -14,10 +14,7 @@ import (
 	"github.com/ozontech/seq-ui/tracing"
 )
 
-func (a *API) CancelAsyncSearch(
-	ctx context.Context,
-	req *seqapi.CancelAsyncSearchRequest,
-) (*seqapi.CancelAsyncSearchResponse, error) {
+func (a *API) CancelAsyncSearch(ctx context.Context, req *seqapi.CancelAsyncSearchRequest) (*seqapi.CancelAsyncSearchResponse, error) {
 	if a.asyncSearches == nil {
 		return nil, status.Error(codes.Unimplemented, types.ErrAsyncSearchesDisabled.Error())
 	}
@@ -36,12 +33,7 @@ func (a *API) CancelAsyncSearch(
 		},
 	)
 
-	profileID, err := a.profiles.GeIDFromContext(ctx)
-	if err != nil {
-		return nil, grpcutil.ProcessError(err)
-	}
-
-	resp, err := a.asyncSearches.CancelAsyncSearch(ctx, profileID, req)
+	resp, err := a.asyncSearches.CancelAsyncSearch(ctx, req)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}

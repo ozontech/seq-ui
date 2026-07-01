@@ -8,152 +8,98 @@ import (
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
 	"github.com/ozontech/seq-ui/internal/app/types"
-	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
-	mock_repo "github.com/ozontech/seq-ui/internal/pkg/repository/mock"
+	mock_asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
 
-func TestServeCancelAsyncSearch(t *testing.T) {
-	const (
-		mockSearchID1  = "69e4a4a6-0922-43bd-952d-060a86c2b622"
-		mockUserName1  = "some_user_1"
-		mockUserName2  = "some_user_2"
-		mockProfileID1 = 1
-		mockProfileID2 = 2
-	)
-
+func TestCancelAsyncSearch(t *testing.T) {
 	type mockArgs struct {
-		userName string
-
-		profilesReq  *types.GetOrCreateUserProfileRequest
-		profilesResp *types.UserProfile
-		profilesErr  error
-
-		repoResp *types.AsyncSearchInfo
-		repoErr  error
+		req  *seqapi.CancelAsyncSearchRequest
+		resp *seqapi.CancelAsyncSearchResponse
+		err  error
 	}
 
 	tests := []struct {
 		name string
 
-		req  *seqapi.CancelAsyncSearchRequest
-		resp *seqapi.CancelAsyncSearchResponse
-		err  error
+		req      *seqapi.CancelAsyncSearchRequest
+		want     *seqapi.CancelAsyncSearchResponse
+		wantCode codes.Code
 
 		mockArgs *mockArgs
 	}{
 		{
 			name: "ok",
 			req: &seqapi.CancelAsyncSearchRequest{
-				SearchId: mockSearchID1,
+				SearchId: testSearchID,
 			},
-			resp: &seqapi.CancelAsyncSearchResponse{},
+			want: &seqapi.CancelAsyncSearchResponse{},
 			mockArgs: &mockArgs{
-				userName: mockUserName1,
-				profilesReq: &types.GetOrCreateUserProfileRequest{
-					UserName: mockUserName1,
+				req: &seqapi.CancelAsyncSearchRequest{
+					SearchId: testSearchID,
 				},
-				profilesResp: &types.UserProfile{
-					ID:       mockProfileID1,
-					UserName: mockUserName1,
-				},
-				repoResp: &types.AsyncSearchInfo{
-					SearchID:  mockSearchID1,
-					OwnerID:   mockProfileID1,
-					OwnerName: mockUserName1,
-				},
+				resp: &seqapi.CancelAsyncSearchResponse{},
 			},
 		},
 		{
-			name: "err_permission_denied",
-			req: &seqapi.CancelAsyncSearchRequest{
-				SearchId: mockSearchID1,
-			},
-			mockArgs: &mockArgs{
-				userName: mockUserName1,
-				profilesReq: &types.GetOrCreateUserProfileRequest{
-					UserName: mockUserName1,
-				},
-				profilesResp: &types.UserProfile{
-					ID:       mockProfileID1,
-					UserName: mockUserName1,
-				},
-				repoResp: &types.AsyncSearchInfo{
-					SearchID:  mockSearchID1,
-					OwnerID:   mockProfileID2,
-					OwnerName: mockUserName2,
-				},
-			},
-			err: status.Error(codes.PermissionDenied, "permission denied: cancel async search"),
-		},
-		{
-			name: "invalid id",
+			name: "invalid_id",
 			req: &seqapi.CancelAsyncSearchRequest{
 				SearchId: "some_invalid_id",
 			},
-			mockArgs: &mockArgs{
-				userName: mockUserName1,
+			wantCode: codes.InvalidArgument,
+		},
+		{
+			name: "err_svc",
+			req: &seqapi.CancelAsyncSearchRequest{
+				SearchId: testSearchID,
 			},
-			err: status.Error(codes.InvalidArgument, "invalid search_id"),
+			wantCode: codes.Internal,
+			mockArgs: &mockArgs{
+				req: &seqapi.CancelAsyncSearchRequest{
+					SearchId: testSearchID,
+				},
+				err: errSomethingWrong,
+			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctrl := gomock.NewController(t)
+			svcMock := mock_asyncsearches.NewMockService(ctrl)
+
 			seqData := test.APITestData{}
+			seqData.Mocks.AsyncSearchesSvc = svcMock
 
 			if tt.mockArgs != nil {
-				ctrl := gomock.NewController(t)
-
-				if tt.err == nil {
-					seqDbMock := mock_seqdb.NewMockClient(ctrl)
-					seqDbMock.EXPECT().CancelAsyncSearch(gomock.Any(), tt.req).
-						Return(tt.resp, nil).Times(1)
-					seqData.Mocks.SeqDB = seqDbMock
-				}
-
-				if tt.mockArgs.profilesResp != nil {
-					profilesRepoMock := mock_repo.NewMockUserProfiles(ctrl)
-					profilesRepoMock.EXPECT().GetOrCreate(gomock.Any(), *tt.mockArgs.profilesReq).
-						Return(*tt.mockArgs.profilesResp, tt.mockArgs.profilesErr).Times(1)
-					seqData.Mocks.ProfilesRepo = profilesRepoMock
-				}
-
-				if tt.mockArgs.repoResp != nil {
-					asyncSearchesRepoMock := mock_repo.NewMockAsyncSearches(ctrl)
-					asyncSearchesRepoMock.EXPECT().GetAsyncSearchById(gomock.Any(), tt.req.SearchId).
-						Return(*tt.mockArgs.repoResp, tt.mockArgs.repoErr).Times(1)
-					seqData.Mocks.AsyncSearchesRepo = asyncSearchesRepoMock
-				}
+				svcMock.EXPECT().
+					CancelAsyncSearch(gomock.Any(), tt.mockArgs.req).
+					Return(tt.mockArgs.resp, tt.mockArgs.err).
+					Times(1)
 			}
 
-			api := initTestAPIWithAsyncSearches(seqData)
+			api := setupTestAPI(seqData)
+			got, err := api.CancelAsyncSearch(context.Background(), tt.req)
 
-			ctx := context.Background()
-			ctx = types.SetUserKey(ctx, tt.mockArgs.userName)
-
-			resp, err := api.CancelAsyncSearch(ctx, tt.req)
-			if tt.err == nil {
-				require.NoError(t, err)
-				require.True(t, proto.Equal(tt.resp, resp))
-			} else {
-				require.Error(t, err)
-				require.Equal(t, tt.err, err)
+			require.Equal(t, tt.wantCode, status.Code(err))
+			if tt.wantCode != codes.OK {
+				return
 			}
+			require.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func TestServeCancelAsyncSearch_Disabled(t *testing.T) {
+func TestCancelAsyncSearch_Disabled(t *testing.T) {
 	seqData := test.APITestData{}
-	api := initTestAPI(seqData)
+	api := setupTestAPI(seqData)
 
-	_, err := api.CancelAsyncSearch(context.Background(), &seqapi.CancelAsyncSearchRequest{})
+	_, err := api.CancelAsyncSearch(context.Background(), &seqapi.CancelAsyncSearchRequest{SearchId: testSearchID})
 	require.Error(t, err)
 	require.Equal(t, status.Error(codes.Unimplemented, types.ErrAsyncSearchesDisabled.Error()), err)
 }

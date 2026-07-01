@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"errors"
 	"strconv"
 	"testing"
 	"time"
@@ -22,20 +21,16 @@ import (
 )
 
 func TestGetLogsLifespan(t *testing.T) {
-	const (
-		cacheKey = "logs_lifespan"
-		cacheTTL = 1 * time.Minute
-
-		result    = 10 * time.Hour
+	var (
 		resultStr = "36000" // 10(h) * 60(min/h) * 60(sec/min)
+		cacheKey  = "logs_lifespan"
+		result    = 10 * time.Hour
+		cacheTTL  = time.Minute
 	)
-
 	unparsable := func(s string) bool {
 		_, err := strconv.Atoi(s)
 		return err != nil
 	}
-
-	oldestStorageTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	tests := []struct {
 		name string
@@ -66,7 +61,7 @@ func TestGetLogsLifespan(t *testing.T) {
 				Value: resultStr,
 			},
 			clientResp: &seqapi.StatusResponse{
-				OldestStorageTime: timestamppb.New(oldestStorageTime),
+				OldestStorageTime: timestamppb.New(testTimestamp),
 			},
 			resp: &seqapi.GetLogsLifespanResponse{
 				Lifespan: durationpb.New(result),
@@ -81,7 +76,7 @@ func TestGetLogsLifespan(t *testing.T) {
 				Value: resultStr,
 			},
 			clientResp: &seqapi.StatusResponse{
-				OldestStorageTime: timestamppb.New(oldestStorageTime),
+				OldestStorageTime: timestamppb.New(testTimestamp),
 			},
 			resp: &seqapi.GetLogsLifespanResponse{
 				Lifespan: durationpb.New(result),
@@ -92,7 +87,7 @@ func TestGetLogsLifespan(t *testing.T) {
 			getOp: test.CacheMockArgs{
 				Err: cache.ErrNotFound,
 			},
-			clientErr: errors.New("network error"),
+			clientErr: errSomethingWrong,
 		},
 		{
 			name: "err_nil_oldest_storage_time",
@@ -104,6 +99,7 @@ func TestGetLogsLifespan(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
@@ -116,28 +112,35 @@ func TestGetLogsLifespan(t *testing.T) {
 					},
 				},
 			}
-			ctrl := gomock.NewController(t)
 
+			ctrl := gomock.NewController(t)
 			cacheMock := mock_cache.NewMockCache(ctrl)
-			cacheMock.EXPECT().Get(gomock.Any(), cacheKey).
-				Return(tt.getOp.Value, tt.getOp.Err).Times(1)
+
+			cacheMock.EXPECT().
+				Get(gomock.Any(), cacheKey).
+				Return(tt.getOp.Value, tt.getOp.Err).
+				Times(1)
 			seqData.Mocks.Cache = cacheMock
 
 			if tt.getOp.Err != nil || unparsable(tt.getOp.Value) {
 				seqDbMock := mock_seqdb.NewMockClient(ctrl)
-				seqDbMock.EXPECT().Status(gomock.Any(), gomock.Any()).
-					Return(proto.Clone(tt.clientResp), tt.clientErr).Times(1)
+				seqDbMock.EXPECT().
+					Status(gomock.Any(), gomock.Any()).
+					Return(proto.Clone(tt.clientResp), tt.clientErr).
+					Times(1)
 				seqData.Mocks.SeqDB = seqDbMock
 
 				if tt.clientErr == nil && tt.clientResp.OldestStorageTime != nil {
-					cacheMock.EXPECT().SetWithTTL(gomock.Any(), cacheKey, tt.setOp.Value, cacheTTL).
-						Return(tt.setOp.Err).Times(1)
+					cacheMock.EXPECT().
+						SetWithTTL(gomock.Any(), cacheKey, tt.setOp.Value, cacheTTL).
+						Return(tt.setOp.Err).
+						Times(1)
 				}
 			}
 
-			s := initTestAPI(seqData)
+			s := setupTestAPI(seqData)
 			s.nowFn = func() time.Time {
-				return oldestStorageTime.Add(result)
+				return testTimestamp.Add(result)
 			}
 
 			resp, err := s.GetLogsLifespan(context.Background(), nil)

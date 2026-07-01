@@ -2221,7 +2221,7 @@
             "type": "object",
             "properties": {
                 "duration": {
-                    "description": "In go duration format. If not specified, then for the entire time.",
+                    "description": "Deprecated: Use time_range instead",
                     "type": "string",
                     "format": "duration",
                     "example": "1h"
@@ -2250,6 +2250,9 @@
                 "source": {
                     "type": "string"
                 },
+                "time_range": {
+                    "$ref": "#/definitions/errorgroups.v1.TimeRange"
+                },
                 "with_total": {
                     "type": "boolean"
                 }
@@ -2273,7 +2276,7 @@
             "type": "object",
             "properties": {
                 "duration": {
-                    "description": "In go duration format. If not specified, `1h` is used.",
+                    "description": "Deprecated: Use time_range instead",
                     "type": "string",
                     "format": "duration",
                     "example": "1h"
@@ -2293,6 +2296,9 @@
                 },
                 "source": {
                     "type": "string"
+                },
+                "time_range": {
+                    "$ref": "#/definitions/errorgroups.v1.TimeRange"
                 }
             }
         },
@@ -2365,7 +2371,7 @@
             "type": "object",
             "properties": {
                 "duration": {
-                    "description": "In go duration format. If not specified, then for the entire time.",
+                    "description": "Deprecated: Use time_range instead",
                     "type": "string",
                     "format": "duration",
                     "example": "1h"
@@ -2381,6 +2387,9 @@
                 },
                 "source": {
                     "type": "string"
+                },
+                "time_range": {
+                    "$ref": "#/definitions/errorgroups.v1.TimeRange"
                 },
                 "with_total": {
                     "type": "boolean"
@@ -2447,6 +2456,24 @@
                 "OrderLatest",
                 "OrderOldest"
             ]
+        },
+        "errorgroups.v1.TimeRange": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "type": "string",
+                    "format": "duration",
+                    "example": "1h"
+                },
+                "from": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "to": {
+                    "type": "string",
+                    "format": "date-time"
+                }
+            }
         },
         "errorgroups.v1.TopGroup": {
             "type": "object",

@@ -23,9 +23,6 @@ import (
 )
 
 func TestServeGetAggregationTs(t *testing.T) {
-	query := "message:error"
-	from := time.Date(2023, time.September, 25, 10, 20, 30, 0, time.UTC)
-	to := from.Add(5 * time.Second)
 	interval := "1s"
 	interval2 := "3000ms"
 	targetBucketRate := "2s"
@@ -34,7 +31,7 @@ func TestServeGetAggregationTs(t *testing.T) {
 		aggQueriesRaw, err := json.Marshal(aggQueries)
 		assert.NoError(t, err)
 		return fmt.Sprintf(`{"query":%q,"from":%q,"to":%q,"aggregations":%s}`,
-			query, from.Format(time.RFC3339), to.Format(time.RFC3339), aggQueriesRaw)
+			testQuery, testTimestamp.Format(time.RFC3339), testTimestamp.Add(time.Second).Format(time.RFC3339), aggQueriesRaw)
 	}
 
 	type mockArgs struct {
@@ -73,9 +70,9 @@ func TestServeGetAggregationTs(t *testing.T) {
 			}),
 			mockArgs: &mockArgs{
 				req: &seqapi.GetAggregationRequest{
-					Query: query,
-					From:  timestamppb.New(from),
-					To:    timestamppb.New(to),
+					Query: testQuery,
+					From:  timestamppb.New(testTimestamp),
+					To:    timestamppb.New(testTimestamp.Add(time.Second)),
 					Aggregations: []*seqapi.AggregationQuery{
 						{Field: "test_count1", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval},
 						{Field: "test_count2", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval},
@@ -84,9 +81,9 @@ func TestServeGetAggregationTs(t *testing.T) {
 				resp: &seqapi.GetAggregationResponse{
 					Aggregation: test.MakeAggregation(3, &test.MakeAggOpts{
 						Ts: []*timestamppb.Timestamp{
-							timestamppb.New(from.Add(time.Second)),
-							timestamppb.New(from.Add(2 * time.Second)),
-							timestamppb.New(from.Add(3 * time.Second)),
+							timestamppb.New(testTimestamp.Add(time.Second)),
+							timestamppb.New(testTimestamp.Add(2 * time.Second)),
+							timestamppb.New(testTimestamp.Add(3 * time.Second)),
 						},
 						Values: []float64{
 							1,
@@ -96,9 +93,9 @@ func TestServeGetAggregationTs(t *testing.T) {
 					}),
 					Aggregations: test.MakeAggregations(2, 3, &test.MakeAggOpts{
 						Ts: []*timestamppb.Timestamp{
-							timestamppb.New(from.Add(time.Second)),
-							timestamppb.New(from.Add(2 * time.Second)),
-							timestamppb.New(from.Add(3 * time.Second)),
+							timestamppb.New(testTimestamp.Add(time.Second)),
+							timestamppb.New(testTimestamp.Add(2 * time.Second)),
+							timestamppb.New(testTimestamp.Add(3 * time.Second)),
 						},
 					}),
 					Error: &seqapi.Error{
@@ -136,9 +133,9 @@ func TestServeGetAggregationTs(t *testing.T) {
 			}),
 			mockArgs: &mockArgs{
 				req: &seqapi.GetAggregationRequest{
-					Query: query,
-					From:  timestamppb.New(from),
-					To:    timestamppb.New(to),
+					Query: testQuery,
+					From:  timestamppb.New(testTimestamp),
+					To:    timestamppb.New(testTimestamp.Add(time.Second)),
 					Aggregations: []*seqapi.AggregationQuery{
 						{Field: "test_count1", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval2},
 						{Field: "test_count2", Func: seqapi.AggFunc_AGG_FUNC_COUNT, Interval: &interval2, TargetBucketRate: &targetBucketRate},
@@ -147,9 +144,9 @@ func TestServeGetAggregationTs(t *testing.T) {
 				resp: &seqapi.GetAggregationResponse{
 					Aggregations: test.MakeAggregations(2, 3, &test.MakeAggOpts{
 						Ts: []*timestamppb.Timestamp{
-							timestamppb.New(from.Add(time.Second)),
-							timestamppb.New(from.Add(2 * time.Second)),
-							timestamppb.New(from.Add(3 * time.Second)),
+							timestamppb.New(testTimestamp.Add(time.Second)),
+							timestamppb.New(testTimestamp.Add(2 * time.Second)),
+							timestamppb.New(testTimestamp.Add(3 * time.Second)),
 						},
 						Values: []float64{
 							3,
@@ -186,9 +183,9 @@ func TestServeGetAggregationTs(t *testing.T) {
 			}),
 			mockArgs: &mockArgs{
 				req: &seqapi.GetAggregationRequest{
-					Query: query,
-					From:  timestamppb.New(from),
-					To:    timestamppb.New(to),
+					Query: testQuery,
+					From:  timestamppb.New(testTimestamp),
+					To:    timestamppb.New(testTimestamp.Add(time.Second)),
 					Aggregations: []*seqapi.AggregationQuery{
 						{
 							Field:     "test_quantile1",
@@ -203,17 +200,17 @@ func TestServeGetAggregationTs(t *testing.T) {
 					Aggregation: test.MakeAggregation(3, &test.MakeAggOpts{
 						Quantiles: []float64{100, 150},
 						Ts: []*timestamppb.Timestamp{
-							timestamppb.New(from.Add(time.Second)),
-							timestamppb.New(from.Add(2 * time.Second)),
-							timestamppb.New(from.Add(3 * time.Second)),
+							timestamppb.New(testTimestamp.Add(time.Second)),
+							timestamppb.New(testTimestamp.Add(2 * time.Second)),
+							timestamppb.New(testTimestamp.Add(3 * time.Second)),
 						},
 					}),
 					Aggregations: test.MakeAggregations(1, 3, &test.MakeAggOpts{
 						Quantiles: []float64{100, 150},
 						Ts: []*timestamppb.Timestamp{
-							timestamppb.New(from.Add(time.Second)),
-							timestamppb.New(from.Add(2 * time.Second)),
-							timestamppb.New(from.Add(3 * time.Second)),
+							timestamppb.New(testTimestamp.Add(time.Second)),
+							timestamppb.New(testTimestamp.Add(2 * time.Second)),
+							timestamppb.New(testTimestamp.Add(3 * time.Second)),
 						},
 					}),
 					Error: &seqapi.Error{
@@ -235,9 +232,9 @@ func TestServeGetAggregationTs(t *testing.T) {
 			reqBody: formatReqBody(nil),
 			mockArgs: &mockArgs{
 				req: &seqapi.GetAggregationRequest{
-					Query: query,
-					From:  timestamppb.New(from),
-					To:    timestamppb.New(to),
+					Query: testQuery,
+					From:  timestamppb.New(testTimestamp),
+					To:    timestamppb.New(testTimestamp.Add(time.Second)),
 				},
 				resp: &seqapi.GetAggregationResponse{
 					Error: &seqapi.Error{
@@ -283,7 +280,7 @@ func TestServeGetAggregationTs(t *testing.T) {
 			cfg: config.SeqAPI{
 				SeqAPIOptions: &config.SeqAPIOptions{
 					MaxAggregationsPerRequest:  3,
-					MaxBucketsPerAggregationTs: 8,
+					MaxBucketsPerAggregationTs: 1,
 				},
 			},
 		},
@@ -292,9 +289,9 @@ func TestServeGetAggregationTs(t *testing.T) {
 			reqBody: formatReqBody(nil),
 			mockArgs: &mockArgs{
 				req: &seqapi.GetAggregationRequest{
-					Query: query,
-					From:  timestamppb.New(from),
-					To:    timestamppb.New(to),
+					Query: testQuery,
+					From:  timestamppb.New(testTimestamp),
+					To:    timestamppb.New(testTimestamp.Add(time.Second)),
 				},
 				err: errors.New("client error"),
 			},
@@ -324,7 +321,7 @@ func TestServeGetAggregationTs(t *testing.T) {
 				seqData.Mocks.SeqDB = seqDbMock
 			}
 
-			api := initTestAPI(seqData)
+			api := setupTestAPI(seqData)
 			req := httptest.NewRequest(http.MethodPost, "/seqapi/v1/aggregation_ts", strings.NewReader(tt.reqBody))
 
 			httputil.DoTestHTTP(t, httputil.TestDataHTTP{

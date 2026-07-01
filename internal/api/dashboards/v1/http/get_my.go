@@ -44,17 +44,11 @@ func (a *API) serveGetMy(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 
-	profileID, err := a.profiles.GeIDFromContext(ctx)
-	if err != nil {
-		httputil.ProcessError(wr, err)
-		return
+	req := types.GetUserDashboardsRequest{
+		Limit:  httpReq.Limit,
+		Offset: httpReq.Offset,
 	}
 
-	req := types.GetUserDashboardsRequest{
-		ProfileID: profileID,
-		Limit:     httpReq.Limit,
-		Offset:    httpReq.Offset,
-	}
 	dis, err := a.service.GetMyDashboards(ctx, req)
 	if err != nil {
 		httputil.ProcessError(wr, err)

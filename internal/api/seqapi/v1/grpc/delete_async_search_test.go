@@ -8,163 +8,98 @@ import (
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
 	"github.com/ozontech/seq-ui/internal/app/types"
-	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
-	mock_repo "github.com/ozontech/seq-ui/internal/pkg/repository/mock"
+	mock_asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
 
-func TestServeDeleteAsyncSearch(t *testing.T) {
-	const (
-		mockSearchID1  = "69e4a4a6-0922-43bd-952d-060a86c2b622"
-		mockUserName1  = "some_user_1"
-		mockUserName2  = "some_user_2"
-		mockProfileID1 = 1
-		mockProfileID2 = 2
-	)
-
+func TestDeleteAsyncSearch(t *testing.T) {
 	type mockArgs struct {
-		userName string
-
-		profilesReq  *types.GetOrCreateUserProfileRequest
-		profilesResp *types.UserProfile
-		profilesErr  error
-
-		repoGetAsyncSearchResp *types.AsyncSearchInfo
-		repoGetAsyncSearchErr  error
-
-		repoDeleteAsyncSearchErr error
+		req  *seqapi.DeleteAsyncSearchRequest
+		resp *seqapi.DeleteAsyncSearchResponse
+		err  error
 	}
 
 	tests := []struct {
 		name string
 
-		req  *seqapi.DeleteAsyncSearchRequest
-		resp *seqapi.DeleteAsyncSearchResponse
-		err  error
-
-		shouldDelete bool
+		req      *seqapi.DeleteAsyncSearchRequest
+		want     *seqapi.DeleteAsyncSearchResponse
+		wantCode codes.Code
 
 		mockArgs *mockArgs
 	}{
 		{
 			name: "ok",
 			req: &seqapi.DeleteAsyncSearchRequest{
-				SearchId: mockSearchID1,
+				SearchId: testSearchID,
 			},
-			resp: &seqapi.DeleteAsyncSearchResponse{},
+			want: &seqapi.DeleteAsyncSearchResponse{},
 			mockArgs: &mockArgs{
-				userName: mockUserName1,
-				profilesReq: &types.GetOrCreateUserProfileRequest{
-					UserName: mockUserName1,
+				req: &seqapi.DeleteAsyncSearchRequest{
+					SearchId: testSearchID,
 				},
-				profilesResp: &types.UserProfile{
-					ID:       mockProfileID1,
-					UserName: mockUserName1,
-				},
-				repoGetAsyncSearchResp: &types.AsyncSearchInfo{
-					SearchID:  mockSearchID1,
-					OwnerID:   mockProfileID1,
-					OwnerName: mockUserName1,
-				},
+				resp: &seqapi.DeleteAsyncSearchResponse{},
 			},
-			shouldDelete: true,
 		},
 		{
-			name: "err_permission_denied",
-			req: &seqapi.DeleteAsyncSearchRequest{
-				SearchId: mockSearchID1,
-			},
-			mockArgs: &mockArgs{
-				userName: mockUserName1,
-				profilesReq: &types.GetOrCreateUserProfileRequest{
-					UserName: mockUserName1,
-				},
-				profilesResp: &types.UserProfile{
-					ID:       mockProfileID1,
-					UserName: mockUserName1,
-				},
-				repoGetAsyncSearchResp: &types.AsyncSearchInfo{
-					SearchID:  mockSearchID1,
-					OwnerID:   mockProfileID2,
-					OwnerName: mockUserName2,
-				},
-			},
-			err: status.Error(codes.PermissionDenied, "permission denied: delete async search"),
-		},
-		{
-			name: "invalid id",
+			name: "invalid_id",
 			req: &seqapi.DeleteAsyncSearchRequest{
 				SearchId: "some_invalid_id",
 			},
-			mockArgs: &mockArgs{
-				userName: mockUserName1,
+			wantCode: codes.InvalidArgument,
+		},
+		{
+			name: "err_svc",
+			req: &seqapi.DeleteAsyncSearchRequest{
+				SearchId: testSearchID,
 			},
-			err: status.Error(codes.InvalidArgument, "invalid search_id"),
+			wantCode: codes.Internal,
+			mockArgs: &mockArgs{
+				req: &seqapi.DeleteAsyncSearchRequest{
+					SearchId: testSearchID,
+				},
+				err: errSomethingWrong,
+			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
+			ctrl := gomock.NewController(t)
+			svcMock := mock_asyncsearches.NewMockService(ctrl)
+
 			seqData := test.APITestData{}
+			seqData.Mocks.AsyncSearchesSvc = svcMock
 
 			if tt.mockArgs != nil {
-				ctrl := gomock.NewController(t)
-
-				if tt.err == nil {
-					seqDbMock := mock_seqdb.NewMockClient(ctrl)
-					seqDbMock.EXPECT().DeleteAsyncSearch(gomock.Any(), tt.req).
-						Return(tt.resp, nil).Times(1)
-					seqData.Mocks.SeqDB = seqDbMock
-				}
-
-				if tt.mockArgs.profilesResp != nil {
-					profilesRepoMock := mock_repo.NewMockUserProfiles(ctrl)
-					profilesRepoMock.EXPECT().GetOrCreate(gomock.Any(), *tt.mockArgs.profilesReq).
-						Return(*tt.mockArgs.profilesResp, tt.mockArgs.profilesErr).Times(1)
-					seqData.Mocks.ProfilesRepo = profilesRepoMock
-				}
-
-				if tt.mockArgs.repoGetAsyncSearchResp != nil {
-					asyncSearchesRepoMock := mock_repo.NewMockAsyncSearches(ctrl)
-					asyncSearchesRepoMock.EXPECT().GetAsyncSearchById(gomock.Any(), tt.req.SearchId).
-						Return(*tt.mockArgs.repoGetAsyncSearchResp, tt.mockArgs.repoGetAsyncSearchErr).Times(1)
-
-					if tt.shouldDelete {
-						asyncSearchesRepoMock.EXPECT().DeleteAsyncSearch(gomock.Any(), tt.req.SearchId).
-							Return(tt.mockArgs.repoDeleteAsyncSearchErr).Times(1)
-					}
-
-					seqData.Mocks.AsyncSearchesRepo = asyncSearchesRepoMock
-				}
+				svcMock.EXPECT().
+					DeleteAsyncSearch(gomock.Any(), tt.mockArgs.req).
+					Return(tt.mockArgs.resp, tt.mockArgs.err).
+					Times(1)
 			}
 
-			api := initTestAPIWithAsyncSearches(seqData)
+			api := setupTestAPI(seqData)
+			got, err := api.DeleteAsyncSearch(context.Background(), tt.req)
 
-			ctx := context.Background()
-			ctx = types.SetUserKey(ctx, tt.mockArgs.userName)
-
-			resp, err := api.DeleteAsyncSearch(ctx, tt.req)
-			if tt.err == nil {
-				require.NoError(t, err)
-				require.True(t, proto.Equal(tt.resp, resp))
-			} else {
-				require.Error(t, err)
-				require.Equal(t, tt.err, err)
+			require.Equal(t, tt.wantCode, status.Code(err))
+			if tt.wantCode != codes.OK {
+				return
 			}
+			require.Equal(t, tt.want, got)
 		})
 	}
 }
 
 func TestServeDeleteAsyncSearch_Disabled(t *testing.T) {
 	seqData := test.APITestData{}
-	api := initTestAPI(seqData)
+	api := setupTestAPI(seqData)
 
-	_, err := api.DeleteAsyncSearch(context.Background(), &seqapi.DeleteAsyncSearchRequest{})
+	_, err := api.DeleteAsyncSearch(context.Background(), &seqapi.DeleteAsyncSearchRequest{SearchId: testSearchID})
 	require.Error(t, err)
 	require.Equal(t, status.Error(codes.Unimplemented, types.ErrAsyncSearchesDisabled.Error()), err)
 }

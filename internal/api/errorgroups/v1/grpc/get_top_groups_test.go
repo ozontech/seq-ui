@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/ozontech/seq-ui/internal/app/types"
 	svc_mock "github.com/ozontech/seq-ui/internal/pkg/service/errorgroups/mock"
@@ -17,10 +18,12 @@ import (
 
 func TestGetTopGroups(t *testing.T) {
 	var (
-		env      = "test-env"
-		source   = "test-source"
-		duration = 2 * time.Minute
-		someErr  = errors.New("some err")
+		env           = "test-env"
+		source        = "test-source"
+		duration      = 2 * time.Minute
+		now           = time.Now().Truncate(0).UTC()
+		twoMinutesAgo = now.Add(-2 * time.Minute)
+		someErr       = errors.New("some err")
 	)
 
 	type mockArgs struct {
@@ -41,7 +44,7 @@ func TestGetTopGroups(t *testing.T) {
 		mockArgs *mockArgs
 	}{
 		{
-			name: "ok",
+			name: "ok_duration",
 
 			req: &errorgroups_v1.GetTopGroupsRequest{
 				Env:       &env,
@@ -71,9 +74,128 @@ func TestGetTopGroups(t *testing.T) {
 
 			mockArgs: &mockArgs{
 				req: types.GetTopErrorGroupsRequest{
+					Env:    &env,
+					Source: &source,
+					TimeRange: &types.TimeRange{
+						Duration: duration,
+					},
+					Limit:     2,
+					Offset:    0,
+					WithTotal: true,
+				},
+
+				groups: []types.TopErrorGroup{
+					{
+						Hash:    123,
+						Message: "some error 1",
+						Source:  source,
+						Count:   10,
+					},
+					{
+						Hash:    456,
+						Message: "some error 2",
+						Source:  source,
+						Count:   5,
+					},
+				},
+				total: 10,
+			},
+		},
+		{
+			name: "ok_timerange",
+
+			req: &errorgroups_v1.GetTopGroupsRequest{
+				Env:      &env,
+				Source:   &source,
+				Duration: durationpb.New(duration),
+				TimeRange: &errorgroups_v1.TimeRange{
+					From: timestamppb.New(twoMinutesAgo),
+					To:   timestamppb.New(now),
+				},
+				Limit:     2,
+				Offset:    0,
+				WithTotal: true,
+			},
+			want: &errorgroups_v1.GetTopGroupsResponse{
+				Total: 10,
+				Groups: []*errorgroups_v1.GetTopGroupsResponse_Group{
+					{
+						Hash:      123,
+						Message:   "some error 1",
+						Source:    source,
+						SeenTotal: 10,
+					},
+					{
+						Hash:      456,
+						Message:   "some error 2",
+						Source:    source,
+						SeenTotal: 5,
+					},
+				},
+			},
+
+			mockArgs: &mockArgs{
+				req: types.GetTopErrorGroupsRequest{
+					Env:    &env,
+					Source: &source,
+					TimeRange: &types.TimeRange{
+						From: twoMinutesAgo,
+						To:   now,
+					},
+					Limit:     2,
+					Offset:    0,
+					WithTotal: true,
+				},
+
+				groups: []types.TopErrorGroup{
+					{
+						Hash:    123,
+						Message: "some error 1",
+						Source:  source,
+						Count:   10,
+					},
+					{
+						Hash:    456,
+						Message: "some error 2",
+						Source:  source,
+						Count:   5,
+					},
+				},
+				total: 10,
+			},
+		},
+		{
+			name: "ok_no_timerange",
+
+			req: &errorgroups_v1.GetTopGroupsRequest{
+				Env:       &env,
+				Source:    &source,
+				Limit:     2,
+				Offset:    0,
+				WithTotal: true,
+			},
+			want: &errorgroups_v1.GetTopGroupsResponse{
+				Total: 10,
+				Groups: []*errorgroups_v1.GetTopGroupsResponse_Group{
+					{
+						Hash:      123,
+						Message:   "some error 1",
+						Source:    source,
+						SeenTotal: 10,
+					},
+					{
+						Hash:      456,
+						Message:   "some error 2",
+						Source:    source,
+						SeenTotal: 5,
+					},
+				},
+			},
+
+			mockArgs: &mockArgs{
+				req: types.GetTopErrorGroupsRequest{
 					Env:       &env,
 					Source:    &source,
-					Duration:  &duration,
 					Limit:     2,
 					Offset:    0,
 					WithTotal: true,
