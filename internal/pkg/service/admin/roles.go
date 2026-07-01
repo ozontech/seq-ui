@@ -16,7 +16,7 @@ func (s *service) CreateRole(ctx context.Context, req types.CreateRoleRequest) (
 		return 0, types.NewErrInvalidRequestField("empty role name")
 	}
 
-	if err := s.validatePermissions(ctx, req.Permissions); err != nil {
+	if err := s.validatePermissions(req.Permissions); err != nil {
 		return 0, err
 	}
 
@@ -25,7 +25,7 @@ func (s *service) CreateRole(ctx context.Context, req types.CreateRoleRequest) (
 		return 0, err
 	}
 
-	s.cache.resetRoles()
+	s.cache.resetRoles(ctx)
 
 	return roleID, nil
 }
@@ -51,7 +51,7 @@ func (s *service) AddUsersToRole(ctx context.Context, req types.AddUsersToRoleRe
 		return err
 	}
 
-	s.cache.resetPermissions(req.Usernames...)
+	s.cache.resetUsersPermissions(ctx, req.Usernames...)
 
 	return nil
 }
@@ -61,16 +61,8 @@ func (s *service) GetRoles(ctx context.Context) (types.GetRolesResponse, error) 
 		return types.GetRolesResponse{}, err
 	}
 
-	available, err := s.GetAvailablePermissions(ctx)
-	if err != nil {
-		return types.GetRolesResponse{}, err
-	}
-
-	if roles, ok := s.cache.getRoles(); ok {
-		return types.GetRolesResponse{
-			Roles:                roles,
-			AvailablePermissions: available,
-		}, nil
+	if roles, err := s.cache.getRoles(ctx); err == nil {
+		return types.GetRolesResponse{Roles: roles}, nil
 	}
 
 	roles, err := s.repo.GetRoles(ctx)
@@ -78,11 +70,10 @@ func (s *service) GetRoles(ctx context.Context) (types.GetRolesResponse, error) 
 		return types.GetRolesResponse{}, err
 	}
 
-	s.cache.setRoles(roles)
+	s.cache.setRoles(ctx, roles)
 
 	return types.GetRolesResponse{
-		Roles:                roles,
-		AvailablePermissions: available,
+		Roles: roles,
 	}, nil
 }
 
@@ -112,7 +103,7 @@ func (s *service) UpdateRole(ctx context.Context, req types.UpdateRoleRequest) e
 	}
 
 	if len(req.Permissions) > 0 {
-		if err := s.validatePermissions(ctx, req.Permissions); err != nil {
+		if err := s.validatePermissions(req.Permissions); err != nil {
 			return err
 		}
 	}
@@ -121,12 +112,10 @@ func (s *service) UpdateRole(ctx context.Context, req types.UpdateRoleRequest) e
 		return err
 	}
 
-	s.cache.resetRoles()
+	s.cache.resetRoles(ctx)
 
-	if len(req.Permissions) > 0 {
-		s.cache.resetAllPermissions()
-	}
-
+	// Как нам в текущей реализации сделать, чтобы мы могли сбросить users, делать вызов GetRole(достанем юзеров этой роли)
+	// и потом удалять их, либо ждать, пока протухнет кэш?
 	return nil
 }
 
@@ -152,8 +141,8 @@ func (s *service) DeleteRole(ctx context.Context, req types.DeleteRoleRequest) e
 		return err
 	}
 
-	s.cache.resetAllPermissions()
-	s.cache.resetRoles()
+	// Опять же эта проблема: либо ждать протухание кэша, либо делать дополнительный запрос в бд...
+	s.cache.resetRoles(ctx)
 
 	return nil
 }
@@ -179,7 +168,7 @@ func (s *service) DeleteUsersFromRole(ctx context.Context, req types.DeleteUsers
 		return err
 	}
 
-	s.cache.resetPermissions(req.Usernames...)
+	s.cache.resetUsersPermissions(ctx, req.Usernames...)
 
 	return nil
 }

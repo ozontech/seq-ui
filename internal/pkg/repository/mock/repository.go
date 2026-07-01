@@ -442,21 +442,6 @@ func (mr *MockAdminMockRecorder) DeleteUsersFromRole(arg0, arg1 any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUsersFromRole", reflect.TypeOf((*MockAdmin)(nil).DeleteUsersFromRole), arg0, arg1)
 }
 
-// GetAvailablePermissions mocks base method.
-func (m *MockAdmin) GetAvailablePermissions(arg0 context.Context) ([]types.Permission, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAvailablePermissions", arg0)
-	ret0, _ := ret[0].([]types.Permission)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAvailablePermissions indicates an expected call of GetAvailablePermissions.
-func (mr *MockAdminMockRecorder) GetAvailablePermissions(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAvailablePermissions", reflect.TypeOf((*MockAdmin)(nil).GetAvailablePermissions), arg0)
-}
-
 // GetRole mocks base method.
 func (m *MockAdmin) GetRole(arg0 context.Context, arg1 types.GetRoleRequest) (types.RoleInfo, error) {
 	m.ctrl.T.Helper()

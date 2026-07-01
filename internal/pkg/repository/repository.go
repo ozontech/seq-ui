@@ -48,7 +48,6 @@ type (
 		UpdateRole(context.Context, types.UpdateRoleRequest) error
 		DeleteRole(context.Context, types.DeleteRoleRequest) error
 		GetUserPermissions(context.Context, types.GetUserPermissionsRequest) ([]string, error)
-		GetAvailablePermissions(context.Context) ([]types.Permission, error)
 	}
 )
 

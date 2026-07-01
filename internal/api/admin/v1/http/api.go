@@ -1,8 +1,6 @@
 package http
 
 import (
-	"net/http"
-
 	"github.com/go-chi/chi/v5"
 
 	"github.com/ozontech/seq-ui/internal/app/types"
@@ -10,24 +8,19 @@ import (
 )
 
 type API struct {
-	service adminservice.Service
+	service              adminservice.Service
+	availablePermissions []permissionGroup
 }
 
 func New(svc adminservice.Service) *API {
 	return &API{
-		service: svc,
+		service:              svc,
+		availablePermissions: parseAvailablePermissions(svc.GetAvailablePermissions()),
 	}
 }
 
 func (a *API) Router() chi.Router {
 	mux := chi.NewMux()
-
-	mux.Use(func(h http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := types.SetUserKey(r.Context(), "serlazarenko")
-			h.ServeHTTP(w, r.WithContext(ctx))
-		})
-	})
 
 	mux.Route("/roles", func(r chi.Router) {
 		r.Post("/", a.serveCreateRole)
@@ -43,4 +36,15 @@ func (a *API) Router() chi.Router {
 	})
 
 	return mux
+}
+
+func parseAvailablePermissions(source []types.PermissionGroup) []permissionGroup {
+	availablePermissions := make([]permissionGroup, 0, len(source))
+	for _, s := range source {
+		availablePermissions = append(availablePermissions, permissionGroup{
+			Group:       s.Group,
+			Permissions: s.Permissions,
+		})
+	}
+	return availablePermissions
 }

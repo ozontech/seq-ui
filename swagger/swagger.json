@@ -1786,7 +1786,7 @@
                 "permissions": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/http.permissionGroup"
                     }
                 }
             }
@@ -1835,7 +1835,7 @@
                 "available_permissions": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/admin.v1.Permission"
+                        "$ref": "#/definitions/http.permissionGroup"
                     }
                 },
                 "roles": {
@@ -1843,17 +1843,6 @@
                     "items": {
                         "$ref": "#/definitions/admin.v1.Role"
                     }
-                }
-            }
-        },
-        "admin.v1.Permission": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "value": {
-                    "type": "string"
                 }
             }
         },
@@ -1869,7 +1858,7 @@
                 "permissions": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/http.permissionGroup"
                     }
                 }
             }
@@ -1883,7 +1872,7 @@
                 "permissions": {
                     "type": "array",
                     "items": {
-                        "type": "string"
+                        "$ref": "#/definitions/http.permissionGroup"
                     }
                 }
             }
@@ -2482,6 +2471,20 @@
             "properties": {
                 "interval": {
                     "type": "string"
+                }
+            }
+        },
+        "http.permissionGroup": {
+            "type": "object",
+            "properties": {
+                "group": {
+                    "type": "string"
+                },
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

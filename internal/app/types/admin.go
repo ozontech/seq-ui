@@ -10,9 +10,9 @@ type RoleInfo struct {
 	Usernames []string
 }
 
-type Permission struct {
-	ID    int32
-	Value string
+type PermissionGroup struct {
+	Group       string
+	Permissions []string
 }
 
 type CreateRoleRequest struct {
@@ -30,8 +30,7 @@ type AddUsersToRoleRequest struct {
 }
 
 type GetRolesResponse struct {
-	Roles                []Role
-	AvailablePermissions []Permission
+	Roles []Role
 }
 
 type GetRoleRequest struct {

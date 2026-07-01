@@ -20,15 +20,20 @@ service AdminService {
   rpc DeleteUsersFromRole(DeleteUsersFromRoleRequest) returns (DeleteUsersFromRoleResponse);
 }
 
+message PermissionGroup {
+  string group = 1;
+  repeated string permissions = 2;
+}
+
 message Role {
   int32 id = 1;
   string name = 2;
-  repeated string permissions = 3;
+  repeated PermissionGroup permissions = 3;
 }
 
 message CreateRoleRequest {
   string name = 1;
-  repeated string permissions = 2;
+  repeated PermissionGroup permissions = 2;
 }
 
 message CreateRoleResponse {
@@ -45,13 +50,8 @@ message AddUsersToRoleResponse {}
 message GetRolesRequest {}
 
 message GetRolesResponse {
-  message Permission {
-    int32 id = 1;
-    string value = 2;
-  }
-
   repeated Role roles = 1;
-  repeated Permission available_permissions = 2;
+  repeated PermissionGroup available_permissions = 2;
 }
 
 message GetRoleRequest {
@@ -65,7 +65,7 @@ message GetRoleResponse {
 message UpdateRoleRequest {
   int32 id = 1;
   optional string name = 2;
-  repeated string permissions = 3;
+  repeated PermissionGroup permissions = 3;
 }
 
 message UpdateRoleResponse {}

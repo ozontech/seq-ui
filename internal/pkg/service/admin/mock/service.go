@@ -99,18 +99,17 @@ func (mr *MockServiceMockRecorder) DeleteUsersFromRole(arg0, arg1 any) *gomock.C
 }
 
 // GetAvailablePermissions mocks base method.
-func (m *MockService) GetAvailablePermissions(arg0 context.Context) ([]types.Permission, error) {
+func (m *MockService) GetAvailablePermissions() []types.PermissionGroup {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAvailablePermissions", arg0)
-	ret0, _ := ret[0].([]types.Permission)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "GetAvailablePermissions")
+	ret0, _ := ret[0].([]types.PermissionGroup)
+	return ret0
 }
 
 // GetAvailablePermissions indicates an expected call of GetAvailablePermissions.
-func (mr *MockServiceMockRecorder) GetAvailablePermissions(arg0 any) *gomock.Call {
+func (mr *MockServiceMockRecorder) GetAvailablePermissions() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAvailablePermissions", reflect.TypeOf((*MockService)(nil).GetAvailablePermissions), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAvailablePermissions", reflect.TypeOf((*MockService)(nil).GetAvailablePermissions))
 }
 
 // GetRole mocks base method.
@@ -141,21 +140,6 @@ func (m *MockService) GetRoles(arg0 context.Context) (types.GetRolesResponse, er
 func (mr *MockServiceMockRecorder) GetRoles(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRoles", reflect.TypeOf((*MockService)(nil).GetRoles), arg0)
-}
-
-// GetUserPermissions mocks base method.
-func (m *MockService) GetUserPermissions(arg0 context.Context, arg1 types.GetUserPermissionsRequest) ([]string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserPermissions", arg0, arg1)
-	ret0, _ := ret[0].([]string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetUserPermissions indicates an expected call of GetUserPermissions.
-func (mr *MockServiceMockRecorder) GetUserPermissions(arg0, arg1 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserPermissions", reflect.TypeOf((*MockService)(nil).GetUserPermissions), arg0, arg1)
 }
 
 // UpdateRole mocks base method.

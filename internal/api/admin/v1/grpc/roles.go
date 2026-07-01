@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"strings"
 
 	"go.opentelemetry.io/otel/attribute"
 
@@ -28,7 +29,7 @@ func (a *API) CreateRole(ctx context.Context, req *admin.CreateRoleRequest) (*ad
 
 	request := types.CreateRoleRequest{
 		Name:        req.Name,
-		Permissions: req.Permissions,
+		Permissions: permissionGroupsToStrings(req.Permissions),
 	}
 
 	roleID, err := a.service.CreateRole(ctx, request)
@@ -74,7 +75,7 @@ func (a *API) GetRoles(ctx context.Context, _ *admin.GetRolesRequest) (*admin.Ge
 
 	return &admin.GetRolesResponse{
 		Roles:                rolesToProto(resp.Roles),
-		AvailablePermissions: availablePermissionsToProto(resp.AvailablePermissions),
+		AvailablePermissions: a.availablePermissions,
 	}, nil
 }
 
@@ -126,7 +127,7 @@ func (a *API) UpdateRole(ctx context.Context, req *admin.UpdateRoleRequest) (*ad
 	if err := a.service.UpdateRole(ctx, types.UpdateRoleRequest{
 		RoleID:      req.Id,
 		Name:        req.Name,
-		Permissions: req.Permissions,
+		Permissions: permissionGroupsToStrings(req.Permissions),
 	}); err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}
@@ -193,19 +194,49 @@ func rolesToProto(source []types.Role) []*admin.Role {
 		roles = append(roles, &admin.Role{
 			Id:          role.ID,
 			Name:        role.Name,
-			Permissions: role.Permissions,
+			Permissions: stringsToPermissionGroups(role.Permissions),
 		})
 	}
 	return roles
 }
 
-func availablePermissionsToProto(source []types.Permission) []*admin.GetRolesResponse_Permission {
-	availablePermissions := make([]*admin.GetRolesResponse_Permission, 0, len(source))
-	for _, aPermission := range source {
-		availablePermissions = append(availablePermissions, &admin.GetRolesResponse_Permission{
-			Id:    aPermission.ID,
-			Value: aPermission.Value,
+func permissionGroupsToStrings(groups []*admin.PermissionGroup) []string {
+	lenPermStrs := 0
+	for _, g := range groups {
+		lenPermStrs += len(g.Permissions)
+	}
+
+	permStrs := make([]string, 0, lenPermStrs)
+	for _, g := range groups {
+		for _, p := range g.Permissions {
+			permStrs = append(permStrs, g.Group+":"+p)
+		}
+	}
+
+	return permStrs
+}
+
+func stringsToPermissionGroups(permissions []string) []*admin.PermissionGroup {
+	grouped := make(map[string][]string)
+	var order []string
+
+	for _, p := range permissions {
+		group, perm, _ := strings.Cut(p, ":")
+
+		if _, exists := grouped[group]; !exists {
+			order = append(order, group)
+		}
+
+		grouped[group] = append(grouped[group], perm)
+	}
+
+	res := make([]*admin.PermissionGroup, 0, len(order))
+	for _, g := range order {
+		res = append(res, &admin.PermissionGroup{
+			Group:       g,
+			Permissions: grouped[g],
 		})
 	}
-	return availablePermissions
+
+	return res
 }

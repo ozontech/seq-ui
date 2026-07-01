@@ -47,6 +47,7 @@ const (
 
 	defaultLogsLifespanCacheKey = "logs_lifespan"
 	defaultLogsLifespanCacheTTL = 10 * time.Minute
+	defaultAdminCacheTTL        = 5 * time.Minute
 
 	defaultClickHouseDialTimeout = 5 * time.Second
 	defaultClickHouseReadTimeout = 30 * time.Second
@@ -136,6 +137,7 @@ type Redis struct {
 	MaxRetries      int           `yaml:"max_retries"`
 	MinRetryBackoff time.Duration `yaml:"min_retry_backoff"`
 	MaxRetryBackoff time.Duration `yaml:"max_retry_backoff"`
+	KeyPrefix       string        `yaml:"key_prefix"`
 }
 
 type Cache struct {
@@ -322,7 +324,8 @@ type AsyncSearch struct {
 }
 
 type Admin struct {
-	SuperUsers []string `yaml:"super_users"`
+	SuperUsers []string      `yaml:"super_users"`
+	CacheTTL   time.Duration `yaml:"cache_ttl"`
 }
 
 // FromFile parse config from config path.
@@ -383,6 +386,12 @@ func FromFile(cfgPath string) (Config, error) {
 	}
 	if cfg.Server.Cache.Inmemory.BufferItems <= 0 {
 		cfg.Server.Cache.Inmemory.BufferItems = defaultInmemCacheBufferItems
+	}
+
+	if cfg.Handlers.Admin != nil {
+		if cfg.Handlers.Admin.CacheTTL <= 0 {
+			cfg.Handlers.Admin.CacheTTL = defaultAdminCacheTTL
+		}
 	}
 
 	if len(cfg.Clients.SeqDB) == 0 {

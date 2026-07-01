@@ -16,12 +16,23 @@ import (
 )
 
 var (
-	errSomethingWrong = errors.New("something happened wrong")
+	errSomethingWrong        = errors.New("something happened wrong")
+	testAvailablePermissions = []*admin.PermissionGroup{
+		{Group: "roles", Permissions: []string{"create", "read", "update", "delete"}},
+	}
 )
 
 func setupTestAPI(t *testing.T) (*API, *mock.MockService) {
 	ctrl := gomock.NewController(t)
 	mockedSvc := mock.NewMockService(ctrl)
+
+	mockedSvc.EXPECT().
+		GetAvailablePermissions().
+		Return([]types.PermissionGroup{
+			{Group: "roles", Permissions: []string{"create", "read", "update", "delete"}},
+		}).
+		Times(1)
+
 	return New(mockedSvc), mockedSvc
 }
 
@@ -44,15 +55,17 @@ func TestCreateRole(t *testing.T) {
 		{
 			name: "ok",
 			req: &admin.CreateRoleRequest{
-				Name:        "manager",
-				Permissions: []string{"roles:create"},
+				Name: "manager",
+				Permissions: []*admin.PermissionGroup{
+					{Group: "roles", Permissions: []string{"create", "read"}},
+				},
 			},
 			want:     &admin.CreateRoleResponse{RoleId: 1},
 			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				req: types.CreateRoleRequest{
 					Name:        "manager",
-					Permissions: []string{"roles:create"},
+					Permissions: []string{"roles:create", "roles:read"},
 				},
 				roleID: 1,
 			},
@@ -60,14 +73,16 @@ func TestCreateRole(t *testing.T) {
 		{
 			name: "err_svc",
 			req: &admin.CreateRoleRequest{
-				Name:        "manager",
-				Permissions: []string{"roles:create"},
+				Name: "manager",
+				Permissions: []*admin.PermissionGroup{
+					{Group: "roles", Permissions: []string{"create", "read"}},
+				},
 			},
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
 				req: types.CreateRoleRequest{
 					Name:        "manager",
-					Permissions: []string{"roles:create"},
+					Permissions: []string{"roles:create", "roles:read"},
 				},
 				err: errSomethingWrong,
 			},
@@ -180,26 +195,21 @@ func TestGetRoles(t *testing.T) {
 			name: "ok",
 			want: &admin.GetRolesResponse{
 				Roles: []*admin.Role{
-					{Id: 1, Name: "manager", Permissions: []string{"roles:create", "roles:update", "roles:read"}},
+					{
+						Id:   1,
+						Name: "manager",
+						Permissions: []*admin.PermissionGroup{
+							{Group: "roles", Permissions: []string{"create", "read"}},
+						},
+					},
 				},
-				AvailablePermissions: []*admin.GetRolesResponse_Permission{
-					{Id: 1, Value: "roles:create"},
-					{Id: 2, Value: "roles:read"},
-					{Id: 3, Value: "roles:update"},
-					{Id: 4, Value: "roles:delete"},
-				},
+				AvailablePermissions: testAvailablePermissions,
 			},
 			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				resp: types.GetRolesResponse{
 					Roles: []types.Role{
-						{ID: 1, Name: "manager", Permissions: []string{"roles:create", "roles:update", "roles:read"}},
-					},
-					AvailablePermissions: []types.Permission{
-						{ID: 1, Value: "roles:create"},
-						{ID: 2, Value: "roles:read"},
-						{ID: 3, Value: "roles:update"},
-						{ID: 4, Value: "roles:delete"},
+						{ID: 1, Name: "manager", Permissions: []string{"roles:create", "roles:read"}},
 					},
 				},
 			},
@@ -319,16 +329,18 @@ func TestUpdateRole(t *testing.T) {
 		{
 			name: "ok",
 			req: &admin.UpdateRoleRequest{
-				Id:          1,
-				Name:        &name,
-				Permissions: []string{"roles:delete"},
+				Id:   1,
+				Name: &name,
+				Permissions: []*admin.PermissionGroup{
+					{Group: "roles", Permissions: []string{"update"}},
+				},
 			},
 			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				req: types.UpdateRoleRequest{
 					RoleID:      1,
 					Name:        &name,
-					Permissions: []string{"roles:delete"},
+					Permissions: []string{"roles:update"},
 				},
 			},
 		},
@@ -341,8 +353,9 @@ func TestUpdateRole(t *testing.T) {
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
 				req: types.UpdateRoleRequest{
-					RoleID: 1,
-					Name:   &name,
+					RoleID:      1,
+					Name:        &name,
+					Permissions: []string{},
 				},
 				err: errSomethingWrong,
 			},

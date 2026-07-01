@@ -2,12 +2,14 @@ package admin
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
 	"github.com/ozontech/seq-ui/internal/app/types"
+	mock_cache "github.com/ozontech/seq-ui/internal/pkg/cache/mock"
 	mock "github.com/ozontech/seq-ui/internal/pkg/repository/mock"
 )
 
@@ -64,12 +66,21 @@ func TestCheckAccess(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 			repo := mock.NewMockAdmin(ctrl)
-			svc := New(repo, adminCfg).(*service)
+			cache := mock_cache.NewMockCache(ctrl)
+			svc := New(repo, cache, adminCfg).(*service)
 
 			if tt.mockArgs != nil {
+				cache.EXPECT().
+					Get(gomock.Any(), cacheKeyUserPerms+tt.mockArgs.req.Username).
+					Return("", errors.New("not found")).
+					Times(1)
 				repo.EXPECT().
 					GetUserPermissions(gomock.Any(), tt.mockArgs.req).
 					Return(tt.mockArgs.perms, tt.mockArgs.err).
+					Times(1)
+				cache.EXPECT().
+					SetWithTTL(gomock.Any(), cacheKeyUserPerms+tt.mockArgs.req.Username, gomock.Any(), adminCfg.CacheTTL).
+					Return(nil).
 					Times(1)
 			}
 
@@ -138,29 +149,36 @@ func TestGetUserPermissions(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 			repo := mock.NewMockAdmin(ctrl)
-			svc := New(repo, adminCfg)
+			cache := mock_cache.NewMockCache(ctrl)
+			svc := New(repo, cache, adminCfg).(*service)
+
+			cache.EXPECT().
+				Get(gomock.Any(), cacheKeyUserPerms+tt.mockArgs.req.Username).
+				Return("", errors.New("not found")).
+				Times(1)
 
 			if tt.mockArgs != nil {
 				repo.EXPECT().
 					GetUserPermissions(gomock.Any(), tt.mockArgs.req).
 					Return(tt.mockArgs.perms, tt.mockArgs.err).
 					Times(1)
+
+				if tt.mockArgs.err == nil {
+					cache.EXPECT().
+						SetWithTTL(gomock.Any(), cacheKeyUserPerms+tt.mockArgs.req.Username, gomock.Any(), adminCfg.CacheTTL).
+						Return(nil).
+						Times(1)
+				}
 			}
 
-			// first call goes to repo.
-			permsFromRepo, err := svc.GetUserPermissions(context.Background(), tt.req)
+			perms, err := svc.getUserPermissions(context.Background(), tt.req)
 			if tt.wantErr {
 				require.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			require.Equal(t, tt.wantPerms, permsFromRepo)
-
-			// second call served from cache.
-			permsFromCache, err := svc.GetUserPermissions(context.Background(), tt.req)
-			require.NoError(t, err)
-			require.Equal(t, permsFromRepo, permsFromCache)
+			require.Equal(t, tt.wantPerms, perms)
 		})
 	}
 }
@@ -198,16 +216,10 @@ func TestValidatePermissions(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 			repo := mock.NewMockAdmin(ctrl)
-			svc := New(repo, adminCfg).(*service)
+			cache := mock_cache.NewMockCache(ctrl)
+			svc := New(repo, cache, adminCfg).(*service)
 
-			if len(tt.perms) > 0 {
-				repo.EXPECT().
-					GetAvailablePermissions(gomock.Any()).
-					Return(testAvailablePermissions, nil).
-					Times(1)
-			}
-
-			err := svc.validatePermissions(context.Background(), tt.perms)
+			err := svc.validatePermissions(tt.perms)
 			require.Equal(t, tt.wantErr, err != nil)
 		})
 	}

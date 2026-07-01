@@ -231,31 +231,6 @@ func (r *adminRepository) GetUserPermissions(ctx context.Context, req types.GetU
 	return permissions, nil
 }
 
-func (r *adminRepository) GetAvailablePermissions(ctx context.Context) ([]types.Permission, error) {
-	metricLabels := []string{"permissions", "SELECT"}
-	query := "SELECT id, value FROM permissions"
-
-	rows, err := r.pool.query(ctx, metricLabels, query)
-	if err != nil {
-		incErrorMetric(err, metricLabels)
-		return nil, fmt.Errorf("failed to get permissions: %w", err)
-	}
-	defer rows.Close()
-
-	var permissions []types.Permission
-	for rows.Next() {
-		var p types.Permission
-		if err := rows.Scan(&p.ID, &p.Value); err != nil {
-			incErrorMetric(err, metricLabels)
-			return nil, fmt.Errorf("failed to scan permission: %w", err)
-		}
-
-		permissions = append(permissions, p)
-	}
-
-	return permissions, nil
-}
-
 func (r *adminRepository) setRolePermissions(ctx context.Context, tx pgx.Tx, roleID int32, permissions []string) error {
 	metricLabels := []string{"roles_permissions", "INSERT"}
 	query, args := "INSERT INTO roles_permissions (role_id, permission_id) SELECT $1, id FROM permissions WHERE value=ANY($2)", []any{roleID, permissions}

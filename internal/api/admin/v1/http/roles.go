@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"go.opentelemetry.io/otel/attribute"
@@ -50,7 +51,7 @@ func (a *API) serveCreateRole(w http.ResponseWriter, r *http.Request) {
 
 	roleID, err := a.service.CreateRole(ctx, types.CreateRoleRequest{
 		Name:        httpReq.Name,
-		Permissions: httpReq.Permissions,
+		Permissions: parsePermissionGroupsToStrings(httpReq.Permissions),
 	})
 	if err != nil {
 		httputil.ProcessError(wr, err)
@@ -132,7 +133,7 @@ func (a *API) serveGetRoles(w http.ResponseWriter, r *http.Request) {
 
 	wr.WriteJson(getRolesResponse{
 		Roles:                parseRoles(resp.Roles),
-		AvailablePermissions: parsePermissions(resp.AvailablePermissions),
+		AvailablePermissions: a.availablePermissions,
 	})
 }
 
@@ -226,7 +227,7 @@ func (a *API) serveUpdateRole(w http.ResponseWriter, r *http.Request) {
 	if err := a.service.UpdateRole(ctx, types.UpdateRoleRequest{
 		RoleID:      roleID,
 		Name:        httpReq.Name,
-		Permissions: httpReq.Permissions,
+		Permissions: parsePermissionGroupsToStrings(httpReq.Permissions),
 	}); err != nil {
 		httputil.ProcessError(wr, err)
 		return
@@ -355,37 +356,67 @@ func parseRoles(source []types.Role) []role {
 		roles = append(roles, role{
 			ID:          s.ID,
 			Name:        s.Name,
-			Permissions: s.Permissions,
+			Permissions: parseStringsToPermissionGroups(s.Permissions),
 		})
 	}
 	return roles
 }
 
-func parsePermissions(source []types.Permission) []permission {
-	permissions := make([]permission, 0, len(source))
-	for _, s := range source {
-		permissions = append(permissions, permission{
-			ID:    s.ID,
-			Value: s.Value,
+func parsePermissionGroupsToStrings(groups []permissionGroup) []string {
+	lenPermStrs := 0
+	for _, g := range groups {
+		lenPermStrs += len(g.Permissions)
+	}
+
+	permStrs := make([]string, 0, lenPermStrs)
+	for _, g := range groups {
+		for _, p := range g.Permissions {
+			permStrs = append(permStrs, g.Group+":"+p)
+		}
+	}
+
+	return permStrs
+}
+
+func parseStringsToPermissionGroups(permissions []string) []permissionGroup {
+	grouped := make(map[string][]string)
+	var order []string
+
+	for _, p := range permissions {
+		group, perm, _ := strings.Cut(p, ":")
+
+		if _, exists := grouped[group]; !exists {
+			order = append(order, group)
+		}
+
+		grouped[group] = append(grouped[group], perm)
+	}
+
+	res := make([]permissionGroup, 0, len(order))
+	for _, g := range order {
+		res = append(res, permissionGroup{
+			Group:       g,
+			Permissions: grouped[g],
 		})
 	}
-	return permissions
+
+	return res
+}
+
+type permissionGroup struct {
+	Group       string   `json:"group"`
+	Permissions []string `json:"permissions"`
 }
 
 type role struct {
-	ID          int32    `json:"id"`
-	Name        string   `json:"name"`
-	Permissions []string `json:"permissions"`
+	ID          int32             `json:"id"`
+	Name        string            `json:"name"`
+	Permissions []permissionGroup `json:"permissions"`
 } //	@name	admin.v1.Role
 
-type permission struct {
-	ID    int32  `json:"id"`
-	Value string `json:"value"`
-} //	@name	admin.v1.Permission
-
 type createRoleRequest struct {
-	Name        string   `json:"name"`
-	Permissions []string `json:"permissions"`
+	Name        string            `json:"name"`
+	Permissions []permissionGroup `json:"permissions"`
 } //	@name	admin.v1.CreateRoleRequest
 
 type createRoleResponse struct {
@@ -397,8 +428,8 @@ type addUsersToRoleRequest struct {
 } //	@name	admin.v1.AddUsersToRoleRequest
 
 type getRolesResponse struct {
-	Roles                []role       `json:"roles"`
-	AvailablePermissions []permission `json:"available_permissions"`
+	Roles                []role            `json:"roles"`
+	AvailablePermissions []permissionGroup `json:"available_permissions"`
 } //	@name	admin.v1.GetRolesResponse
 
 type getRoleResponse struct {
@@ -406,8 +437,8 @@ type getRoleResponse struct {
 } //	@name	admin.v1.GetRoleResponse
 
 type updateRoleRequest struct {
-	Name        *string  `json:"name"`
-	Permissions []string `json:"permissions"`
+	Name        *string           `json:"name"`
+	Permissions []permissionGroup `json:"permissions"`
 } //	@name	admin.v1.UpdateRoleResponse
 
 type deleteRoleRequest struct {
