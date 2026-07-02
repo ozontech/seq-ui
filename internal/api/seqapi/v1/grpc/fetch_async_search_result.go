@@ -14,7 +14,10 @@ import (
 	"github.com/ozontech/seq-ui/tracing"
 )
 
-func (a *API) FetchAsyncSearchResult(ctx context.Context, req *seqapi.FetchAsyncSearchResultRequest) (*seqapi.FetchAsyncSearchResultResponse, error) {
+func (a *API) FetchAsyncSearchResult(
+	ctx context.Context,
+	req *seqapi.FetchAsyncSearchResultRequest,
+) (*seqapi.FetchAsyncSearchResultResponse, error) {
 	if a.asyncSearches == nil {
 		return nil, status.Error(codes.Unimplemented, types.ErrAsyncSearchesDisabled.Error())
 	}

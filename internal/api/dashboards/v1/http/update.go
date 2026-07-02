@@ -48,13 +48,19 @@ func (a *API) serveUpdate(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 
-	req := types.UpdateDashboardRequest{
-		UUID: uuid,
-		Name: httpReq.Name,
-		Meta: httpReq.Meta,
+	profileID, err := a.profiles.GeIDFromContext(ctx)
+	if err != nil {
+		httputil.ProcessError(wr, err)
+		return
 	}
 
-	err := a.service.UpdateDashboard(ctx, req)
+	req := types.UpdateDashboardRequest{
+		UUID:      uuid,
+		ProfileID: profileID,
+		Name:      httpReq.Name,
+		Meta:      httpReq.Meta,
+	}
+	err = a.service.UpdateDashboard(ctx, req)
 	if err != nil {
 		httputil.ProcessError(wr, err)
 		return

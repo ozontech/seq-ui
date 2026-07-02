@@ -40,12 +40,16 @@ func (a *API) Search(ctx context.Context, req *dashboards.SearchRequest) (*dashb
 
 	span.SetAttributes(spanAttributes...)
 
+	// check auth and create profile if its doesn't exist
+	if _, err := a.profiles.GeIDFromContext(ctx); err != nil {
+		return nil, grpcutil.ProcessError(err)
+	}
+
 	request := types.SearchDashboardsRequest{
 		Query:  req.Query,
 		Limit:  int(req.Limit),
 		Offset: int(req.Offset),
 	}
-
 	if req.Filter != nil {
 		request.Filter = &types.SearchDashboardsFilter{
 			OwnerName: req.Filter.OwnerName,

@@ -5,7 +5,8 @@ import (
 
 	grpc_api "github.com/ozontech/seq-ui/internal/api/dashboards/v1/grpc"
 	http_api "github.com/ozontech/seq-ui/internal/api/dashboards/v1/http"
-	"github.com/ozontech/seq-ui/internal/pkg/service/dashboards"
+	"github.com/ozontech/seq-ui/internal/api/profiles"
+	"github.com/ozontech/seq-ui/internal/pkg/service"
 )
 
 type Dashboards struct {
@@ -13,10 +14,10 @@ type Dashboards struct {
 	httpAPI *http_api.API
 }
 
-func New(svc dashboards.Service) *Dashboards {
+func New(svc service.Service, p *profiles.Profiles) *Dashboards {
 	return &Dashboards{
-		grpcAPI: grpc_api.New(svc),
-		httpAPI: http_api.New(svc),
+		grpcAPI: grpc_api.New(svc, p),
+		httpAPI: http_api.New(svc, p),
 	}
 }
 

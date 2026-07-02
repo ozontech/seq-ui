@@ -9,48 +9,49 @@ import (
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
 	"github.com/ozontech/seq-ui/internal/app/types"
-	mock_asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches/mock"
+	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
+	mock_repo "github.com/ozontech/seq-ui/internal/pkg/repository/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
 
 func TestServeFetchAsyncSearchResult(t *testing.T) {
 	var (
-		meta = `{"some":"meta"}`
+		mockSearchID = "c9a34cf8-4c66-484e-9cc2-42979d848656"
+		mockTime     = time.Date(2025, 8, 6, 17, 52, 12, 123, time.UTC)
+		meta         = `{"some":"meta"}`
 	)
-	type mockArgs struct {
-		req *seqapi.FetchAsyncSearchResultRequest
-		err error
-	}
 
 	tests := []struct {
 		name string
 
-		req      *seqapi.FetchAsyncSearchResultRequest
-		want     *seqapi.FetchAsyncSearchResultResponse
-		wantCode codes.Code
+		req  *seqapi.FetchAsyncSearchResultRequest
+		resp *seqapi.FetchAsyncSearchResultResponse
 
-		mockArgs *mockArgs
+		repoResp types.AsyncSearchInfo
+
+		err error
 	}{
 		{
 			name: "ok",
 			req: &seqapi.FetchAsyncSearchResultRequest{
-				SearchId: testSearchID,
+				SearchId: mockSearchID,
 				Limit:    2,
 				Offset:   10,
 				Order:    seqapi.Order_ORDER_DESC,
 			},
-			want: &seqapi.FetchAsyncSearchResultResponse{
+			resp: &seqapi.FetchAsyncSearchResultResponse{
 				Status: seqapi.AsyncSearchStatus_ASYNC_SEARCH_STATUS_DONE,
 				Request: &seqapi.StartAsyncSearchRequest{
 					Retention: durationpb.New(60 * time.Second),
 					Query:     "message:error",
-					From:      timestamppb.New(testTimestamp.Add(-15 * time.Minute)),
-					To:        timestamppb.New(testTimestamp),
+					From:      timestamppb.New(mockTime.Add(-15 * time.Minute)),
+					To:        timestamppb.New(mockTime),
 					Aggs: []*seqapi.AggregationQuery{
 						{
 							Field:     "x",
@@ -74,7 +75,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 								"message": "some error",
 								"x":       "2",
 							},
-							Time: timestamppb.New(testTimestamp.Add(-1 * time.Minute)),
+							Time: timestamppb.New(mockTime.Add(-1 * time.Minute)),
 						},
 						{
 							Id: "017a854298010000-8502fe7f2aa33df3",
@@ -83,7 +84,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 								"message": "some error 2",
 								"x":       "8",
 							},
-							Time: timestamppb.New(testTimestamp.Add(-2 * time.Minute)),
+							Time: timestamppb.New(mockTime.Add(-2 * time.Minute)),
 						},
 					},
 					Total: 2,
@@ -107,14 +108,14 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 									Value:     pointerTo(2),
 									NotExists: 0,
 									Quantiles: []float64{2, 1},
-									Ts:        timestamppb.New(testTimestamp),
+									Ts:        timestamppb.New(mockTime),
 								},
 								{
 									Key:       "2",
 									Value:     pointerTo(8),
 									NotExists: 1,
 									Quantiles: []float64{7, 4},
-									Ts:        timestamppb.New(testTimestamp.Add(-1 * time.Minute)),
+									Ts:        timestamppb.New(mockTime.Add(-1 * time.Minute)),
 								},
 							},
 							NotExists: 2,
@@ -125,36 +126,32 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 						Message: "some error",
 					},
 				},
-				StartedAt: timestamppb.New(testTimestamp.Add(-30 * time.Second)),
-				ExpiresAt: timestamppb.New(testTimestamp.Add(30 * time.Second)),
+				StartedAt: timestamppb.New(mockTime.Add(-30 * time.Second)),
+				ExpiresAt: timestamppb.New(mockTime.Add(30 * time.Second)),
 				Progress:  1,
 				DiskUsage: 512,
 				Meta:      meta,
 			},
-			mockArgs: &mockArgs{
-				req: &seqapi.FetchAsyncSearchResultRequest{
-					SearchId: testSearchID,
-					Limit:    2,
-					Offset:   10,
-					Order:    seqapi.Order_ORDER_DESC,
-				},
+			repoResp: types.AsyncSearchInfo{
+				SearchID: mockSearchID,
+				Meta:     meta,
 			},
 		},
 		{
 			name: "partial_response",
 			req: &seqapi.FetchAsyncSearchResultRequest{
-				SearchId: testSearchID,
+				SearchId: mockSearchID,
 				Limit:    2,
 				Offset:   10,
 				Order:    seqapi.Order_ORDER_DESC,
 			},
-			want: &seqapi.FetchAsyncSearchResultResponse{
+			resp: &seqapi.FetchAsyncSearchResultResponse{
 				Status: seqapi.AsyncSearchStatus_ASYNC_SEARCH_STATUS_DONE,
 				Request: &seqapi.StartAsyncSearchRequest{
 					Retention: durationpb.New(60 * time.Second),
 					Query:     "message:error",
-					From:      timestamppb.New(testTimestamp.Add(-15 * time.Minute)),
-					To:        timestamppb.New(testTimestamp),
+					From:      timestamppb.New(mockTime.Add(-15 * time.Minute)),
+					To:        timestamppb.New(mockTime),
 					WithDocs:  true,
 					Size:      100,
 				},
@@ -167,7 +164,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 								"message": "some error",
 								"x":       "2",
 							},
-							Time: timestamppb.New(testTimestamp.Add(-1 * time.Minute)),
+							Time: timestamppb.New(mockTime.Add(-1 * time.Minute)),
 						},
 					},
 					Total: 1,
@@ -175,8 +172,8 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 						Code: seqapi.ErrorCode_ERROR_CODE_NO,
 					},
 				},
-				StartedAt: timestamppb.New(testTimestamp.Add(-30 * time.Second)),
-				ExpiresAt: timestamppb.New(testTimestamp.Add(30 * time.Second)),
+				StartedAt: timestamppb.New(mockTime.Add(-30 * time.Second)),
+				ExpiresAt: timestamppb.New(mockTime.Add(30 * time.Second)),
 				Progress:  1,
 				DiskUsage: 512,
 				Meta:      meta,
@@ -185,77 +182,60 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 					Message: "partial response",
 				},
 			},
-			mockArgs: &mockArgs{
-				req: &seqapi.FetchAsyncSearchResultRequest{
-					SearchId: testSearchID,
-					Limit:    2,
-					Offset:   10,
-					Order:    seqapi.Order_ORDER_DESC,
-				},
+			repoResp: types.AsyncSearchInfo{
+				SearchID: mockSearchID,
+				Meta:     meta,
 			},
 		},
 		{
-			name: "invalid_id",
+			name: "invalid id",
 			req: &seqapi.FetchAsyncSearchResultRequest{
 				SearchId: "some_invalid_id",
 			},
-			wantCode: codes.InvalidArgument,
-		},
-		{
-			name: "err_svc",
-			req: &seqapi.FetchAsyncSearchResultRequest{
-				SearchId: testSearchID,
-				Limit:    2,
-				Offset:   10,
-				Order:    seqapi.Order_ORDER_DESC,
-			},
-			wantCode: codes.Internal,
-			mockArgs: &mockArgs{
-				req: &seqapi.FetchAsyncSearchResultRequest{
-					SearchId: testSearchID,
-					Limit:    2,
-					Offset:   10,
-					Order:    seqapi.Order_ORDER_DESC,
-				},
-				err: errSomethingWrong,
-			},
+			err: status.Error(codes.InvalidArgument, "invalid search_id"),
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			ctrl := gomock.NewController(t)
-			svcMock := mock_asyncsearches.NewMockService(ctrl)
-
 			seqData := test.APITestData{}
-			seqData.Mocks.AsyncSearchesSvc = svcMock
 
-			if tt.mockArgs != nil {
-				svcMock.EXPECT().
-					FetchAsyncSearchResult(gomock.Any(), tt.mockArgs.req).
-					Return(tt.want, tt.mockArgs.err).
-					Times(1)
+			ctrl := gomock.NewController(t)
+
+			if tt.err == nil {
+				asyncSearchesRepoMock := mock_repo.NewMockAsyncSearches(ctrl)
+				asyncSearchesRepoMock.EXPECT().GetAsyncSearchById(gomock.Any(), mockSearchID).
+					Return(tt.repoResp, nil).Times(1)
+				seqData.Mocks.AsyncSearchesRepo = asyncSearchesRepoMock
+
+				seqDbMock := mock_seqdb.NewMockClient(ctrl)
+				seqDbMock.EXPECT().FetchAsyncSearchResult(gomock.Any(), tt.req).
+					Return(tt.resp, nil).Times(1)
+				seqData.Mocks.SeqDB = seqDbMock
 			}
 
-			api := setupTestAPI(seqData)
-			got, err := api.FetchAsyncSearchResult(context.Background(), tt.req)
+			api := initTestAPIWithAsyncSearches(seqData)
 
-			require.Equal(t, tt.wantCode, status.Code(err))
-			if tt.wantCode != codes.OK {
-				return
+			ctx := context.Background()
+
+			resp, err := api.FetchAsyncSearchResult(ctx, tt.req)
+			if tt.err == nil {
+				require.NoError(t, err)
+				require.True(t, proto.Equal(tt.resp, resp))
+			} else {
+				require.Error(t, err)
+				require.Equal(t, tt.err, err)
 			}
-			require.Equal(t, tt.want, got)
 		})
 	}
 }
 
 func TestServeFetchAsyncSearchResult_Disabled(t *testing.T) {
 	seqData := test.APITestData{}
-	api := setupTestAPI(seqData)
+	api := initTestAPI(seqData)
 
-	_, err := api.FetchAsyncSearchResult(context.Background(), &seqapi.FetchAsyncSearchResultRequest{SearchId: testSearchID})
+	_, err := api.FetchAsyncSearchResult(context.Background(), &seqapi.FetchAsyncSearchResultRequest{})
 	require.Error(t, err)
 	require.Equal(t, status.Error(codes.Unimplemented, types.ErrAsyncSearchesDisabled.Error()), err)
 }

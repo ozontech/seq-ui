@@ -14,7 +14,6 @@ import (
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	"github.com/ozontech/seq-ui/internal/pkg/repository"
-	"github.com/ozontech/seq-ui/internal/pkg/service/profiles"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/metric"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
@@ -27,23 +26,20 @@ const (
 	deleteExpiredAsyncSearchesInterval = 1 * time.Minute
 )
 
-type Service interface {
-	StartAsyncSearch(context.Context, *seqapi.StartAsyncSearchRequest) (*seqapi.StartAsyncSearchResponse, error)
-	DeleteAsyncSearch(context.Context, *seqapi.DeleteAsyncSearchRequest) (*seqapi.DeleteAsyncSearchResponse, error)
-	CancelAsyncSearch(context.Context, *seqapi.CancelAsyncSearchRequest) (*seqapi.CancelAsyncSearchResponse, error)
-	FetchAsyncSearchResult(context.Context, *seqapi.FetchAsyncSearchResultRequest) (*seqapi.FetchAsyncSearchResultResponse, error)
-	GetAsyncSearchesList(context.Context, *seqapi.GetAsyncSearchesListRequest) (*seqapi.GetAsyncSearchesListResponse, error)
-}
-
-type service struct {
+type Service struct {
 	repo  repository.AsyncSearches
 	seqDB seqdb.Client
 
 	cfg config.AsyncSearch
 }
 
-func New(ctx context.Context, repo repository.AsyncSearches, seqDB seqdb.Client, cfg config.AsyncSearch) Service {
-	s := &service{
+func New(
+	ctx context.Context,
+	repo repository.AsyncSearches,
+	seqDB seqdb.Client,
+	cfg config.AsyncSearch,
+) *Service {
+	s := &Service{
 		repo:  repo,
 		seqDB: seqDB,
 		cfg:   cfg,
@@ -54,12 +50,11 @@ func New(ctx context.Context, repo repository.AsyncSearches, seqDB seqdb.Client,
 	return s
 }
 
-func (s *service) StartAsyncSearch(ctx context.Context, req *seqapi.StartAsyncSearchRequest) (*seqapi.StartAsyncSearchResponse, error) {
-	ownerID, err := profiles.GetIDFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
+func (s *Service) StartAsyncSearch(
+	ctx context.Context,
+	ownerID int64,
+	req *seqapi.StartAsyncSearchRequest,
+) (*seqapi.StartAsyncSearchResponse, error) {
 	if utf8.RuneCountInString(req.Query) > s.cfg.ListQueryLengthLimit {
 		metric.AsyncSearchQueryTooLong.Inc()
 	}
@@ -87,12 +82,11 @@ func (s *service) StartAsyncSearch(ctx context.Context, req *seqapi.StartAsyncSe
 	return resp, nil
 }
 
-func (s *service) DeleteAsyncSearch(ctx context.Context, req *seqapi.DeleteAsyncSearchRequest) (*seqapi.DeleteAsyncSearchResponse, error) {
-	ownerID, err := profiles.GetIDFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
+func (s *Service) DeleteAsyncSearch(
+	ctx context.Context,
+	ownerID int64,
+	req *seqapi.DeleteAsyncSearchRequest,
+) (*seqapi.DeleteAsyncSearchResponse, error) {
 	searchInfo, err := s.repo.GetAsyncSearchById(ctx, req.SearchId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get async search by id: %w", err)
@@ -121,12 +115,11 @@ func (s *service) DeleteAsyncSearch(ctx context.Context, req *seqapi.DeleteAsync
 	return resp, nil
 }
 
-func (s *service) CancelAsyncSearch(ctx context.Context, req *seqapi.CancelAsyncSearchRequest) (*seqapi.CancelAsyncSearchResponse, error) {
-	ownerID, err := profiles.GetIDFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
+func (s *Service) CancelAsyncSearch(
+	ctx context.Context,
+	ownerID int64,
+	req *seqapi.CancelAsyncSearchRequest,
+) (*seqapi.CancelAsyncSearchResponse, error) {
 	searchInfo, err := s.repo.GetAsyncSearchById(ctx, req.SearchId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get async search by id: %w", err)
@@ -144,7 +137,10 @@ func (s *service) CancelAsyncSearch(ctx context.Context, req *seqapi.CancelAsync
 	return resp, nil
 }
 
-func (s *service) FetchAsyncSearchResult(ctx context.Context, req *seqapi.FetchAsyncSearchResultRequest) (*seqapi.FetchAsyncSearchResultResponse, error) {
+func (s *Service) FetchAsyncSearchResult(
+	ctx context.Context,
+	req *seqapi.FetchAsyncSearchResultRequest,
+) (*seqapi.FetchAsyncSearchResultResponse, error) {
 	searchInfo, err := s.repo.GetAsyncSearchById(ctx, req.SearchId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get async search by id: %w", err)
@@ -160,7 +156,10 @@ func (s *service) FetchAsyncSearchResult(ctx context.Context, req *seqapi.FetchA
 	return resp, nil
 }
 
-func (s *service) GetAsyncSearchesList(ctx context.Context, req *seqapi.GetAsyncSearchesListRequest) (*seqapi.GetAsyncSearchesListResponse, error) {
+func (s *Service) GetAsyncSearchesList(
+	ctx context.Context,
+	req *seqapi.GetAsyncSearchesListRequest,
+) (*seqapi.GetAsyncSearchesListResponse, error) {
 	searches, err := s.repo.GetAsyncSearchesList(ctx, types.GetAsyncSearchesListRequest{
 		Owner: req.OwnerName,
 	})
@@ -192,7 +191,7 @@ func (s *service) GetAsyncSearchesList(ctx context.Context, req *seqapi.GetAsync
 	return resp, nil
 }
 
-func (s *service) isAdmin(ctx context.Context) bool {
+func (s *Service) isAdmin(ctx context.Context) bool {
 	userName, err := types.GetUserKey(ctx)
 	if err != nil {
 		return false
@@ -201,7 +200,7 @@ func (s *service) isAdmin(ctx context.Context) bool {
 	return slices.Index(s.cfg.AdminUsers, userName) >= 0
 }
 
-func (s *service) deleteExpiredAsyncSearches(ctx context.Context) {
+func (s *Service) deleteExpiredAsyncSearches(ctx context.Context) {
 	ticker := time.NewTicker(deleteExpiredAsyncSearchesInterval)
 	defer ticker.Stop()
 
@@ -218,7 +217,7 @@ func (s *service) deleteExpiredAsyncSearches(ctx context.Context) {
 	}
 }
 
-func (s *service) trimQueryToLimit(query string, limit int) string {
+func (s *Service) trimQueryToLimit(query string, limit int) string {
 	count := 0
 	for i := range query {
 		if count == limit {

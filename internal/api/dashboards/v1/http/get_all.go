@@ -44,11 +44,16 @@ func (a *API) serveGetAll(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 
+	// check auth and create profile if its doesn't exist
+	if _, err := a.profiles.GeIDFromContext(ctx); err != nil {
+		httputil.ProcessError(wr, err)
+		return
+	}
+
 	req := types.GetAllDashboardsRequest{
 		Limit:  httpReq.Limit,
 		Offset: httpReq.Offset,
 	}
-
 	dis, err := a.service.GetAllDashboards(ctx, req)
 	if err != nil {
 		httputil.ProcessError(wr, err)

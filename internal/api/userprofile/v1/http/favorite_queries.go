@@ -29,9 +29,16 @@ func (a *API) serveGetFavoriteQueries(w http.ResponseWriter, r *http.Request) {
 
 	wr := httputil.NewWriter(w)
 
-	req := types.GetFavoriteQueriesRequest{}
-	fqs, err := a.service.GetFavoriteQueries(ctx, req)
+	profileID, err := a.profiles.GeIDFromContext(ctx)
+	if err != nil {
+		httputil.ProcessError(wr, err)
+		return
+	}
 
+	req := types.GetFavoriteQueriesRequest{
+		ProfileID: profileID,
+	}
+	fqs, err := a.service.GetFavoriteQueries(ctx, req)
 	if err != nil {
 		httputil.ProcessError(wr, err)
 		return
@@ -78,20 +85,26 @@ func (a *API) serveCreateFavoriteQuery(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 
-	req := types.GetOrCreateFavoriteQueryRequest{Query: httpReq.Query}
+	profileID, err := a.profiles.GeIDFromContext(ctx)
+	if err != nil {
+		httputil.ProcessError(wr, err)
+		return
+	}
 
+	req := types.GetOrCreateFavoriteQueryRequest{
+		ProfileID: profileID,
+		Query:     httpReq.Query,
+	}
 	if httpReq.Name != nil {
 		req.Name = *httpReq.Name
 	}
 	if httpReq.RelativeFrom != nil {
-		var err error
 		req.RelativeFrom, err = strconv.ParseUint(*httpReq.RelativeFrom, 10, 64)
 		if err != nil {
 			wr.Error(errors.New("incorrect favorite query 'relativeFrom' format"), http.StatusBadRequest)
 			return
 		}
 	}
-
 	fqID, err := a.service.GetOrCreateFavoriteQuery(ctx, req)
 	if err != nil {
 		httputil.ProcessError(wr, err)
@@ -129,8 +142,16 @@ func (a *API) serveDeleteFavoriteQuery(w http.ResponseWriter, r *http.Request) {
 		Value: attribute.Int64Value(id),
 	})
 
-	req := types.DeleteFavoriteQueryRequest{ID: id}
+	profileID, err := a.profiles.GeIDFromContext(ctx)
+	if err != nil {
+		httputil.ProcessError(wr, err)
+		return
+	}
 
+	req := types.DeleteFavoriteQueryRequest{
+		ID:        id,
+		ProfileID: profileID,
+	}
 	err = a.service.DeleteFavoriteQuery(ctx, req)
 	if err != nil {
 		httputil.ProcessError(wr, err)
