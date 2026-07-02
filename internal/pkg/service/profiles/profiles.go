@@ -57,19 +57,16 @@ func (p *profiles) getID(userName string) (int64, error) {
 		return id, nil
 	}
 
-	id, ok = p.idByName[userName]
-	if !ok {
-		userProfile, err := p.service.GetOrCreateUserProfile(context.Background(), types.GetOrCreateUserProfileRequest{UserName: userName})
-		if err != nil {
-			return 0, err
-		}
-
-		p.mx.Lock()
-		p.idByName[userName] = userProfile.ID
-		p.mx.Unlock()
+	userProfile, err := p.service.GetOrCreateUserProfile(context.Background(), types.GetOrCreateUserProfileRequest{UserName: userName})
+	if err != nil {
+		return 0, err
 	}
 
-	return id, nil
+	p.mx.Lock()
+	p.idByName[userName] = userProfile.ID
+	p.mx.Unlock()
+
+	return userProfile.ID, nil
 }
 
 func (p *profiles) setID(userName string, userProfileID int64) {
