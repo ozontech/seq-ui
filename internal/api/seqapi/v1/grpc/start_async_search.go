@@ -14,7 +14,10 @@ import (
 	"github.com/ozontech/seq-ui/tracing"
 )
 
-func (a *API) StartAsyncSearch(ctx context.Context, req *seqapi.StartAsyncSearchRequest) (*seqapi.StartAsyncSearchResponse, error) {
+func (a *API) StartAsyncSearch(
+	ctx context.Context,
+	req *seqapi.StartAsyncSearchRequest,
+) (*seqapi.StartAsyncSearchResponse, error) {
 	if a.asyncSearches == nil {
 		return nil, status.Error(codes.Unimplemented, types.ErrAsyncSearchesDisabled.Error())
 	}
@@ -64,7 +67,12 @@ func (a *API) StartAsyncSearch(ctx context.Context, req *seqapi.StartAsyncSearch
 
 	span.SetAttributes(spanAttributes...)
 
-	resp, err := a.asyncSearches.StartAsyncSearch(ctx, req)
+	profileID, err := a.profiles.GeIDFromContext(ctx)
+	if err != nil {
+		return nil, grpcutil.ProcessError(err)
+	}
+
+	resp, err := a.asyncSearches.StartAsyncSearch(ctx, profileID, req)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}

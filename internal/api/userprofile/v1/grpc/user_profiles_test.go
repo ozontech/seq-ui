@@ -1,6 +1,8 @@
 package grpc
 
 import (
+	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -13,12 +15,10 @@ import (
 )
 
 func TestGetUserProfile(t *testing.T) {
-	var (
-		userName          = "unnamed"
-		timezone          = "UTC"
-		onboardingVersion = `{"name1": "ver1", "name2": "ver2"}`
-		logColumns        = []string{"val1", "val2"}
-	)
+	userName := "unnamed"
+	timezone := "UTC"
+	onboardingVersion := `{"name1": "ver1", "name2": "ver2"}`
+	logColumns := []string{"val1", "val2"}
 
 	type mockArgs struct {
 		req  types.GetOrCreateUserProfileRequest
@@ -33,9 +33,10 @@ func TestGetUserProfile(t *testing.T) {
 		wantCode codes.Code
 
 		mockArgs *mockArgs
+		noUser   bool
 	}{
 		{
-			name: "ok",
+			name: "success",
 			want: &userprofile.GetUserProfileResponse{
 				Timezone:          timezone,
 				OnboardingVersion: onboardingVersion,
@@ -56,31 +57,38 @@ func TestGetUserProfile(t *testing.T) {
 			},
 		},
 		{
-			name:     "err_svc",
+			name:     "err_no_user",
+			wantCode: codes.Unauthenticated,
+			noUser:   true,
+		},
+		{
+			name:     "err_repo_random",
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
 				req: types.GetOrCreateUserProfileRequest{
 					UserName: userName,
 				},
-				err: errSomethingWrong,
+				err: errors.New("random repo err"),
 			},
 		},
 	}
-
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupTestAPI(t)
+			api, mockedRepo := newUserProfilesTestData(t)
 
 			if tt.mockArgs != nil {
-				mockedSvc.EXPECT().
-					GetOrCreateUserProfile(gomock.Any(), tt.mockArgs.req).
-					Return(tt.mockArgs.resp, tt.mockArgs.err).
-					Times(1)
+				mockedRepo.EXPECT().GetOrCreate(gomock.Any(), tt.mockArgs.req).
+					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
 			}
 
-			ctx := withUser(userName)
+			ctx := context.Background()
+			if !tt.noUser {
+				ctx = context.WithValue(ctx, types.UserKey{}, userName)
+			}
+
 			got, err := api.GetUserProfile(ctx, &userprofile.GetUserProfileRequest{})
 
 			require.Equal(t, tt.wantCode, status.Code(err))
@@ -94,12 +102,11 @@ func TestGetUserProfile(t *testing.T) {
 }
 
 func TestUpdateUserProfile(t *testing.T) {
-	var (
-		userName          = "unnamed"
-		validTimezone     = "Europe/Moscow"
-		onboardingVersion = `{"name1": "ver1", "name2": "ver2"}`
-		logColumns        = []string{"val1", "val2"}
-	)
+	userName := "unnamed"
+	validTimezone := "Europe/Moscow"
+	invalidTimezone := "invalid timezone"
+	onboardingVersion := `{"name1": "ver1", "name2": "ver2"}`
+	logColumns := []string{"val1", "val2"}
 
 	type mockArgs struct {
 		req types.UpdateUserProfileRequest
@@ -114,9 +121,10 @@ func TestUpdateUserProfile(t *testing.T) {
 		wantCode codes.Code
 
 		mockArgs *mockArgs
+		noUser   bool
 	}{
 		{
-			name: "ok",
+			name: "success_all",
 			req: &userprofile.UpdateUserProfileRequest{
 				Timezone:          &validTimezone,
 				OnboardingVersion: &onboardingVersion,
@@ -134,7 +142,94 @@ func TestUpdateUserProfile(t *testing.T) {
 			},
 		},
 		{
-			name: "err_svc",
+			name: "success_only_timezone",
+			req: &userprofile.UpdateUserProfileRequest{
+				Timezone: &validTimezone,
+			},
+			want:     &userprofile.UpdateUserProfileResponse{},
+			wantCode: codes.OK,
+			mockArgs: &mockArgs{
+				req: types.UpdateUserProfileRequest{
+					UserName: userName,
+					Timezone: &validTimezone,
+				},
+			},
+		},
+		{
+			name: "success_only_onboarding_ver",
+			req: &userprofile.UpdateUserProfileRequest{
+				OnboardingVersion: &onboardingVersion,
+			},
+			want:     &userprofile.UpdateUserProfileResponse{},
+			wantCode: codes.OK,
+			mockArgs: &mockArgs{
+				req: types.UpdateUserProfileRequest{
+					UserName:          userName,
+					OnboardingVersion: &onboardingVersion,
+				},
+			},
+		},
+		{
+			name: "success_only_log_columns",
+			req: &userprofile.UpdateUserProfileRequest{
+				LogColumns: &userprofile.LogColumns{LogColumns: logColumns},
+			},
+			want:     &userprofile.UpdateUserProfileResponse{},
+			wantCode: codes.OK,
+			mockArgs: &mockArgs{
+				req: types.UpdateUserProfileRequest{
+					UserName:   userName,
+					LogColumns: &types.LogColumns{LogColumns: logColumns},
+				},
+			},
+		},
+		{
+			name: "success_empty_log_columns",
+			req: &userprofile.UpdateUserProfileRequest{
+				LogColumns: &userprofile.LogColumns{LogColumns: []string{}},
+			},
+			want:     &userprofile.UpdateUserProfileResponse{},
+			wantCode: codes.OK,
+			mockArgs: &mockArgs{
+				req: types.UpdateUserProfileRequest{
+					UserName:   userName,
+					LogColumns: &types.LogColumns{LogColumns: []string{}},
+				},
+			},
+		},
+		{
+			name:     "err_no_user",
+			wantCode: codes.Unauthenticated,
+			noUser:   true,
+		},
+		{
+			name:     "err_svc_empty_request",
+			req:      &userprofile.UpdateUserProfileRequest{},
+			wantCode: codes.InvalidArgument,
+		},
+		{
+			name: "err_svc_invalid_timezone_format",
+			req: &userprofile.UpdateUserProfileRequest{
+				Timezone: &invalidTimezone,
+			},
+			wantCode: codes.InvalidArgument,
+		},
+		{
+			name: "err_repo_not_found",
+			req: &userprofile.UpdateUserProfileRequest{
+				Timezone: &validTimezone,
+			},
+			wantCode: codes.NotFound,
+			mockArgs: &mockArgs{
+				req: types.UpdateUserProfileRequest{
+					UserName: userName,
+					Timezone: &validTimezone,
+				},
+				err: types.ErrNotFound,
+			},
+		},
+		{
+			name: "err_repo_random",
 			req: &userprofile.UpdateUserProfileRequest{
 				Timezone: &validTimezone,
 			},
@@ -144,25 +239,27 @@ func TestUpdateUserProfile(t *testing.T) {
 					UserName: userName,
 					Timezone: &validTimezone,
 				},
-				err: errSomethingWrong,
+				err: errors.New("random repo err"),
 			},
 		},
 	}
-
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupTestAPI(t)
+			api, mockedRepo := newUserProfilesTestData(t)
 
 			if tt.mockArgs != nil {
-				mockedSvc.EXPECT().
-					UpdateUserProfile(gomock.Any(), tt.mockArgs.req).
-					Return(tt.mockArgs.err).
-					Times(1)
+				mockedRepo.EXPECT().Update(gomock.Any(), tt.mockArgs.req).
+					Return(tt.mockArgs.err).Times(1)
 			}
 
-			ctx := withUser(userName)
+			ctx := context.Background()
+			if !tt.noUser {
+				ctx = context.WithValue(ctx, types.UserKey{}, userName)
+			}
+
 			got, err := api.UpdateUserProfile(ctx, tt.req)
 
 			require.Equal(t, tt.wantCode, status.Code(err))
