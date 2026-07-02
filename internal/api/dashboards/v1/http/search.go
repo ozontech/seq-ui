@@ -57,6 +57,12 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 
 	span.SetAttributes(spanAttributes...)
 
+	// check auth and create profile if its doesn't exist
+	if _, err := a.profiles.GeIDFromContext(ctx); err != nil {
+		httputil.ProcessError(wr, err)
+		return
+	}
+
 	req := types.SearchDashboardsRequest{
 		Query:  httpReq.Query,
 		Limit:  httpReq.Limit,

@@ -1,7 +1,9 @@
 package http
 
 import (
+	"errors"
 	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"testing"
 	"time"
@@ -20,17 +22,21 @@ import (
 )
 
 func TestServeGetLogsLifespan(t *testing.T) {
-	var (
-		resultStr = "36000" // 10(h) * 60(min/h) * 60(sec/min)
-		cacheKey  = "logs_lifespan"
-		result    = 10 * time.Hour
-		cacheTTL  = time.Minute
+	const (
+		cacheKey = "logs_lifespan"
+		cacheTTL = 1 * time.Minute
+
+		result         = 10 * time.Hour
+		resultStr      = "36000" // 10(h) * 60(min/h) * 60(sec/min)
+		resultRespBody = `{"lifespan":36000}`
 	)
 
 	unparsable := func(s string) bool {
 		_, err := strconv.Atoi(s)
 		return err != nil
 	}
+
+	oldestStorageTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	tests := []struct {
 		name string
@@ -41,15 +47,16 @@ func TestServeGetLogsLifespan(t *testing.T) {
 		clientResp *seqapi.StatusResponse
 		clientErr  error
 
-		wantErr bool
-		want    getLogsLifespanResponse
+		wantStatus   int
+		wantRespBody string
 	}{
 		{
 			name: "ok_cached",
 			getOp: test.CacheMockArgs{
 				Value: resultStr,
 			},
-			want: getLogsLifespanResponse{Lifespan: 36000},
+			wantStatus:   http.StatusOK,
+			wantRespBody: resultRespBody,
 		},
 		{
 			name: "ok_cached_unparsable",
@@ -60,9 +67,10 @@ func TestServeGetLogsLifespan(t *testing.T) {
 				Value: resultStr,
 			},
 			clientResp: &seqapi.StatusResponse{
-				OldestStorageTime: timestamppb.New(testTimestamp),
+				OldestStorageTime: timestamppb.New(oldestStorageTime),
 			},
-			want: getLogsLifespanResponse{Lifespan: 36000},
+			wantStatus:   http.StatusOK,
+			wantRespBody: resultRespBody,
 		},
 		{
 			name: "ok_no_cached",
@@ -73,17 +81,18 @@ func TestServeGetLogsLifespan(t *testing.T) {
 				Value: resultStr,
 			},
 			clientResp: &seqapi.StatusResponse{
-				OldestStorageTime: timestamppb.New(testTimestamp),
+				OldestStorageTime: timestamppb.New(oldestStorageTime),
 			},
-			want: getLogsLifespanResponse{Lifespan: 36000},
+			wantStatus:   http.StatusOK,
+			wantRespBody: resultRespBody,
 		},
 		{
 			name: "err_client",
 			getOp: test.CacheMockArgs{
 				Err: cache.ErrNotFound,
 			},
-			clientErr: errSomethingWrong,
-			wantErr:   true,
+			clientErr:  errors.New("network error"),
+			wantStatus: http.StatusInternalServerError,
 		},
 		{
 			name: "err_nil_oldest_storage_time",
@@ -93,11 +102,11 @@ func TestServeGetLogsLifespan(t *testing.T) {
 			clientResp: &seqapi.StatusResponse{
 				OldestStorageTime: nil,
 			},
-			wantErr: true,
+			wantStatus: http.StatusInternalServerError,
 		},
 	}
-
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -109,43 +118,37 @@ func TestServeGetLogsLifespan(t *testing.T) {
 					},
 				},
 			}
-
 			ctrl := gomock.NewController(t)
-			cacheMock := mock_cache.NewMockCache(ctrl)
 
-			cacheMock.EXPECT().
-				Get(gomock.Any(), cacheKey).
-				Return(tt.getOp.Value, tt.getOp.Err).
-				Times(1)
+			cacheMock := mock_cache.NewMockCache(ctrl)
+			cacheMock.EXPECT().Get(gomock.Any(), cacheKey).
+				Return(tt.getOp.Value, tt.getOp.Err).Times(1)
 			seqData.Mocks.Cache = cacheMock
 
 			if tt.getOp.Err != nil || unparsable(tt.getOp.Value) {
 				seqDbMock := mock_seqdb.NewMockClient(ctrl)
-				seqDbMock.EXPECT().
-					Status(gomock.Any(), gomock.Any()).
-					Return(proto.Clone(tt.clientResp), tt.clientErr).
-					Times(1)
+				seqDbMock.EXPECT().Status(gomock.Any(), gomock.Any()).
+					Return(proto.Clone(tt.clientResp), tt.clientErr).Times(1)
 				seqData.Mocks.SeqDB = seqDbMock
 
 				if tt.clientErr == nil && tt.clientResp.OldestStorageTime != nil {
-					cacheMock.EXPECT().
-						SetWithTTL(gomock.Any(), cacheKey, tt.setOp.Value, cacheTTL).
-						Return(tt.setOp.Err).
-						Times(1)
+					cacheMock.EXPECT().SetWithTTL(gomock.Any(), cacheKey, tt.setOp.Value, cacheTTL).
+						Return(tt.setOp.Err).Times(1)
 				}
 			}
 
-			api := setupTestAPI(seqData)
+			api := initTestAPI(seqData)
 			api.nowFn = func() time.Time {
-				return testTimestamp.Add(result)
+				return oldestStorageTime.Add(result)
 			}
 
-			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getLogsLifespanResponse]{
-				Method:  http.MethodGet,
-				Target:  "/seqapi/v1/logs_lifespan",
-				Handler: api.serveGetLogsLifespan,
-				Want:    tt.want,
-				WantErr: tt.wantErr,
+			req := httptest.NewRequest(http.MethodGet, "/seqapi/v1/logs_lifespan", http.NoBody)
+
+			httputil.DoTestHTTP(t, httputil.TestDataHTTP{
+				Req:          req,
+				Handler:      api.serveGetLogsLifespan,
+				WantRespBody: tt.wantRespBody,
+				WantStatus:   tt.wantStatus,
 			})
 		})
 	}

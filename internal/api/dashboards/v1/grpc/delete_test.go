@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -14,6 +15,10 @@ import (
 )
 
 func TestDelete(t *testing.T) {
+	userName := "unnamed"
+	var profileID int64 = 1
+	dashboardUUID := "064dc707-02b8-7000-8201-02a7f396738a"
+
 	type mockArgs struct {
 		req types.DeleteDashboardRequest
 		err error
@@ -27,49 +32,82 @@ func TestDelete(t *testing.T) {
 		wantCode codes.Code
 
 		mockArgs *mockArgs
+		noUser   bool
 	}{
 		{
-			name: "ok",
+			name: "success",
 			req: &dashboards.DeleteRequest{
-				Uuid: testDashboardUUID,
+				Uuid: dashboardUUID,
 			},
 			want:     &dashboards.DeleteResponse{},
 			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				req: types.DeleteDashboardRequest{
-					UUID: testDashboardUUID,
+					UUID:      dashboardUUID,
+					ProfileID: profileID,
 				},
 			},
 		},
 		{
-			name: "err_svc",
+			name:     "err_no_user",
+			wantCode: codes.Unauthenticated,
+			noUser:   true,
+		},
+		{
+			name: "err_svc_invalid_uuid",
 			req: &dashboards.DeleteRequest{
-				Uuid: testDashboardUUID,
+				Uuid: "invalid-uuid",
+			},
+			wantCode: codes.InvalidArgument,
+		},
+		{
+			name: "err_repo_permission_denied",
+			req: &dashboards.DeleteRequest{
+				Uuid: dashboardUUID,
+			},
+			wantCode: codes.PermissionDenied,
+			mockArgs: &mockArgs{
+				req: types.DeleteDashboardRequest{
+					UUID:      dashboardUUID,
+					ProfileID: profileID,
+				},
+				err: types.ErrPermissionDenied,
+			},
+		},
+		{
+			name: "err_repo_random",
+			req: &dashboards.DeleteRequest{
+				Uuid: dashboardUUID,
 			},
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
 				req: types.DeleteDashboardRequest{
-					UUID: testDashboardUUID,
+					UUID:      dashboardUUID,
+					ProfileID: profileID,
 				},
-				err: errSomethingWrong,
+				err: errors.New("random repo err"),
 			},
 		},
 	}
-
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupTestAPI(t)
+			api, mockedRepo := newTestData(t)
 
 			if tt.mockArgs != nil {
-				mockedSvc.EXPECT().
-					DeleteDashboard(gomock.Any(), tt.mockArgs.req).
-					Return(tt.mockArgs.err).
-					Times(1)
+				mockedRepo.EXPECT().Delete(gomock.Any(), tt.mockArgs.req).
+					Return(tt.mockArgs.err).Times(1)
 			}
 
-			got, err := api.Delete(context.Background(), tt.req)
+			ctx := context.Background()
+			if !tt.noUser {
+				ctx = context.WithValue(ctx, types.UserKey{}, userName)
+				api.profiles.SetID(userName, profileID)
+			}
+
+			got, err := api.Delete(ctx, tt.req)
 
 			require.Equal(t, tt.wantCode, status.Code(err))
 			if tt.wantCode != codes.OK {

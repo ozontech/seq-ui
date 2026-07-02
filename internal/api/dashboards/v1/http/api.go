@@ -3,17 +3,20 @@ package http
 import (
 	"github.com/go-chi/chi/v5"
 
+	"github.com/ozontech/seq-ui/internal/api/profiles"
 	"github.com/ozontech/seq-ui/internal/app/types"
-	"github.com/ozontech/seq-ui/internal/pkg/service/dashboards"
+	"github.com/ozontech/seq-ui/internal/pkg/service"
 )
 
 type API struct {
-	service dashboards.Service
+	service  service.Service
+	profiles *profiles.Profiles
 }
 
-func New(svc dashboards.Service) *API {
+func New(svc service.Service, p *profiles.Profiles) *API {
 	return &API{
-		service: svc,
+		service:  svc,
+		profiles: p,
 	}
 }
 

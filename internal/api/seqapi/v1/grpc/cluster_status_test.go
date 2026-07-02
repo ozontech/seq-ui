@@ -2,112 +2,82 @@ package grpc
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
+	"github.com/ozontech/seq-ui/internal/app/config"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
 
 func TestStatus(t *testing.T) {
-	type mockArgs struct {
-		resp *seqapi.StatusResponse
-		err  error
+	type TestCase struct {
+		name      string
+		resp      *seqapi.StatusResponse
+		clientErr error
 	}
 
-	tests := []struct {
-		name string
+	someMoment := time.Now()
 
-		want     *seqapi.StatusResponse
-		wantCode codes.Code
-
-		mockArgs *mockArgs
-	}{
+	tests := []TestCase{
 		{
 			name: "ok",
-			want: &seqapi.StatusResponse{
+			resp: &seqapi.StatusResponse{
 				NumberOfStores:    3,
-				OldestStorageTime: timestamppb.New(testTimestamp),
+				OldestStorageTime: timestamppb.New(someMoment),
 				Stores: []*seqapi.StoreStatus{
 					{
 						Host:   "host-0",
-						Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testTimestamp)},
+						Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(someMoment)},
 					},
 					{
 						Host:   "host-1",
-						Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testTimestamp.Add(1 * time.Hour))},
+						Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(someMoment.Add(1 * time.Hour))},
 					},
 					{
 						Host:   "host-2",
-						Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testTimestamp.Add(2 * time.Hour))},
-					},
-				},
-			},
-			mockArgs: &mockArgs{
-				resp: &seqapi.StatusResponse{
-					NumberOfStores:    3,
-					OldestStorageTime: timestamppb.New(testTimestamp),
-					Stores: []*seqapi.StoreStatus{
-						{
-							Host:   "host-0",
-							Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testTimestamp)},
-						},
-						{
-							Host:   "host-1",
-							Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testTimestamp.Add(1 * time.Hour))},
-						},
-						{
-							Host:   "host-2",
-							Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testTimestamp.Add(2 * time.Hour))},
-						},
+						Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(someMoment.Add(2 * time.Hour))},
 					},
 				},
 			},
 		},
 		{
-			name:     "err_client",
-			wantCode: codes.Internal,
-			mockArgs: &mockArgs{
-				err: status.Error(codes.Internal, "client error"),
-			},
+			name:      "err_client",
+			clientErr: errors.New("client error"),
 		},
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			seqDbMock := mock_seqdb.NewMockClient(ctrl)
 
-			seqDbMock.EXPECT().
-				Status(gomock.Any(), nil).
-				Return(proto.Clone(tt.mockArgs.resp), tt.mockArgs.err).
-				Times(1)
+			seqDbMock := mock_seqdb.NewMockClient(ctrl)
+			seqDbMock.EXPECT().Status(gomock.Any(), nil).
+				Return(proto.Clone(tt.resp), tt.clientErr).Times(1)
+
+			cfg := config.SeqAPI{}
 
 			seqData := test.APITestData{
+				Cfg: cfg,
 				Mocks: test.Mocks{
 					SeqDB: seqDbMock,
 				},
 			}
+			s := initTestAPI(seqData)
+			resp, err := s.Status(context.Background(), nil)
 
-			api := setupTestAPI(seqData)
-
-			got, err := api.Status(context.Background(), nil)
-
-			require.Equal(t, tt.wantCode, status.Code(err))
-			if tt.wantCode != codes.OK {
-				return
-			}
-			require.True(t, proto.Equal(tt.want, got))
+			require.Equal(t, tt.clientErr, err)
+			require.True(t, proto.Equal(tt.resp, resp))
 		})
 	}
 }

@@ -35,11 +35,17 @@ func (a *API) serveDelete(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 
-	req := types.DeleteDashboardRequest{
-		UUID: uuid,
+	profileID, err := a.profiles.GeIDFromContext(ctx)
+	if err != nil {
+		httputil.ProcessError(wr, err)
+		return
 	}
 
-	err := a.service.DeleteDashboard(ctx, req)
+	req := types.DeleteDashboardRequest{
+		UUID:      uuid,
+		ProfileID: profileID,
+	}
+	err = a.service.DeleteDashboard(ctx, req)
 	if err != nil {
 		httputil.ProcessError(wr, err)
 		return

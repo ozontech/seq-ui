@@ -1,23 +1,18 @@
 package grpc
 
 import (
-	"errors"
-	"time"
+	"context"
 
+	"github.com/ozontech/seq-ui/internal/api/profiles"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
 	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
+	"github.com/ozontech/seq-ui/internal/pkg/repository"
+	"github.com/ozontech/seq-ui/internal/pkg/service"
 	asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches"
 )
 
-// Shared test data.
-var (
-	errSomethingWrong = errors.New("something happened wrong")
-	testSearchID      = "69e4a4a6-0922-43bd-952d-060a86c2b622"
-	testTimestamp     = time.Date(2023, time.September, 25, 10, 20, 30, 0, time.UTC)
-)
-
-func setupTestAPI(data test.APITestData) *API {
+func initTestAPI(data test.APITestData) *API {
 	// when test cases don't explicitly provide configuration
 	if data.Cfg.SeqAPIOptions == nil {
 		data.Cfg.SeqAPIOptions = &config.SeqAPIOptions{}
@@ -29,10 +24,20 @@ func setupTestAPI(data test.APITestData) *API {
 		seqDBClients[envConfig.SeqDB] = data.Mocks.SeqDB
 	}
 
-	var asyncSvc asyncsearches.Service
-	if data.Mocks.AsyncSearchesSvc != nil {
-		asyncSvc = data.Mocks.AsyncSearchesSvc
-	}
+	return New(data.Cfg, seqDBClients, data.Mocks.Cache, data.Mocks.Cache, nil, nil)
+}
 
-	return New(data.Cfg, seqDBClients, data.Mocks.Cache, data.Mocks.Cache, asyncSvc)
+func initTestAPIWithAsyncSearches(data test.APITestData) *API {
+	if data.Cfg.SeqAPIOptions == nil {
+		data.Cfg.SeqAPIOptions = &config.SeqAPIOptions{}
+	}
+	seqDBClients := map[string]seqdb.Client{
+		config.DefaultSeqDBClientID: data.Mocks.SeqDB,
+	}
+	as := asyncsearches.New(context.Background(), data.Mocks.AsyncSearchesRepo, data.Mocks.SeqDB, data.AsyncCfg)
+	s := service.New(&repository.Repository{
+		UserProfiles: data.Mocks.ProfilesRepo,
+	})
+	p := profiles.New(s)
+	return New(data.Cfg, seqDBClients, data.Mocks.Cache, data.Mocks.Cache, as, p)
 }

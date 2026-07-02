@@ -9,7 +9,7 @@ import (
 	"github.com/ozontech/seq-ui/internal/app/config"
 	mock_cache "github.com/ozontech/seq-ui/internal/pkg/cache/mock"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
-	mock_asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches/mock"
+	mock_repo "github.com/ozontech/seq-ui/internal/pkg/repository/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
 
@@ -20,14 +20,16 @@ type CacheMockArgs struct {
 }
 
 type Mocks struct {
-	SeqDB            *mock_seqdb.MockClient
-	Cache            *mock_cache.MockCache
-	AsyncSearchesSvc *mock_asyncsearches.MockService
+	SeqDB             *mock_seqdb.MockClient
+	Cache             *mock_cache.MockCache
+	AsyncSearchesRepo *mock_repo.MockAsyncSearches
+	ProfilesRepo      *mock_repo.MockUserProfiles
 }
 
 type APITestData struct {
-	Cfg   config.SeqAPI
-	Mocks Mocks
+	Cfg      config.SeqAPI
+	AsyncCfg config.AsyncSearch
+	Mocks    Mocks
 }
 
 func MakeEvent(id string, countData int, t time.Time) *seqapi.Event {

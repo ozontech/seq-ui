@@ -47,7 +47,15 @@ func (a *API) serveDeleteAsyncSearch(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 
-	_, err := a.asyncSearches.DeleteAsyncSearch(ctx, &seqapi.DeleteAsyncSearchRequest{SearchId: searchID})
+	profileID, err := a.profiles.GeIDFromContext(ctx)
+	if err != nil {
+		httputil.ProcessError(wr, err)
+		return
+	}
+
+	_, err = a.asyncSearches.DeleteAsyncSearch(ctx, profileID, &seqapi.DeleteAsyncSearchRequest{
+		SearchId: searchID,
+	})
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, types.ErrPermissionDenied) {

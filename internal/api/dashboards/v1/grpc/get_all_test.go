@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -14,6 +15,9 @@ import (
 )
 
 func TestGetAll(t *testing.T) {
+	userName := "unnamed"
+	var profileID int64 = 1
+
 	type mockArgs struct {
 		req  types.GetAllDashboardsRequest
 		resp types.DashboardInfosWithOwner
@@ -28,12 +32,13 @@ func TestGetAll(t *testing.T) {
 		wantCode codes.Code
 
 		mockArgs *mockArgs
+		noUser   bool
 	}{
 		{
-			name: "ok",
+			name: "success",
 			req: &dashboards.GetAllRequest{
-				Limit:  int32(testLimit),
-				Offset: int32(testOffset),
+				Limit:  2,
+				Offset: 0,
 			},
 			want: &dashboards.GetAllResponse{
 				Dashboards: []*dashboards.GetAllResponse_Dashboard{
@@ -44,8 +49,8 @@ func TestGetAll(t *testing.T) {
 			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				req: types.GetAllDashboardsRequest{
-					Limit:  testLimit,
-					Offset: testOffset,
+					Limit:  2,
+					Offset: 0,
 				},
 				resp: types.DashboardInfosWithOwner{
 					{
@@ -66,36 +71,61 @@ func TestGetAll(t *testing.T) {
 			},
 		},
 		{
-			name: "err_svc",
+			name:     "err_no_user",
+			wantCode: codes.Unauthenticated,
+			noUser:   true,
+		},
+		{
+			name: "err_svc_invalid_limit",
 			req: &dashboards.GetAllRequest{
-				Limit:  int32(testLimit),
-				Offset: int32(testOffset),
+				Limit:  0,
+				Offset: 0,
+			},
+			wantCode: codes.InvalidArgument,
+		},
+		{
+			name: "err_svc_invalid_offset",
+			req: &dashboards.GetAllRequest{
+				Limit:  2,
+				Offset: -10,
+			},
+			wantCode: codes.InvalidArgument,
+		},
+		{
+			name: "err_repo_random",
+			req: &dashboards.GetAllRequest{
+				Limit:  2,
+				Offset: 0,
 			},
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
 				req: types.GetAllDashboardsRequest{
-					Limit:  testLimit,
-					Offset: testOffset,
+					Limit:  2,
+					Offset: 0,
 				},
-				err: errSomethingWrong,
+				err: errors.New("random repo err"),
 			},
 		},
 	}
-
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedSvc := setupTestAPI(t)
+			api, mockedRepo := newTestData(t)
 
 			if tt.mockArgs != nil {
-				mockedSvc.EXPECT().
-					GetAllDashboards(gomock.Any(), tt.mockArgs.req).
-					Return(tt.mockArgs.resp, tt.mockArgs.err).
-					Times(1)
+				mockedRepo.EXPECT().GetAll(gomock.Any(), tt.mockArgs.req).
+					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
 			}
 
-			got, err := api.GetAll(context.Background(), tt.req)
+			ctx := context.Background()
+			if !tt.noUser {
+				ctx = context.WithValue(ctx, types.UserKey{}, userName)
+				api.profiles.SetID(userName, profileID)
+			}
+
+			got, err := api.GetAll(ctx, tt.req)
 
 			require.Equal(t, tt.wantCode, status.Code(err))
 			if tt.wantCode != codes.OK {

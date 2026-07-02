@@ -2,11 +2,11 @@ package grpc
 
 import (
 	"github.com/ozontech/seq-ui/internal/pkg/service/massexport"
-	api "github.com/ozontech/seq-ui/pkg/massexport/v1"
+	massexport_v1 "github.com/ozontech/seq-ui/pkg/massexport/v1"
 )
 
 type API struct {
-	api.UnimplementedMassExportServiceServer
+	massexport_v1.UnimplementedMassExportServiceServer
 
 	exporter massexport.Service
 }

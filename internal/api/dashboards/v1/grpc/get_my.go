@@ -26,11 +26,16 @@ func (a *API) GetMy(ctx context.Context, req *dashboards.GetMyRequest) (*dashboa
 		},
 	)
 
-	request := types.GetUserDashboardsRequest{
-		Limit:  int(req.Limit),
-		Offset: int(req.Offset),
+	profileID, err := a.profiles.GeIDFromContext(ctx)
+	if err != nil {
+		return nil, grpcutil.ProcessError(err)
 	}
 
+	request := types.GetUserDashboardsRequest{
+		ProfileID: profileID,
+		Limit:     int(req.Limit),
+		Offset:    int(req.Offset),
+	}
 	dis, err := a.service.GetMyDashboards(ctx, request)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)

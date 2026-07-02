@@ -21,6 +21,11 @@ func (a *API) GetByUUID(ctx context.Context, req *dashboards.GetByUUIDRequest) (
 		},
 	)
 
+	// check auth and create profile if its doesn't exist
+	if _, err := a.profiles.GeIDFromContext(ctx); err != nil {
+		return nil, grpcutil.ProcessError(err)
+	}
+
 	d, err := a.service.GetDashboardByUUID(ctx, req.Uuid)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
