@@ -210,6 +210,7 @@ message ExportRequest {
   int32 offset = 5;
   ExportFormat format = 6;
   repeated string fields = 7;
+  uint32 downsample = 8;
 }
 
 message GetLimitsRequest {}
@@ -260,6 +261,7 @@ message StartAsyncSearchRequest {
   bool with_docs = 7;
   int32 size = 8;
   string meta = 9;
+  uint32 downsample = 10;
 }
 
 message StartAsyncSearchResponse {

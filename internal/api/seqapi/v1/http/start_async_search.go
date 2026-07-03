@@ -86,6 +86,10 @@ func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
 			Key:   "size",
 			Value: attribute.Int64Value(int64(httpReq.Size)),
 		},
+		{
+			Key:   "downsample",
+			Value: attribute.IntValue(int(httpReq.Downsample)),
+		},
 	}
 	if httpReq.Histogram != nil && httpReq.Histogram.Interval != "" {
 		spanAttributes = append(spanAttributes, attribute.KeyValue{
@@ -132,18 +136,20 @@ type startAsyncSearchRequest struct {
 	WithDocs     bool                         `json:"with_docs"`
 	Size         int32                        `json:"size"`
 	Meta         string                       `json:"meta,omitempty"`
+	Downsample   uint32                       `json:"downsample"`
 } //	@name	seqapi.v1.StartAsyncSearchRequest
 
 func (r startAsyncSearchRequest) toProto(parsedRetention time.Duration) *seqapi.StartAsyncSearchRequest {
 	req := &seqapi.StartAsyncSearchRequest{
-		Retention: durationpb.New(parsedRetention),
-		Query:     r.Query,
-		From:      timestamppb.New(r.From),
-		To:        timestamppb.New(r.To),
-		Aggs:      r.Aggregations.toProto(),
-		WithDocs:  r.WithDocs,
-		Size:      r.Size,
-		Meta:      r.Meta,
+		Retention:  durationpb.New(parsedRetention),
+		Query:      r.Query,
+		From:       timestamppb.New(r.From),
+		To:         timestamppb.New(r.To),
+		Aggs:       r.Aggregations.toProto(),
+		WithDocs:   r.WithDocs,
+		Size:       r.Size,
+		Meta:       r.Meta,
+		Downsample: r.Downsample,
 	}
 	if r.Histogram != nil && r.Histogram.Interval != "" {
 		req.Hist = &seqapi.StartAsyncSearchRequest_HistQuery{

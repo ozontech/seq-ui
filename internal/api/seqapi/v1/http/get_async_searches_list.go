@@ -176,6 +176,7 @@ func startAsyncSearchRequestFromProto(r *seqapi.StartAsyncSearchRequest) startAs
 		Histogram:    hist,
 		WithDocs:     r.WithDocs,
 		Size:         r.Size,
+		Downsample:   r.Downsample,
 	}
 }
 

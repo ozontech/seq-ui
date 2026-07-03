@@ -2588,6 +2588,9 @@
         "seqapi.v1.ExportRequest": {
             "type": "object",
             "properties": {
+                "downsample": {
+                    "type": "integer"
+                },
                 "fields": {
                     "type": "array",
                     "items": {
@@ -3064,6 +3067,9 @@
                     "items": {
                         "$ref": "#/definitions/seqapi.v1.AggregationTsQuery"
                     }
+                },
+                "downsample": {
+                    "type": "integer"
                 },
                 "from": {
                     "type": "string",

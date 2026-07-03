@@ -50,6 +50,10 @@ func (a *API) StartAsyncSearch(
 			Key:   "size",
 			Value: attribute.Int64Value(int64(req.GetSize())),
 		},
+		{
+			Key:   "downsample",
+			Value: attribute.IntValue(int(req.GetDownsample())),
+		},
 	}
 	if req.Hist != nil && req.Hist.Interval != "" {
 		spanAttributes = append(spanAttributes, attribute.KeyValue{

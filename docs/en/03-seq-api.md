@@ -180,6 +180,7 @@ Downloads events to file in the specified format.
 - `limit` (*int*, *required*): Export limit.
 - `offset` (*int*, *optional*): Export offset.
 - `fields` (*[]string*, *optional*): List of fields to export (only for `format:csv`, must be non-empty in this case).
+- `downsample` (*uint32*, *optional*): Random sampling coefficient. Higher values yield a smaller fraction of returned events.
 
 #### Request
 
