@@ -23,7 +23,7 @@ func TestServeGetHist(t *testing.T) {
 		release       = "test-release"
 		durationStr   = "2m"
 		duration      = 2 * time.Minute
-		now           = time.Now()
+		now           = time.Now().Truncate(0).UTC()
 		oneMinuteAgo  = now.Add(-1 * time.Minute)
 		twoMinutesAgo = now.Add(-2 * time.Minute)
 		someErr       = errors.New("some err")
@@ -46,7 +46,7 @@ func TestServeGetHist(t *testing.T) {
 		mockArgs *mockArgs
 	}{
 		{
-			name: "ok",
+			name: "ok_duration",
 
 			req: getHistRequest{
 				GroupHash: &groupHashStr,
@@ -77,7 +77,101 @@ func TestServeGetHist(t *testing.T) {
 					Env:       &env,
 					Source:    &source,
 					Release:   &release,
-					Duration:  &duration,
+					TimeRange: &types.TimeRange{
+						Duration: duration,
+					},
+				},
+
+				hist: types.ErrorHist{
+					Buckets: []types.ErrorHistBucket{
+						{Time: twoMinutesAgo, Count: 100},
+						{Time: oneMinuteAgo, Count: 200},
+					},
+					Interval: 123,
+				},
+			},
+		},
+		{
+			name: "ok_timerange",
+
+			req: getHistRequest{
+				GroupHash: &groupHashStr,
+				Service:   &service,
+				Env:       &env,
+				Source:    &source,
+				Release:   &release,
+				TimeRange: &timeRange{
+					From: twoMinutesAgo,
+					To:   now,
+				},
+			},
+			want: getHistResponse{
+				Buckets: []bucket{
+					{
+						Time:  twoMinutesAgo,
+						Count: 100,
+					},
+					{
+						Time:  oneMinuteAgo,
+						Count: 200,
+					},
+				},
+				Interval: 123,
+			},
+
+			mockArgs: &mockArgs{
+				req: types.GetErrorHistRequest{
+					GroupHash: &groupHash,
+					Service:   &service,
+					Env:       &env,
+					Source:    &source,
+					Release:   &release,
+					TimeRange: &types.TimeRange{
+						From: twoMinutesAgo,
+						To:   now,
+					},
+				},
+
+				hist: types.ErrorHist{
+					Buckets: []types.ErrorHistBucket{
+						{Time: twoMinutesAgo, Count: 100},
+						{Time: oneMinuteAgo, Count: 200},
+					},
+					Interval: 123,
+				},
+			},
+		},
+		{
+			name: "ok_no_timerange",
+
+			req: getHistRequest{
+				GroupHash: &groupHashStr,
+				Service:   &service,
+				Env:       &env,
+				Source:    &source,
+				Release:   &release,
+			},
+			want: getHistResponse{
+				Buckets: []bucket{
+					{
+						Time:  twoMinutesAgo,
+						Count: 100,
+					},
+					{
+						Time:  oneMinuteAgo,
+						Count: 200,
+					},
+				},
+				Interval: 123,
+			},
+
+			mockArgs: &mockArgs{
+				req: types.GetErrorHistRequest{
+					GroupHash: &groupHash,
+					Service:   &service,
+					Env:       &env,
+					Source:    &source,
+					Release:   &release,
 				},
 
 				hist: types.ErrorHist{

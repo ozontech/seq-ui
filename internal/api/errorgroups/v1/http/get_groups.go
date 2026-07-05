@@ -35,12 +35,6 @@ func (a *API) serveGetGroups(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	parsedDuration, err := parseDuration(httpReq.Duration)
-	if err != nil {
-		wr.Error(fmt.Errorf("failed to parse duration: %w", err), http.StatusBadRequest)
-		return
-	}
-
 	attributes := []attribute.KeyValue{
 		{Key: "service", Value: attribute.StringValue(httpReq.Service)},
 		{Key: "limit", Value: attribute.IntValue(int(httpReq.Limit))},
@@ -64,14 +58,24 @@ func (a *API) serveGetGroups(w http.ResponseWriter, r *http.Request) {
 		filterRaw, _ := json.Marshal(httpReq.Filter)
 		attributes = append(attributes, attribute.KeyValue{Key: "filter", Value: attribute.StringValue(string(filterRaw))})
 	}
+	if httpReq.TimeRange != nil {
+		trRaw, _ := json.Marshal(httpReq.TimeRange)
+		attributes = append(attributes, attribute.KeyValue{Key: "time_range", Value: attribute.StringValue(string(trRaw))})
+	}
 	span.SetAttributes(attributes...)
+
+	tr, err := parseTimeRange(httpReq.TimeRange, httpReq.Duration)
+	if err != nil {
+		wr.Error(fmt.Errorf("failed to parse time range: %w", err), http.StatusBadRequest)
+		return
+	}
 
 	req := types.GetErrorGroupsRequest{
 		Service:   httpReq.Service,
 		Env:       httpReq.Env,
 		Source:    httpReq.Source,
 		Release:   httpReq.Release,
-		Duration:  parsedDuration,
+		TimeRange: tr,
 		Limit:     httpReq.Limit,
 		Offset:    httpReq.Offset,
 		Order:     httpReq.Order.toDomain(),
@@ -129,12 +133,13 @@ type getGroupsRequest struct {
 	Env     *string `json:"env,omitempty"`
 	Source  *string `json:"source,omitempty"`
 	Release *string `json:"release,omitempty"`
-	// In go duration format. If not specified, then for the entire time.
-	Duration  *string `json:"duration,omitempty" format:"duration" example:"1h"`
-	Limit     uint32  `json:"limit"`
-	Offset    uint32  `json:"offset"`
-	Order     order   `json:"order"`
-	WithTotal bool    `json:"with_total"`
+	// Deprecated: Use time_range instead
+	Duration  *string    `json:"duration,omitempty" format:"duration" example:"1h"`
+	TimeRange *timeRange `json:"time_range,omitempty"`
+	Limit     uint32     `json:"limit"`
+	Offset    uint32     `json:"offset"`
+	Order     order      `json:"order"`
+	WithTotal bool       `json:"with_total"`
 
 	Filter *groupsFilter `json:"filter,omitempty"`
 } //	@name	errorgroups.v1.GetGroupsRequest
