@@ -35,8 +35,6 @@ func (s *service) GetOrCreateUserProfile(ctx context.Context, req types.GetOrCre
 		return up, err
 	}
 
-	profiles.SetID(req.UserName, up.ID)
-
 	return up, nil
 }
 

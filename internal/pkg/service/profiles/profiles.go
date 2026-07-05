@@ -41,7 +41,7 @@ func (p *profiles) getIDFromContext(ctx context.Context) (int64, error) {
 		return 0, err
 	}
 
-	id, err := p.getID(userName)
+	id, err := p.getID(ctx, userName)
 	if err != nil {
 		return 0, err
 	}
@@ -49,7 +49,7 @@ func (p *profiles) getIDFromContext(ctx context.Context) (int64, error) {
 	return id, nil
 }
 
-func (p *profiles) getID(userName string) (int64, error) {
+func (p *profiles) getID(ctx context.Context, userName string) (int64, error) {
 	p.mx.RLock()
 	id, ok := p.idByName[userName]
 	p.mx.RUnlock()
@@ -61,9 +61,7 @@ func (p *profiles) getID(userName string) (int64, error) {
 	defer p.mx.Unlock()
 	id, ok = p.idByName[userName]
 	if !ok {
-		userProfile, err := p.service.GetOrCreateUserProfile(context.Background(), types.GetOrCreateUserProfileRequest{
-			UserName: userName,
-		})
+		userProfile, err := p.service.GetOrCreateUserProfile(ctx, types.GetOrCreateUserProfileRequest{UserName: userName})
 		if err != nil {
 			return 0, err
 		}
