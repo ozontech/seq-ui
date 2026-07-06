@@ -439,11 +439,11 @@ type getRoleResponse struct {
 type updateRoleRequest struct {
 	Name        *string           `json:"name"`
 	Permissions []permissionGroup `json:"permissions"`
-} //	@name	admin.v1.UpdateRoleResponse
+} //	@name	admin.v1.UpdateRoleRequest
 
 type deleteRoleRequest struct {
 	ReplacementRoleID *int32 `json:"replacement_role_id"`
-} //	@name	admin.v1.DeleteRoleResponse
+} //	@name	admin.v1.DeleteRoleRequest
 
 type deleteUsersFromRoleRequest struct {
 	Usernames []string `json:"usernames"`
