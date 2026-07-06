@@ -3607,6 +3607,9 @@
                 "onboardingVersion": {
                     "type": "string"
                 },
+                "role_id": {
+                    "type": "integer"
+                },
                 "timezone": {
                     "type": "string"
                 }

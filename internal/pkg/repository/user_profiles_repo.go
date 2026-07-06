@@ -26,7 +26,8 @@ func (r *userProfilesRepository) GetOrCreate(ctx context.Context, req types.GetO
 		UserName: req.UserName,
 	}
 
-	query, args := "SELECT id, timezone, onboarding_version, log_columns FROM user_profiles WHERE user_name = $1 LIMIT 1",
+	query, args := `SELECT up.id, up.timezone, up.onboarding_version, up.log_columns, ur.role_id
+		FROM user_profiles up LEFT JOIN users_roles ur ON up.id=ur.user_id WHERE user_name = $1 LIMIT 1`,
 		[]any{req.UserName}
 
 	metricLabelsSelect := []string{"user_profiles", "SELECT"}
@@ -36,6 +37,7 @@ func (r *userProfilesRepository) GetOrCreate(ctx context.Context, req types.GetO
 		&userProfile.Timezone,
 		&userProfile.OnboardingVersion,
 		&logColumns,
+		&userProfile.RoleID,
 	)
 
 	// create user profile if it doesn't exist

@@ -109,6 +109,7 @@ type userProfile struct {
 	Timezone          string   `json:"timezone"`
 	OnboardingVersion string   `json:"onboardingVersion"`
 	LogColumns        []string `json:"log_columns"`
+	RoleID            *int32   `json:"role_id"`
 } //	@name	userprofile.v1.UserProfile
 
 func newUserProfile(t types.UserProfile) userProfile {
@@ -116,6 +117,7 @@ func newUserProfile(t types.UserProfile) userProfile {
 		Timezone:          t.Timezone,
 		OnboardingVersion: t.OnboardingVersion,
 		LogColumns:        t.LogColumns.LogColumns,
+		RoleID:            t.RoleID,
 	}
 }
 
