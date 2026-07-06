@@ -114,8 +114,12 @@ func (s *service) UpdateRole(ctx context.Context, req types.UpdateRoleRequest) e
 
 	s.cache.resetRoles(ctx)
 
-	// Как нам в текущей реализации сделать, чтобы мы могли сбросить users, делать вызов GetRole(достанем юзеров этой роли)
-	// и потом удалять их, либо ждать, пока протухнет кэш?
+	if len(req.Permissions) > 0 {
+		if roleInfo, err := s.repo.GetRole(ctx, types.GetRoleRequest{RoleID: req.RoleID}); err == nil {
+			s.cache.resetUsersPermissions(ctx, roleInfo.Usernames...)
+		}
+	}
+
 	return nil
 }
 
@@ -137,11 +141,14 @@ func (s *service) DeleteRole(ctx context.Context, req types.DeleteRoleRequest) e
 		}
 	}
 
+	if roleInfo, err := s.repo.GetRole(ctx, types.GetRoleRequest{RoleID: req.RoleID}); err == nil {
+		s.cache.resetUsersPermissions(ctx, roleInfo.Usernames...)
+	}
+
 	if err := s.repo.DeleteRole(ctx, req); err != nil {
 		return err
 	}
 
-	// Опять же эта проблема: либо ждать протухание кэша, либо делать дополнительный запрос в бд...
 	s.cache.resetRoles(ctx)
 
 	return nil
