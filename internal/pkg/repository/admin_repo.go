@@ -204,7 +204,7 @@ func (r *adminRepository) DeleteUsersFromRole(ctx context.Context, req types.Del
 
 func (r *adminRepository) GetUserPermissions(ctx context.Context, req types.GetUserPermissionsRequest) ([]string, error) {
 	metricLabels := []string{"permissions", "SELECT"}
-	query, args := `SELECT DISTINCT p.value FROM user_profiles up
+	query, args := `SELECT p.value FROM user_profiles up
     	JOIN users_roles ur ON up.id=ur.user_id
      	JOIN roles_permissions rp ON ur.role_id=rp.role_id
       	JOIN permissions p ON rp.permission_id=p.id
