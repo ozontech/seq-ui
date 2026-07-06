@@ -349,11 +349,15 @@ func asyncSearchStatusFromProto(s seqapi.AsyncSearchStatus) seqproxyapi.AsyncSea
 func newProxyStartAsyncSearchRequest(req *seqapi.StartAsyncSearchRequest) *seqproxyapi.StartAsyncSearchRequest {
 	return &seqproxyapi.StartAsyncSearchRequest{
 		Retention: req.Retention,
-		Query:     newProxySearchQuery(req),
-		Aggs:      newProxyAggQuerySlice(req.Aggs),
-		Hist:      newProxyHistQuery(req.Hist),
-		WithDocs:  req.WithDocs,
-		Size:      int64(req.Size),
+		Query: &seqproxyapi.SearchQuery{
+			Query: req.Query,
+			From:  req.From,
+			To:    req.To,
+		},
+		Aggs:     newProxyAggQuerySlice(req.Aggs),
+		Hist:     newProxyHistQuery(req.Hist),
+		WithDocs: req.WithDocs,
+		Size:     int64(req.Size),
 	}
 }
 
@@ -449,15 +453,14 @@ func newSeqapiStartAsyncSearchRequest(r *seqproxyapi.StartAsyncSearchRequest) *s
 	}
 
 	return &seqapi.StartAsyncSearchRequest{
-		Retention:  r.Retention,
-		Query:      r.Query.Query,
-		From:       r.Query.From,
-		To:         r.Query.To,
-		Aggs:       newSeqapiAggQuerySlice(r.Aggs),
-		Hist:       hist,
-		WithDocs:   r.WithDocs,
-		Size:       int32(r.Size),
-		Downsample: r.Query.Downsample,
+		Retention: r.Retention,
+		Query:     r.Query.Query,
+		From:      r.Query.From,
+		To:        r.Query.To,
+		Aggs:      newSeqapiAggQuerySlice(r.Aggs),
+		Hist:      hist,
+		WithDocs:  r.WithDocs,
+		Size:      int32(r.Size),
 	}
 }
 

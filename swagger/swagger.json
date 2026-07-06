@@ -3068,9 +3068,6 @@
                         "$ref": "#/definitions/seqapi.v1.AggregationTsQuery"
                     }
                 },
-                "downsample": {
-                    "type": "integer"
-                },
                 "from": {
                     "type": "string",
                     "format": "date-time"

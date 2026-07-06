@@ -261,7 +261,6 @@ message StartAsyncSearchRequest {
   bool with_docs = 7;
   int32 size = 8;
   string meta = 9;
-  uint32 downsample = 10;
 }
 
 message StartAsyncSearchResponse {
