@@ -2588,6 +2588,9 @@
         "seqapi.v1.ExportRequest": {
             "type": "object",
             "properties": {
+                "downsample": {
+                    "type": "integer"
+                },
                 "fields": {
                     "type": "array",
                     "items": {
@@ -2719,6 +2722,9 @@
                     "items": {
                         "$ref": "#/definitions/seqapi.v1.AggregationQuery"
                     }
+                },
+                "downsample": {
+                    "type": "integer"
                 },
                 "from": {
                     "type": "string",
@@ -2867,6 +2873,9 @@
         "seqapi.v1.GetHistogramRequest": {
             "type": "object",
             "properties": {
+                "downsample": {
+                    "type": "integer"
+                },
                 "from": {
                     "type": "string",
                     "format": "date-time"
@@ -2973,6 +2982,9 @@
                     "items": {
                         "$ref": "#/definitions/seqapi.v1.AggregationQuery"
                     }
+                },
+                "downsample": {
+                    "type": "integer"
                 },
                 "from": {
                     "type": "string",

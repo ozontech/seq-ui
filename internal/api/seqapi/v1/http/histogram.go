@@ -56,6 +56,10 @@ func (a *API) serveGetHistogram(w http.ResponseWriter, r *http.Request) {
 			Key:   "interval",
 			Value: attribute.StringValue(httpReq.Interval),
 		},
+		{
+			Key:   "downsample",
+			Value: attribute.IntValue(int(httpReq.Downsample)),
+		},
 	}
 
 	if env != "" {
@@ -80,18 +84,20 @@ func (a *API) serveGetHistogram(w http.ResponseWriter, r *http.Request) {
 }
 
 type getHistogramRequest struct {
-	Query    string    `json:"query"`
-	From     time.Time `json:"from" format:"date-time"`
-	To       time.Time `json:"to" format:"date-time"`
-	Interval string    `json:"interval"`
+	Query      string    `json:"query"`
+	From       time.Time `json:"from" format:"date-time"`
+	To         time.Time `json:"to" format:"date-time"`
+	Interval   string    `json:"interval"`
+	Downsample uint32    `json:"downsample"`
 } //	@name	seqapi.v1.GetHistogramRequest
 
 func (r getHistogramRequest) toProto() *seqapi.GetHistogramRequest {
 	return &seqapi.GetHistogramRequest{
-		Query:    r.Query,
-		From:     timestamppb.New(r.From),
-		To:       timestamppb.New(r.To),
-		Interval: r.Interval,
+		Query:      r.Query,
+		From:       timestamppb.New(r.From),
+		To:         timestamppb.New(r.To),
+		Interval:   r.Interval,
+		Downsample: r.Downsample,
 	}
 }
 

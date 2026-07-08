@@ -159,17 +159,18 @@ func Test_GRPCClient_GetEvent(t *testing.T) {
 			wantErr: streamErrConvert,
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-
 			mArgs := prepareMockArgs(ctrl, tt.req, tt.doc, tt.wantErr)
-
 			seqProxyMock := mock.NewMockSeqProxyApiClient(ctrl)
-			seqProxyMock.EXPECT().Fetch(gomock.Any(), mArgs.req).
-				Return(mArgs.resp, mArgs.err).Times(1)
+
+			seqProxyMock.EXPECT().
+				Fetch(gomock.Any(), mArgs.req).
+				Return(mArgs.resp, mArgs.err).
+				Times(1)
 
 			c := initGRPCClient(seqProxyMock)
 
