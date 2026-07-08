@@ -82,7 +82,7 @@ message DeleteRequest {
 
 message DeleteResponse {}
 
-message SearchRequest{
+message SearchRequest {
   message Filter {
     optional string owner_name = 1;
   }
@@ -93,7 +93,7 @@ message SearchRequest{
   optional Filter filter = 4;
 }
 
-message SearchResponse{
+message SearchResponse {
   message Dashboard {
     string uuid = 1;
     string name = 2;

@@ -36,7 +36,6 @@ message UpdateUserProfileRequest {
 
 message UpdateUserProfileResponse {}
 
-
 message GetFavoriteQueriesRequest {}
 
 message GetFavoriteQueriesResponse {
@@ -65,7 +64,6 @@ message DeleteFavoriteQueryRequest {
 }
 
 message DeleteFavoriteQueryResponse {}
-
 
 message GetDashboardsRequest {}
 
