@@ -7,16 +7,14 @@ import (
 	"github.com/ozontech/seq-ui/internal/app/types"
 )
 
-type userProfileService interface {
-	GetOrCreateUserProfile(context.Context, types.GetOrCreateUserProfileRequest) (types.UserProfile, error)
-}
+type getOrCreateFn func(context.Context, types.GetOrCreateUserProfileRequest) (types.UserProfile, error)
 
 var profile *profiles
 
-func InitProfiles(svc userProfileService) {
+func InitProfiles(fn getOrCreateFn) {
 	profile = &profiles{
-		idByName: make(map[string]int64),
-		service:  svc,
+		idByName:      make(map[string]int64),
+		getOrCreateFn: fn,
 	}
 }
 
@@ -24,7 +22,7 @@ type profiles struct {
 	idByName map[string]int64 // map UserName->UserProfileId
 	mx       sync.RWMutex
 
-	service userProfileService
+	getOrCreateFn getOrCreateFn
 }
 
 func GetIDFromContext(ctx context.Context) (int64, error) {
@@ -61,7 +59,7 @@ func (p *profiles) getID(ctx context.Context, userName string) (int64, error) {
 	defer p.mx.Unlock()
 	id, ok = p.idByName[userName]
 	if !ok {
-		userProfile, err := p.service.GetOrCreateUserProfile(ctx, types.GetOrCreateUserProfileRequest{UserName: userName})
+		userProfile, err := p.getOrCreateFn(ctx, types.GetOrCreateUserProfileRequest{UserName: userName})
 		if err != nil {
 			return 0, err
 		}
