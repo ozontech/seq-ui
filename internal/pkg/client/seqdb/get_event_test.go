@@ -7,12 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1"
-	mock "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1/mock"
-	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1"
+	mock "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1/mock"
+	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
 
 func Test_GRPCClient_GetEvent(t *testing.T) {
@@ -158,17 +159,18 @@ func Test_GRPCClient_GetEvent(t *testing.T) {
 			wantErr: streamErrConvert,
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
-
 			mArgs := prepareMockArgs(ctrl, tt.req, tt.doc, tt.wantErr)
-
 			seqProxyMock := mock.NewMockSeqProxyApiClient(ctrl)
-			seqProxyMock.EXPECT().Fetch(gomock.Any(), mArgs.req).
-				Return(mArgs.resp, mArgs.err).Times(1)
+
+			seqProxyMock.EXPECT().
+				Fetch(gomock.Any(), mArgs.req).
+				Return(mArgs.resp, mArgs.err).
+				Times(1)
 
 			c := initGRPCClient(seqProxyMock)
 

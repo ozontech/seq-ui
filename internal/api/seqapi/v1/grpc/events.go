@@ -3,14 +3,15 @@ package grpc
 import (
 	"context"
 
-	"github.com/ozontech/seq-ui/logger"
-	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
-	"github.com/ozontech/seq-ui/tracing"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/ozontech/seq-ui/logger"
+	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
+	"github.com/ozontech/seq-ui/tracing"
 )
 
 func (a *API) GetEvent(ctx context.Context, req *seqapi.GetEventRequest) (*seqapi.GetEventResponse, error) {

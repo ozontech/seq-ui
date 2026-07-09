@@ -15,6 +15,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"go.uber.org/zap"
+
 	"github.com/ozontech/seq-ui/internal/api"
 	dashboards_v1 "github.com/ozontech/seq-ui/internal/api/dashboards/v1"
 	errorgroups_v1 "github.com/ozontech/seq-ui/internal/api/errorgroups/v1"
@@ -36,7 +38,6 @@ import (
 	"github.com/ozontech/seq-ui/internal/pkg/service/massexport/sessionstore"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/tracing"
-	"go.uber.org/zap"
 )
 
 const (

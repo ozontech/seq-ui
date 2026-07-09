@@ -18,8 +18,10 @@ func (a *API) GetDetails(ctx context.Context, req *errorgroups.GetDetailsRequest
 	defer span.End()
 
 	attributes := []attribute.KeyValue{
-		{Key: "service", Value: attribute.StringValue(req.Service)},
 		{Key: "group_hash", Value: attribute.StringValue(strconv.FormatUint(req.GroupHash, 10))},
+	}
+	if req.Service != nil {
+		attributes = append(attributes, attribute.KeyValue{Key: "service", Value: attribute.StringValue(*req.Service)})
 	}
 	if req.Env != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*req.Env)})
@@ -45,7 +47,7 @@ func (a *API) GetDetails(ctx context.Context, req *errorgroups.GetDetailsRequest
 	}
 
 	return &errorgroups.GetDetailsResponse{
-		GroupHash:     details.GroupHash,
+		GroupHash:     details.Hash,
 		Message:       details.Message,
 		SeenTotal:     details.SeenTotal,
 		FirstSeenAt:   timestamppb.New(details.FirstSeenAt),
@@ -57,24 +59,26 @@ func (a *API) GetDetails(ctx context.Context, req *errorgroups.GetDetailsRequest
 }
 
 func distributionsToProto(source types.ErrorGroupDistributions) *errorgroups.GetDetailsResponse_Distributions {
-	distrToProto := func(d types.ErrorGroupDistribution) *errorgroups.GetDetailsResponse_Distribution {
-		return &errorgroups.GetDetailsResponse_Distribution{
-			Value:   d.Value,
-			Percent: d.Percent,
+	distrToProto := func(ds []types.ErrorGroupDistribution) []*errorgroups.GetDetailsResponse_Distribution {
+		if len(ds) == 0 {
+			return nil
 		}
+
+		res := make([]*errorgroups.GetDetailsResponse_Distribution, 0, len(ds))
+		for _, d := range ds {
+			res = append(res, &errorgroups.GetDetailsResponse_Distribution{
+				Value:   d.Value,
+				Percent: d.Percent,
+			})
+		}
+
+		return res
 	}
 
-	ds := &errorgroups.GetDetailsResponse_Distributions{
-		ByEnv:     make([]*errorgroups.GetDetailsResponse_Distribution, 0, len(source.ByEnv)),
-		ByRelease: make([]*errorgroups.GetDetailsResponse_Distribution, 0, len(source.ByRelease)),
+	return &errorgroups.GetDetailsResponse_Distributions{
+		ByEnv:     distrToProto(source.ByEnv),
+		BySource:  distrToProto(source.BySource),
+		ByService: distrToProto(source.ByService),
+		ByRelease: distrToProto(source.ByRelease),
 	}
-
-	for _, d := range source.ByEnv {
-		ds.ByEnv = append(ds.ByEnv, distrToProto(d))
-	}
-	for _, d := range source.ByRelease {
-		ds.ByRelease = append(ds.ByRelease, distrToProto(d))
-	}
-
-	return ds
 }

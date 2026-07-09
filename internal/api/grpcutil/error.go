@@ -3,9 +3,10 @@ package grpcutil
 import (
 	"errors"
 
-	"github.com/ozontech/seq-ui/internal/app/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/ozontech/seq-ui/internal/app/types"
 )
 
 func ProcessError(err error) error {

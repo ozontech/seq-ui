@@ -2,8 +2,8 @@ syntax = "proto3";
 
 package massexport.v1;
 
-import "google/protobuf/timestamp.proto";
 import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/ozontech/seq-ui/pkg/massexport/v1;massexport";
 

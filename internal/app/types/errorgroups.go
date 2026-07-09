@@ -12,12 +12,38 @@ const (
 	OrderOldest
 )
 
+type TimeRange struct {
+	Duration time.Duration
+
+	From time.Time
+	To   time.Time
+}
+
+func (tr *TimeRange) IsAbsolute() bool {
+	return tr != nil && !tr.From.IsZero() && !tr.To.IsZero()
+}
+
+func (tr *TimeRange) AbsoluteDuration() time.Duration {
+	if !tr.IsAbsolute() {
+		return 0
+	}
+	return tr.To.Sub(tr.From)
+}
+
+func (tr *TimeRange) IsRelative() bool {
+	return tr != nil && tr.Duration != 0
+}
+
+func (tr *TimeRange) IsEmpty() bool {
+	return tr == nil || !tr.IsAbsolute() && !tr.IsRelative()
+}
+
 type GetErrorGroupsRequest struct {
 	Service   string
 	Env       *string
 	Source    *string
 	Release   *string
-	Duration  *time.Duration
+	TimeRange *TimeRange
 	Limit     uint32
 	Offset    uint32
 	Order     ErrorGroupsOrder
@@ -26,20 +52,36 @@ type GetErrorGroupsRequest struct {
 
 type ErrorGroup struct {
 	Hash        uint64
+	Source      string
 	Message     string
-	SeenTotal   uint64
+	Count       uint64
 	FirstSeenAt time.Time
 	LastSeenAt  time.Time
-	Source      string
+}
+
+type GetTopErrorGroupsRequest struct {
+	Env       *string
+	Source    *string
+	TimeRange *TimeRange
+	Limit     uint32
+	Offset    uint32
+	WithTotal bool
+}
+
+type TopErrorGroup struct {
+	Hash    uint64
+	Source  string
+	Message string
+	Count   uint64
 }
 
 type GetErrorHistRequest struct {
-	Service   string
 	GroupHash *uint64
+	Service   *string
 	Env       *string
 	Source    *string
 	Release   *string
-	Duration  *time.Duration
+	TimeRange *TimeRange
 }
 
 type ErrorHistBucket struct {
@@ -47,21 +89,28 @@ type ErrorHistBucket struct {
 	Count uint64
 }
 
+type ErrorHist struct {
+	Buckets  []ErrorHistBucket
+	Interval uint64
+}
+
 type GetErrorGroupDetailsRequest struct {
-	Service   string
 	GroupHash uint64
 	Env       *string
 	Source    *string
+	Service   *string
 	Release   *string
 }
 
 func (r GetErrorGroupDetailsRequest) IsFullyFilled() bool {
 	return r.Env != nil && *r.Env != "" &&
-		r.Release != nil && *r.Release != ""
+		r.Release != nil && *r.Release != "" &&
+		r.Service != nil && *r.Service != "" &&
+		r.Source != nil && *r.Source != ""
 }
 
 type ErrorGroupDetails struct {
-	GroupHash     uint64
+	Hash          uint64
 	Message       string
 	SeenTotal     uint64
 	FirstSeenAt   time.Time
@@ -78,6 +127,8 @@ type ErrorGroupDistribution struct {
 
 type ErrorGroupDistributions struct {
 	ByEnv     []ErrorGroupDistribution
+	BySource  []ErrorGroupDistribution
+	ByService []ErrorGroupDistribution
 	ByRelease []ErrorGroupDistribution
 }
 
@@ -85,12 +136,9 @@ type ErrorGroupCount map[string]uint64
 
 type ErrorGroupCounts struct {
 	ByEnv     ErrorGroupCount
+	BySource  ErrorGroupCount
+	ByService ErrorGroupCount
 	ByRelease ErrorGroupCount
-}
-
-type GetErrorGroupReleasesRequest struct {
-	Service string
-	Env     *string
 }
 
 type GetServicesRequest struct {
@@ -98,6 +146,11 @@ type GetServicesRequest struct {
 	Env    *string
 	Limit  uint32
 	Offset uint32
+}
+
+type GetReleasesRequest struct {
+	Service string
+	Env     *string
 }
 
 type DiffByReleasesRequest struct {

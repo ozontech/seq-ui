@@ -8,14 +8,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ozontech/seq-ui/internal/api/httputil"
-	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1"
-	mock "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1/mock"
-	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/ozontech/seq-ui/internal/api/httputil"
+	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1"
+	mock "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1/mock"
+	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
 
 func Test_GRPCClient_Export(t *testing.T) {
@@ -38,7 +39,7 @@ func Test_GRPCClient_Export(t *testing.T) {
 
 		if req != nil {
 			proxyReq = &seqproxyapi.ExportRequest{
-				Query:  makeProxySearchQuery(req.Query, req.From, req.To),
+				Query:  makeProxySearchQuery(req.Query, req.From, req.To, req.Downsample),
 				Size:   int64(req.Limit),
 				Offset: int64(req.Offset),
 			}
@@ -162,6 +163,23 @@ func Test_GRPCClient_Export(t *testing.T) {
 			wantResp: "key1,key3\r\n\"val1,a\",\"test \"\"quoted\"\"\"\r\n",
 		},
 		{
+			name: "ok_downsample",
+			req: &seqapi.ExportRequest{
+				Query:      "test_ok_escaped",
+				From:       timestamppb.New(from),
+				To:         timestamppb.New(to),
+				Limit:      limit,
+				Offset:     0,
+				Format:     seqapi.ExportFormat_EXPORT_FORMAT_CSV,
+				Fields:     []string{"key1", "key3"},
+				Downsample: 10,
+			},
+			docs: []seqproxyapi.Document{
+				{Id: "test1", Data: []byte(`{"key1":"val1,a","key2":"val2,b","key3":"test \"quoted\""}`), Time: eventTimePB},
+			},
+			wantResp: "key1,key3\r\n\"val1,a\",\"test \"\"quoted\"\"\"\r\n",
+		},
+		{
 			name: "err_proxy",
 			req: &seqapi.ExportRequest{
 				Query:  "test_err_proxy",
@@ -184,18 +202,20 @@ func Test_GRPCClient_Export(t *testing.T) {
 			wantErr: streamErrRecv,
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
 			ctrl := gomock.NewController(t)
 
 			mArgs := prepareMockArgs(ctrl, tt.req, tt.docs, tt.wantErr)
-
 			seqProxyMock := mock.NewMockSeqProxyApiClient(ctrl)
-			seqProxyMock.EXPECT().Export(ctx, mArgs.req).
-				Return(mArgs.resp, mArgs.err).Times(1)
+
+			seqProxyMock.EXPECT().
+				Export(ctx, mArgs.req).
+				Return(mArgs.resp, mArgs.err).
+				Times(1)
 
 			c := initGRPCClient(seqProxyMock)
 

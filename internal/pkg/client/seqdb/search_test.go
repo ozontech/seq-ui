@@ -7,13 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1"
-	mock "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1/mock"
-	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1"
+	mock "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1/mock"
+	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
 
 func Test_GRPCClient_Search(t *testing.T) {
@@ -24,12 +25,12 @@ func Test_GRPCClient_Search(t *testing.T) {
 	eventTime := timestamppb.New(time.Date(2024, time.December, 31, 10, 20, 30, 400000, time.UTC))
 
 	events := make([]*seqapi.Event, limit)
-	for i := 0; i < len(events); i++ {
+	for i := range len(events) {
 		events[i] = makeEvent(fmt.Sprintf("test%d", i+1), i+1, eventTime)
 	}
 
 	docs := make([]*seqproxyapi.Document, 0, len(events))
-	for i := 0; i < len(events); i++ {
+	for i := range len(events) {
 		data, err := json.Marshal(events[i].Data)
 		assert.NoError(t, err)
 		docs = append(docs, &seqproxyapi.Document{
@@ -51,7 +52,7 @@ func Test_GRPCClient_Search(t *testing.T) {
 
 		if req != nil {
 			proxyReq = &seqproxyapi.ComplexSearchRequest{
-				Query:     makeProxySearchQuery(req.Query, req.From, req.To),
+				Query:     makeProxySearchQuery(req.Query, req.From, req.To, req.Downsample),
 				Size:      int64(req.Limit),
 				Offset:    int64(req.Offset),
 				WithTotal: req.WithTotal,
@@ -218,6 +219,25 @@ func Test_GRPCClient_Search(t *testing.T) {
 			},
 		},
 		{
+			name: "ok_downsample",
+			req: &seqapi.SearchRequest{
+				Query:      "test_downsample",
+				From:       timestamppb.New(from),
+				To:         timestamppb.New(to),
+				Limit:      limit,
+				Offset:     0,
+				Downsample: 10,
+			},
+			docs: docs,
+			wantResp: &seqapi.SearchResponse{
+				Events:       events,
+				Aggregations: makeAggregations(0, 0, nil),
+				Error: &seqapi.Error{
+					Code: seqapi.ErrorCode_ERROR_CODE_NO,
+				},
+			},
+		},
+		{
 			name: "ok_invalid_utf8",
 			req: &seqapi.SearchRequest{
 				Query:  "test_invalid_utf8",
@@ -271,18 +291,20 @@ func Test_GRPCClient_Search(t *testing.T) {
 			wantErr: errors.New("proxy error"),
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
 
 			mArgs := prepareMockArgs(tt.req, tt.docs, tt.wantResp, tt.wantErr)
-
 			ctrl := gomock.NewController(t)
 			seqProxyMock := mock.NewMockSeqProxyApiClient(ctrl)
-			seqProxyMock.EXPECT().ComplexSearch(ctx, mArgs.req).
-				Return(mArgs.resp, mArgs.err).Times(1)
+
+			seqProxyMock.EXPECT().
+				ComplexSearch(ctx, mArgs.req).
+				Return(mArgs.resp, mArgs.err).
+				Times(1)
 
 			c := initGRPCClient(seqProxyMock)
 

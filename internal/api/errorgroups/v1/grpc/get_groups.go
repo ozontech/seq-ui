@@ -3,7 +3,6 @@ package grpc
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -41,20 +40,18 @@ func (a *API) GetGroups(ctx context.Context, req *errorgroups.GetGroupsRequest) 
 		filterRaw, _ := json.Marshal(req.Filter)
 		attributes = append(attributes, attribute.KeyValue{Key: "filter", Value: attribute.StringValue(string(filterRaw))})
 	}
-	span.SetAttributes(attributes...)
-
-	var duration *time.Duration
-	if req.Duration != nil {
-		parsedDuration := req.Duration.AsDuration()
-		duration = &parsedDuration
+	if req.TimeRange != nil {
+		trRaw, _ := json.Marshal(req.TimeRange)
+		attributes = append(attributes, attribute.KeyValue{Key: "time_range", Value: attribute.StringValue(string(trRaw))})
 	}
+	span.SetAttributes(attributes...)
 
 	request := types.GetErrorGroupsRequest{
 		Service:   req.Service,
 		Env:       req.Env,
 		Source:    req.Source,
 		Release:   req.Release,
-		Duration:  duration,
+		TimeRange: parseTimeRange(req),
 		Limit:     req.Limit,
 		Offset:    req.Offset,
 		Order:     types.ErrorGroupsOrder(req.Order),
@@ -66,7 +63,6 @@ func (a *API) GetGroups(ctx context.Context, req *errorgroups.GetGroupsRequest) 
 		total  uint64
 		err    error
 	)
-
 	if req.Filter != nil && req.Filter.IsNew {
 		groups, total, err = a.service.GetNewErrorGroups(ctx, request)
 	} else {
@@ -83,14 +79,14 @@ func (a *API) GetGroups(ctx context.Context, req *errorgroups.GetGroupsRequest) 
 	}, nil
 }
 
-func groupsToProto(source []types.ErrorGroup) []*errorgroups.Group {
-	groups := make([]*errorgroups.Group, 0, len(source))
+func groupsToProto(source []types.ErrorGroup) []*errorgroups.GetGroupsResponse_Group {
+	groups := make([]*errorgroups.GetGroupsResponse_Group, 0, len(source))
 
 	for _, g := range source {
-		groups = append(groups, &errorgroups.Group{
+		groups = append(groups, &errorgroups.GetGroupsResponse_Group{
 			Hash:        g.Hash,
 			Message:     g.Message,
-			SeenTotal:   g.SeenTotal,
+			SeenTotal:   g.Count,
 			FirstSeenAt: timestamppb.New(g.FirstSeenAt),
 			LastSeenAt:  timestamppb.New(g.LastSeenAt),
 			Source:      g.Source,

@@ -2,8 +2,8 @@ package grpc
 
 import (
 	"context"
+	"encoding/json"
 	"strconv"
-	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -18,13 +18,14 @@ func (a *API) GetHist(ctx context.Context, req *errorgroups.GetHistRequest) (*er
 	ctx, span := tracing.StartSpan(ctx, "errorgroups_v1_get_hist")
 	defer span.End()
 
-	attributes := []attribute.KeyValue{
-		{Key: "service", Value: attribute.StringValue(req.Service)},
-	}
+	attributes := []attribute.KeyValue{}
 	if req.GroupHash != nil {
 		attributes = append(attributes, attribute.KeyValue{
 			Key: "group_hash", Value: attribute.StringValue(strconv.FormatUint(*req.GroupHash, 10)),
 		})
+	}
+	if req.Service != nil {
+		attributes = append(attributes, attribute.KeyValue{Key: "service", Value: attribute.StringValue(*req.Service)})
 	}
 	if req.Env != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*req.Env)})
@@ -38,13 +39,11 @@ func (a *API) GetHist(ctx context.Context, req *errorgroups.GetHistRequest) (*er
 	if req.Source != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "source", Value: attribute.StringValue(*req.Source)})
 	}
-	span.SetAttributes(attributes...)
-
-	var duration *time.Duration
-	if req.Duration != nil {
-		parsedDuration := req.Duration.AsDuration()
-		duration = &parsedDuration
+	if req.TimeRange != nil {
+		trRaw, _ := json.Marshal(req.TimeRange)
+		attributes = append(attributes, attribute.KeyValue{Key: "time_range", Value: attribute.StringValue(string(trRaw))})
 	}
+	span.SetAttributes(attributes...)
 
 	request := types.GetErrorHistRequest{
 		Service:   req.Service,
@@ -52,27 +51,28 @@ func (a *API) GetHist(ctx context.Context, req *errorgroups.GetHistRequest) (*er
 		Env:       req.Env,
 		Source:    req.Source,
 		Release:   req.Release,
-		Duration:  duration,
+		TimeRange: parseTimeRange(req),
 	}
-	buckets, err := a.service.GetHist(ctx, request)
+	hist, err := a.service.GetHist(ctx, request)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}
 
-	return &errorgroups.GetHistResponse{
-		Buckets: bucketsToProto(buckets),
-	}, nil
+	return histToProto(hist), nil
 }
 
-func bucketsToProto(source []types.ErrorHistBucket) []*errorgroups.Bucket {
-	buckets := make([]*errorgroups.Bucket, 0, len(source))
+func histToProto(source types.ErrorHist) *errorgroups.GetHistResponse {
+	buckets := make([]*errorgroups.Bucket, 0, len(source.Buckets))
 
-	for _, b := range source {
+	for _, b := range source.Buckets {
 		buckets = append(buckets, &errorgroups.Bucket{
 			Time:  timestamppb.New(b.Time),
 			Count: b.Count,
 		})
 	}
 
-	return buckets
+	return &errorgroups.GetHistResponse{
+		Buckets:  buckets,
+		Interval: source.Interval,
+	}
 }

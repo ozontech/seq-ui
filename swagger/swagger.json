@@ -499,6 +499,44 @@
                 }
             }
         },
+        "/errorgroups/v1/top_groups": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "errorgroups_v1"
+                ],
+                "operationId": "errorgroups_v1_get_top_groups",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/errorgroups.v1.GetTopGroupsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/errorgroups.v1.GetTopGroupsResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
         "/massexport/v1/cancel": {
             "post": {
                 "security": [
@@ -1737,17 +1775,18 @@
                     "items": {
                         "$ref": "#/definitions/errorgroups.v1.Distribution"
                     }
-                }
-            }
-        },
-        "errorgroups.v1.Env": {
-            "type": "object",
-            "properties": {
-                "env": {
-                    "type": "string"
                 },
-                "percent": {
-                    "type": "integer"
+                "by_service": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/errorgroups.v1.Distribution"
+                    }
+                },
+                "by_source": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/errorgroups.v1.Distribution"
+                    }
                 }
             }
         },
@@ -1777,13 +1816,6 @@
             "properties": {
                 "distributions": {
                     "$ref": "#/definitions/errorgroups.v1.Distributions"
-                },
-                "envs": {
-                    "description": "Deprecated. Use `distributions.by_envs` instead",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/errorgroups.v1.Env"
-                    }
                 },
                 "first_seen_at": {
                     "type": "string",
@@ -1818,7 +1850,7 @@
             "type": "object",
             "properties": {
                 "duration": {
-                    "description": "In go duration format. If not specified, then for the entire time.",
+                    "description": "Deprecated: Use time_range instead",
                     "type": "string",
                     "format": "duration",
                     "example": "1h"
@@ -1847,6 +1879,9 @@
                 "source": {
                     "type": "string"
                 },
+                "time_range": {
+                    "$ref": "#/definitions/errorgroups.v1.TimeRange"
+                },
                 "with_total": {
                     "type": "boolean"
                 }
@@ -1870,7 +1905,7 @@
             "type": "object",
             "properties": {
                 "duration": {
-                    "description": "In go duration format. If not specified, `1h` is used.",
+                    "description": "Deprecated: Use time_range instead",
                     "type": "string",
                     "format": "duration",
                     "example": "1h"
@@ -1890,6 +1925,9 @@
                 },
                 "source": {
                     "type": "string"
+                },
+                "time_range": {
+                    "$ref": "#/definitions/errorgroups.v1.TimeRange"
                 }
             }
         },
@@ -1901,6 +1939,10 @@
                     "items": {
                         "$ref": "#/definitions/errorgroups.v1.Bucket"
                     }
+                },
+                "interval": {
+                    "description": "Interval between buckets in seconds.",
+                    "type": "integer"
                 }
             }
         },
@@ -1954,6 +1996,49 @@
                 }
             }
         },
+        "errorgroups.v1.GetTopGroupsRequest": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "description": "Deprecated: Use time_range instead",
+                    "type": "string",
+                    "format": "duration",
+                    "example": "1h"
+                },
+                "env": {
+                    "type": "string"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "time_range": {
+                    "$ref": "#/definitions/errorgroups.v1.TimeRange"
+                },
+                "with_total": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "errorgroups.v1.GetTopGroupsResponse": {
+            "type": "object",
+            "properties": {
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/errorgroups.v1.TopGroup"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "errorgroups.v1.Group": {
             "type": "object",
             "properties": {
@@ -2000,6 +2085,42 @@
                 "OrderLatest",
                 "OrderOldest"
             ]
+        },
+        "errorgroups.v1.TimeRange": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "type": "string",
+                    "format": "duration",
+                    "example": "1h"
+                },
+                "from": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "to": {
+                    "type": "string",
+                    "format": "date-time"
+                }
+            }
+        },
+        "errorgroups.v1.TopGroup": {
+            "type": "object",
+            "properties": {
+                "hash": {
+                    "type": "string",
+                    "format": "uint64"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "seen_total": {
+                    "type": "integer"
+                },
+                "source": {
+                    "type": "string"
+                }
+            }
         },
         "http.AsyncSearchRequestHistogram": {
             "type": "object",
@@ -2467,6 +2588,9 @@
         "seqapi.v1.ExportRequest": {
             "type": "object",
             "properties": {
+                "downsample": {
+                    "type": "integer"
+                },
                 "fields": {
                     "type": "array",
                     "items": {
@@ -2598,6 +2722,9 @@
                     "items": {
                         "$ref": "#/definitions/seqapi.v1.AggregationQuery"
                     }
+                },
+                "downsample": {
+                    "type": "integer"
                 },
                 "from": {
                     "type": "string",
@@ -2746,6 +2873,9 @@
         "seqapi.v1.GetHistogramRequest": {
             "type": "object",
             "properties": {
+                "downsample": {
+                    "type": "integer"
+                },
                 "from": {
                     "type": "string",
                     "format": "date-time"
@@ -2852,6 +2982,9 @@
                     "items": {
                         "$ref": "#/definitions/seqapi.v1.AggregationQuery"
                     }
+                },
+                "downsample": {
+                    "type": "integer"
                 },
                 "from": {
                     "type": "string",

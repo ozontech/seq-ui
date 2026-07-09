@@ -10,9 +10,10 @@ import (
 	"strings"
 	"testing"
 
+	"go.uber.org/mock/gomock"
+
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/app/types"
-	"go.uber.org/mock/gomock"
 )
 
 func TestServeGetUserProfile(t *testing.T) {

@@ -3,9 +3,10 @@ package grpc
 import (
 	"context"
 
-	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
 
 func (a *API) GetLimits(ctx context.Context, _ *seqapi.GetLimitsRequest) (*seqapi.GetLimitsResponse, error) {

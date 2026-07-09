@@ -34,25 +34,12 @@ func (a *API) serveGetHist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	parsedGroupHash, err := parseGroupHash(httpReq.GroupHash)
-	if err != nil {
-		wr.Error(fmt.Errorf("failed to parse group_hash: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	parsedDuration, err := parseDuration(httpReq.Duration)
-	if err != nil {
-		wr.Error(fmt.Errorf("failed to parse duration: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	attributes := []attribute.KeyValue{
-		{Key: "service", Value: attribute.StringValue(httpReq.Service)},
-	}
+	attributes := []attribute.KeyValue{}
 	if httpReq.GroupHash != nil {
-		attributes = append(attributes, attribute.KeyValue{
-			Key: "group_hash", Value: attribute.StringValue(*httpReq.GroupHash),
-		})
+		attributes = append(attributes, attribute.KeyValue{Key: "group_hash", Value: attribute.StringValue(*httpReq.GroupHash)})
+	}
+	if httpReq.Service != nil {
+		attributes = append(attributes, attribute.KeyValue{Key: "service", Value: attribute.StringValue(*httpReq.Service)})
 	}
 	if httpReq.Env != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReq.Env)})
@@ -66,7 +53,23 @@ func (a *API) serveGetHist(w http.ResponseWriter, r *http.Request) {
 	if httpReq.Source != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "source", Value: attribute.StringValue(*httpReq.Source)})
 	}
+	if httpReq.TimeRange != nil {
+		trRaw, _ := json.Marshal(httpReq.TimeRange)
+		attributes = append(attributes, attribute.KeyValue{Key: "time_range", Value: attribute.StringValue(string(trRaw))})
+	}
 	span.SetAttributes(attributes...)
+
+	parsedGroupHash, err := parseGroupHash(httpReq.GroupHash)
+	if err != nil {
+		wr.Error(fmt.Errorf("failed to parse group_hash: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	tr, err := parseTimeRange(httpReq.TimeRange, httpReq.Duration)
+	if err != nil {
+		wr.Error(fmt.Errorf("failed to parse time range: %w", err), http.StatusBadRequest)
+		return
+	}
 
 	req := types.GetErrorHistRequest{
 		Service:   httpReq.Service,
@@ -74,31 +77,32 @@ func (a *API) serveGetHist(w http.ResponseWriter, r *http.Request) {
 		Env:       httpReq.Env,
 		Source:    httpReq.Source,
 		Release:   httpReq.Release,
-		Duration:  parsedDuration,
+		TimeRange: tr,
 	}
-	buckets, err := a.service.GetHist(ctx, req)
+	hist, err := a.service.GetHist(ctx, req)
 	if err != nil {
 		httputil.ProcessError(wr, err)
 		return
 	}
 
-	wr.WriteJson(getHistResponse{
-		Buckets: newBuckets(buckets),
-	})
+	wr.WriteJson(newHistResp(hist))
 }
 
 type getHistRequest struct {
-	Service   string  `json:"service"`
+	Service   *string `json:"service"`
 	GroupHash *string `json:"group_hash,omitempty" format:"uint64"`
 	Env       *string `json:"env,omitempty"`
 	Source    *string `json:"source,omitempty"`
 	Release   *string `json:"release,omitempty"`
-	// In go duration format. If not specified, `1h` is used.
-	Duration *string `json:"duration,omitempty" format:"duration" example:"1h"`
+	// Deprecated: Use time_range instead
+	Duration  *string    `json:"duration,omitempty" format:"duration" example:"1h"`
+	TimeRange *timeRange `json:"time_range,omitempty"`
 } //	@name	errorgroups.v1.GetHistRequest
 
 type getHistResponse struct {
 	Buckets []bucket `json:"buckets"`
+	// Interval between buckets in seconds.
+	Interval uint64 `json:"interval"`
 } //	@name	errorgroups.v1.GetHistResponse
 
 type bucket struct {
@@ -106,15 +110,18 @@ type bucket struct {
 	Count uint64    `json:"count"`
 } //	@name	errorgroups.v1.Bucket
 
-func newBuckets(source []types.ErrorHistBucket) []bucket {
-	buckets := make([]bucket, 0, len(source))
+func newHistResp(source types.ErrorHist) getHistResponse {
+	buckets := make([]bucket, 0, len(source.Buckets))
 
-	for _, b := range source {
+	for _, b := range source.Buckets {
 		buckets = append(buckets, bucket{
 			Time:  b.Time,
 			Count: b.Count,
 		})
 	}
 
-	return buckets
+	return getHistResponse{
+		Buckets:  buckets,
+		Interval: source.Interval,
+	}
 }

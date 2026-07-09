@@ -3,10 +3,11 @@ package grpc
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/ozontech/seq-ui/internal/api/grpcutil"
 	"github.com/ozontech/seq-ui/pkg/dashboards/v1"
 	"github.com/ozontech/seq-ui/tracing"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 func (a *API) GetByUUID(ctx context.Context, req *dashboards.GetByUUIDRequest) (*dashboards.GetByUUIDResponse, error) {

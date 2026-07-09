@@ -3,12 +3,13 @@ package seqdb
 import (
 	"math"
 
+	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/metric"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
-	"go.uber.org/zap"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type proxyError seqproxyapi.Error
@@ -142,6 +143,7 @@ type (
 		GetQuery() string
 		GetFrom() *timestamppb.Timestamp
 		GetTo() *timestamppb.Timestamp
+		GetDownsample() uint32
 	}
 
 	seqAPIHistQ interface {
@@ -151,9 +153,10 @@ type (
 
 func newProxySearchQuery(q seqAPISearchQ) *seqproxyapi.SearchQuery {
 	return &seqproxyapi.SearchQuery{
-		Query: q.GetQuery(),
-		From:  q.GetFrom(),
-		To:    q.GetTo(),
+		Query:      q.GetQuery(),
+		From:       q.GetFrom(),
+		To:         q.GetTo(),
+		Downsample: q.GetDownsample(),
 	}
 }
 

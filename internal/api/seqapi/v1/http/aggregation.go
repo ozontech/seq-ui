@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/api_error"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
-	"go.opentelemetry.io/otel/attribute"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // serveGetAggregation go doc.
@@ -61,6 +62,10 @@ func (a *API) serveGetAggregation(w http.ResponseWriter, r *http.Request) {
 		{
 			Key:   "aggregations",
 			Value: attribute.StringValue(string(aggsRaw)),
+		},
+		{
+			Key:   "downsample",
+			Value: attribute.IntValue(int(httpReq.Downsample)),
 		},
 	}
 
@@ -201,6 +206,7 @@ type getAggregationRequest struct {
 	To           time.Time          `json:"to" format:"date-time"`
 	AggField     string             `json:"aggField"`
 	Aggregations aggregationQueries `json:"aggregations"`
+	Downsample   uint32             `json:"downsample"`
 } //	@name	seqapi.v1.GetAggregationRequest
 
 func (r getAggregationRequest) toProto() *seqapi.GetAggregationRequest {
@@ -210,6 +216,7 @@ func (r getAggregationRequest) toProto() *seqapi.GetAggregationRequest {
 		To:           timestamppb.New(r.To),
 		AggField:     r.AggField,
 		Aggregations: r.Aggregations.toProto(),
+		Downsample:   r.Downsample,
 	}
 }
 

@@ -7,13 +7,14 @@ import (
 	"net/http"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/metric"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
-	"go.opentelemetry.io/otel/attribute"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // serveExport go doc.
@@ -77,6 +78,10 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 		{
 			Key:   "fields",
 			Value: attribute.StringSliceValue(httpReq.Fields),
+		},
+		{
+			Key:   "downsample",
+			Value: attribute.IntValue(int(httpReq.Downsample)),
 		},
 	}
 
@@ -143,24 +148,26 @@ func (f exportFormat) toProto() seqapi.ExportFormat {
 }
 
 type exportRequest struct {
-	Query  string       `json:"query"`
-	From   time.Time    `json:"from" format:"date-time"`
-	To     time.Time    `json:"to" format:"date-time"`
-	Limit  int32        `json:"limit" format:"int32"`
-	Offset int32        `json:"offset" format:"int32"`
-	Format exportFormat `json:"format" default:"jsonl"`
-	Fields []string     `json:"fields,omitempty"`
+	Query      string       `json:"query"`
+	From       time.Time    `json:"from" format:"date-time"`
+	To         time.Time    `json:"to" format:"date-time"`
+	Limit      int32        `json:"limit" format:"int32"`
+	Offset     int32        `json:"offset" format:"int32"`
+	Format     exportFormat `json:"format" default:"jsonl"`
+	Fields     []string     `json:"fields,omitempty"`
+	Downsample uint32       `json:"downsample"`
 } //	@name	seqapi.v1.ExportRequest
 
 func (r exportRequest) toProto() *seqapi.ExportRequest {
 	return &seqapi.ExportRequest{
-		Query:  r.Query,
-		From:   timestamppb.New(r.From),
-		To:     timestamppb.New(r.To),
-		Limit:  r.Limit,
-		Offset: r.Offset,
-		Format: r.Format.toProto(),
-		Fields: r.Fields,
+		Query:      r.Query,
+		From:       timestamppb.New(r.From),
+		To:         timestamppb.New(r.To),
+		Limit:      r.Limit,
+		Offset:     r.Offset,
+		Format:     r.Format.toProto(),
+		Fields:     r.Fields,
+		Downsample: r.Downsample,
 	}
 }
 

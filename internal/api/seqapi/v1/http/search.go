@@ -7,12 +7,13 @@ import (
 	"strconv"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/api_error"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
-	"go.opentelemetry.io/otel/attribute"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // serveSearch go doc.
@@ -75,6 +76,10 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 		{
 			Key:   "offset_id",
 			Value: attribute.StringValue(httpReq.OffsetID),
+		},
+		{
+			Key:   "downsample",
+			Value: attribute.IntValue(int(httpReq.Downsample)),
 		},
 	}
 
@@ -171,8 +176,9 @@ type searchRequest struct {
 	Histogram    struct {
 		Interval string `json:"interval"`
 	} `json:"histogram"`
-	Order    order  `json:"order" default:"desc"`
-	OffsetID string `json:"offset_id"`
+	Order      order  `json:"order" default:"desc"`
+	OffsetID   string `json:"offset_id"`
+	Downsample uint32 `json:"downsample"`
 } //	@name	seqapi.v1.SearchRequest
 
 func (r searchRequest) toProto() *seqapi.SearchRequest {
@@ -184,6 +190,7 @@ func (r searchRequest) toProto() *seqapi.SearchRequest {
 		Offset:       r.Offset,
 		OffsetId:     r.OffsetID,
 		WithTotal:    r.WithTotal,
+		Downsample:   r.Downsample,
 		Aggregations: r.Aggregations.toProto(),
 		Order:        r.Order.toProto(),
 	}

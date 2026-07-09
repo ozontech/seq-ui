@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ozontech/seq-ui/internal/app/auth"
-	mock_auth "github.com/ozontech/seq-ui/internal/app/auth/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+
+	"github.com/ozontech/seq-ui/internal/app/auth"
+	mock_auth "github.com/ozontech/seq-ui/internal/app/auth/mock"
 )
 
 func TestAuthProvidersAuth(t *testing.T) {

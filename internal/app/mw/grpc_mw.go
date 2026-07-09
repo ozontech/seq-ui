@@ -5,10 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ozontech/seq-ui/internal/app/types"
-	"github.com/ozontech/seq-ui/logger"
-	"github.com/ozontech/seq-ui/metric"
-	"github.com/ozontech/seq-ui/tracing"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -17,6 +13,11 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/ozontech/seq-ui/internal/app/types"
+	"github.com/ozontech/seq-ui/logger"
+	"github.com/ozontech/seq-ui/metric"
+	"github.com/ozontech/seq-ui/tracing"
 )
 
 func GRPCLogInterceptor(l *tracing.Logger) grpc.UnaryServerInterceptor {
