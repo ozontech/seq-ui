@@ -7,6 +7,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/grpcutil"
 	"github.com/ozontech/seq-ui/internal/app/types"
+	"github.com/ozontech/seq-ui/internal/pkg/service/profiles"
 	"github.com/ozontech/seq-ui/pkg/userprofile/v1"
 	"github.com/ozontech/seq-ui/tracing"
 )
@@ -27,6 +28,8 @@ func (a *API) GetUserProfile(ctx context.Context, _ *userprofile.GetUserProfileR
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}
+
+	profiles.SetID(userName, userProfile.ID)
 
 	return userProfile.ToProto(), nil
 }
