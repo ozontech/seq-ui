@@ -24,7 +24,7 @@ import (
 	"github.com/ozontech/seq-ui/internal/api/profiles"
 	seqapi_v1 "github.com/ozontech/seq-ui/internal/api/seqapi/v1"
 	userprofile_v1 "github.com/ozontech/seq-ui/internal/api/userprofile/v1"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/server"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
@@ -103,7 +103,7 @@ func run(ctx context.Context) {
 	}
 }
 
-func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
+func initApp(ctx context.Context, cfg config_v2.Config) *api.Registrar {
 	logger.Info("initializing seq-db clients")
 	seqDBClients, err := initSeqDBClients(ctx, cfg)
 	if err != nil {
@@ -145,7 +145,7 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 	}
 
 	logger.Info("initializing db")
-	db, err := initDb(ctx, cfg.Server.DB)
+	db, err := initDb(ctx, cfg.DB)
 	if err != nil {
 		logger.Fatal("failed to init db", zap.Error(err))
 	}
@@ -157,7 +157,7 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 		dashboardsV1         *dashboards_v1.Dashboards
 	)
 	if db != nil {
-		repo := repository.New(db, cfg.Server.DB.RequestTimeout)
+		repo := repository.New(db, cfg.DB.RequestTimeout)
 		svc := service.New(repo)
 		p = profiles.New(svc)
 

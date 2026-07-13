@@ -1,16 +1,15 @@
-package config
+package v2
 
 import (
-	"bytes"
 	"fmt"
-	"os"
 	"time"
-
-	"gopkg.in/yaml.v3"
 )
 
 const (
-	DefaultSeqDBClientID = "default"
+	DefaultSeqDBClientID     = "default"
+	DefaultInmemCacheID      = "seqapi"
+	DefaultRedisID           = "default"
+	DefaultMassExportRedisID = "mass_export"
 
 	ProxyClientModeGRPC = "grpc"
 
@@ -53,10 +52,12 @@ const (
 )
 
 type Config struct {
-	Version  *int      `yaml:"version,omitempty"`
+	Version  int       `yaml:"version"`
 	Server   *Server   `yaml:"server"`
 	Clients  *Clients  `yaml:"clients"`
 	Handlers *Handlers `yaml:"handlers"`
+	DB       *DB       `yaml:"db"`
+	Cache    *Cache    `yaml:"cache"`
 }
 
 type CORS struct {
@@ -95,16 +96,6 @@ func (db *DB) ConnString() string {
 	return fmt.Sprintf("host=%s port=%d dbname=%s user=%s password=%s pool_max_conns=%d", db.Host, db.Port, db.Name, db.User, db.Pass, db.ConnectionPoolCapacity)
 }
 
-type CH struct {
-	Addrs       []string      `yaml:"addrs"`
-	Database    string        `yaml:"database"`
-	Username    string        `yaml:"username"`
-	Password    string        `yaml:"password"`
-	Sharded     bool          `yaml:"sharded"`
-	DialTimeout time.Duration `yaml:"dial_timeout"`
-	ReadTimeout time.Duration `yaml:"read_timeout"`
-}
-
 type (
 	RateLimiter struct {
 		RatePerSec   int  `yaml:"rate_per_sec"`
@@ -124,12 +115,15 @@ type (
 )
 
 type InmemoryCache struct {
-	NumCounters int64 `yaml:"num_counters"`
-	MaxCost     int64 `yaml:"max_cost"`
-	BufferItems int64 `yaml:"buffer_items"`
+	ID          string `yaml:"id"`
+	NumCounters int64  `yaml:"num_counters"`
+	MaxCost     int64  `yaml:"max_cost"`
+	BufferItems int64  `yaml:"buffer_items"`
 }
 
 type Redis struct {
+	ID              string        `yaml:"id"`
+	WithInmemID     string        `yaml:"with_inmem_id"`
 	Addr            string        `yaml:"addr"`
 	Username        string        `yaml:"username"`
 	Password        string        `yaml:"password"`
@@ -140,8 +134,8 @@ type Redis struct {
 }
 
 type Cache struct {
-	Inmemory InmemoryCache `yaml:"inmemory"`
-	Redis    *Redis        `yaml:"redis"`
+	Inmemory []InmemoryCache `yaml:"inmemory"`
+	Redis    []Redis         `yaml:"redis"`
 }
 
 type S3 struct {
@@ -152,14 +146,14 @@ type S3 struct {
 	EnableSSl       bool   `yaml:"enable_ssl"`
 }
 
-type SeqProxyDownloader struct {
+type DownloadParams struct {
 	Delay               time.Duration `yaml:"delay"`
 	InitialRetryBackoff time.Duration `yaml:"initial_retry_backoff"`
 	MaxRetryBackoff     time.Duration `yaml:"max_retry_backoff"`
 }
 
 type SessionStore struct {
-	Redis          Redis         `yaml:"redis"`
+	RedisID        string        `yaml:"redis_id"`
 	ExportLifetime time.Duration `yaml:"export_lifetime"`
 }
 
@@ -168,32 +162,49 @@ type FileStore struct {
 }
 
 type MassExport struct {
-	BatchSize          uint64              `yaml:"batch_size"`
-	WorkersCount       int                 `yaml:"workers_count"`
-	TasksChannelSize   int                 `yaml:"tasks_channel_size"`
-	PartLength         time.Duration       `yaml:"part_length"`
-	URLPrefix          string              `yaml:"url_prefix"`
-	AllowedUsers       []string            `yaml:"allowed_users"`
-	FileStore          *FileStore          `yaml:"file_store"`
-	SessionStore       *SessionStore       `yaml:"session_store"`
-	SeqProxyDownloader *SeqProxyDownloader `yaml:"seq_proxy_downloader"`
+	BatchSize        uint64          `yaml:"batch_size"`
+	WorkersCount     int             `yaml:"workers_count"`
+	TasksChannelSize int             `yaml:"tasks_channel_size"`
+	PartLength       time.Duration   `yaml:"part_length"`
+	URLPrefix        string          `yaml:"url_prefix"`
+	AllowedUsers     []string        `yaml:"allowed_users"`
+	FileStore        *FileStore      `yaml:"file_store"`
+	SessionStore     *SessionStore   `yaml:"session_store"`
+	DownloadParams   *DownloadParams `yaml:"download_params"`
+}
+
+type HTTP struct {
+	Addr              string        `yaml:"addr"`
+	ReadHeaderTimeout time.Duration `yaml:"read_header_timeout"`
+	ReadTimeout       time.Duration `yaml:"read_timeout"`
+	WriteTimeout      time.Duration `yaml:"write_timeout"`
+	CORS              *CORS         `yaml:"cors"`
+}
+
+type GRPC struct {
+	Addr              string        `yaml:"addr"`
+	ConnectionTimeout time.Duration `yaml:"connection_timeout"`
+}
+
+type Debug struct {
+	Addr string `yaml:"addr"`
+}
+
+type JWT struct {
+	SecretKey string `yaml:"secret_key"`
+}
+
+type Auth struct {
+	OIDC *OIDC `yaml:"oidc"`
+	JWT  *JWT  `yaml:"jwt"`
 }
 
 type Server struct {
-	DebugAddr             string            `yaml:"debug_addr"`
-	HTTPAddr              string            `yaml:"http_addr"`
-	GRPCAddr              string            `yaml:"grpc_addr"`
-	CORS                  *CORS             `yaml:"cors"`
-	OIDC                  *OIDC             `yaml:"oidc"`
-	GRPCConnectionTimeout time.Duration     `yaml:"grpc_connection_timeout"`
-	HTTPReadHeaderTimeout time.Duration     `yaml:"http_read_header_timeout"`
-	HTTPReadTimeout       time.Duration     `yaml:"http_read_timeout"`
-	HTTPWriteTimeout      time.Duration     `yaml:"http_write_timeout"`
-	DB                    *DB               `yaml:"db"`
-	CH                    *CH               `yaml:"clickhouse"`
-	RateLimiters          ApiToRateLimiters `yaml:"rate_limiters"`
-	Cache                 Cache             `yaml:"cache"`
-	JWTSecretKey          string            `yaml:"jwt_secret_key"`
+	HTTP         HTTP              `yaml:"http"`
+	GRPC         GRPC              `yaml:"grpc"`
+	Debug        Debug             `yaml:"debug"`
+	Auth         *Auth             `yaml:"auth"`
+	RateLimiters ApiToRateLimiters `yaml:"rate_limiters"`
 }
 
 type GRPCKeepaliveParams struct {
@@ -221,18 +232,23 @@ type SeqDBClient struct {
 	MaxRetryBackoff     time.Duration        `yaml:"max_retry_backoff"`
 	ClientMode          string               `yaml:"client_mode"`
 	GRPCKeepaliveParams *GRPCKeepaliveParams `yaml:"grpc_keepalive_params"`
+	DownloadParams      *DownloadParams      `yaml:"download_params"`
+}
+
+type CHClient struct {
+	ID          string        `yaml:"id"`
+	Addrs       []string      `yaml:"addrs"`
+	Database    string        `yaml:"database"`
+	Username    string        `yaml:"username"`
+	Password    string        `yaml:"password"`
+	Sharded     bool          `yaml:"sharded"`
+	DialTimeout time.Duration `yaml:"dial_timeout"`
+	ReadTimeout time.Duration `yaml:"read_timeout"`
 }
 
 type Clients struct {
-	SeqDBTimeout        time.Duration        `yaml:"seq_db_timeout"`
-	SeqDBAvgDocSize     int                  `yaml:"seq_db_avg_doc_size"`
-	SeqDBAddrs          []string             `yaml:"seq_db_addrs"`
-	RequestRetries      int                  `yaml:"request_retries"`
-	InitialRetryBackoff time.Duration        `yaml:"initial_retry_backoff"`
-	MaxRetryBackoff     time.Duration        `yaml:"max_retry_backoff"`
-	ProxyClientMode     string               `yaml:"proxy_client_mode"`
-	GRPCKeepaliveParams *GRPCKeepaliveParams `yaml:"grpc_keepalive_params"`
-	SeqDB               []SeqDBClient        `yaml:"seq_db"`
+	SeqDB      []SeqDBClient `yaml:"seq_db"`
+	ClickHouse []CHClient    `yaml:"clickhouse"`
 }
 
 type Handlers struct {
@@ -307,6 +323,7 @@ type FieldFilterSet struct {
 
 type LogTagsMapping struct {
 	Release []string `yaml:"release"`
+	Service []string `yaml:"service"`
 	Env     []string `yaml:"env"`
 }
 
@@ -320,104 +337,124 @@ type AsyncSearch struct {
 	ListQueryLengthLimit int      `yaml:"list_query_length_limit"`
 }
 
-// FromFile parse config from config path.
-func FromFile(cfgPath string) (Config, error) {
-	cfgBytes, err := os.ReadFile(cfgPath) //nolint:gosec
-	if err != nil {
-		return Config{}, fmt.Errorf("error reading file: %s", err)
+func Normalize(cfg *Config) error {
+	if len(cfg.Clients.SeqDB) == 0 {
+		return fmt.Errorf("clients.seq_db must contain at least one client")
 	}
 
-	cfg, err := parse(cfgBytes)
-	if err != nil {
-		return Config{}, fmt.Errorf("error parsing file: %s", err)
+	seqDBIDs := make(map[string]struct{}, len(cfg.Clients.SeqDB))
+	for i := range cfg.Clients.SeqDB {
+		c := &cfg.Clients.SeqDB[i]
+		if c.ID == "" {
+			return fmt.Errorf("seq_db client ID cannot be empty")
+		}
+		if _, ok := seqDBIDs[c.ID]; ok {
+			return fmt.Errorf("duplicate seq_db client ID: %s", c.ID)
+		}
+
+		seqDBIDs[c.ID] = struct{}{}
+
+		if c.ClientMode == "" {
+			c.ClientMode = ProxyClientModeGRPC
+		} else if c.ClientMode != ProxyClientModeGRPC {
+			return fmt.Errorf("invalid clients.seq_db[%s].client_mode: %q (allowed: %q)", c.ID, c.ClientMode, ProxyClientModeGRPC)
+		}
+
+		if c.GRPCKeepaliveParams != nil {
+			if c.GRPCKeepaliveParams.Time < minGRPCKeepaliveTime {
+				c.GRPCKeepaliveParams.Time = minGRPCKeepaliveTime
+			}
+			if c.GRPCKeepaliveParams.Timeout < minGRPCKeepaliveTimeout {
+				c.GRPCKeepaliveParams.Timeout = minGRPCKeepaliveTimeout
+			}
+		}
 	}
 
-	proxyClientMode := cfg.Clients.ProxyClientMode
-	if proxyClientMode == "" {
-		cfg.Clients.ProxyClientMode = ProxyClientModeGRPC
-	} else if proxyClientMode != ProxyClientModeGRPC {
-		return Config{}, fmt.Errorf(
-			"invalid value for clients.proxy_client_mode: %q. Allowed values are empty string (defaults to %q) or %q",
-			proxyClientMode, ProxyClientModeGRPC, ProxyClientModeGRPC,
-		)
+	chIDs := make(map[string]struct{}, len(cfg.Clients.ClickHouse))
+	for i := range cfg.Clients.ClickHouse {
+		ch := &cfg.Clients.ClickHouse[i]
+		if ch.ID == "" {
+			return fmt.Errorf("clickhouse client ID cannot be empty")
+		}
+		if _, ok := chIDs[ch.ID]; ok {
+			return fmt.Errorf("duplicate clickhouse client ID: %s", ch.ID)
+		}
+
+		chIDs[ch.ID] = struct{}{}
+
+		if ch.DialTimeout <= 0 {
+			ch.DialTimeout = defaultClickHouseDialTimeout
+		}
+		if ch.ReadTimeout <= 0 {
+			ch.ReadTimeout = defaultClickHouseReadTimeout
+		}
 	}
 
-	setSeqAPIOptionsDefaults(cfg.Handlers.SeqAPI.SeqAPIOptions)
+	inmemIDs := make(map[string]struct{}, len(cfg.Cache.Inmemory))
+	for i := range cfg.Cache.Inmemory {
+		inm := &cfg.Cache.Inmemory[i]
+		if inm.ID == "" {
+			return fmt.Errorf("inmemory cache ID cannot be empty")
+		}
+		if _, ok := inmemIDs[inm.ID]; ok {
+			return fmt.Errorf("duplicate inmemory cache ID: %s", inm.ID)
+		}
+
+		inmemIDs[inm.ID] = struct{}{}
+
+		if inm.NumCounters <= 0 {
+			inm.NumCounters = defaultInmemCacheNumCounters
+		}
+		if inm.MaxCost <= 0 {
+			inm.MaxCost = defaultInmemCacheMaxCost
+		}
+		if inm.BufferItems <= 0 {
+			inm.BufferItems = defaultInmemCacheBufferItems
+		}
+	}
+
+	redisIDs := make(map[string]struct{}, len(cfg.Cache.Redis))
+	for i := range cfg.Cache.Redis {
+		r := &cfg.Cache.Redis[i]
+		if r.ID == "" {
+			return fmt.Errorf("redis cache ID cannot be empty")
+		}
+		if _, ok := inmemIDs[r.ID]; ok {
+			return fmt.Errorf("duplicate redis cache ID: %s", r.ID)
+		}
+
+		redisIDs[r.ID] = struct{}{}
+
+		if r.WithInmemID != "" {
+			if _, ok := redisIDs[r.WithInmemID]; !ok {
+				return fmt.Errorf("redis cache %q references unknown inmem cache id %q", r.ID, r.WithInmemID)
+			}
+		}
+	}
+
+	if cfg.DB != nil && cfg.DB.UsePreparedStatements == nil {
+		cfg.DB.UsePreparedStatements = new(bool)
+		*cfg.DB.UsePreparedStatements = true
+	}
 
 	if cfg.Handlers.AsyncSearch.ListQueryLengthLimit <= 0 {
 		cfg.Handlers.AsyncSearch.ListQueryLengthLimit = defaultAsyncSearchListQueryLengthLimit
 	}
 
-	if cfg.Server.DB != nil && cfg.Server.DB.UsePreparedStatements == nil {
-		cfg.Server.DB.UsePreparedStatements = new(bool)
-		*cfg.Server.DB.UsePreparedStatements = true
-	}
-
-	if cfg.Server.CH != nil && cfg.Server.CH.DialTimeout <= 0 {
-		cfg.Server.CH.DialTimeout = defaultClickHouseDialTimeout
-	}
-
-	if cfg.Server.CH != nil && cfg.Server.CH.ReadTimeout <= 0 {
-		cfg.Server.CH.ReadTimeout = defaultClickHouseReadTimeout
-	}
-
-	if cfg.Clients.GRPCKeepaliveParams != nil {
-		if cfg.Clients.GRPCKeepaliveParams.Time < minGRPCKeepaliveTime {
-			cfg.Clients.GRPCKeepaliveParams.Time = minGRPCKeepaliveTime
-		}
-		if cfg.Clients.GRPCKeepaliveParams.Timeout < minGRPCKeepaliveTimeout {
-			cfg.Clients.GRPCKeepaliveParams.Timeout = minGRPCKeepaliveTimeout
-		}
-	}
-
-	if cfg.Server.Cache.Inmemory.NumCounters <= 0 {
-		cfg.Server.Cache.Inmemory.NumCounters = defaultInmemCacheNumCounters
-	}
-	if cfg.Server.Cache.Inmemory.MaxCost <= 0 {
-		cfg.Server.Cache.Inmemory.MaxCost = defaultInmemCacheMaxCost
-	}
-	if cfg.Server.Cache.Inmemory.BufferItems <= 0 {
-		cfg.Server.Cache.Inmemory.BufferItems = defaultInmemCacheBufferItems
-	}
-
-	if len(cfg.Clients.SeqDB) == 0 {
-		defaultClient := SeqDBClient{
-			ID:                  DefaultSeqDBClientID,
-			Timeout:             cfg.Clients.SeqDBTimeout,
-			AvgDocSize:          cfg.Clients.SeqDBAvgDocSize,
-			Addrs:               cfg.Clients.SeqDBAddrs,
-			RequestRetries:      cfg.Clients.RequestRetries,
-			InitialRetryBackoff: cfg.Clients.InitialRetryBackoff,
-			MaxRetryBackoff:     cfg.Clients.MaxRetryBackoff,
-			ClientMode:          cfg.Clients.ProxyClientMode,
-			GRPCKeepaliveParams: cfg.Clients.GRPCKeepaliveParams,
-		}
-		cfg.Clients.SeqDB = []SeqDBClient{defaultClient}
-	}
-
-	clientIDs := make(map[string]struct{})
-	for _, client := range cfg.Clients.SeqDB {
-		if client.ID == "" {
-			return Config{}, fmt.Errorf("seq_db client ID cannot be empty")
-		}
-		if _, ok := clientIDs[client.ID]; ok {
-			return Config{}, fmt.Errorf("duplicate seq_db client ID: %s", client.ID)
-		}
-		clientIDs[client.ID] = struct{}{}
-	}
+	setSeqAPIOptionsDefaults(cfg.Handlers.SeqAPI.SeqAPIOptions)
 
 	if len(cfg.Handlers.SeqAPI.Envs) > 0 {
 		if cfg.Handlers.SeqAPI.DefaultEnv == "" {
-			return Config{}, fmt.Errorf("default_env must be specified when using envs")
+			return fmt.Errorf("default_env must be specified when using envs")
 		}
 
 		if _, exists := cfg.Handlers.SeqAPI.Envs[cfg.Handlers.SeqAPI.DefaultEnv]; !exists {
-			return Config{}, fmt.Errorf("default_env '%s' not found in seq_api.envs", cfg.Handlers.SeqAPI.DefaultEnv)
+			return fmt.Errorf("default_env '%s' not found in seq_api.envs", cfg.Handlers.SeqAPI.DefaultEnv)
 		}
 
 		for envName, envConfig := range cfg.Handlers.SeqAPI.Envs {
-			if _, ok := clientIDs[envConfig.SeqDB]; !ok {
-				return Config{}, fmt.Errorf("client '%s' for env '%s' not found", envConfig.SeqDB, envName)
+			if _, ok := seqDBIDs[envConfig.SeqDB]; !ok {
+				return fmt.Errorf("client '%s' for env '%s' not found", envConfig.SeqDB, envName)
 			}
 
 			if envConfig.Options == nil {
@@ -430,7 +467,16 @@ func FromFile(cfgPath string) (Config, error) {
 		}
 	}
 
-	return cfg, nil
+	if cfg.Handlers.MassExport != nil {
+		if cfg.Handlers.MassExport.SessionStore.RedisID == "" {
+			return fmt.Errorf("handlers.mass_export.session_store.redis_id cannot be empty")
+		}
+
+		if _, ok := redisIDs[cfg.Handlers.MassExport.SessionStore.RedisID]; !ok {
+			return fmt.Errorf("unknown handlers.mass_export.session_store.redis_id %q", cfg.Handlers.MassExport.SessionStore.RedisID)
+		}
+	}
+	return nil
 }
 
 func setSeqAPIOptionsDefaults(options *SeqAPIOptions) {
@@ -461,16 +507,4 @@ func setSeqAPIOptionsDefaults(options *SeqAPIOptions) {
 	if options.LogsLifespanCacheTTL <= 0 {
 		options.LogsLifespanCacheTTL = defaultLogsLifespanCacheTTL
 	}
-}
-
-func parse(cfg []byte) (Config, error) {
-	result := Config{}
-
-	decoder := yaml.NewDecoder(bytes.NewReader(cfg))
-	decoder.KnownFields(true)
-	if err := decoder.Decode(&result); err != nil {
-		return result, fmt.Errorf("error parsing config: %w", err)
-	}
-
-	return result, nil
 }
