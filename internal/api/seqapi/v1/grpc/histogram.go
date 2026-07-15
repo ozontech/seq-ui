@@ -34,6 +34,10 @@ func (a *API) GetHistogram(ctx context.Context, req *seqapi.GetHistogramRequest)
 			Key:   "interval",
 			Value: attribute.StringValue(req.GetInterval()),
 		},
+		{
+			Key:   "downsample",
+			Value: attribute.IntValue(int(req.GetDownsample())),
+		},
 	}
 
 	if env != "" {

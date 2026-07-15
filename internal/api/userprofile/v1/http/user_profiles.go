@@ -9,6 +9,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/app/types"
+	"github.com/ozontech/seq-ui/internal/pkg/service/profiles"
 	"github.com/ozontech/seq-ui/tracing"
 )
 
@@ -41,6 +42,8 @@ func (a *API) serveGetUserProfile(w http.ResponseWriter, r *http.Request) {
 		httputil.ProcessError(wr, err)
 		return
 	}
+
+	profiles.SetID(userName, up.ID)
 
 	wr.WriteJson(newUserProfile(up))
 }

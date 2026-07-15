@@ -133,7 +133,7 @@
                         "name": "body",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/admin.v1.DeleteRoleResponse"
+                            "$ref": "#/definitions/admin.v1.DeleteRoleRequest"
                         }
                     }
                 ],
@@ -173,7 +173,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/admin.v1.UpdateRoleResponse"
+                            "$ref": "#/definitions/admin.v1.UpdateRoleRequest"
                         }
                     }
                 ],
@@ -1799,7 +1799,7 @@
                 }
             }
         },
-        "admin.v1.DeleteRoleResponse": {
+        "admin.v1.DeleteRoleRequest": {
             "type": "object",
             "properties": {
                 "replacement_role_id": {
@@ -1863,7 +1863,7 @@
                 }
             }
         },
-        "admin.v1.UpdateRoleResponse": {
+        "admin.v1.UpdateRoleRequest": {
             "type": "object",
             "properties": {
                 "name": {
@@ -2973,6 +2973,9 @@
         "seqapi.v1.ExportRequest": {
             "type": "object",
             "properties": {
+                "downsample": {
+                    "type": "integer"
+                },
                 "fields": {
                     "type": "array",
                     "items": {
@@ -3104,6 +3107,9 @@
                     "items": {
                         "$ref": "#/definitions/seqapi.v1.AggregationQuery"
                     }
+                },
+                "downsample": {
+                    "type": "integer"
                 },
                 "from": {
                     "type": "string",
@@ -3252,6 +3258,9 @@
         "seqapi.v1.GetHistogramRequest": {
             "type": "object",
             "properties": {
+                "downsample": {
+                    "type": "integer"
+                },
                 "from": {
                     "type": "string",
                     "format": "date-time"
@@ -3358,6 +3367,9 @@
                     "items": {
                         "$ref": "#/definitions/seqapi.v1.AggregationQuery"
                     }
+                },
+                "downsample": {
+                    "type": "integer"
                 },
                 "from": {
                     "type": "string",

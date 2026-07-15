@@ -27,11 +27,12 @@ func initGRPCClient(client *mock.MockSeqProxyApiClient) *GRPCClient {
 	}
 }
 
-func makeProxySearchQuery(query string, from, to *timestamppb.Timestamp) *seqproxyapi.SearchQuery {
+func makeProxySearchQuery(query string, from, to *timestamppb.Timestamp, downsample uint32) *seqproxyapi.SearchQuery {
 	return &seqproxyapi.SearchQuery{
-		Query: query,
-		From:  from,
-		To:    to,
+		Query:      query,
+		From:       from,
+		To:         to,
+		Downsample: downsample,
 	}
 }
 
@@ -41,7 +42,7 @@ func makeEvent(id string, countData int, t *timestamppb.Timestamp) *seqapi.Event
 		Data: make(map[string]string),
 		Time: t,
 	}
-	for i := 0; i < countData; i++ {
+	for i := range countData {
 		e.Data[fmt.Sprintf("field%d", i+1)] = fmt.Sprintf("val%d", i+1)
 	}
 	return e
@@ -51,7 +52,7 @@ func makeHistogram(bucketCount int) *seqapi.Histogram {
 	hist := &seqapi.Histogram{
 		Buckets: make([]*seqapi.Histogram_Bucket, 0, bucketCount),
 	}
-	for i := 0; i < bucketCount; i++ {
+	for i := range bucketCount {
 		hist.Buckets = append(hist.Buckets, &seqapi.Histogram_Bucket{
 			Key:      uint64(i * 100),
 			DocCount: uint64(i + 1),
@@ -69,7 +70,7 @@ func makeAggregation(bucketCount int, opts *makeAggOpts) *seqapi.Aggregation {
 	agg := &seqapi.Aggregation{
 		Buckets: make([]*seqapi.Aggregation_Bucket, 0, bucketCount),
 	}
-	for i := 0; i < bucketCount; i++ {
+	for i := range bucketCount {
 		v := new(float64)
 		*v = float64(i + 1)
 		b := &seqapi.Aggregation_Bucket{
@@ -89,7 +90,7 @@ func makeAggregation(bucketCount int, opts *makeAggOpts) *seqapi.Aggregation {
 
 func makeAggregations(aggCount, bucketCount int, opts *makeAggOpts) []*seqapi.Aggregation {
 	aggs := make([]*seqapi.Aggregation, 0, aggCount)
-	for i := 0; i < aggCount; i++ {
+	for range aggCount {
 		aggs = append(aggs, makeAggregation(bucketCount, opts))
 	}
 	return aggs

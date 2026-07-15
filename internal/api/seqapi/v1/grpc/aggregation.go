@@ -42,6 +42,10 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 			Key:   "aggregations",
 			Value: attribute.StringValue(string(aggregations)),
 		},
+		{
+			Key:   "downsample",
+			Value: attribute.IntValue(int(req.GetDownsample())),
+		},
 	}
 
 	if env != "" {

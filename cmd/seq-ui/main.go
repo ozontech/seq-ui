@@ -163,7 +163,7 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 		repo := repository.New(db, cfg.Server.DB.RequestTimeout)
 		userProfilesSvc := userprofile.New(repo.UserProfiles, repo.FavoriteQueries)
 		dashboardsSvc := dashboards.New(repo.Dashboards)
-		profiles.InitProfiles(userProfilesSvc)
+		profiles.InitProfiles(repo.UserProfiles.GetOrCreate)
 
 		userProfileV1 = userprofile_v1.New(userProfilesSvc)
 		dashboardsV1 = dashboards_v1.New(dashboardsSvc)

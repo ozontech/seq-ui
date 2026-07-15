@@ -587,8 +587,9 @@ func TestUpdateRole(t *testing.T) {
 	emptyName := ""
 
 	type mockArgs struct {
-		req types.UpdateRoleRequest
-		err error
+		req        types.UpdateRoleRequest
+		err        error
+		resetUsers []string
 	}
 
 	tests := []struct {
@@ -613,10 +614,11 @@ func TestUpdateRole(t *testing.T) {
 					Name:        &name,
 					Permissions: []string{permissionReadRoles},
 				},
+				resetUsers: []string{"dima"},
 			},
 			accessMock: &accessMock{
 				username:    "typical good boy",
-				permissions: []string{permissionUpdateRoles},
+				permissions: []string{permissionUpdateRoles, permissionReadRoles},
 			},
 		},
 		{
@@ -630,10 +632,11 @@ func TestUpdateRole(t *testing.T) {
 					RoleID: 1,
 					Name:   &name,
 				},
+				resetUsers: []string{"dima"},
 			},
 			accessMock: &accessMock{
 				username:    "typical good boy",
-				permissions: []string{permissionUpdateRoles},
+				permissions: []string{permissionUpdateRoles, permissionReadRoles},
 			},
 		},
 		{
@@ -647,10 +650,11 @@ func TestUpdateRole(t *testing.T) {
 					RoleID:      1,
 					Permissions: []string{permissionReadRoles},
 				},
+				resetUsers: []string{"dima"},
 			},
 			accessMock: &accessMock{
 				username:    "typical good boy",
-				permissions: []string{permissionUpdateRoles},
+				permissions: []string{permissionUpdateRoles, permissionReadRoles},
 			},
 		},
 		{
@@ -664,6 +668,7 @@ func TestUpdateRole(t *testing.T) {
 					RoleID: 1,
 					Name:   &name,
 				},
+				resetUsers: []string{"dima"},
 			},
 			accessMock: &accessMock{
 				username: defaultSuperUser,
@@ -778,6 +783,19 @@ func TestUpdateRole(t *testing.T) {
 					cache.EXPECT().
 						Del(gomock.Any(), cacheKeyRoles).
 						Times(1)
+
+					if len(tt.req.Permissions) > 0 {
+						repo.EXPECT().
+							GetRole(gomock.Any(), types.GetRoleRequest{RoleID: tt.req.RoleID}).
+							Return(types.RoleInfo{Usernames: tt.mockArgs.resetUsers}, nil).
+							Times(1)
+
+						for _, u := range tt.mockArgs.resetUsers {
+							cache.EXPECT().
+								Del(gomock.Any(), cacheKeyUserPerms+u).
+								Times(1)
+						}
+					}
 				}
 			}
 
@@ -796,8 +814,9 @@ func TestDeleteRole(t *testing.T) {
 	replacementID := int32(2)
 
 	type mockArgs struct {
-		req types.DeleteRoleRequest
-		err error
+		req        types.DeleteRoleRequest
+		err        error
+		resetUsers []string
 	}
 
 	tests := []struct {
@@ -816,10 +835,11 @@ func TestDeleteRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionDeleteRoles},
+				permissions: []string{permissionDeleteRoles, permissionReadRoles},
 			},
 			mockArgs: &mockArgs{
-				req: types.DeleteRoleRequest{RoleID: 1},
+				req:        types.DeleteRoleRequest{RoleID: 1},
+				resetUsers: []string{"dima"},
 			},
 		},
 		{
@@ -830,13 +850,14 @@ func TestDeleteRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionDeleteRoles},
+				permissions: []string{permissionDeleteRoles, permissionReadRoles},
 			},
 			mockArgs: &mockArgs{
 				req: types.DeleteRoleRequest{
 					RoleID:            1,
 					ReplacementRoleID: &replacementID,
 				},
+				resetUsers: []string{"dima"},
 			},
 		},
 		{
@@ -864,7 +885,7 @@ func TestDeleteRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionDeleteRoles},
+				permissions: []string{permissionDeleteRoles, permissionReadRoles},
 			},
 			wantErr: true,
 		},
@@ -876,7 +897,7 @@ func TestDeleteRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionDeleteRoles},
+				permissions: []string{permissionDeleteRoles, permissionReadRoles},
 			},
 			wantErr: true,
 		},
@@ -887,11 +908,12 @@ func TestDeleteRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionDeleteRoles},
+				permissions: []string{permissionDeleteRoles, permissionReadRoles},
 			},
 			mockArgs: &mockArgs{
-				req: types.DeleteRoleRequest{RoleID: 1},
-				err: errSomethingWrong,
+				req:        types.DeleteRoleRequest{RoleID: 1},
+				err:        errSomethingWrong,
+				resetUsers: []string{"dima"},
 			},
 			wantErr: true,
 		},
@@ -909,6 +931,17 @@ func TestDeleteRole(t *testing.T) {
 			ctx := setupAccessMock(context.Background(), repo, cache, tt.accessMock)
 
 			if tt.mockArgs != nil {
+				repo.EXPECT().
+					GetRole(gomock.Any(), types.GetRoleRequest{RoleID: tt.req.RoleID}).
+					Return(types.RoleInfo{Usernames: tt.mockArgs.resetUsers}, nil).
+					Times(1)
+
+				for _, u := range tt.mockArgs.resetUsers {
+					cache.EXPECT().
+						Del(gomock.Any(), cacheKeyUserPerms+u).
+						Times(1)
+				}
+
 				repo.EXPECT().
 					DeleteRole(gomock.Any(), tt.mockArgs.req).
 					Return(tt.mockArgs.err).

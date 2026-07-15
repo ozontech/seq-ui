@@ -53,6 +53,10 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 			Key:   "offset_id",
 			Value: attribute.StringValue(req.GetOffsetId()),
 		},
+		{
+			Key:   "downsample",
+			Value: attribute.IntValue(int(req.GetDownsample())),
+		},
 	}
 
 	if env != "" {

@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/ozontech/seq-ui/internal/app/types"
+	"github.com/ozontech/seq-ui/internal/pkg/service/profiles"
 	"github.com/ozontech/seq-ui/pkg/userprofile/v1"
 )
 
@@ -78,6 +79,11 @@ func TestGetUserProfile(t *testing.T) {
 					GetOrCreateUserProfile(gomock.Any(), tt.mockArgs.req).
 					Return(tt.mockArgs.resp, tt.mockArgs.err).
 					Times(1)
+
+				if tt.mockArgs.err == nil {
+					profiles.InitProfiles(mockedSvc.GetOrCreateUserProfile)
+					profiles.SetID(tt.mockArgs.resp.UserName, tt.mockArgs.resp.ID)
+				}
 			}
 
 			ctx := withUser(userName)

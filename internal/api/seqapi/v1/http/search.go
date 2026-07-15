@@ -77,6 +77,10 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 			Key:   "offset_id",
 			Value: attribute.StringValue(httpReq.OffsetID),
 		},
+		{
+			Key:   "downsample",
+			Value: attribute.IntValue(int(httpReq.Downsample)),
+		},
 	}
 
 	if env != "" {
@@ -172,8 +176,9 @@ type searchRequest struct {
 	Histogram    struct {
 		Interval string `json:"interval"`
 	} `json:"histogram"`
-	Order    order  `json:"order" default:"desc"`
-	OffsetID string `json:"offset_id"`
+	Order      order  `json:"order" default:"desc"`
+	OffsetID   string `json:"offset_id"`
+	Downsample uint32 `json:"downsample"`
 } //	@name	seqapi.v1.SearchRequest
 
 func (r searchRequest) toProto() *seqapi.SearchRequest {
@@ -185,6 +190,7 @@ func (r searchRequest) toProto() *seqapi.SearchRequest {
 		Offset:       r.Offset,
 		OffsetId:     r.OffsetID,
 		WithTotal:    r.WithTotal,
+		Downsample:   r.Downsample,
 		Aggregations: r.Aggregations.toProto(),
 		Order:        r.Order.toProto(),
 	}

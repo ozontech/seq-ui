@@ -31,7 +31,7 @@ func Test_GRPCClient_GetAggregation(t *testing.T) {
 
 		if req != nil {
 			proxyReq = &seqproxyapi.GetAggregationRequest{
-				Query: makeProxySearchQuery(req.Query, req.From, req.To),
+				Query: makeProxySearchQuery(req.Query, req.From, req.To, req.Downsample),
 			}
 
 			if len(req.Aggregations) == 0 && req.AggField != "" {
@@ -154,6 +154,23 @@ func Test_GRPCClient_GetAggregation(t *testing.T) {
 			},
 		},
 		{
+			name: "ok_downsample",
+			req: &seqapi.GetAggregationRequest{
+				Query:      "test_downsample",
+				From:       timestamppb.New(from),
+				To:         timestamppb.New(to),
+				AggField:   "test1",
+				Downsample: 10,
+			},
+			wantResp: &seqapi.GetAggregationResponse{
+				Aggregation:  makeAggregation(2, nil),
+				Aggregations: makeAggregations(1, 2, nil),
+				Error: &seqapi.Error{
+					Code: seqapi.ErrorCode_ERROR_CODE_NO,
+				},
+			},
+		},
+		{
 			name: "ok_partial_response",
 			req: &seqapi.GetAggregationRequest{
 				Query:    "test_ok_partial_resp",
@@ -180,17 +197,20 @@ func Test_GRPCClient_GetAggregation(t *testing.T) {
 			wantErr: errors.New("proxy error"),
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
 
 			mArgs := prepareMockArgs(tt.req, tt.wantResp, tt.wantErr)
-
 			ctrl := gomock.NewController(t)
 			seqProxyMock := mock.NewMockSeqProxyApiClient(ctrl)
-			seqProxyMock.EXPECT().GetAggregation(ctx, mArgs.req).
-				Return(mArgs.resp, mArgs.err).Times(1)
+
+			seqProxyMock.EXPECT().
+				GetAggregation(ctx, mArgs.req).
+				Return(mArgs.resp, mArgs.err).
+				Times(1)
 
 			c := initGRPCClient(seqProxyMock)
 
