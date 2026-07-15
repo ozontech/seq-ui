@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,12 +14,6 @@ import (
 )
 
 func TestCreate(t *testing.T) {
-	userName := "unnamed"
-	var profileID int64 = 1
-	dashboardUUID := "064dc707-02b8-7000-8201-02a7f396738a"
-	dashboardName := "my_dashboard"
-	dashboardMeta := "my_meta"
-
 	type mockArgs struct {
 		req  types.CreateDashboardRequest
 		resp string
@@ -35,82 +28,56 @@ func TestCreate(t *testing.T) {
 		wantCode codes.Code
 
 		mockArgs *mockArgs
-		noUser   bool
 	}{
 		{
-			name: "success",
+			name: "ok",
 			req: &dashboards.CreateRequest{
-				Name: dashboardName,
-				Meta: dashboardMeta,
+				Name: testDashboardName,
+				Meta: testDashboardMeta,
 			},
 			want: &dashboards.CreateResponse{
-				Uuid: dashboardUUID,
+				Uuid: testDashboardUUID,
 			},
 			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				req: types.CreateDashboardRequest{
-					ProfileID: profileID,
-					Name:      dashboardName,
-					Meta:      dashboardMeta,
+					Name: testDashboardName,
+					Meta: testDashboardMeta,
 				},
-				resp: dashboardUUID,
+				resp: testDashboardUUID,
 			},
 		},
 		{
-			name:     "err_no_user",
-			wantCode: codes.Unauthenticated,
-			noUser:   true,
-		},
-		{
-			name: "err_svc_empty_name",
+			name: "err_svc",
 			req: &dashboards.CreateRequest{
-				Meta: dashboardMeta,
-			},
-			wantCode: codes.InvalidArgument,
-		},
-		{
-			name: "err_svc_empty_meta",
-			req: &dashboards.CreateRequest{
-				Name: dashboardName,
-			},
-			wantCode: codes.InvalidArgument,
-		},
-		{
-			name: "err_repo_random",
-			req: &dashboards.CreateRequest{
-				Name: dashboardName,
-				Meta: dashboardMeta,
+				Name: testDashboardName,
+				Meta: testDashboardMeta,
 			},
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
 				req: types.CreateDashboardRequest{
-					ProfileID: profileID,
-					Name:      dashboardName,
-					Meta:      dashboardMeta,
+					Name: testDashboardName,
+					Meta: testDashboardMeta,
 				},
-				err: errors.New("random repo err"),
+				err: errSomethingWrong,
 			},
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedRepo := newTestData(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
-				mockedRepo.EXPECT().Create(gomock.Any(), tt.mockArgs.req).
-					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
+				mockedSvc.EXPECT().
+					CreateDashboard(gomock.Any(), tt.mockArgs.req).
+					Return(tt.mockArgs.resp, tt.mockArgs.err).
+					Times(1)
 			}
 
-			ctx := context.Background()
-			if !tt.noUser {
-				ctx = context.WithValue(ctx, types.UserKey{}, userName)
-				api.profiles.SetID(userName, profileID)
-			}
-
-			got, err := api.Create(ctx, tt.req)
+			got, err := api.Create(context.Background(), tt.req)
 
 			require.Equal(t, tt.wantCode, status.Code(err))
 			if tt.wantCode != codes.OK {

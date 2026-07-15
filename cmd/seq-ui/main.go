@@ -21,21 +21,22 @@ import (
 	dashboards_v1 "github.com/ozontech/seq-ui/internal/api/dashboards/v1"
 	errorgroups_v1 "github.com/ozontech/seq-ui/internal/api/errorgroups/v1"
 	massexport_v1 "github.com/ozontech/seq-ui/internal/api/massexport/v1"
-	"github.com/ozontech/seq-ui/internal/api/profiles"
 	seqapi_v1 "github.com/ozontech/seq-ui/internal/api/seqapi/v1"
 	userprofile_v1 "github.com/ozontech/seq-ui/internal/api/userprofile/v1"
-	"github.com/ozontech/seq-ui/internal/app/config/v2"
+	config "github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/server"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	"github.com/ozontech/seq-ui/internal/pkg/repository"
 	repositorych "github.com/ozontech/seq-ui/internal/pkg/repository_ch"
-	"github.com/ozontech/seq-ui/internal/pkg/service"
 	asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches"
+	"github.com/ozontech/seq-ui/internal/pkg/service/dashboards"
 	"github.com/ozontech/seq-ui/internal/pkg/service/errorgroups"
 	"github.com/ozontech/seq-ui/internal/pkg/service/massexport"
 	"github.com/ozontech/seq-ui/internal/pkg/service/massexport/filestore"
 	"github.com/ozontech/seq-ui/internal/pkg/service/massexport/sessionstore"
+	"github.com/ozontech/seq-ui/internal/pkg/service/profiles"
+	"github.com/ozontech/seq-ui/internal/pkg/service/userprofile"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/tracing"
 )
@@ -151,23 +152,23 @@ func initApp(ctx context.Context, cfg config_v2.Config) *api.Registrar {
 	}
 
 	var (
-		asyncSearchesService *asyncsearches.Service
-		p                    *profiles.Profiles
+		asyncSearchesService asyncsearches.Service
 		userProfileV1        *userprofile_v1.UserProfile
 		dashboardsV1         *dashboards_v1.Dashboards
 	)
 	if db != nil {
-		repo := repository.New(db, cfg.DB.RequestTimeout)
-		svc := service.New(repo)
-		p = profiles.New(svc)
+		repo := repository.New(db, cfg.Server.DB.RequestTimeout)
+		userProfilesSvc := userprofile.New(repo.UserProfiles, repo.FavoriteQueries)
+		dashboardsSvc := dashboards.New(repo.Dashboards)
+		profiles.InitProfiles(repo.UserProfiles.GetOrCreate)
 
-		userProfileV1 = userprofile_v1.New(svc, p)
-		dashboardsV1 = dashboards_v1.New(svc, p)
+		userProfileV1 = userprofile_v1.New(userProfilesSvc)
+		dashboardsV1 = dashboards_v1.New(dashboardsSvc)
 
 		asyncSearchesService = asyncsearches.New(ctx, repo, defaultClient, cfg.Handlers.AsyncSearch)
 	}
 
-	seqApiV1 := seqapi_v1.New(cfg.Handlers.SeqAPI, seqDBClients, inmemWithRedisCache, redisCache, asyncSearchesService, p)
+	seqApiV1 := seqapi_v1.New(cfg.Handlers.SeqAPI, seqDBClients, inmemWithRedisCache, redisCache, asyncSearchesService)
 
 	logger.Info("initializing clickhouse")
 	ch, err := initClickHouse(ctx, cfg.Server.CH)
@@ -224,7 +225,7 @@ func createSeqBDClient(ctx context.Context, cfg config.SeqDBClient, seqAPI confi
 	return seqdb.NewGRPCClient(ctx, clientParams)
 }
 
-func initDb(ctx context.Context, cfg *config.DB) (*pgxpool.Pool, error) {
+func initDb(ctx context.Context, cfg *config_v2.DB) (*pgxpool.Pool, error) {
 	if cfg == nil {
 		logger.Warn("db config is nil, running without db")
 		return nil, nil

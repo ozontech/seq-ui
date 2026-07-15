@@ -1,21 +1,18 @@
 package grpc
 
 import (
-	"github.com/ozontech/seq-ui/internal/api/profiles"
-	"github.com/ozontech/seq-ui/internal/pkg/service"
-	"github.com/ozontech/seq-ui/pkg/userprofile/v1"
+	"github.com/ozontech/seq-ui/internal/pkg/service/userprofile"
+	api "github.com/ozontech/seq-ui/pkg/userprofile/v1"
 )
 
 type API struct {
-	userprofile.UnimplementedUserProfileServiceServer
+	api.UnimplementedUserProfileServiceServer
 
-	service  service.Service
-	profiles *profiles.Profiles
+	service userprofile.Service
 }
 
-func New(svc service.Service, p *profiles.Profiles) *API {
+func New(svc userprofile.Service) *API {
 	return &API{
-		service:  svc,
-		profiles: p,
+		service: svc,
 	}
 }

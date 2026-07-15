@@ -7,6 +7,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/grpcutil"
 	"github.com/ozontech/seq-ui/internal/app/types"
+	"github.com/ozontech/seq-ui/internal/pkg/service/profiles"
 	"github.com/ozontech/seq-ui/pkg/userprofile/v1"
 	"github.com/ozontech/seq-ui/tracing"
 )
@@ -21,15 +22,14 @@ func (a *API) GetUserProfile(ctx context.Context, _ *userprofile.GetUserProfileR
 		return nil, grpcutil.ProcessError(err)
 	}
 
-	request := types.GetOrCreateUserProfileRequest{
-		UserName: userName,
-	}
+	request := types.GetOrCreateUserProfileRequest{UserName: userName}
+
 	userProfile, err := a.service.GetOrCreateUserProfile(ctx, request)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}
 
-	a.profiles.SetID(userName, userProfile.ID)
+	profiles.SetID(userName, userProfile.ID)
 
 	return userProfile.ToProto(), nil
 }
@@ -60,6 +60,7 @@ func (a *API) UpdateUserProfile(ctx context.Context, req *userprofile.UpdateUser
 		Timezone:          req.Timezone,
 		OnboardingVersion: req.OnboardingVersion,
 	}
+
 	if req.GetLogColumns() != nil {
 		request.LogColumns = &types.LogColumns{LogColumns: req.GetLogColumns().GetLogColumns()}
 	}

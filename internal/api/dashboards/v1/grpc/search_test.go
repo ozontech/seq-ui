@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,8 +14,9 @@ import (
 )
 
 func TestSearch(t *testing.T) {
-	userName := "unnamed"
-	var profileID int64 = 1
+	var (
+		userName = "unnamed"
+	)
 
 	type mockArgs struct {
 		req  types.SearchDashboardsRequest
@@ -32,14 +32,13 @@ func TestSearch(t *testing.T) {
 		wantCode codes.Code
 
 		mockArgs *mockArgs
-		noUser   bool
 	}{
 		{
-			name: "success",
+			name: "ok",
 			req: &dashboards.SearchRequest{
 				Query:  "test",
-				Limit:  2,
-				Offset: 0,
+				Limit:  int32(testLimit),
+				Offset: int32(testOffset),
 			},
 			want: &dashboards.SearchResponse{
 				Dashboards: []*dashboards.SearchResponse_Dashboard{
@@ -51,8 +50,8 @@ func TestSearch(t *testing.T) {
 			mockArgs: &mockArgs{
 				req: types.SearchDashboardsRequest{
 					Query:  "test",
-					Limit:  2,
-					Offset: 0,
+					Limit:  testLimit,
+					Offset: testOffset,
 				},
 				resp: types.DashboardInfosWithOwner{
 					{
@@ -73,11 +72,11 @@ func TestSearch(t *testing.T) {
 			},
 		},
 		{
-			name: "success_with_filter",
+			name: "ok_with_filter",
 			req: &dashboards.SearchRequest{
 				Query:  "test",
-				Limit:  2,
-				Offset: 0,
+				Limit:  int32(testLimit),
+				Offset: int32(testOffset),
 				Filter: &dashboards.SearchRequest_Filter{
 					OwnerName: &userName,
 				},
@@ -91,8 +90,8 @@ func TestSearch(t *testing.T) {
 			mockArgs: &mockArgs{
 				req: types.SearchDashboardsRequest{
 					Query:  "test",
-					Limit:  2,
-					Offset: 0,
+					Limit:  testLimit,
+					Offset: testOffset,
 					Filter: &types.SearchDashboardsFilter{
 						OwnerName: &userName,
 					},
@@ -109,63 +108,38 @@ func TestSearch(t *testing.T) {
 			},
 		},
 		{
-			name:     "err_no_user",
-			wantCode: codes.Unauthenticated,
-			noUser:   true,
-		},
-		{
-			name: "err_svc_invalid_limit",
-			req: &dashboards.SearchRequest{
-				Limit:  0,
-				Offset: 0,
-			},
-			wantCode: codes.InvalidArgument,
-		},
-		{
-			name: "err_svc_invalid_offset",
-			req: &dashboards.SearchRequest{
-				Limit:  2,
-				Offset: -10,
-			},
-			wantCode: codes.InvalidArgument,
-		},
-		{
-			name: "err_repo_random",
+			name: "err_svc",
 			req: &dashboards.SearchRequest{
 				Query:  "test",
-				Limit:  2,
-				Offset: 0,
+				Limit:  int32(testLimit),
+				Offset: int32(testOffset),
 			},
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
 				req: types.SearchDashboardsRequest{
 					Query:  "test",
-					Limit:  2,
-					Offset: 0,
+					Limit:  testLimit,
+					Offset: testOffset,
 				},
-				err: errors.New("random repo err"),
+				err: errSomethingWrong,
 			},
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedRepo := newTestData(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
-				mockedRepo.EXPECT().Search(gomock.Any(), tt.mockArgs.req).
-					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
+				mockedSvc.EXPECT().
+					SearchDashboards(gomock.Any(), tt.mockArgs.req).
+					Return(tt.mockArgs.resp, tt.mockArgs.err).
+					Times(1)
 			}
 
-			ctx := context.Background()
-			if !tt.noUser {
-				ctx = context.WithValue(ctx, types.UserKey{}, userName)
-				api.profiles.SetID(userName, profileID)
-			}
-
-			got, err := api.Search(ctx, tt.req)
+			got, err := api.Search(context.Background(), tt.req)
 
 			require.Equal(t, tt.wantCode, status.Code(err))
 			if tt.wantCode != codes.OK {

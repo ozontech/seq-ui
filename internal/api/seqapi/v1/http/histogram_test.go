@@ -2,10 +2,7 @@ package http
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -19,15 +16,6 @@ import (
 )
 
 func TestServeGetHistogram(t *testing.T) {
-	query := "message:error"
-	from := time.Date(2023, time.September, 25, 10, 20, 30, 0, time.UTC)
-	to := from.Add(time.Second)
-
-	formatReqBody := func(interval string) string {
-		return fmt.Sprintf(`{"query":%q,"from":%q,"to":%q,"interval":%q}`,
-			query, from.Format(time.RFC3339), to.Format(time.RFC3339), interval)
-	}
-
 	type mockArgs struct {
 		req  *seqapi.GetHistogramRequest
 		resp *seqapi.GetHistogramResponse
@@ -37,20 +25,35 @@ func TestServeGetHistogram(t *testing.T) {
 	tests := []struct {
 		name string
 
-		reqBody      string
-		wantRespBody string
-		wantStatus   int
+		req     getHistogramRequest
+		want    getHistogramResponse
+		wantErr bool
 
 		mockArgs *mockArgs
 	}{
 		{
-			name:    "ok",
-			reqBody: formatReqBody("5s"),
+			name: "ok",
+			req: getHistogramRequest{
+				Query:    testQuery,
+				From:     testTimestamp,
+				To:       testTimestamp.Add(time.Second),
+				Interval: "5s",
+			},
+			want: getHistogramResponse{
+				Histogram: histogram{
+					Buckets: histogramBuckets{
+						{Key: "0", DocCount: "1"},
+						{Key: "100", DocCount: "2"},
+					},
+				},
+				Error:           apiError{Code: aecNo},
+				PartialResponse: false,
+			},
 			mockArgs: &mockArgs{
 				req: &seqapi.GetHistogramRequest{
-					Query:    query,
-					From:     timestamppb.New(from),
-					To:       timestamppb.New(to),
+					Query:    testQuery,
+					From:     timestamppb.New(testTimestamp),
+					To:       timestamppb.New(testTimestamp.Add(time.Second)),
 					Interval: "5s",
 				},
 				resp: &seqapi.GetHistogramResponse{
@@ -60,17 +63,27 @@ func TestServeGetHistogram(t *testing.T) {
 					},
 				},
 			},
-			wantRespBody: `{"histogram":{"buckets":[{"key":"0","docCount":"1"},{"key":"100","docCount":"2"}]},"error":{"code":"ERROR_CODE_NO"},"partialResponse":false}`,
-			wantStatus:   http.StatusOK,
 		},
 		{
-			name:    "err_partial_response",
-			reqBody: formatReqBody("10s"),
+			name: "err_partial_response",
+			req: getHistogramRequest{
+				Query:    testQuery,
+				From:     testTimestamp,
+				To:       testTimestamp.Add(time.Second),
+				Interval: "10s",
+			},
+			want: getHistogramResponse{
+				Histogram: histogram{
+					Buckets: histogramBuckets{},
+				},
+				Error:           apiError{Code: aecPartialResponse, Message: "partial response"},
+				PartialResponse: true,
+			},
 			mockArgs: &mockArgs{
 				req: &seqapi.GetHistogramRequest{
-					Query:    query,
-					From:     timestamppb.New(from),
-					To:       timestamppb.New(to),
+					Query:    testQuery,
+					From:     timestamppb.New(testTimestamp),
+					To:       timestamppb.New(testTimestamp.Add(time.Second)),
 					Interval: "10s",
 				},
 				resp: &seqapi.GetHistogramResponse{
@@ -81,31 +94,29 @@ func TestServeGetHistogram(t *testing.T) {
 					PartialResponse: true,
 				},
 			},
-			wantRespBody: `{"histogram":{"buckets":[]},"error":{"code":"ERROR_CODE_PARTIAL_RESPONSE","message":"partial response"},"partialResponse":true}`,
-			wantStatus:   http.StatusOK,
 		},
 		{
-			name:       "err_invalid_request",
-			reqBody:    "invalid-request",
-			wantStatus: http.StatusBadRequest,
-		},
-		{
-			name:    "err_client",
-			reqBody: formatReqBody("20s"),
+			name: "err_client",
+			req: getHistogramRequest{
+				Query:    testQuery,
+				From:     testTimestamp,
+				To:       testTimestamp.Add(time.Second),
+				Interval: "20s",
+			},
+			wantErr: true,
 			mockArgs: &mockArgs{
 				req: &seqapi.GetHistogramRequest{
-					Query:    query,
-					From:     timestamppb.New(from),
-					To:       timestamppb.New(to),
+					Query:    testQuery,
+					From:     timestamppb.New(testTimestamp),
+					To:       timestamppb.New(testTimestamp.Add(time.Second)),
 					Interval: "20s",
 				},
 				err: errors.New("client error"),
 			},
-			wantStatus: http.StatusInternalServerError,
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -113,22 +124,25 @@ func TestServeGetHistogram(t *testing.T) {
 
 			if tt.mockArgs != nil {
 				ctrl := gomock.NewController(t)
-
 				seqDbMock := mock_seqdb.NewMockClient(ctrl)
-				seqDbMock.EXPECT().GetHistogram(gomock.Any(), tt.mockArgs.req).
-					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
+
+				seqDbMock.EXPECT().
+					GetHistogram(gomock.Any(), tt.mockArgs.req).
+					Return(tt.mockArgs.resp, tt.mockArgs.err).
+					Times(1)
 
 				seqData.Mocks.SeqDB = seqDbMock
 			}
 
-			api := initTestAPI(seqData)
-			req := httptest.NewRequest(http.MethodPost, "/seqapi/v1/histogram", strings.NewReader(tt.reqBody))
+			api := setupTestAPI(seqData)
 
-			httputil.DoTestHTTP(t, httputil.TestDataHTTP{
-				Req:          req,
-				Handler:      api.serveGetHistogram,
-				WantRespBody: tt.wantRespBody,
-				WantStatus:   tt.wantStatus,
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[getHistogramRequest, getHistogramResponse]{
+				Method:  http.MethodPost,
+				Target:  "/seqapi/v1/histogram",
+				Req:     tt.req,
+				Handler: api.serveGetHistogram,
+				Want:    tt.want,
+				WantErr: tt.wantErr,
 			})
 		})
 	}

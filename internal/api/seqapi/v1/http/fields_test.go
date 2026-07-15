@@ -1,16 +1,10 @@
 package http
 
 import (
-	"encoding/json"
-	"errors"
-	"io"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
@@ -31,14 +25,20 @@ func TestServeGetFields(t *testing.T) {
 
 		cfg config.SeqAPIOptions
 
-		wantRespBody string
-		wantStatus   int
+		want    getFieldsResponse
+		wantErr bool
 
-		mockArgs mockArgs
+		mockArgs *mockArgs
 	}{
 		{
 			name: "ok",
-			mockArgs: mockArgs{
+			want: getFieldsResponse{
+				Fields: fields{
+					{Name: "test_name1", Type: "keyword"},
+					{Name: "test_name2", Type: "text"},
+				},
+			},
+			mockArgs: &mockArgs{
 				resp: &seqapi.GetFieldsResponse{
 					Fields: []*seqapi.Field{
 						{
@@ -52,12 +52,24 @@ func TestServeGetFields(t *testing.T) {
 					},
 				},
 			},
-			wantRespBody: `{"fields":[{"name":"test_name1","type":"keyword"},{"name":"test_name2","type":"text"}]}`,
-			wantStatus:   http.StatusOK,
 		},
 		{
 			name: "ok_with_system_and_pinned_fields",
-			mockArgs: mockArgs{
+			want: getFieldsResponse{
+				Fields: fields{
+					{Name: "test_name1", Type: "keyword"},
+					{Name: "test_name2", Type: "text"},
+				},
+				SystemFields: fields{
+					{Name: "field1", Type: "keyword"},
+					{Name: "field2", Type: "text"},
+				},
+				PinnedFields: fields{
+					{Name: "field3", Type: "keyword"},
+					{Name: "field4", Type: "text"},
+				},
+			},
+			mockArgs: &mockArgs{
 				resp: &seqapi.GetFieldsResponse{
 					Fields: []*seqapi.Field{
 						{
@@ -81,19 +93,17 @@ func TestServeGetFields(t *testing.T) {
 					{Name: "field4", Type: "text"},
 				},
 			},
-			wantRespBody: `{"fields":[{"name":"test_name1","type":"keyword"},{"name":"test_name2","type":"text"}],"system_fields":[{"name":"field1","type":"keyword"},{"name":"field2","type":"text"}],"pinned_fields":[{"name":"field3","type":"keyword"},{"name":"field4","type":"text"}]}`,
-			wantStatus:   http.StatusOK,
 		},
 		{
-			name: "err_client",
-			mockArgs: mockArgs{
-				err: errors.New("client error"),
+			name:    "err_client",
+			wantErr: true,
+			mockArgs: &mockArgs{
+				err: errSomethingWrong,
 			},
-			wantStatus: http.StatusInternalServerError,
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
@@ -105,31 +115,38 @@ func TestServeGetFields(t *testing.T) {
 			}
 
 			seqDbMock := mock_seqdb.NewMockClient(ctrl)
-			seqDbMock.EXPECT().GetFields(gomock.Any(), gomock.Any()).
-				Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
+			seqDbMock.EXPECT().
+				GetFields(gomock.Any(), gomock.Any()).
+				Return(tt.mockArgs.resp, tt.mockArgs.err).
+				Times(1)
 			seqData.Mocks.SeqDB = seqDbMock
 
-			api := initTestAPI(seqData)
-			req := httptest.NewRequest(http.MethodGet, "/seqapi/v1/fields", http.NoBody)
+			api := setupTestAPI(seqData)
 
-			httputil.DoTestHTTP(t, httputil.TestDataHTTP{
-				Req:          req,
-				Handler:      api.serveGetFields,
-				WantRespBody: tt.wantRespBody,
-				WantStatus:   tt.wantStatus,
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getFieldsResponse]{
+				Method:  http.MethodGet,
+				Target:  "/seqapi/v1/fields",
+				Handler: api.serveGetFields,
+				Want:    tt.want,
+				WantErr: tt.wantErr,
 			})
 		})
 	}
 }
 
 func TestServeGetFieldsCached(t *testing.T) {
-	type TestCase struct {
-		resp         *seqapi.GetFieldsResponse
-		wantRespBody string
-	}
+	var (
+		ttl = 5 * time.Millisecond
+	)
 
-	tests := []TestCase{
+	tests := []struct {
+		name string
+
+		resp *seqapi.GetFieldsResponse
+		want getFieldsResponse
+	}{
 		{
+			name: "ok",
 			resp: &seqapi.GetFieldsResponse{
 				Fields: []*seqapi.Field{
 					{
@@ -142,9 +159,15 @@ func TestServeGetFieldsCached(t *testing.T) {
 					},
 				},
 			},
-			wantRespBody: `{"fields":[{"name":"n1","type":"keyword"},{"name":"n2","type":"text"}]}`,
+			want: getFieldsResponse{
+				Fields: fields{
+					{Name: "n1", Type: "keyword"},
+					{Name: "n2", Type: "text"},
+				},
+			},
 		},
 		{
+			name: "another_ok",
 			resp: &seqapi.GetFieldsResponse{
 				Fields: []*seqapi.Field{
 					{
@@ -153,51 +176,55 @@ func TestServeGetFieldsCached(t *testing.T) {
 					},
 				},
 			},
-			wantRespBody: `{"fields":[{"name":"qwe","type":"keyword"}]}`,
-		},
-	}
-
-	ctrl := gomock.NewController(t)
-	seqDbMock := mock_seqdb.NewMockClient(ctrl)
-
-	for _, testCase := range tests {
-		seqDbMock.EXPECT().GetFields(gomock.Any(), gomock.Any()).
-			Return(testCase.resp, nil).Times(1)
-	}
-
-	const ttl = 20 * time.Millisecond
-
-	seqData := test.APITestData{
-		Cfg: config.SeqAPI{
-			SeqAPIOptions: &config.SeqAPIOptions{
-				FieldsCacheTTL: ttl,
+			want: getFieldsResponse{
+				Fields: fields{
+					{Name: "qwe", Type: "keyword"},
+				},
 			},
 		},
-		Mocks: test.Mocks{
-			SeqDB: seqDbMock,
-		},
 	}
 
-	api := initTestAPI(seqData)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	for _, testCase := range tests {
-		httputil.DoTestHTTP(t, httputil.TestDataHTTP{
-			Req:          httptest.NewRequest(http.MethodGet, "/seqapi/v1/fields", http.NoBody),
-			Handler:      api.serveGetFields,
-			WantRespBody: testCase.wantRespBody,
-			WantStatus:   http.StatusOK,
+			ctrl := gomock.NewController(t)
+			seqDbMock := mock_seqdb.NewMockClient(ctrl)
+
+			seqDbMock.EXPECT().
+				GetFields(gomock.Any(), gomock.Any()).
+				Return(tt.resp, nil).
+				Times(1)
+
+			seqData := test.APITestData{
+				Cfg: config.SeqAPI{
+					SeqAPIOptions: &config.SeqAPIOptions{
+						FieldsCacheTTL: ttl,
+					},
+				},
+				Mocks: test.Mocks{
+					SeqDB: seqDbMock,
+				},
+			}
+
+			api := setupTestAPI(seqData)
+
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getFieldsResponse]{
+				Method:  http.MethodGet,
+				Target:  "/seqapi/v1/fields",
+				Handler: api.serveGetFields,
+				Want:    tt.want,
+			})
+
+			time.Sleep(ttl / 2)
+
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getFieldsResponse]{
+				Method:  http.MethodGet,
+				Target:  "/seqapi/v1/fields",
+				Handler: api.serveGetFields,
+				Want:    tt.want,
+			})
 		})
-
-		time.Sleep(ttl / 2)
-
-		httputil.DoTestHTTP(t, httputil.TestDataHTTP{
-			Req:          httptest.NewRequest(http.MethodGet, "/seqapi/v1/fields", http.NoBody),
-			Handler:      api.serveGetFields,
-			WantRespBody: testCase.wantRespBody,
-			WantStatus:   http.StatusOK,
-		})
-
-		time.Sleep(ttl)
 	}
 }
 
@@ -205,8 +232,8 @@ func TestServeGetPinnedFields(t *testing.T) {
 	tests := []struct {
 		name string
 
-		fields       []config.Field
-		wantRespBody string
+		fields []config.Field
+		want   getFieldsResponse
 	}{
 		{
 			name: "ok",
@@ -214,15 +241,16 @@ func TestServeGetPinnedFields(t *testing.T) {
 				{Name: "field1", Type: "keyword"},
 				{Name: "field2", Type: "text"},
 			},
-			wantRespBody: `{"fields":[{"name":"field1","type":"keyword"},{"name":"field2","type":"text"}]}`,
-		},
-		{
-			name:         "empty",
-			wantRespBody: `{"fields":[]}`,
+			want: getFieldsResponse{
+				Fields: fields{
+					{Name: "field1", Type: "keyword"},
+					{Name: "field2", Type: "text"},
+				},
+			},
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -234,27 +262,14 @@ func TestServeGetPinnedFields(t *testing.T) {
 				},
 			}
 
-			api := initTestAPI(seqData)
-			req := httptest.NewRequest(http.MethodGet, "/seqapi/v1/fields/pinned", http.NoBody)
-			w := httptest.NewRecorder()
+			api := setupTestAPI(seqData)
 
-			api.serveGetPinnedFields(w, req)
-
-			resp := w.Result()
-			defer resp.Body.Close()
-
-			respBody, err := io.ReadAll(resp.Body)
-			assert.NoError(t, err)
-
-			var gfr getFieldsResponse
-			err = json.Unmarshal(respBody, &gfr)
-			assert.NoError(t, err)
-
-			require.Equal(t, len(tt.fields), len(gfr.Fields))
-			for i, f := range gfr.Fields {
-				require.Equal(t, tt.fields[i].Name, f.Name)
-				require.Equal(t, tt.fields[i].Type, f.Type)
-			}
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getFieldsResponse]{
+				Method:  http.MethodGet,
+				Target:  "/seqapi/v1/fields/pinned",
+				Handler: api.serveGetPinnedFields,
+				Want:    tt.want,
+			})
 		})
 	}
 }

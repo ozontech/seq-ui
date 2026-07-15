@@ -3,7 +3,6 @@ package seqapi_v1
 import (
 	"github.com/go-chi/chi/v5"
 
-	"github.com/ozontech/seq-ui/internal/api/profiles"
 	grpc_api "github.com/ozontech/seq-ui/internal/api/seqapi/v1/grpc"
 	http_api "github.com/ozontech/seq-ui/internal/api/seqapi/v1/http"
 	"github.com/ozontech/seq-ui/internal/app/config"
@@ -22,12 +21,11 @@ func New(
 	seqDB map[string]seqdb.Client,
 	inmemWithRedisCache cache.Cache,
 	redisCache cache.Cache,
-	asyncSearches *asyncsearches.Service,
-	p *profiles.Profiles,
+	asyncSearches asyncsearches.Service,
 ) *SeqAPI {
 	return &SeqAPI{
-		grpcAPI: grpc_api.New(cfg, seqDB, inmemWithRedisCache, redisCache, asyncSearches, p),
-		httpAPI: http_api.New(cfg, seqDB, inmemWithRedisCache, redisCache, asyncSearches, p),
+		grpcAPI: grpc_api.New(cfg, seqDB, inmemWithRedisCache, redisCache, asyncSearches),
+		httpAPI: http_api.New(cfg, seqDB, inmemWithRedisCache, redisCache, asyncSearches),
 	}
 }
 
