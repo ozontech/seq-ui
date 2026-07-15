@@ -9,6 +9,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/app/types"
+	"github.com/ozontech/seq-ui/internal/pkg/service/profiles"
 	"github.com/ozontech/seq-ui/tracing"
 )
 
@@ -35,13 +36,14 @@ func (a *API) serveGetUserProfile(w http.ResponseWriter, r *http.Request) {
 	req := types.GetOrCreateUserProfileRequest{
 		UserName: userName,
 	}
+
 	up, err := a.service.GetOrCreateUserProfile(ctx, req)
 	if err != nil {
 		httputil.ProcessError(wr, err)
 		return
 	}
 
-	a.profiles.SetID(userName, up.ID)
+	profiles.SetID(userName, up.ID)
 
 	wr.WriteJson(newUserProfile(up))
 }
@@ -93,6 +95,7 @@ func (a *API) serveUpdateUserProfile(w http.ResponseWriter, r *http.Request) {
 		Timezone:          httpReq.Timezone,
 		OnboardingVersion: httpReq.OnboardingVersion,
 	}
+
 	if httpReq.LogColumns != nil {
 		req.LogColumns = &types.LogColumns{LogColumns: httpReq.LogColumns.Columns}
 	}

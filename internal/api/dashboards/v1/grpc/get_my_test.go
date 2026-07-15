@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,9 +14,6 @@ import (
 )
 
 func TestGetMy(t *testing.T) {
-	userName := "unnamed"
-	var profileID int64 = 1
-
 	type mockArgs struct {
 		req  types.GetUserDashboardsRequest
 		resp types.DashboardInfos
@@ -32,13 +28,12 @@ func TestGetMy(t *testing.T) {
 		wantCode codes.Code
 
 		mockArgs *mockArgs
-		noUser   bool
 	}{
 		{
-			name: "success",
+			name: "ok",
 			req: &dashboards.GetMyRequest{
-				Limit:  2,
-				Offset: 0,
+				Limit:  int32(testLimit),
+				Offset: int32(testOffset),
 			},
 			want: &dashboards.GetMyResponse{
 				Dashboards: []*dashboards.GetMyResponse_Dashboard{
@@ -49,9 +44,8 @@ func TestGetMy(t *testing.T) {
 			wantCode: codes.OK,
 			mockArgs: &mockArgs{
 				req: types.GetUserDashboardsRequest{
-					ProfileID: profileID,
-					Limit:     2,
-					Offset:    0,
+					Limit:  testLimit,
+					Offset: testOffset,
 				},
 				resp: types.DashboardInfos{
 					{UUID: "064dc707-02b8-7000-8201-02a7f396738a", Name: "dashboard1"},
@@ -60,62 +54,36 @@ func TestGetMy(t *testing.T) {
 			},
 		},
 		{
-			name:     "err_no_user",
-			wantCode: codes.Unauthenticated,
-			noUser:   true,
-		},
-		{
-			name: "err_svc_invalid_limit",
+			name: "err_svc",
 			req: &dashboards.GetMyRequest{
-				Limit:  0,
-				Offset: 0,
-			},
-			wantCode: codes.InvalidArgument,
-		},
-		{
-			name: "err_svc_invalid_offset",
-			req: &dashboards.GetMyRequest{
-				Limit:  2,
-				Offset: -10,
-			},
-			wantCode: codes.InvalidArgument,
-		},
-		{
-			name: "err_repo_random",
-			req: &dashboards.GetMyRequest{
-				Limit:  2,
-				Offset: 0,
+				Limit:  int32(testLimit),
+				Offset: int32(testOffset),
 			},
 			wantCode: codes.Internal,
 			mockArgs: &mockArgs{
 				req: types.GetUserDashboardsRequest{
-					ProfileID: profileID,
-					Limit:     2,
-					Offset:    0,
+					Limit:  testLimit,
+					Offset: testOffset,
 				},
-				err: errors.New("random repo err"),
+				err: errSomethingWrong,
 			},
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			api, mockedRepo := newTestData(t)
+			api, mockedSvc := setupTestAPI(t)
 
 			if tt.mockArgs != nil {
-				mockedRepo.EXPECT().GetMy(gomock.Any(), tt.mockArgs.req).
-					Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
+				mockedSvc.EXPECT().
+					GetMyDashboards(gomock.Any(), tt.mockArgs.req).
+					Return(tt.mockArgs.resp, tt.mockArgs.err).
+					Times(1)
 			}
 
-			ctx := context.Background()
-			if !tt.noUser {
-				ctx = context.WithValue(ctx, types.UserKey{}, userName)
-				api.profiles.SetID(userName, profileID)
-			}
-
-			got, err := api.GetMy(ctx, tt.req)
+			got, err := api.GetMy(context.Background(), tt.req)
 
 			require.Equal(t, tt.wantCode, status.Code(err))
 			if tt.wantCode != codes.OK {

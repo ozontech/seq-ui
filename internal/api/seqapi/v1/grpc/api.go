@@ -10,7 +10,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/ozontech/seq-ui/internal/api/profiles"
 	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
@@ -39,8 +38,7 @@ type API struct {
 	inmemWithRedisCache cache.Cache
 	redisCache          cache.Cache
 	nowFn               func() time.Time
-	asyncSearches       *asyncsearches.Service
-	profiles            *profiles.Profiles
+	asyncSearches       asyncsearches.Service
 	envsResponse        *seqapi.GetEnvsResponse
 }
 
@@ -49,8 +47,7 @@ func New(
 	seqDBСlients map[string]seqdb.Client,
 	inmemWithRedisCache cache.Cache,
 	redisCache cache.Cache,
-	asyncSearches *asyncsearches.Service,
-	p *profiles.Profiles,
+	asyncSearches asyncsearches.Service,
 ) *API {
 	var globalfCache *fieldsCache
 	if cfg.FieldsCacheTTL > 0 {
@@ -121,7 +118,6 @@ func New(
 		redisCache:          redisCache,
 		nowFn:               time.Now,
 		asyncSearches:       asyncSearches,
-		profiles:            p,
 		envsResponse:        parseEnvs(cfg),
 	}
 }

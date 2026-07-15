@@ -1,11 +1,8 @@
 package http
 
 import (
-	"errors"
 	"net/http"
-	"net/http/httptest"
 	"testing"
-	"time"
 
 	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -22,64 +19,70 @@ func TestStatus(t *testing.T) {
 		err  error
 	}
 
-	type testCase struct {
+	tests := []struct {
 		name string
 
-		wantRespBody string
-		wantStatus   int
+		want    statusResponse
+		wantErr bool
 
-		mockArgs mockArgs
-	}
-
-	someMoment := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
-
-	tests := []testCase{
+		mockArgs *mockArgs
+	}{
 		{
 			name: "ok",
-			mockArgs: mockArgs{
+			want: statusResponse{
+				OldestStorageTime: &testTimestamp,
+				NumberOfStores:    1,
+				Stores: []storeStatus{
+					{
+						Host:   "host-0",
+						Values: &storeStatusValues{OldestTime: &testTimestamp},
+					},
+				},
+			},
+			mockArgs: &mockArgs{
 				resp: &seqapi.StatusResponse{
 					NumberOfStores:    1,
-					OldestStorageTime: timestamppb.New(someMoment),
+					OldestStorageTime: timestamppb.New(testTimestamp),
 					Stores: []*seqapi.StoreStatus{
 						{
 							Host:   "host-0",
-							Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(someMoment)},
+							Values: &seqapi.StoreStatusValues{OldestTime: timestamppb.New(testTimestamp)},
 						},
 					},
 				},
 			},
-			wantRespBody: `{"oldest_storage_time":"2020-01-01T00:00:00Z","number_of_stores":1,"stores":[{"host":"host-0","values":{"oldest_time":"2020-01-01T00:00:00Z"}}]}`,
-			wantStatus:   http.StatusOK,
 		},
 		{
-			name: "err_client",
-			mockArgs: mockArgs{
-				err: errors.New("client error"),
+			name:    "err_client",
+			wantErr: true,
+			mockArgs: &mockArgs{
+				err: errSomethingWrong,
 			},
-			wantStatus: http.StatusInternalServerError,
 		},
 	}
+
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			ctrl := gomock.NewController(t)
 
 			seqData := test.APITestData{}
-
+			ctrl := gomock.NewController(t)
 			seqDbMock := mock_seqdb.NewMockClient(ctrl)
-			seqDbMock.EXPECT().Status(gomock.Any(), gomock.Any()).
-				Return(tt.mockArgs.resp, tt.mockArgs.err).Times(1)
+
+			seqDbMock.EXPECT().
+				Status(gomock.Any(), gomock.Any()).
+				Return(tt.mockArgs.resp, tt.mockArgs.err).
+				Times(1)
+
 			seqData.Mocks.SeqDB = seqDbMock
+			api := setupTestAPI(seqData)
 
-			api := initTestAPI(seqData)
-			req := httptest.NewRequest(http.MethodGet, "/seqapi/v1/status", http.NoBody)
-
-			httputil.DoTestHTTP(t, httputil.TestDataHTTP{
-				Req:          req,
-				Handler:      api.serveStatus,
-				WantRespBody: tt.wantRespBody,
-				WantStatus:   tt.wantStatus,
+			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, statusResponse]{
+				Method:  http.MethodGet,
+				Target:  "/seqapi/v1/status",
+				Handler: api.serveStatus,
+				Want:    tt.want,
+				WantErr: tt.wantErr,
 			})
 		})
 	}

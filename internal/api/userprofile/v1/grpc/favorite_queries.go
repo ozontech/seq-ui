@@ -16,14 +16,8 @@ func (a *API) GetFavoriteQueries(ctx context.Context, _ *userprofile.GetFavorite
 	ctx, span := tracing.StartSpan(ctx, "userprofile_v1_get_favorite_queries")
 	defer span.End()
 
-	profileID, err := a.profiles.GeIDFromContext(ctx)
-	if err != nil {
-		return nil, grpcutil.ProcessError(err)
-	}
+	request := types.GetFavoriteQueriesRequest{}
 
-	request := types.GetFavoriteQueriesRequest{
-		ProfileID: profileID,
-	}
 	favoriteQueries, err := a.service.GetFavoriteQueries(ctx, request)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
@@ -54,21 +48,15 @@ func (a *API) CreateFavoriteQuery(ctx context.Context, req *userprofile.CreateFa
 		},
 	)
 
-	profileID, err := a.profiles.GeIDFromContext(ctx)
-	if err != nil {
-		return nil, grpcutil.ProcessError(err)
-	}
+	request := types.GetOrCreateFavoriteQueryRequest{Query: req.Query}
 
-	request := types.GetOrCreateFavoriteQueryRequest{
-		ProfileID: profileID,
-		Query:     req.Query,
-	}
 	if req.RelativeFrom != nil {
 		request.RelativeFrom = *req.RelativeFrom
 	}
 	if req.Name != nil {
 		request.Name = *req.Name
 	}
+
 	fqID, err := a.service.GetOrCreateFavoriteQuery(ctx, request)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
@@ -89,16 +77,9 @@ func (a *API) DeleteFavoriteQuery(ctx context.Context, req *userprofile.DeleteFa
 		Value: attribute.Int64Value(req.GetId()),
 	})
 
-	profileID, err := a.profiles.GeIDFromContext(ctx)
-	if err != nil {
-		return nil, grpcutil.ProcessError(err)
-	}
+	request := types.DeleteFavoriteQueryRequest{ID: req.Id}
 
-	request := types.DeleteFavoriteQueryRequest{
-		ID:        req.Id,
-		ProfileID: profileID,
-	}
-	if err = a.service.DeleteFavoriteQuery(ctx, request); err != nil {
+	if err := a.service.DeleteFavoriteQuery(ctx, request); err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}
 

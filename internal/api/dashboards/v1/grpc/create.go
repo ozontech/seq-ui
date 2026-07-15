@@ -22,16 +22,11 @@ func (a *API) Create(ctx context.Context, req *dashboards.CreateRequest) (*dashb
 		},
 	)
 
-	profileID, err := a.profiles.GeIDFromContext(ctx)
-	if err != nil {
-		return nil, grpcutil.ProcessError(err)
+	request := types.CreateDashboardRequest{
+		Name: req.Name,
+		Meta: req.Meta,
 	}
 
-	request := types.CreateDashboardRequest{
-		ProfileID: profileID,
-		Name:      req.Name,
-		Meta:      req.Meta,
-	}
 	uuid, err := a.service.CreateDashboard(ctx, request)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
