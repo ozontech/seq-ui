@@ -57,6 +57,19 @@ func (r *adminRepository) AddUsersToRole(ctx context.Context, req types.AddUsers
 	return nil
 }
 
+func (r *adminRepository) DeleteUsersFromRole(ctx context.Context, req types.DeleteUsersFromRoleRequest) error {
+	metricLabels := []string{"users_roles", "DELETE"}
+	query, args := `DELETE FROM users_roles WHERE role_id=$1 AND user_id IN (
+		SELECT id FROM user_profiles WHERE user_name=ANY($2))`, []any{req.RoleID, req.Usernames}
+
+	if _, err := r.pool.exec(ctx, metricLabels, query, args...); err != nil {
+		incErrorMetric(err, metricLabels)
+		return fmt.Errorf("failed to delete users from role: %w", err)
+	}
+
+	return nil
+}
+
 func (r *adminRepository) GetRoles(ctx context.Context) ([]types.Role, error) {
 	metricLabels := []string{"roles", "SELECT"}
 	query := `SELECT r.id, r.name, array_agg(p.value ORDER BY p.value) AS roles_permissions
@@ -187,19 +200,6 @@ func (r *adminRepository) DeleteRole(ctx context.Context, req types.DeleteRoleRe
 
 		return nil
 	})
-}
-
-func (r *adminRepository) DeleteUsersFromRole(ctx context.Context, req types.DeleteUsersFromRoleRequest) error {
-	metricLabels := []string{"users_roles", "DELETE"}
-	query, args := `DELETE FROM users_roles WHERE role_id=$1 AND user_id IN (
-		SELECT id FROM user_profiles WHERE user_name=ANY($2))`, []any{req.RoleID, req.Usernames}
-
-	if _, err := r.pool.exec(ctx, metricLabels, query, args...); err != nil {
-		incErrorMetric(err, metricLabels)
-		return fmt.Errorf("failed to delete users from role: %w", err)
-	}
-
-	return nil
 }
 
 func (r *adminRepository) GetUserPermissions(ctx context.Context, req types.GetUserPermissionsRequest) ([]string, error) {

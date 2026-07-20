@@ -1786,7 +1786,7 @@
                 "permissions": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/http.permissionGroup"
+                        "$ref": "#/definitions/admin.v1.PermissionGroup"
                     }
                 }
             }
@@ -1835,13 +1835,27 @@
                 "available_permissions": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/http.permissionGroup"
+                        "$ref": "#/definitions/admin.v1.PermissionGroup"
                     }
                 },
                 "roles": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/admin.v1.Role"
+                    }
+                }
+            }
+        },
+        "admin.v1.PermissionGroup": {
+            "type": "object",
+            "properties": {
+                "group": {
+                    "type": "string"
+                },
+                "permissions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
                     }
                 }
             }
@@ -1858,7 +1872,7 @@
                 "permissions": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/http.permissionGroup"
+                        "$ref": "#/definitions/admin.v1.PermissionGroup"
                     }
                 }
             }
@@ -1872,7 +1886,7 @@
                 "permissions": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/http.permissionGroup"
+                        "$ref": "#/definitions/admin.v1.PermissionGroup"
                     }
                 }
             }
@@ -2498,20 +2512,6 @@
             "properties": {
                 "interval": {
                     "type": "string"
-                }
-            }
-        },
-        "http.permissionGroup": {
-            "type": "object",
-            "properties": {
-                "group": {
-                    "type": "string"
-                },
-                "permissions": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },

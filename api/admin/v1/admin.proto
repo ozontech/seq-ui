@@ -9,6 +9,8 @@ service AdminService {
 
   rpc AddUsersToRole(AddUsersToRoleRequest) returns (AddUsersToRoleResponse);
 
+  rpc DeleteUsersFromRole(DeleteUsersFromRoleRequest) returns (DeleteUsersFromRoleResponse);
+
   rpc GetRoles(GetRolesRequest) returns (GetRolesResponse);
 
   rpc GetRole(GetRoleRequest) returns (GetRoleResponse);
@@ -16,8 +18,6 @@ service AdminService {
   rpc UpdateRole(UpdateRoleRequest) returns (UpdateRoleResponse);
 
   rpc DeleteRole(DeleteRoleRequest) returns (DeleteRoleResponse);
-
-  rpc DeleteUsersFromRole(DeleteUsersFromRoleRequest) returns (DeleteUsersFromRoleResponse);
 }
 
 message PermissionGroup {

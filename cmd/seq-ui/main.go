@@ -171,7 +171,13 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 		asyncSearchesService = asyncsearches.New(ctx, repo, defaultClient, cfg.Handlers.AsyncSearch)
 
 		if cfg.Handlers.Admin != nil {
-			adminSvc := admin.New(repo, redisCache, cfg.Handlers.Admin)
+			logger.Info("initializing redis admin cache")
+			adminCache, err := cache.NewRedis(ctx, cfg.Server.Cache.Redis)
+			if err != nil {
+				logger.Fatal("failed to init redis admin cache", zap.Error(err))
+			}
+
+			adminSvc := admin.New(repo, adminCache, cfg.Handlers.Admin)
 			adminV1 = admin_v1.New(adminSvc)
 		}
 	}

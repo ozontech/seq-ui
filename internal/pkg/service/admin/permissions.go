@@ -8,22 +8,20 @@ import (
 	"github.com/ozontech/seq-ui/internal/app/types"
 )
 
-const (
-	permissionCreateRoles = "roles:create"
-	permissionReadRoles   = "roles:read"
-	permissionUpdateRoles = "roles:update"
-	permissionDeleteRoles = "roles:delete"
-)
-
-var availablePermissions = []types.PermissionGroup{
-	{
-		Group:       "roles",
-		Permissions: []string{"create", "read", "update", "delete"},
-	},
+var availablePermissions = []string{
+	permissionRolesCreate,
+	permissionRolesRead,
+	permissionRolesUpdate,
+	permissionRolesDelete,
 }
 
 func (s *service) GetAvailablePermissions() []types.PermissionGroup {
-	return availablePermissions
+	return []types.PermissionGroup{
+		{
+			Group:       "roles",
+			Permissions: []string{"create", "read", "update", "delete"},
+		},
+	}
 }
 
 func (s *service) checkAccess(ctx context.Context, requiredPermission string) error {
@@ -68,29 +66,11 @@ func (s *service) validatePermissions(permissions []string) error {
 		return types.NewErrInvalidRequestField("empty permissions")
 	}
 
-	availablePerms := parsePermissionGroupsToStrings(availablePermissions)
-
 	for _, permission := range permissions {
-		if !slices.Contains(availablePerms, permission) {
+		if !slices.Contains(availablePermissions, permission) {
 			return fmt.Errorf("unknown permission: %s", permission)
 		}
 	}
 
 	return nil
-}
-
-func parsePermissionGroupsToStrings(groups []types.PermissionGroup) []string {
-	lenPermStrs := 0
-	for _, g := range groups {
-		lenPermStrs += len(g.Permissions)
-	}
-
-	permStrs := make([]string, 0, lenPermStrs)
-	for _, g := range groups {
-		for _, p := range g.Permissions {
-			permStrs = append(permStrs, g.Group+":"+p)
-		}
-	}
-
-	return permStrs
 }

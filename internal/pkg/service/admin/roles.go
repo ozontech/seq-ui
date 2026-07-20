@@ -7,8 +7,15 @@ import (
 	"github.com/ozontech/seq-ui/internal/app/types"
 )
 
+const (
+	permissionRolesCreate = "roles:create"
+	permissionRolesRead   = "roles:read"
+	permissionRolesUpdate = "roles:update"
+	permissionRolesDelete = "roles:delete"
+)
+
 func (s *service) CreateRole(ctx context.Context, req types.CreateRoleRequest) (int32, error) {
-	if err := s.checkAccess(ctx, permissionCreateRoles); err != nil {
+	if err := s.checkAccess(ctx, permissionRolesCreate); err != nil {
 		return 0, err
 	}
 
@@ -31,7 +38,7 @@ func (s *service) CreateRole(ctx context.Context, req types.CreateRoleRequest) (
 }
 
 func (s *service) AddUsersToRole(ctx context.Context, req types.AddUsersToRoleRequest) error {
-	if err := s.checkAccess(ctx, permissionUpdateRoles); err != nil {
+	if err := s.checkAccess(ctx, permissionRolesUpdate); err != nil {
 		return err
 	}
 
@@ -56,8 +63,34 @@ func (s *service) AddUsersToRole(ctx context.Context, req types.AddUsersToRoleRe
 	return nil
 }
 
+func (s *service) DeleteUsersFromRole(ctx context.Context, req types.DeleteUsersFromRoleRequest) error {
+	if err := s.checkAccess(ctx, permissionRolesUpdate); err != nil {
+		return err
+	}
+
+	if req.RoleID <= 0 {
+		return types.NewErrInvalidRequestField("value role_id must be greater than 0")
+	}
+
+	if len(req.Usernames) == 0 {
+		return types.NewErrInvalidRequestField("empty usernames")
+	}
+
+	if slices.Contains(req.Usernames, "") {
+		return types.NewErrInvalidRequestField("empty username")
+	}
+
+	if err := s.repo.DeleteUsersFromRole(ctx, req); err != nil {
+		return err
+	}
+
+	s.cache.resetUsersPermissions(ctx, req.Usernames...)
+
+	return nil
+}
+
 func (s *service) GetRoles(ctx context.Context) (types.GetRolesResponse, error) {
-	if err := s.checkAccess(ctx, permissionReadRoles); err != nil {
+	if err := s.checkAccess(ctx, permissionRolesRead); err != nil {
 		return types.GetRolesResponse{}, err
 	}
 
@@ -78,7 +111,7 @@ func (s *service) GetRoles(ctx context.Context) (types.GetRolesResponse, error) 
 }
 
 func (s *service) GetRole(ctx context.Context, req types.GetRoleRequest) (types.RoleInfo, error) {
-	if err := s.checkAccess(ctx, permissionReadRoles); err != nil {
+	if err := s.checkAccess(ctx, permissionRolesRead); err != nil {
 		return types.RoleInfo{}, err
 	}
 
@@ -90,7 +123,7 @@ func (s *service) GetRole(ctx context.Context, req types.GetRoleRequest) (types.
 }
 
 func (s *service) UpdateRole(ctx context.Context, req types.UpdateRoleRequest) error {
-	if err := s.checkAccess(ctx, permissionUpdateRoles); err != nil {
+	if err := s.checkAccess(ctx, permissionRolesUpdate); err != nil {
 		return err
 	}
 
@@ -124,7 +157,7 @@ func (s *service) UpdateRole(ctx context.Context, req types.UpdateRoleRequest) e
 }
 
 func (s *service) DeleteRole(ctx context.Context, req types.DeleteRoleRequest) error {
-	if err := s.checkAccess(ctx, permissionDeleteRoles); err != nil {
+	if err := s.checkAccess(ctx, permissionRolesDelete); err != nil {
 		return err
 	}
 
@@ -150,32 +183,6 @@ func (s *service) DeleteRole(ctx context.Context, req types.DeleteRoleRequest) e
 	}
 
 	s.cache.resetRoles(ctx)
-
-	return nil
-}
-
-func (s *service) DeleteUsersFromRole(ctx context.Context, req types.DeleteUsersFromRoleRequest) error {
-	if err := s.checkAccess(ctx, permissionDeleteRoles); err != nil {
-		return err
-	}
-
-	if req.RoleID <= 0 {
-		return types.NewErrInvalidRequestField("value role_id must be greater than 0")
-	}
-
-	if len(req.Usernames) == 0 {
-		return types.NewErrInvalidRequestField("empty usernames")
-	}
-
-	if slices.Contains(req.Usernames, "") {
-		return types.NewErrInvalidRequestField("empty username")
-	}
-
-	if err := s.repo.DeleteUsersFromRole(ctx, req); err != nil {
-		return err
-	}
-
-	s.cache.resetUsersPermissions(ctx, req.Usernames...)
 
 	return nil
 }

@@ -12,6 +12,8 @@ import (
 	"github.com/ozontech/seq-ui/tracing"
 )
 
+const permSep = ":"
+
 func (a *API) CreateRole(ctx context.Context, req *admin.CreateRoleRequest) (*admin.CreateRoleResponse, error) {
 	ctx, span := tracing.StartSpan(ctx, "admin_v1_create_role")
 	defer span.End()
@@ -65,6 +67,31 @@ func (a *API) AddUsersToRole(ctx context.Context, req *admin.AddUsersToRoleReque
 	}
 
 	return &admin.AddUsersToRoleResponse{}, nil
+}
+
+func (a *API) DeleteUsersFromRole(ctx context.Context, req *admin.DeleteUsersFromRoleRequest) (*admin.DeleteUsersFromRoleResponse, error) {
+	ctx, span := tracing.StartSpan(ctx, "admin_v1_delete_users_from_role")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.KeyValue{
+			Key:   "role_id",
+			Value: attribute.IntValue(int(req.GetRoleId())),
+		},
+		attribute.KeyValue{
+			Key:   "users_count",
+			Value: attribute.IntValue(len(req.GetUsernames())),
+		},
+	)
+
+	if err := a.service.DeleteUsersFromRole(ctx, types.DeleteUsersFromRoleRequest{
+		RoleID:    req.RoleId,
+		Usernames: req.Usernames,
+	}); err != nil {
+		return nil, grpcutil.ProcessError(err)
+	}
+
+	return &admin.DeleteUsersFromRoleResponse{}, nil
 }
 
 func (a *API) GetRoles(ctx context.Context, _ *admin.GetRolesRequest) (*admin.GetRolesResponse, error) {
@@ -163,31 +190,6 @@ func (a *API) DeleteRole(ctx context.Context, req *admin.DeleteRoleRequest) (*ad
 	return &admin.DeleteRoleResponse{}, nil
 }
 
-func (a *API) DeleteUsersFromRole(ctx context.Context, req *admin.DeleteUsersFromRoleRequest) (*admin.DeleteUsersFromRoleResponse, error) {
-	ctx, span := tracing.StartSpan(ctx, "admin_v1_delete_users_from_role")
-	defer span.End()
-
-	span.SetAttributes(
-		attribute.KeyValue{
-			Key:   "role_id",
-			Value: attribute.IntValue(int(req.GetRoleId())),
-		},
-		attribute.KeyValue{
-			Key:   "users_count",
-			Value: attribute.IntValue(len(req.GetUsernames())),
-		},
-	)
-
-	if err := a.service.DeleteUsersFromRole(ctx, types.DeleteUsersFromRoleRequest{
-		RoleID:    req.RoleId,
-		Usernames: req.Usernames,
-	}); err != nil {
-		return nil, grpcutil.ProcessError(err)
-	}
-
-	return &admin.DeleteUsersFromRoleResponse{}, nil
-}
-
 func rolesToProto(source []types.Role) []*admin.Role {
 	roles := make([]*admin.Role, 0, len(source))
 	for _, role := range source {
@@ -209,7 +211,7 @@ func permissionGroupsToStrings(groups []*admin.PermissionGroup) []string {
 	permStrs := make([]string, 0, lenPermStrs)
 	for _, g := range groups {
 		for _, p := range g.Permissions {
-			permStrs = append(permStrs, g.Group+":"+p)
+			permStrs = append(permStrs, g.Group+permSep+p)
 		}
 	}
 
@@ -221,7 +223,7 @@ func stringsToPermissionGroups(permissions []string) []*admin.PermissionGroup {
 	var order []string
 
 	for _, p := range permissions {
-		group, perm, _ := strings.Cut(p, ":")
+		group, perm, _ := strings.Cut(p, permSep)
 
 		if _, exists := grouped[group]; !exists {
 			order = append(order, group)

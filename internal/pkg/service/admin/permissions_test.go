@@ -32,17 +32,17 @@ func TestCheckAccess(t *testing.T) {
 		{
 			name:         "ok_super_user",
 			username:     defaultSuperUser,
-			requiredPerm: permissionCreateRoles,
+			requiredPerm: permissionRolesCreate,
 		},
 		{
 			name:         "err_no_auth",
-			requiredPerm: permissionCreateRoles,
+			requiredPerm: permissionRolesCreate,
 			wantErr:      types.ErrUnauthenticated,
 		},
 		{
 			name:         "err_permission_denied",
 			username:     "typical bad boy",
-			requiredPerm: permissionCreateRoles,
+			requiredPerm: permissionRolesCreate,
 			wantErr:      types.ErrPermissionDenied,
 			mockArgs: &mockArgs{
 				req:   types.GetUserPermissionsRequest{Username: "typical bad boy"},
@@ -52,10 +52,10 @@ func TestCheckAccess(t *testing.T) {
 		{
 			name:         "ok_allowed",
 			username:     "typical good boy",
-			requiredPerm: permissionCreateRoles,
+			requiredPerm: permissionRolesCreate,
 			mockArgs: &mockArgs{
 				req:   types.GetUserPermissionsRequest{Username: "typical good boy"},
-				perms: []string{permissionCreateRoles},
+				perms: []string{permissionRolesCreate},
 			},
 		},
 	}
@@ -117,10 +117,10 @@ func TestGetUserPermissions(t *testing.T) {
 		{
 			name:      "ok",
 			req:       types.GetUserPermissionsRequest{Username: "user1"},
-			wantPerms: []string{permissionCreateRoles, permissionDeleteRoles},
+			wantPerms: []string{permissionRolesCreate, permissionRolesDelete},
 			mockArgs: &mockArgs{
 				req:   types.GetUserPermissionsRequest{Username: "user1"},
-				perms: []string{permissionCreateRoles, permissionDeleteRoles},
+				perms: []string{permissionRolesCreate, permissionRolesDelete},
 			},
 		},
 		{
@@ -191,7 +191,7 @@ func TestValidatePermissions(t *testing.T) {
 	}{
 		{
 			name:  "ok",
-			perms: []string{permissionCreateRoles},
+			perms: []string{permissionRolesCreate},
 		},
 		{
 			name:    "err_empty",
@@ -205,7 +205,7 @@ func TestValidatePermissions(t *testing.T) {
 		},
 		{
 			name:    "err_mixed",
-			perms:   []string{permissionCreateRoles, "roles:unknownOperation"},
+			perms:   []string{permissionRolesCreate, "roles:unknownOperation"},
 			wantErr: true,
 		},
 	}

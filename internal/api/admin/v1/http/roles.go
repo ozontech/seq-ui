@@ -17,6 +17,8 @@ import (
 	"github.com/ozontech/seq-ui/tracing"
 )
 
+const permSep = ":"
+
 // serveCreateRole go doc.
 //
 //	@Router		/admin/v1/roles [post]
@@ -101,6 +103,56 @@ func (a *API) serveAddUsersToRole(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err := a.service.AddUsersToRole(ctx, types.AddUsersToRoleRequest{
+		RoleID:    roleID,
+		Usernames: httpReq.Usernames,
+	}); err != nil {
+		httputil.ProcessError(wr, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// serveDeleteUsersFromRole go doc.
+//
+//	@Router		/admin/v1/roles/{id}/users [delete]
+//	@ID			admin_v1_delete_users_from_role
+//	@Tags		admin_v1
+//	@Param		id		path		int32						true	"Role ID"
+//	@Param		body	body		deleteUsersFromRoleRequest	true	"Request body"
+//	@Success	200		{object}	nil							"A successful response"
+//	@Failure	default	{object}	httputil.Error				"An unexpected error response"
+//	@Security	bearer
+func (a *API) serveDeleteUsersFromRole(w http.ResponseWriter, r *http.Request) {
+	ctx, span := tracing.StartSpan(r.Context(), "admin_v1_delete_users_from_role")
+	defer span.End()
+
+	wr := httputil.NewWriter(w)
+
+	roleID, err := getRoleID(r)
+	if err != nil {
+		httputil.ProcessError(wr, err)
+		return
+	}
+
+	var httpReq deleteUsersFromRoleRequest
+	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
+		wr.Error(fmt.Errorf("failed to parse request: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	span.SetAttributes(
+		attribute.KeyValue{
+			Key:   "role_id",
+			Value: attribute.IntValue(int(roleID)),
+		},
+		attribute.KeyValue{
+			Key:   "users_count",
+			Value: attribute.IntValue(len(httpReq.Usernames)),
+		},
+	)
+
+	if err := a.service.DeleteUsersFromRole(ctx, types.DeleteUsersFromRoleRequest{
 		RoleID:    roleID,
 		Usernames: httpReq.Usernames,
 	}); err != nil {
@@ -289,56 +341,6 @@ func (a *API) serveDeleteRole(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// serveDeleteUsersFromRole go doc.
-//
-//	@Router		/admin/v1/roles/{id}/users [delete]
-//	@ID			admin_v1_delete_users_from_role
-//	@Tags		admin_v1
-//	@Param		id		path		int32						true	"Role ID"
-//	@Param		body	body		deleteUsersFromRoleRequest	true	"Request body"
-//	@Success	200		{object}	nil							"A successful response"
-//	@Failure	default	{object}	httputil.Error				"An unexpected error response"
-//	@Security	bearer
-func (a *API) serveDeleteUsersFromRole(w http.ResponseWriter, r *http.Request) {
-	ctx, span := tracing.StartSpan(r.Context(), "admin_v1_delete_users_from_role")
-	defer span.End()
-
-	wr := httputil.NewWriter(w)
-
-	roleID, err := getRoleID(r)
-	if err != nil {
-		httputil.ProcessError(wr, err)
-		return
-	}
-
-	var httpReq deleteUsersFromRoleRequest
-	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
-		wr.Error(fmt.Errorf("failed to parse request: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	span.SetAttributes(
-		attribute.KeyValue{
-			Key:   "role_id",
-			Value: attribute.IntValue(int(roleID)),
-		},
-		attribute.KeyValue{
-			Key:   "users_count",
-			Value: attribute.IntValue(len(httpReq.Usernames)),
-		},
-	)
-
-	if err := a.service.DeleteUsersFromRole(ctx, types.DeleteUsersFromRoleRequest{
-		RoleID:    roleID,
-		Usernames: httpReq.Usernames,
-	}); err != nil {
-		httputil.ProcessError(wr, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-}
-
 func getRoleID(r *http.Request) (int32, error) {
 	idString := chi.URLParam(r, "id")
 
@@ -371,7 +373,7 @@ func parsePermissionGroupsToStrings(groups []permissionGroup) []string {
 	permStrs := make([]string, 0, lenPermStrs)
 	for _, g := range groups {
 		for _, p := range g.Permissions {
-			permStrs = append(permStrs, g.Group+":"+p)
+			permStrs = append(permStrs, g.Group+permSep+p)
 		}
 	}
 
@@ -383,7 +385,7 @@ func parseStringsToPermissionGroups(permissions []string) []permissionGroup {
 	var order []string
 
 	for _, p := range permissions {
-		group, perm, _ := strings.Cut(p, ":")
+		group, perm, _ := strings.Cut(p, permSep)
 
 		if _, exists := grouped[group]; !exists {
 			order = append(order, group)
@@ -406,7 +408,7 @@ func parseStringsToPermissionGroups(permissions []string) []permissionGroup {
 type permissionGroup struct {
 	Group       string   `json:"group"`
 	Permissions []string `json:"permissions"`
-}
+} // @name admin.v1.PermissionGroup
 
 type role struct {
 	ID          int32             `json:"id"`

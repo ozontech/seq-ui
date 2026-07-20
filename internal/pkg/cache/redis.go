@@ -25,13 +25,8 @@ func newRedisCache(ctx context.Context, cfg *config.Redis) (*redisCache, error) 
 		return nil, fmt.Errorf("create redis client: %w", err)
 	}
 
-	var prefix string
-	if cfg.KeyPrefix != "" {
-		prefix = cfg.KeyPrefix + "_"
-	}
-
 	metric.ServerCacheRedisHits.Inc()
-	return &redisCache{client: client, prefix: prefix}, nil
+	return &redisCache{client: client, prefix: cfg.KeyPrefix}, nil
 }
 
 func (c *redisCache) Set(ctx context.Context, key string, value string) error {

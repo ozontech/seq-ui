@@ -75,16 +75,16 @@ func TestCreateRole(t *testing.T) {
 			name: "ok",
 			req: types.CreateRoleRequest{
 				Name:        "typical good boy",
-				Permissions: []string{permissionCreateRoles},
+				Permissions: []string{permissionRolesCreate},
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionCreateRoles},
+				permissions: []string{permissionRolesCreate},
 			},
 			mockArgs: &mockArgs{
 				req: types.CreateRoleRequest{
 					Name:        "typical good boy",
-					Permissions: []string{permissionCreateRoles},
+					Permissions: []string{permissionRolesCreate},
 				},
 				roleID: 1,
 			},
@@ -94,12 +94,12 @@ func TestCreateRole(t *testing.T) {
 			name: "ok_superuser",
 			req: types.CreateRoleRequest{
 				Name:        "typical good boy",
-				Permissions: []string{permissionCreateRoles},
+				Permissions: []string{permissionRolesCreate},
 			},
 			mockArgs: &mockArgs{
 				req: types.CreateRoleRequest{
 					Name:        "typical good boy",
-					Permissions: []string{permissionCreateRoles},
+					Permissions: []string{permissionRolesCreate},
 				},
 				roleID: 2,
 			},
@@ -112,7 +112,7 @@ func TestCreateRole(t *testing.T) {
 			name: "err_no_auth",
 			req: types.CreateRoleRequest{
 				Name:        "typical good boy",
-				Permissions: []string{permissionCreateRoles},
+				Permissions: []string{permissionRolesCreate},
 			},
 			wantErr: true,
 		},
@@ -120,7 +120,7 @@ func TestCreateRole(t *testing.T) {
 			name: "err_no_access",
 			req: types.CreateRoleRequest{
 				Name:        "typical good boy",
-				Permissions: []string{permissionCreateRoles},
+				Permissions: []string{permissionRolesCreate},
 			},
 			accessMock: &accessMock{
 				username:    "bad boy",
@@ -132,11 +132,11 @@ func TestCreateRole(t *testing.T) {
 			name: "err_empty_name",
 			req: types.CreateRoleRequest{
 				Name:        "",
-				Permissions: []string{permissionCreateRoles},
+				Permissions: []string{permissionRolesCreate},
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionCreateRoles},
+				permissions: []string{permissionRolesCreate},
 			},
 			wantErr: true,
 		},
@@ -148,7 +148,7 @@ func TestCreateRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionCreateRoles},
+				permissions: []string{permissionRolesCreate},
 			},
 			wantErr: true,
 		},
@@ -160,7 +160,7 @@ func TestCreateRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionCreateRoles},
+				permissions: []string{permissionRolesCreate},
 			},
 			wantErr: true,
 		},
@@ -168,16 +168,16 @@ func TestCreateRole(t *testing.T) {
 			name: "err_repo",
 			req: types.CreateRoleRequest{
 				Name:        "typical good boy",
-				Permissions: []string{permissionCreateRoles},
+				Permissions: []string{permissionRolesCreate},
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionCreateRoles},
+				permissions: []string{permissionRolesCreate},
 			},
 			mockArgs: &mockArgs{
 				req: types.CreateRoleRequest{
 					Name:        "typical good boy",
-					Permissions: []string{permissionCreateRoles},
+					Permissions: []string{permissionRolesCreate},
 				},
 				err: errSomethingWrong,
 			},
@@ -243,7 +243,7 @@ func TestAddUsersToRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionUpdateRoles},
+				permissions: []string{permissionRolesUpdate},
 			},
 			mockArgs: &mockArgs{},
 		},
@@ -286,7 +286,7 @@ func TestAddUsersToRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionUpdateRoles},
+				permissions: []string{permissionRolesUpdate},
 			},
 			wantErr: true,
 		},
@@ -298,7 +298,7 @@ func TestAddUsersToRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionUpdateRoles},
+				permissions: []string{permissionRolesUpdate},
 			},
 			wantErr: true,
 		},
@@ -310,7 +310,7 @@ func TestAddUsersToRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionUpdateRoles},
+				permissions: []string{permissionRolesUpdate},
 			},
 			wantErr: true,
 		},
@@ -322,7 +322,7 @@ func TestAddUsersToRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionUpdateRoles},
+				permissions: []string{permissionRolesUpdate},
 			},
 			mockArgs: &mockArgs{
 				err: errSomethingWrong,
@@ -386,14 +386,14 @@ func TestGetRoles(t *testing.T) {
 			name: "ok",
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionReadRoles},
+				permissions: []string{permissionRolesRead},
 			},
 			mockArgs: &mockArgs{
 				roles: []types.Role{
 					{
 						ID:          1,
 						Name:        "admin",
-						Permissions: []string{permissionCreateRoles, permissionUpdateRoles},
+						Permissions: []string{permissionRolesCreate, permissionRolesUpdate},
 					},
 				},
 			},
@@ -401,7 +401,7 @@ func TestGetRoles(t *testing.T) {
 				{
 					ID:          1,
 					Name:        "admin",
-					Permissions: []string{permissionCreateRoles, permissionUpdateRoles},
+					Permissions: []string{permissionRolesCreate, permissionRolesUpdate},
 				},
 			},
 		},
@@ -409,7 +409,7 @@ func TestGetRoles(t *testing.T) {
 			name: "ok_empty",
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionReadRoles},
+				permissions: []string{permissionRolesRead},
 			},
 			mockArgs: &mockArgs{
 				roles: []types.Role{},
@@ -432,7 +432,7 @@ func TestGetRoles(t *testing.T) {
 			name: "err_repo",
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionReadRoles},
+				permissions: []string{permissionRolesRead},
 			},
 			mockArgs: &mockArgs{
 				err: errSomethingWrong,
@@ -512,7 +512,7 @@ func TestGetRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionReadRoles},
+				permissions: []string{permissionRolesRead},
 			},
 		},
 		{
@@ -535,7 +535,7 @@ func TestGetRole(t *testing.T) {
 			wantErr: true,
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionReadRoles},
+				permissions: []string{permissionRolesRead},
 			},
 		},
 		{
@@ -544,7 +544,7 @@ func TestGetRole(t *testing.T) {
 			wantErr: true,
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionReadRoles},
+				permissions: []string{permissionRolesRead},
 			},
 			mockArgs: &mockArgs{
 				err: errSomethingWrong,
@@ -606,19 +606,19 @@ func TestUpdateRole(t *testing.T) {
 			req: types.UpdateRoleRequest{
 				RoleID:      1,
 				Name:        &name,
-				Permissions: []string{permissionReadRoles},
+				Permissions: []string{permissionRolesRead},
 			},
 			mockArgs: &mockArgs{
 				req: types.UpdateRoleRequest{
 					RoleID:      1,
 					Name:        &name,
-					Permissions: []string{permissionReadRoles},
+					Permissions: []string{permissionRolesRead},
 				},
 				resetUsers: []string{"dima"},
 			},
 			accessMock: &accessMock{
 				username:    "typical good boy",
-				permissions: []string{permissionUpdateRoles, permissionReadRoles},
+				permissions: []string{permissionRolesUpdate, permissionRolesRead},
 			},
 		},
 		{
@@ -636,25 +636,25 @@ func TestUpdateRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "typical good boy",
-				permissions: []string{permissionUpdateRoles, permissionReadRoles},
+				permissions: []string{permissionRolesUpdate, permissionRolesRead},
 			},
 		},
 		{
 			name: "ok_permissions_only",
 			req: types.UpdateRoleRequest{
 				RoleID:      1,
-				Permissions: []string{permissionReadRoles},
+				Permissions: []string{permissionRolesRead},
 			},
 			mockArgs: &mockArgs{
 				req: types.UpdateRoleRequest{
 					RoleID:      1,
-					Permissions: []string{permissionReadRoles},
+					Permissions: []string{permissionRolesRead},
 				},
 				resetUsers: []string{"dima"},
 			},
 			accessMock: &accessMock{
 				username:    "typical good boy",
-				permissions: []string{permissionUpdateRoles, permissionReadRoles},
+				permissions: []string{permissionRolesUpdate, permissionRolesRead},
 			},
 		},
 		{
@@ -702,7 +702,7 @@ func TestUpdateRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "typical good boy",
-				permissions: []string{permissionUpdateRoles},
+				permissions: []string{permissionRolesUpdate},
 			},
 			wantErr: true,
 		},
@@ -713,7 +713,7 @@ func TestUpdateRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "typical good boy",
-				permissions: []string{permissionUpdateRoles},
+				permissions: []string{permissionRolesUpdate},
 			},
 			wantErr: true,
 		},
@@ -725,7 +725,7 @@ func TestUpdateRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "typical good boy",
-				permissions: []string{permissionUpdateRoles},
+				permissions: []string{permissionRolesUpdate},
 			},
 			wantErr: true,
 		},
@@ -737,7 +737,7 @@ func TestUpdateRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "typical good boy",
-				permissions: []string{permissionUpdateRoles},
+				permissions: []string{permissionRolesUpdate},
 			},
 			wantErr: true,
 		},
@@ -756,7 +756,7 @@ func TestUpdateRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "typical good boy",
-				permissions: []string{permissionUpdateRoles},
+				permissions: []string{permissionRolesUpdate},
 			},
 			wantErr: true,
 		},
@@ -835,7 +835,7 @@ func TestDeleteRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionDeleteRoles, permissionReadRoles},
+				permissions: []string{permissionRolesDelete, permissionRolesRead},
 			},
 			mockArgs: &mockArgs{
 				req:        types.DeleteRoleRequest{RoleID: 1},
@@ -850,7 +850,7 @@ func TestDeleteRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionDeleteRoles, permissionReadRoles},
+				permissions: []string{permissionRolesDelete, permissionRolesRead},
 			},
 			mockArgs: &mockArgs{
 				req: types.DeleteRoleRequest{
@@ -885,7 +885,7 @@ func TestDeleteRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionDeleteRoles, permissionReadRoles},
+				permissions: []string{permissionRolesDelete, permissionRolesRead},
 			},
 			wantErr: true,
 		},
@@ -897,7 +897,7 @@ func TestDeleteRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionDeleteRoles, permissionReadRoles},
+				permissions: []string{permissionRolesDelete, permissionRolesRead},
 			},
 			wantErr: true,
 		},
@@ -908,7 +908,7 @@ func TestDeleteRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionDeleteRoles, permissionReadRoles},
+				permissions: []string{permissionRolesDelete, permissionRolesRead},
 			},
 			mockArgs: &mockArgs{
 				req:        types.DeleteRoleRequest{RoleID: 1},
@@ -988,7 +988,7 @@ func TestDeleteUsersFromRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionDeleteRoles},
+				permissions: []string{permissionRolesUpdate},
 			},
 			mockArgs: &mockArgs{
 				req: types.DeleteUsersFromRoleRequest{
@@ -1025,7 +1025,7 @@ func TestDeleteUsersFromRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionDeleteRoles},
+				permissions: []string{permissionRolesUpdate},
 			},
 			wantErr: true,
 		},
@@ -1037,7 +1037,7 @@ func TestDeleteUsersFromRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionDeleteRoles},
+				permissions: []string{permissionRolesUpdate},
 			},
 			wantErr: true,
 		},
@@ -1049,7 +1049,7 @@ func TestDeleteUsersFromRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionDeleteRoles},
+				permissions: []string{permissionRolesUpdate},
 			},
 			wantErr: true,
 		},
@@ -1061,7 +1061,7 @@ func TestDeleteUsersFromRole(t *testing.T) {
 			},
 			accessMock: &accessMock{
 				username:    "admin",
-				permissions: []string{permissionDeleteRoles},
+				permissions: []string{permissionRolesUpdate},
 			},
 			mockArgs: &mockArgs{
 				req: types.DeleteUsersFromRoleRequest{

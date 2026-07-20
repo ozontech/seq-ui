@@ -47,7 +47,7 @@ const (
 
 	defaultLogsLifespanCacheKey = "logs_lifespan"
 	defaultLogsLifespanCacheTTL = 10 * time.Minute
-	defaultAdminCacheTTL        = 5 * time.Minute
+	defaultAdminCacheTTL        = time.Hour
 
 	defaultClickHouseDialTimeout = 5 * time.Second
 	defaultClickHouseReadTimeout = 30 * time.Second

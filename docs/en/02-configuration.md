@@ -278,6 +278,10 @@ Cache config.
 
   > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
 
++ **`key_prefix`** *`string`* *`optional`*
+
+  Prefix added to every cache key stored in Redis. Useful when multiple instances of seq-ui use one Redis cache. If set, the resulting key is `<key_prefix><cache_key>`
+
 ### External storages
 
 **`db`** *`DB`* *`optional`*
@@ -844,7 +848,7 @@ Configuration for `/admin` API.
 
   List of users with full access to admin features.
 
-+ **`cache_ttl`** *`string`* *`default="5m"`*
++ **`cache_ttl`** *`string`* *`default="1h"`*
 
   Cache TTL for roles and user permissions. If not set or set to zero, then it will be reset to `default`.
 

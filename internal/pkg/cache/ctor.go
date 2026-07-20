@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -9,6 +10,19 @@ import (
 	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/ozontech/seq-ui/logger"
 )
+
+func NewRedis(ctx context.Context, cfg *config.Redis) (Cache, error) {
+	if cfg == nil {
+		return nil, errors.New("redis cache config is nil")
+	}
+
+	redis, err := newRedisCache(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return redis, nil
+}
 
 func NewInmemoryWithRedisOrInmemory(ctx context.Context, cfg config.Cache) (Cache, error) {
 	return newRedisBasedOrInmemory(ctx, cfg, true)

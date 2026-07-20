@@ -21,11 +21,11 @@ const _ = grpc.SupportPackageIsVersion8
 const (
 	AdminService_CreateRole_FullMethodName          = "/admin.v1.AdminService/CreateRole"
 	AdminService_AddUsersToRole_FullMethodName      = "/admin.v1.AdminService/AddUsersToRole"
+	AdminService_DeleteUsersFromRole_FullMethodName = "/admin.v1.AdminService/DeleteUsersFromRole"
 	AdminService_GetRoles_FullMethodName            = "/admin.v1.AdminService/GetRoles"
 	AdminService_GetRole_FullMethodName             = "/admin.v1.AdminService/GetRole"
 	AdminService_UpdateRole_FullMethodName          = "/admin.v1.AdminService/UpdateRole"
 	AdminService_DeleteRole_FullMethodName          = "/admin.v1.AdminService/DeleteRole"
-	AdminService_DeleteUsersFromRole_FullMethodName = "/admin.v1.AdminService/DeleteUsersFromRole"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -34,11 +34,11 @@ const (
 type AdminServiceClient interface {
 	CreateRole(ctx context.Context, in *CreateRoleRequest, opts ...grpc.CallOption) (*CreateRoleResponse, error)
 	AddUsersToRole(ctx context.Context, in *AddUsersToRoleRequest, opts ...grpc.CallOption) (*AddUsersToRoleResponse, error)
+	DeleteUsersFromRole(ctx context.Context, in *DeleteUsersFromRoleRequest, opts ...grpc.CallOption) (*DeleteUsersFromRoleResponse, error)
 	GetRoles(ctx context.Context, in *GetRolesRequest, opts ...grpc.CallOption) (*GetRolesResponse, error)
 	GetRole(ctx context.Context, in *GetRoleRequest, opts ...grpc.CallOption) (*GetRoleResponse, error)
 	UpdateRole(ctx context.Context, in *UpdateRoleRequest, opts ...grpc.CallOption) (*UpdateRoleResponse, error)
 	DeleteRole(ctx context.Context, in *DeleteRoleRequest, opts ...grpc.CallOption) (*DeleteRoleResponse, error)
-	DeleteUsersFromRole(ctx context.Context, in *DeleteUsersFromRoleRequest, opts ...grpc.CallOption) (*DeleteUsersFromRoleResponse, error)
 }
 
 type adminServiceClient struct {
@@ -63,6 +63,16 @@ func (c *adminServiceClient) AddUsersToRole(ctx context.Context, in *AddUsersToR
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AddUsersToRoleResponse)
 	err := c.cc.Invoke(ctx, AdminService_AddUsersToRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeleteUsersFromRole(ctx context.Context, in *DeleteUsersFromRoleRequest, opts ...grpc.CallOption) (*DeleteUsersFromRoleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteUsersFromRoleResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeleteUsersFromRole_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -109,27 +119,17 @@ func (c *adminServiceClient) DeleteRole(ctx context.Context, in *DeleteRoleReque
 	return out, nil
 }
 
-func (c *adminServiceClient) DeleteUsersFromRole(ctx context.Context, in *DeleteUsersFromRoleRequest, opts ...grpc.CallOption) (*DeleteUsersFromRoleResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeleteUsersFromRoleResponse)
-	err := c.cc.Invoke(ctx, AdminService_DeleteUsersFromRole_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // AdminServiceServer is the server API for AdminService service.
 // All implementations should embed UnimplementedAdminServiceServer
 // for forward compatibility
 type AdminServiceServer interface {
 	CreateRole(context.Context, *CreateRoleRequest) (*CreateRoleResponse, error)
 	AddUsersToRole(context.Context, *AddUsersToRoleRequest) (*AddUsersToRoleResponse, error)
+	DeleteUsersFromRole(context.Context, *DeleteUsersFromRoleRequest) (*DeleteUsersFromRoleResponse, error)
 	GetRoles(context.Context, *GetRolesRequest) (*GetRolesResponse, error)
 	GetRole(context.Context, *GetRoleRequest) (*GetRoleResponse, error)
 	UpdateRole(context.Context, *UpdateRoleRequest) (*UpdateRoleResponse, error)
 	DeleteRole(context.Context, *DeleteRoleRequest) (*DeleteRoleResponse, error)
-	DeleteUsersFromRole(context.Context, *DeleteUsersFromRoleRequest) (*DeleteUsersFromRoleResponse, error)
 }
 
 // UnimplementedAdminServiceServer should be embedded to have forward compatible implementations.
@@ -142,6 +142,9 @@ func (UnimplementedAdminServiceServer) CreateRole(context.Context, *CreateRoleRe
 func (UnimplementedAdminServiceServer) AddUsersToRole(context.Context, *AddUsersToRoleRequest) (*AddUsersToRoleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddUsersToRole not implemented")
 }
+func (UnimplementedAdminServiceServer) DeleteUsersFromRole(context.Context, *DeleteUsersFromRoleRequest) (*DeleteUsersFromRoleResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteUsersFromRole not implemented")
+}
 func (UnimplementedAdminServiceServer) GetRoles(context.Context, *GetRolesRequest) (*GetRolesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRoles not implemented")
 }
@@ -153,9 +156,6 @@ func (UnimplementedAdminServiceServer) UpdateRole(context.Context, *UpdateRoleRe
 }
 func (UnimplementedAdminServiceServer) DeleteRole(context.Context, *DeleteRoleRequest) (*DeleteRoleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteRole not implemented")
-}
-func (UnimplementedAdminServiceServer) DeleteUsersFromRole(context.Context, *DeleteUsersFromRoleRequest) (*DeleteUsersFromRoleResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteUsersFromRole not implemented")
 }
 
 // UnsafeAdminServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -201,6 +201,24 @@ func _AdminService_AddUsersToRole_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).AddUsersToRole(ctx, req.(*AddUsersToRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeleteUsersFromRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteUsersFromRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeleteUsersFromRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeleteUsersFromRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeleteUsersFromRole(ctx, req.(*DeleteUsersFromRoleRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -277,24 +295,6 @@ func _AdminService_DeleteRole_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_DeleteUsersFromRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteUsersFromRoleRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).DeleteUsersFromRole(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_DeleteUsersFromRole_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).DeleteUsersFromRole(ctx, req.(*DeleteUsersFromRoleRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -311,6 +311,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_AddUsersToRole_Handler,
 		},
 		{
+			MethodName: "DeleteUsersFromRole",
+			Handler:    _AdminService_DeleteUsersFromRole_Handler,
+		},
+		{
 			MethodName: "GetRoles",
 			Handler:    _AdminService_GetRoles_Handler,
 		},
@@ -325,10 +329,6 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteRole",
 			Handler:    _AdminService_DeleteRole_Handler,
-		},
-		{
-			MethodName: "DeleteUsersFromRole",
-			Handler:    _AdminService_DeleteUsersFromRole_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
