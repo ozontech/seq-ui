@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/ozontech/seq-ui/internal/app/config/migrate"
 	v1 "github.com/ozontech/seq-ui/internal/app/config/v1"
 	v2 "github.com/ozontech/seq-ui/internal/app/config/v2"
 	"gopkg.in/yaml.v3"
@@ -40,7 +41,7 @@ func FromFile(cfgPath string) (v2.Config, error) {
 		if err != nil {
 			return v2.Config{}, err
 		}
-		cfg = migrateV1ToV2(cfgV1)
+		cfg = migrate.V1ToV2(cfgV1)
 	case *meta.Version == currentVersion:
 		cfg, err = parse[v2.Config](cfgBytes, true)
 		if err != nil {

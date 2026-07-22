@@ -5,6 +5,212 @@ import (
 	"time"
 )
 
+// Actual configuration scheme
+// version:
+// server:
+//   http:
+//     addr:
+//     read_timeout:
+//     read_header_timeout:
+//     write_timeout:
+//     cors:
+//       allowed_origins:
+//       allowed_methods:
+//       allowed_headers:
+//       exposed_headers:
+//       allow_credentials:
+//       max_age:
+//       options_passthrough:
+//   grpc:
+//     addr:
+//     connection_timeout:
+//   debug:
+//     addr:
+//   auth:
+//     oidc:
+//       skip_verify:
+//       auth_urls:
+//       root_ca:
+//       ca_cert:
+//       private_key:
+//       ssl_skip_verify:
+//       allowed_clients:
+//       cache_secret_key:
+//     jwt:
+//       secret_key:
+//   rate_limiters:
+//     <api_name>:
+//       default:
+//         rate_per_sec:
+//         max_burst:
+//         store_max_keys:
+//         per_handler:
+//       spec_users:
+//         <username>:
+//           rate_per_sec:
+//           max_burst:
+//           store_max_keys:
+//           per_handler:
+// clients:
+//   seq_db:
+//     id:
+//     timeout:
+//     avg_doc_size:
+//     addrs:
+//     request_retries:
+//     initial_retry_backoff:
+//     max_retry_backoff:
+//     client_mode:
+//     grpc_keepalive_params:
+//       time:
+//       timeout:
+//       permit_without_stream:
+//     download_params:
+//       delay:
+//       initial_retry_backoff:
+//       max_retry_backoff:
+//   clickhouse:
+//     id:
+//     addrs:
+//     database:
+//     username:
+//     password:
+//     sharded:
+//     dial_timeout:
+//     read_timeout:
+// handlers:
+//   seq_api:
+//   	options:
+//       max_search_limit:
+//       max_search_total_limit:
+//       max_search_offset_limit:
+//       max_export_limit:
+//       seq_cli_max_search_limit:
+//       max_parallel_export_requests:
+//       max_aggregations_per_request:
+//       max_buckets_per_aggregation_ts:
+//       events_cache_ttl:
+//       pinned_fields:
+//         name:
+//         type:
+//       system_fields:
+//         name:
+//         type:
+//       logs_lifespan_cache_key:
+//       logs_lifespan_cache_ttl:
+//       fields_cache_ttl:
+//       masking:
+//         masks:
+//           re:
+//           groups:
+//           mode:
+//           replace_word:
+//           process_fields:
+//           ignore_fields:
+//           field_filters:
+//             condition:
+//             filters:
+//               field:
+//               mode:
+//               values:
+//         process_fields:
+//         ignore_fields:
+//     envs:
+//       <env_name>:
+//         seq_db_id:
+//         options:
+//           max_search_limit:
+//           max_search_total_limit:
+//           max_search_offset_limit:
+//           max_export_limit:
+//           seq_cli_max_search_limit:
+//           max_parallel_export_requests:
+//           max_aggregations_per_request:
+//           max_buckets_per_aggregation_ts:
+//           events_cache_ttl:
+//           pinned_fields:
+//             name:
+//             type:
+//           system_fields:
+//             name:
+//             type:
+//           logs_lifespan_cache_key:
+//           logs_lifespan_cache_ttl:
+//           fields_cache_ttl:
+//           masking:
+//             masks:
+//               re:
+//               groups:
+//               mode:
+//               replace_word:
+//               process_fields:
+//               ignore_fields:
+//               field_filters:
+//                 condition:
+//                 filters:
+//                   field:
+//                   mode:
+//                   values:
+//             process_fields:
+//             ignore_fields:
+//     default_env:
+//   error_groups:
+//     log_tags_mapping:
+//       env:
+//       service:
+//       release:
+//     query_filter:
+//       <ch_column>:
+//   mass_export:
+//     batch_size:
+//     workers_count:
+//     tasks_channel_size:
+//     part_length:
+//     url_prefix:
+//     allowed_users:
+//     file_store:
+//       s3:
+//         endpoint:
+//         access_key_id:
+//         secret_access_key:
+//         bucket_name:
+//         enable_ssl:
+//     session_store:
+//       redis_id:
+//       export_lifetime:
+//     download_params:
+//       delay:
+//       initial_retry_backoff:
+//       max_retry_backoff:
+//   async_search:
+//     admin_users:
+//     list_query_length_limit:
+// db:
+//   name:
+//   host:
+//   port:
+//   pass:
+//   user:
+//   request_timeout:
+//   connection_pool_capacity:
+//   use_prepared_statements:
+// cache:
+//   inmemory:
+//     id:
+//     num_counters:
+//     max_cost:
+//     buffer_items:
+//   redis:
+//     id:
+//     with_inmem_id:
+//     addr:
+//     username:
+//     password:
+//     timeout:
+//     max_retries:
+//     min_retry_backoff:
+//     max_retry_backoff:
+
 const (
 	DefaultSeqDBClientID     = "default"
 	DefaultInmemCacheID      = "seqapi"
@@ -264,9 +470,9 @@ type Field struct {
 }
 
 type SeqAPI struct {
-	*SeqAPIOptions `yaml:",inline"`
-	Envs           map[string]SeqAPIEnv `yaml:"envs"`
-	DefaultEnv     string               `yaml:"default_env"`
+	Options    SeqAPIOptions        `yaml:"options"`
+	Envs       map[string]SeqAPIEnv `yaml:"envs"`
+	DefaultEnv string               `yaml:"default_env"`
 }
 
 type SeqAPIEnv struct {
@@ -419,14 +625,14 @@ func Normalize(cfg *Config) error {
 		if r.ID == "" {
 			return fmt.Errorf("redis cache ID cannot be empty")
 		}
-		if _, ok := inmemIDs[r.ID]; ok {
+		if _, ok := redisIDs[r.ID]; ok {
 			return fmt.Errorf("duplicate redis cache ID: %s", r.ID)
 		}
 
 		redisIDs[r.ID] = struct{}{}
 
 		if r.WithInmemID != "" {
-			if _, ok := redisIDs[r.WithInmemID]; !ok {
+			if _, ok := inmemIDs[r.WithInmemID]; !ok {
 				return fmt.Errorf("redis cache %q references unknown inmem cache id %q", r.ID, r.WithInmemID)
 			}
 		}
@@ -441,7 +647,7 @@ func Normalize(cfg *Config) error {
 		cfg.Handlers.AsyncSearch.ListQueryLengthLimit = defaultAsyncSearchListQueryLengthLimit
 	}
 
-	setSeqAPIOptionsDefaults(cfg.Handlers.SeqAPI.SeqAPIOptions)
+	setSeqAPIOptionsDefaults(&cfg.Handlers.SeqAPI.Options)
 
 	if len(cfg.Handlers.SeqAPI.Envs) > 0 {
 		if cfg.Handlers.SeqAPI.DefaultEnv == "" {

@@ -1,12 +1,12 @@
-package config
+package migrate
 
 import (
 	v1 "github.com/ozontech/seq-ui/internal/app/config/v1"
 	v2 "github.com/ozontech/seq-ui/internal/app/config/v2"
 )
 
-func migrateV1ToV2(src v1.Config) v2.Config {
-	dst := v2.Config{Version: currentVersion}
+func V1ToV2(src v1.Config) v2.Config {
+	dst := v2.Config{Version: 2}
 
 	dst.Server = migrateServer(src.Server)
 	dst.Cache = migrateCache(src.Server)

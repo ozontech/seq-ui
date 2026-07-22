@@ -1,5 +1,3 @@
-version: 2
-
 server:
   http_addr: ":5555"
   grpc_addr: ":5556"
