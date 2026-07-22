@@ -15,7 +15,7 @@ import (
 // serveGetMy go doc.
 //
 //	@Router		/dashboards/v1/my [post]
-//	@ID			dashboards_v1_getMy
+//	@ID			dashboards_v1_get_my
 //	@Tags		dashboards_v1
 //	@Param		body	body		getMyRequest	true	"Request body"
 //	@Success	200		{object}	getMyResponse	"A successful response"

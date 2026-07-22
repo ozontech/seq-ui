@@ -61,7 +61,7 @@ type requestLogArgs struct {
 	clientError string
 	serverError string
 	user        string
-	details     []interface{}
+	details     []any
 }
 
 // logRequestBeforeHandler logs incoming request before the handler call.

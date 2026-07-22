@@ -15,6 +15,7 @@ import (
 
 type redisCache struct {
 	client *redis.Client
+	prefix string
 }
 
 func newRedisCache(ctx context.Context, cfg *config.Redis) (*redisCache, error) {
@@ -25,7 +26,7 @@ func newRedisCache(ctx context.Context, cfg *config.Redis) (*redisCache, error) 
 	}
 
 	metric.ServerCacheRedisHits.Inc()
-	return &redisCache{client: client}, nil
+	return &redisCache{client: client, prefix: cfg.KeyPrefix}, nil
 }
 
 func (c *redisCache) Set(ctx context.Context, key string, value string) error {
@@ -33,11 +34,11 @@ func (c *redisCache) Set(ctx context.Context, key string, value string) error {
 }
 
 func (c *redisCache) SetWithTTL(ctx context.Context, key string, value string, ttl time.Duration) error {
-	return c.client.Set(ctx, key, value, ttl).Err()
+	return c.client.Set(ctx, c.withPrefix(key), value, ttl).Err()
 }
 
 func (c *redisCache) Get(ctx context.Context, key string) (string, error) {
-	value, err := c.client.Get(ctx, key).Result()
+	value, err := c.client.Get(ctx, c.withPrefix(key)).Result()
 	if err == nil {
 		return value, nil
 	}
@@ -50,7 +51,7 @@ func (c *redisCache) Get(ctx context.Context, key string) (string, error) {
 }
 
 func (c *redisCache) GetTTL(ctx context.Context, key string) (time.Duration, error) {
-	value, err := c.client.TTL(ctx, key).Result()
+	value, err := c.client.TTL(ctx, c.withPrefix(key)).Result()
 	if err == nil {
 		return value, nil
 	}
@@ -63,5 +64,9 @@ func (c *redisCache) GetTTL(ctx context.Context, key string) (time.Duration, err
 }
 
 func (c *redisCache) Del(ctx context.Context, key string) {
-	c.client.Del(ctx, key)
+	c.client.Del(ctx, c.withPrefix(key))
+}
+
+func (c *redisCache) withPrefix(key string) string {
+	return c.prefix + key
 }

@@ -16,7 +16,7 @@ import (
 // serveGetUserProfile go doc.
 //
 //	@Router		/userprofile/v1/profile [get]
-//	@ID			userprofile_v1_getUserProfile
+//	@ID			userprofile_v1_get_user_profile
 //	@Tags		userprofile_v1
 //	@Success	200		{object}	userProfile		"A successful response"
 //	@Failure	default	{object}	httputil.Error	"An unexpected error response"
@@ -51,7 +51,7 @@ func (a *API) serveGetUserProfile(w http.ResponseWriter, r *http.Request) {
 // serveUpdateUserProfile go doc.
 //
 //	@Router		/userprofile/v1/profile [patch]
-//	@ID			userprofile_v1_updateUserProfile
+//	@ID			userprofile_v1_update_user_profile
 //	@Tags		userprofile_v1
 //	@Param		body	body		updateUserProfileRequest	true	"Request body"
 //	@Success	200		{object}	nil							"A successful response"
@@ -112,6 +112,7 @@ type userProfile struct {
 	Timezone          string   `json:"timezone"`
 	OnboardingVersion string   `json:"onboardingVersion"`
 	LogColumns        []string `json:"log_columns"`
+	RoleID            *int32   `json:"role_id"`
 } //	@name	userprofile.v1.UserProfile
 
 func newUserProfile(t types.UserProfile) userProfile {
@@ -119,6 +120,7 @@ func newUserProfile(t types.UserProfile) userProfile {
 		Timezone:          t.Timezone,
 		OnboardingVersion: t.OnboardingVersion,
 		LogColumns:        t.LogColumns.LogColumns,
+		RoleID:            t.RoleID,
 	}
 }
 

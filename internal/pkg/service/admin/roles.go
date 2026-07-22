@@ -1,0 +1,188 @@
+package admin
+
+import (
+	"context"
+	"slices"
+
+	"github.com/ozontech/seq-ui/internal/app/types"
+)
+
+const (
+	permissionRolesCreate = "roles:create"
+	permissionRolesRead   = "roles:read"
+	permissionRolesUpdate = "roles:update"
+	permissionRolesDelete = "roles:delete"
+)
+
+func (s *service) CreateRole(ctx context.Context, req types.CreateRoleRequest) (int32, error) {
+	if err := s.checkAccess(ctx, permissionRolesCreate); err != nil {
+		return 0, err
+	}
+
+	if req.Name == "" {
+		return 0, types.NewErrInvalidRequestField("empty role name")
+	}
+
+	if err := s.validatePermissions(req.Permissions); err != nil {
+		return 0, err
+	}
+
+	roleID, err := s.repo.CreateRole(ctx, req)
+	if err != nil {
+		return 0, err
+	}
+
+	s.cache.resetRoles(ctx)
+
+	return roleID, nil
+}
+
+func (s *service) AddUsersToRole(ctx context.Context, req types.AddUsersToRoleRequest) error {
+	if err := s.checkAccess(ctx, permissionRolesUpdate); err != nil {
+		return err
+	}
+
+	if req.RoleID <= 0 {
+		return types.NewErrInvalidRequestField("value role_id must be greater than 0")
+	}
+
+	if len(req.Usernames) == 0 {
+		return types.NewErrInvalidRequestField("empty usernames")
+	}
+
+	if slices.Contains(req.Usernames, "") {
+		return types.NewErrInvalidRequestField("empty username")
+	}
+
+	if err := s.repo.AddUsersToRole(ctx, req); err != nil {
+		return err
+	}
+
+	s.cache.resetUsersPermissions(ctx, req.Usernames...)
+
+	return nil
+}
+
+func (s *service) DeleteUsersFromRole(ctx context.Context, req types.DeleteUsersFromRoleRequest) error {
+	if err := s.checkAccess(ctx, permissionRolesUpdate); err != nil {
+		return err
+	}
+
+	if req.RoleID <= 0 {
+		return types.NewErrInvalidRequestField("value role_id must be greater than 0")
+	}
+
+	if len(req.Usernames) == 0 {
+		return types.NewErrInvalidRequestField("empty usernames")
+	}
+
+	if slices.Contains(req.Usernames, "") {
+		return types.NewErrInvalidRequestField("empty username")
+	}
+
+	if err := s.repo.DeleteUsersFromRole(ctx, req); err != nil {
+		return err
+	}
+
+	s.cache.resetUsersPermissions(ctx, req.Usernames...)
+
+	return nil
+}
+
+func (s *service) GetRoles(ctx context.Context) (types.GetRolesResponse, error) {
+	if err := s.checkAccess(ctx, permissionRolesRead); err != nil {
+		return types.GetRolesResponse{}, err
+	}
+
+	if roles, err := s.cache.getRoles(ctx); err == nil {
+		return types.GetRolesResponse{Roles: roles}, nil
+	}
+
+	roles, err := s.repo.GetRoles(ctx)
+	if err != nil {
+		return types.GetRolesResponse{}, err
+	}
+
+	s.cache.setRoles(ctx, roles)
+
+	return types.GetRolesResponse{
+		Roles: roles,
+	}, nil
+}
+
+func (s *service) GetRole(ctx context.Context, req types.GetRoleRequest) (types.RoleInfo, error) {
+	if err := s.checkAccess(ctx, permissionRolesRead); err != nil {
+		return types.RoleInfo{}, err
+	}
+
+	if req.RoleID <= 0 {
+		return types.RoleInfo{}, types.NewErrInvalidRequestField("value role_id must be greater than 0")
+	}
+
+	return s.repo.GetRole(ctx, req)
+}
+
+func (s *service) UpdateRole(ctx context.Context, req types.UpdateRoleRequest) error {
+	if err := s.checkAccess(ctx, permissionRolesUpdate); err != nil {
+		return err
+	}
+
+	if req.RoleID <= 0 {
+		return types.NewErrInvalidRequestField("value role_id must be greater than 0")
+	}
+
+	if (req.Name == nil || *req.Name == "") && len(req.Permissions) == 0 {
+		return types.ErrEmptyUpdateRequest
+	}
+
+	if len(req.Permissions) > 0 {
+		if err := s.validatePermissions(req.Permissions); err != nil {
+			return err
+		}
+	}
+
+	if err := s.repo.UpdateRole(ctx, req); err != nil {
+		return err
+	}
+
+	s.cache.resetRoles(ctx)
+
+	if len(req.Permissions) > 0 {
+		if roleInfo, err := s.repo.GetRole(ctx, types.GetRoleRequest{RoleID: req.RoleID}); err == nil {
+			s.cache.resetUsersPermissions(ctx, roleInfo.Usernames...)
+		}
+	}
+
+	return nil
+}
+
+func (s *service) DeleteRole(ctx context.Context, req types.DeleteRoleRequest) error {
+	if err := s.checkAccess(ctx, permissionRolesDelete); err != nil {
+		return err
+	}
+
+	if req.RoleID <= 0 {
+		return types.NewErrInvalidRequestField("value role_id must be greater than 0")
+	}
+
+	if req.ReplacementRoleID != nil {
+		if *req.ReplacementRoleID <= 0 {
+			return types.NewErrInvalidRequestField("value replacement_role_id must be greater than 0")
+		}
+		if *req.ReplacementRoleID == req.RoleID {
+			return types.NewErrInvalidRequestField("replacement_role_id must be not equal to role_id")
+		}
+	}
+
+	if roleInfo, err := s.repo.GetRole(ctx, types.GetRoleRequest{RoleID: req.RoleID}); err == nil {
+		s.cache.resetUsersPermissions(ctx, roleInfo.Usernames...)
+	}
+
+	if err := s.repo.DeleteRole(ctx, req); err != nil {
+		return err
+	}
+
+	s.cache.resetRoles(ctx)
+
+	return nil
+}

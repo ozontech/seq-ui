@@ -278,6 +278,10 @@ server:
 
   > Значение должно быть передано в `duration`-формате: `<число>(ms|s|m|h)`.
 
++ **`key_prefix`** *`string`* *`optional`*
+
+  Префикс, добавляемый ко всем ключам, хранящимся в Redis. Полезно, когда несколько инстансов seq-ui используют один Redis и их ключи не должны пересекаться. Итоговый ключ имеет вид `<key_prefix><cache_key>`
+
 ### Внешние хранилища
 
 **`db`** *`DB`* *`optional`*
@@ -505,6 +509,7 @@ handlers:
   error_groups:
   mass_export:
   async_search:
+  admin:
 ```
 
 ### SeqAPI
@@ -513,7 +518,7 @@ handlers:
 
 Конфигурация `/seqapi` API.
 
-`SeqAPI` fields:
+Поля `SeqAPI`:
   
 + **`max_search_limit`** *`int`* *`default=0`*
 
@@ -562,6 +567,8 @@ handlers:
 + **`logs_lifespan_cache_key`** *`string`* *`default="logs_lifespan"`*
 
   Ключ кэширования данных о времени жизни логов. Полезно, когда несколько инстансов seq-ui используют один Redis-кэш. Если установлена пустая строка, то она будет сброшена на `default`.
+
+  > Устарело. Используйте `cache.redis.key_prefix` вместо этого.
 
 + **`logs_lifespan_cache_ttl`** *`string`* *`default="10m"`*
 
@@ -830,6 +837,22 @@ handlers:
 + **`list_query_length_limit`** *`int`* *`default=1000`*
 
   Максимальная длина `request.query` в ответе списка отложенных запросов. Запросы, превышающие лимит, будут обрезаны до этого значения.
+
+### Admin
+
+**`admin`** *`Admin`* *`optional`*
+
+Конфигурация `/admin` API.
+
+Поля `Admin`:
+
++ **`super_users`** *`[]string`* *`required`*
+
+  Список пользователей с полным доступом к административным функциям.
+
++ **`cache_ttl`** *`string`* *`default="1h"`*
+
+  TTL кэширования ролей и прав пользователей. Если установлено нулевое или отрицательное значение, то оно будет сброшено на `default`.
 
 ## Tracing
 

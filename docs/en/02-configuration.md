@@ -278,6 +278,10 @@ Cache config.
 
   > The value must be passed in the duration format: `<number>(ms|s|m|h)`.
 
++ **`key_prefix`** *`string`* *`optional`*
+
+  Prefix added to every cache key stored in Redis. Useful when multiple instances of seq-ui use one Redis cache. If set, the resulting key is `<key_prefix><cache_key>`
+
 ### External storages
 
 **`db`** *`DB`* *`optional`*
@@ -505,6 +509,7 @@ handlers:
   error_groups:
   mass_export:
   async_search:
+  admin:
 ```
 
 ### SeqAPI
@@ -562,6 +567,8 @@ Config for `/seqapi` API handlers.
 + **`logs_lifespan_cache_key`** *`string`* *`default="logs_lifespan"`*
 
   Cache key for logs lifespan data. Useful when multiple instances of seq-ui use one Redis cache. If set to empty string, then it will be reset to `default`.
+
+  > Deprecated. Use `cache.redis.key_prefix` instead.
 
 + **`logs_lifespan_cache_ttl`** *`string`* *`default="10m"`*
 
@@ -830,6 +837,22 @@ Configuration for async search request.
 + **`list_query_length_limit`** *`int`* *`default=1000`*
 
   Maximum length of `request.query` in async searches list responses. Requests exceeding the limit will be truncated to it
+
+### Admin
+
+**`admin`** *`Admin`* *`optional`*
+
+Configuration for `/admin` API.
+
+`Admin` fields:
+
++ **`super_users`** *`[]string`* *`required`*
+
+  List of users with full access to admin features.
+
++ **`cache_ttl`** *`string`* *`default="1h"`*
+
+  Cache TTL for roles and user permissions. If not set or set to zero, then it will be reset to `default`.
 
 ## Tracing
 
