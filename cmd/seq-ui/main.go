@@ -174,7 +174,7 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 			logger.Info("initializing redis admin cache")
 			adminCache, err := cache.NewRedis(ctx, cfg.Server.Cache.Redis)
 			if err != nil {
-				logger.Fatal("failed to init redis admin cache", zap.Error(err))
+				logger.Info("failed to init redis admin cache, admin will run without cache", zap.Error(err))
 			}
 
 			adminSvc := admin.New(repo, adminCache, cfg.Handlers.Admin)

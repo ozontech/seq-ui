@@ -3,6 +3,7 @@ package admin
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -18,6 +19,8 @@ const (
 	cacheKeyUserPerms = "admin_user_perms_"
 )
 
+var errCacheDisabled = errors.New("admin cache disabled")
+
 type adminCache struct {
 	cache cache.Cache
 	ttl   time.Duration
@@ -28,6 +31,10 @@ func newAdminCache(c cache.Cache, ttl time.Duration) adminCache {
 }
 
 func (c *adminCache) getRoles(ctx context.Context) ([]types.Role, error) {
+	if c.cache == nil {
+		return nil, errCacheDisabled
+	}
+
 	data, err := c.cache.Get(ctx, cacheKeyRoles)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get roles from cache: %w", err)
@@ -42,6 +49,10 @@ func (c *adminCache) getRoles(ctx context.Context) ([]types.Role, error) {
 }
 
 func (c *adminCache) setRoles(ctx context.Context, roles []types.Role) {
+	if c.cache == nil {
+		return
+	}
+
 	data, err := json.Marshal(roles)
 	if err != nil {
 		logger.Error("failed to marshal roles for cache", zap.Error(err))
@@ -54,10 +65,18 @@ func (c *adminCache) setRoles(ctx context.Context, roles []types.Role) {
 }
 
 func (c *adminCache) resetRoles(ctx context.Context) {
+	if c.cache == nil {
+		return
+	}
+
 	c.cache.Del(ctx, cacheKeyRoles)
 }
 
 func (c *adminCache) getUserPermissions(ctx context.Context, username string) ([]string, error) {
+	if c.cache == nil {
+		return nil, errCacheDisabled
+	}
+
 	data, err := c.cache.Get(ctx, cacheKeyUserPerms+username)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user permissions from cache: %w", err)
@@ -72,6 +91,10 @@ func (c *adminCache) getUserPermissions(ctx context.Context, username string) ([
 }
 
 func (c *adminCache) setUserPermissions(ctx context.Context, username string, permissions []string) {
+	if c.cache == nil {
+		return
+	}
+
 	data, err := json.Marshal(permissions)
 	if err != nil {
 		logger.Error("failed to marshal user permissions for cache", zap.Error(err))
@@ -84,6 +107,10 @@ func (c *adminCache) setUserPermissions(ctx context.Context, username string, pe
 }
 
 func (c *adminCache) resetUsersPermissions(ctx context.Context, usernames ...string) {
+	if c.cache == nil {
+		return
+	}
+
 	for _, username := range usernames {
 		c.cache.Del(ctx, cacheKeyUserPerms+username)
 	}

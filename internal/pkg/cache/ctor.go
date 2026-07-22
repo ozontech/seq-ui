@@ -2,7 +2,6 @@ package cache
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -13,15 +12,10 @@ import (
 
 func NewRedis(ctx context.Context, cfg *config.Redis) (Cache, error) {
 	if cfg == nil {
-		return nil, errors.New("redis cache config is nil")
+		return nil, nil
 	}
 
-	redis, err := newRedisCache(ctx, cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return redis, nil
+	return newRedisCache(ctx, cfg)
 }
 
 func NewInmemoryWithRedisOrInmemory(ctx context.Context, cfg config.Cache) (Cache, error) {

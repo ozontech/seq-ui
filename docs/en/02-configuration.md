@@ -568,6 +568,8 @@ Config for `/seqapi` API handlers.
 
   Cache key for logs lifespan data. Useful when multiple instances of seq-ui use one Redis cache. If set to empty string, then it will be reset to `default`.
 
+  > Deprecated. Use `cache.redis.key_prefix` instead.
+
 + **`logs_lifespan_cache_ttl`** *`string`* *`default="10m"`*
 
   TTL for logs lifespan caching. If not set or set to zero, then it will be reset to `default`.
