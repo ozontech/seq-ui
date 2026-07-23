@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
+	config "github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/metric"

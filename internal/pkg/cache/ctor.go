@@ -6,7 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
+	config "github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/logger"
 )
 

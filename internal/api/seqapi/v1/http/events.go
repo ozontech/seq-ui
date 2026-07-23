@@ -57,8 +57,8 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 	if cached, err := a.inmemWithRedisCache.Get(ctx, id); err == nil {
 		e := &seqapi.Event{}
 		if err = proto.Unmarshal([]byte(cached), e); err == nil {
-			if params.masker != nil {
-				params.masker.Mask(e.Data)
+			if a.globalParams.masker != nil {
+				a.globalParams.masker.Mask(e.Data)
 			}
 			wr.WriteJson(getEventResponseFromProto(&seqapi.GetEventResponse{Event: e}))
 			return
@@ -74,8 +74,8 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if params.masker != nil && resp.Event != nil {
-		params.masker.Mask(resp.Event.Data)
+	if a.globalParams.masker != nil && resp.Event != nil {
+		a.globalParams.masker.Mask(resp.Event.Data)
 	}
 
 	if data, err := proto.Marshal(resp.Event); err == nil {

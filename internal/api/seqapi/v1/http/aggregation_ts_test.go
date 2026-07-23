@@ -17,7 +17,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	config "github.com/ozontech/seq-ui/internal/app/config/v2"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
@@ -106,7 +106,7 @@ func TestServeGetAggregationTs(t *testing.T) {
 			wantRespBody: `{"aggregations":[{"data":{"result":[{"metric":{"test_count1":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count1":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count1":"test3"},"values":[{"timestamp":1695637233,"value":3}]}]}},{"data":{"result":[{"metric":{"test_count2":"test1"},"values":[{"timestamp":1695637231,"value":1}]},{"metric":{"test_count2":"test2"},"values":[{"timestamp":1695637232,"value":2}]},{"metric":{"test_count2":"test3"},"values":[{"timestamp":1695637233,"value":3}]}]}}],"error":{"code":"ERROR_CODE_NO"}}`,
 			wantStatus:   http.StatusOK,
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxAggregationsPerRequest:  3,
 					MaxBucketsPerAggregationTs: 100,
 				},
@@ -162,7 +162,7 @@ func TestServeGetAggregationTs(t *testing.T) {
 			wantRespBody: `{"aggregations":[{"data":{"result":[{"metric":{"test_count1":"test1"},"values":[{"timestamp":1695637231,"value":3}]},{"metric":{"test_count1":"test2"},"values":[{"timestamp":1695637232,"value":6}]},{"metric":{"test_count1":"test3"},"values":[{"timestamp":1695637233,"value":9}]}]}},{"data":{"result":[{"metric":{"test_count2":"test1"},"values":[{"timestamp":1695637231,"value":2}]},{"metric":{"test_count2":"test2"},"values":[{"timestamp":1695637232,"value":4}]},{"metric":{"test_count2":"test3"},"values":[{"timestamp":1695637233,"value":6}]}],"target_bucket_rate":"2s"}}],"error":{"code":"ERROR_CODE_NO"}}`,
 			wantStatus:   http.StatusOK,
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxAggregationsPerRequest:  3,
 					MaxBucketsPerAggregationTs: 100,
 				},
@@ -221,7 +221,7 @@ func TestServeGetAggregationTs(t *testing.T) {
 			wantRespBody: `{"aggregations":[{"data":{"result":[{"metric":{"quantile":"p95","service":"test1"},"values":[{"timestamp":1695637231,"value":100}]},{"metric":{"quantile":"p99","service":"test1"},"values":[{"timestamp":1695637231,"value":150}]},{"metric":{"quantile":"p95","service":"test2"},"values":[{"timestamp":1695637232,"value":100}]},{"metric":{"quantile":"p99","service":"test2"},"values":[{"timestamp":1695637232,"value":150}]},{"metric":{"quantile":"p95","service":"test3"},"values":[{"timestamp":1695637233,"value":100}]},{"metric":{"quantile":"p99","service":"test3"},"values":[{"timestamp":1695637233,"value":150}]}]}}],"error":{"code":"ERROR_CODE_NO"}}`,
 			wantStatus:   http.StatusOK,
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxAggregationsPerRequest:  3,
 					MaxBucketsPerAggregationTs: 100,
 				},
@@ -247,7 +247,7 @@ func TestServeGetAggregationTs(t *testing.T) {
 			wantRespBody: `{"aggregations":null,"error":{"code":"ERROR_CODE_PARTIAL_RESPONSE","message":"partial response"}}`,
 			wantStatus:   http.StatusOK,
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxAggregationsPerRequest:  3,
 					MaxBucketsPerAggregationTs: 100,
 				},
@@ -263,7 +263,7 @@ func TestServeGetAggregationTs(t *testing.T) {
 			reqBody:    formatReqBody(aggregationTsQueries{{}, {}, {}}),
 			wantStatus: http.StatusBadRequest,
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxAggregationsPerRequest:  2,
 					MaxBucketsPerAggregationTs: 100,
 				},
@@ -278,7 +278,7 @@ func TestServeGetAggregationTs(t *testing.T) {
 			}),
 			wantStatus: http.StatusBadRequest,
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxAggregationsPerRequest:  3,
 					MaxBucketsPerAggregationTs: 1,
 				},
@@ -297,7 +297,7 @@ func TestServeGetAggregationTs(t *testing.T) {
 			},
 			wantStatus: http.StatusInternalServerError,
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxAggregationsPerRequest: 3,
 				},
 			},

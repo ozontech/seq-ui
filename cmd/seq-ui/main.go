@@ -23,6 +23,7 @@ import (
 	massexport_v1 "github.com/ozontech/seq-ui/internal/api/massexport/v1"
 	seqapi_v1 "github.com/ozontech/seq-ui/internal/api/seqapi/v1"
 	userprofile_v1 "github.com/ozontech/seq-ui/internal/api/userprofile/v1"
+	configloader "github.com/ozontech/seq-ui/internal/app/config"
 	config "github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/server"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
@@ -74,7 +75,7 @@ func run(ctx context.Context) {
 		logger.Warn("app uses the default config file, to provide your own config use -config flag")
 	}
 
-	cfg, err := config.FromFile(*configPath)
+	cfg, err := configloader.FromFile(*configPath)
 	if err != nil {
 		logger.Fatal("read config file error", zap.Error(err))
 	}
@@ -104,28 +105,21 @@ func run(ctx context.Context) {
 	}
 }
 
-func initApp(ctx context.Context, cfg config_v2.Config) *api.Registrar {
+func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 	logger.Info("initializing seq-db clients")
 	seqDBClients, err := initSeqDBClients(ctx, cfg)
 	if err != nil {
 		logger.Fatal("failed to init seq-db client", zap.Error(err))
 	}
 
-	defaultClientID := config.DefaultSeqDBClientID
-	if len(cfg.Handlers.SeqAPI.Envs) > 0 {
-		defaultClientID = cfg.Handlers.SeqAPI.Envs[cfg.Handlers.SeqAPI.DefaultEnv].SeqDB
-	}
-
-	defaultClient, exists := seqDBClients[defaultClientID]
-	if !exists {
-		logger.Fatal("default seq-db client not found",
-			zap.String("clientID", defaultClientID),
-		)
-	}
-
 	var massExportV1 *massexport_v1.MassExport
 	if cfg.Handlers.MassExport != nil {
-		exportServer, err := initExportService(ctx, *cfg.Handlers.MassExport, defaultClient)
+		massExportClient, ok := seqDBClients[cfg.Handlers.MassExport.SeqDBID]
+		if !ok {
+			logger.Fatal("mass_export seq_db client not found", zap.String("seq_db_id", cfg.Handlers.MassExport.SeqDBID))
+		}
+
+		exportServer, err := initExportService(ctx, *cfg.Handlers.MassExport, massExportClient)
 		if err != nil {
 			logger.Fatal("can't init export server", zap.Error(err))
 		}
@@ -157,7 +151,7 @@ func initApp(ctx context.Context, cfg config_v2.Config) *api.Registrar {
 		dashboardsV1         *dashboards_v1.Dashboards
 	)
 	if db != nil {
-		repo := repository.New(db, cfg.Server.DB.RequestTimeout)
+		repo := repository.New(db, cfg.DB.RequestTimeout)
 		userProfilesSvc := userprofile.New(repo.UserProfiles, repo.FavoriteQueries)
 		dashboardsSvc := dashboards.New(repo.Dashboards)
 		profiles.InitProfiles(repo.UserProfiles.GetOrCreate)
@@ -165,7 +159,11 @@ func initApp(ctx context.Context, cfg config_v2.Config) *api.Registrar {
 		userProfileV1 = userprofile_v1.New(userProfilesSvc)
 		dashboardsV1 = dashboards_v1.New(dashboardsSvc)
 
-		asyncSearchesService = asyncsearches.New(ctx, repo, defaultClient, cfg.Handlers.AsyncSearch)
+		asyncSearchClient, ok := seqDBClients[cfg.Handlers.AsyncSearch.SeqDBID]
+		if !ok {
+			logger.Fatal("async_search seq_db client not found", zap.String("seq_db_id", cfg.Handlers.AsyncSearch.SeqDBID))
+		}
+		asyncSearchesService = asyncsearches.New(ctx, repo, asyncSearchClient, cfg.Handlers.AsyncSearch)
 	}
 
 	seqApiV1 := seqapi_v1.New(cfg.Handlers.SeqAPI, seqDBClients, inmemWithRedisCache, redisCache, asyncSearchesService)
@@ -201,7 +199,17 @@ func initSeqDBClients(ctx context.Context, cfg config.Config) (map[string]seqdb.
 }
 
 func createSeqBDClient(ctx context.Context, cfg config.SeqDBClient, seqAPI config.SeqAPI) (seqdb.Client, error) {
-	clientMaxRecvMsgSize := cfg.AvgDocSize * 1024 * int(seqAPI.MaxSearchLimit)
+	maxSearchLimit := int(seqAPI.Options.MaxSearchLimit)
+	for _, env := range seqAPI.Envs {
+		if env.SeqDBID != cfg.ID {
+			continue
+		}
+		if l := int(env.Options.MaxSearchLimit); l > maxSearchLimit {
+			maxSearchLimit = l
+		}
+	}
+
+	clientMaxRecvMsgSize := cfg.AvgDocSize * 1024 * maxSearchLimit
 	if clientMaxRecvMsgSize < defaultClientMaxRecvMsgSize {
 		clientMaxRecvMsgSize = defaultClientMaxRecvMsgSize
 	}

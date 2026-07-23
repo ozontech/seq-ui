@@ -250,11 +250,17 @@ func migrateHandlers(src *v1.Handlers, cfg *v2.Config) *v2.Handlers {
 }
 
 func migrateSeqAPI(src v1.SeqAPI) v2.SeqAPI {
-	return v2.SeqAPI{
-		SeqAPIOptions: migrateSeqAPIOptions(src.SeqAPIOptions),
-		Envs:          migrateSeqAPIEnvs(src.Envs),
-		DefaultEnv:    src.DefaultEnv,
+	dst := v2.SeqAPI{
+		Envs:       migrateSeqAPIEnvs(src.Envs),
+		DefaultEnv: src.DefaultEnv,
 	}
+
+	if src.SeqAPIOptions != nil {
+		dst.GlobalOptions = migrateSeqAPIOptionsToGlobal(src.SeqAPIOptions)
+		dst.Options = migrateSeqAPIOptions(src.SeqAPIOptions)
+	}
+
+	return dst
 }
 
 func migrateSeqAPIEnvs(envs map[string]v1.SeqAPIEnv) map[string]v2.SeqAPIEnv {
@@ -264,21 +270,34 @@ func migrateSeqAPIEnvs(envs map[string]v1.SeqAPIEnv) map[string]v2.SeqAPIEnv {
 
 	dst := make(map[string]v2.SeqAPIEnv, len(envs))
 	for name, cfg := range envs {
-		dst[name] = v2.SeqAPIEnv{
-			SeqDB:   cfg.SeqDB,
-			Options: migrateSeqAPIOptions(cfg.Options),
+		env := v2.SeqAPIEnv{
+			SeqDBID: cfg.SeqDB,
 		}
+		if cfg.Options != nil {
+			envOptions := migrateSeqAPIOptions(cfg.Options)
+			env.Options = &envOptions
+		}
+
+		dst[name] = env
 	}
 
 	return dst
 }
 
-func migrateSeqAPIOptions(options *v1.SeqAPIOptions) *v2.SeqAPIOptions {
-	if options == nil {
-		return nil
+func migrateSeqAPIOptionsToGlobal(options *v1.SeqAPIOptions) v2.SeqAPIGlobalOptions {
+	return v2.SeqAPIGlobalOptions{
+		EventsCacheTTL:       options.EventsCacheTTL,
+		PinnedFields:         migrateFields(options.PinnedFields),
+		SystemFields:         migrateFields(options.SystemFields),
+		LogsLifespanCacheKey: options.LogsLifespanCacheKey,
+		LogsLifespanCacheTTL: options.LogsLifespanCacheTTL,
+		FieldsCacheTTL:       options.FieldsCacheTTL,
+		Masking:              migrateMasking(options.Masking),
 	}
+}
 
-	return &v2.SeqAPIOptions{
+func migrateSeqAPIOptions(options *v1.SeqAPIOptions) v2.SeqAPIOptions {
+	return v2.SeqAPIOptions{
 		MaxSearchLimit:             options.MaxSearchLimit,
 		MaxSearchTotalLimit:        options.MaxSearchTotalLimit,
 		MaxSearchOffsetLimit:       options.MaxSearchOffsetLimit,
@@ -287,13 +306,6 @@ func migrateSeqAPIOptions(options *v1.SeqAPIOptions) *v2.SeqAPIOptions {
 		MaxParallelExportRequests:  options.MaxParallelExportRequests,
 		MaxAggregationsPerRequest:  options.MaxAggregationsPerRequest,
 		MaxBucketsPerAggregationTs: options.MaxBucketsPerAggregationTs,
-		EventsCacheTTL:             options.EventsCacheTTL,
-		PinnedFields:               migrateFields(options.PinnedFields),
-		SystemFields:               migrateFields(options.SystemFields),
-		LogsLifespanCacheKey:       options.LogsLifespanCacheKey,
-		LogsLifespanCacheTTL:       options.LogsLifespanCacheTTL,
-		FieldsCacheTTL:             options.FieldsCacheTTL,
-		Masking:                    migrateMasking(options.Masking),
 	}
 }
 

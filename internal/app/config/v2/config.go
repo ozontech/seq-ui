@@ -368,6 +368,7 @@ type FileStore struct {
 }
 
 type MassExport struct {
+	SeqDBID          string          `yaml:"seq_db_id"`
 	BatchSize        uint64          `yaml:"batch_size"`
 	WorkersCount     int             `yaml:"workers_count"`
 	TasksChannelSize int             `yaml:"tasks_channel_size"`
@@ -470,32 +471,37 @@ type Field struct {
 }
 
 type SeqAPI struct {
-	Options    SeqAPIOptions        `yaml:"options"`
-	Envs       map[string]SeqAPIEnv `yaml:"envs"`
-	DefaultEnv string               `yaml:"default_env"`
+	CacheID       string               `yaml:"cache_id"`
+	GlobalOptions SeqAPIGlobalOptions  `yaml:"global_options"`
+	Options       SeqAPIOptions        `yaml:"options"`
+	Envs          map[string]SeqAPIEnv `yaml:"envs"`
+	DefaultEnv    string               `yaml:"default_env"`
+}
+
+type SeqAPIGlobalOptions struct {
+	PinnedFields         []Field       `yaml:"pinned_fields"`
+	SystemFields         []Field       `yaml:"system_fields"`
+	Masking              *Masking      `yaml:"masking"`
+	LogsLifespanCacheKey string        `yaml:"logs_lifespan_cache_key"`
+	EventsCacheTTL       time.Duration `yaml:"events_cache_ttl"`
+	LogsLifespanCacheTTL time.Duration `yaml:"logs_lifespan_cache_ttl"`
+	FieldsCacheTTL       time.Duration `yaml:"fields_cache_ttl"`
 }
 
 type SeqAPIEnv struct {
-	SeqDB   string         `yaml:"seq_db_id"`
+	SeqDBID string         `yaml:"seq_db_id"`
 	Options *SeqAPIOptions `yaml:"options"`
 }
 
 type SeqAPIOptions struct {
-	MaxSearchLimit             int32         `yaml:"max_search_limit"`
-	MaxSearchTotalLimit        int64         `yaml:"max_search_total_limit"`
-	MaxSearchOffsetLimit       int32         `yaml:"max_search_offset_limit"`
-	MaxExportLimit             int32         `yaml:"max_export_limit"`
-	SeqCLIMaxSearchLimit       int           `yaml:"seq_cli_max_search_limit"`
-	MaxParallelExportRequests  int           `yaml:"max_parallel_export_requests"`
-	MaxAggregationsPerRequest  int           `yaml:"max_aggregations_per_request"`
-	MaxBucketsPerAggregationTs int           `yaml:"max_buckets_per_aggregation_ts"`
-	EventsCacheTTL             time.Duration `yaml:"events_cache_ttl"`
-	PinnedFields               []Field       `yaml:"pinned_fields"`
-	SystemFields               []Field       `yaml:"system_fields"`
-	LogsLifespanCacheKey       string        `yaml:"logs_lifespan_cache_key"`
-	LogsLifespanCacheTTL       time.Duration `yaml:"logs_lifespan_cache_ttl"`
-	FieldsCacheTTL             time.Duration `yaml:"fields_cache_ttl"`
-	Masking                    *Masking      `yaml:"masking"`
+	MaxSearchLimit             int32 `yaml:"max_search_limit"`
+	MaxSearchTotalLimit        int64 `yaml:"max_search_total_limit"`
+	MaxSearchOffsetLimit       int32 `yaml:"max_search_offset_limit"`
+	MaxExportLimit             int32 `yaml:"max_export_limit"`
+	SeqCLIMaxSearchLimit       int   `yaml:"seq_cli_max_search_limit"`
+	MaxParallelExportRequests  int   `yaml:"max_parallel_export_requests"`
+	MaxAggregationsPerRequest  int   `yaml:"max_aggregations_per_request"`
+	MaxBucketsPerAggregationTs int   `yaml:"max_buckets_per_aggregation_ts"`
 }
 
 type Masking struct {
@@ -534,11 +540,13 @@ type LogTagsMapping struct {
 }
 
 type ErrorGroups struct {
+	CHID           string            `yaml:"ch_id"`
 	LogTagsMapping LogTagsMapping    `yaml:"log_tags_mapping"`
 	QueryFilter    map[string]string `yaml:"query_filter"`
 }
 
 type AsyncSearch struct {
+	SeqDBID              string   `yaml:"seq_db_id"`
 	AdminUsers           []string `yaml:"admin_users"`
 	ListQueryLengthLimit int      `yaml:"list_query_length_limit"`
 }
@@ -647,6 +655,7 @@ func Normalize(cfg *Config) error {
 		cfg.Handlers.AsyncSearch.ListQueryLengthLimit = defaultAsyncSearchListQueryLengthLimit
 	}
 
+	setSeqAPIGlobalOptionsDefaults(&cfg.Handlers.SeqAPI.GlobalOptions)
 	setSeqAPIOptionsDefaults(&cfg.Handlers.SeqAPI.Options)
 
 	if len(cfg.Handlers.SeqAPI.Envs) > 0 {
@@ -659,16 +668,12 @@ func Normalize(cfg *Config) error {
 		}
 
 		for envName, envConfig := range cfg.Handlers.SeqAPI.Envs {
-			if _, ok := seqDBIDs[envConfig.SeqDB]; !ok {
-				return fmt.Errorf("client '%s' for env '%s' not found", envConfig.SeqDB, envName)
+			if _, ok := seqDBIDs[envConfig.SeqDBID]; !ok {
+				return fmt.Errorf("client '%s' for env '%s' not found", envConfig.SeqDBID, envName)
 			}
 
-			if envConfig.Options == nil {
-				envConfig.Options = cfg.Handlers.SeqAPI.SeqAPIOptions
-			} else {
-				setSeqAPIOptionsDefaults(envConfig.Options)
-			}
-
+			merged := mergeSeqAPIOptions(cfg.Handlers.SeqAPI.Options, envConfig.Options)
+			envConfig.Options = &merged
 			cfg.Handlers.SeqAPI.Envs[envName] = envConfig
 		}
 	}
@@ -704,6 +709,43 @@ func setSeqAPIOptionsDefaults(options *SeqAPIOptions) {
 	if options.MaxExportLimit <= 0 {
 		options.MaxExportLimit = defaultMaxExportLimit
 	}
+}
+
+func mergeSeqAPIOptions(global SeqAPIOptions, envOptions *SeqAPIOptions) SeqAPIOptions {
+	merged := global
+	if envOptions == nil {
+		return merged
+	}
+
+	if envOptions.MaxAggregationsPerRequest > 0 {
+		merged.MaxAggregationsPerRequest = envOptions.MaxAggregationsPerRequest
+	}
+	if envOptions.MaxBucketsPerAggregationTs > 0 {
+		merged.MaxBucketsPerAggregationTs = envOptions.MaxBucketsPerAggregationTs
+	}
+	if envOptions.MaxParallelExportRequests > 0 {
+		merged.MaxParallelExportRequests = envOptions.MaxParallelExportRequests
+	}
+	if envOptions.MaxSearchLimit > 0 {
+		merged.MaxSearchLimit = envOptions.MaxSearchLimit
+	}
+	if envOptions.MaxSearchTotalLimit > 0 {
+		merged.MaxSearchTotalLimit = envOptions.MaxSearchTotalLimit
+	}
+	if envOptions.MaxSearchOffsetLimit > 0 {
+		merged.MaxSearchOffsetLimit = envOptions.MaxSearchOffsetLimit
+	}
+	if envOptions.MaxExportLimit > 0 {
+		merged.MaxExportLimit = envOptions.MaxExportLimit
+	}
+	if envOptions.SeqCLIMaxSearchLimit > 0 {
+		merged.SeqCLIMaxSearchLimit = envOptions.SeqCLIMaxSearchLimit
+	}
+
+	return merged
+}
+
+func setSeqAPIGlobalOptionsDefaults(options *SeqAPIGlobalOptions) {
 	if options.EventsCacheTTL <= 0 {
 		options.EventsCacheTTL = defaultEventsCacheTTL
 	}

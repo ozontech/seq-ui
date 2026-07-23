@@ -8,7 +8,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
+	config "github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	repositorych "github.com/ozontech/seq-ui/internal/pkg/repository_ch"
 )

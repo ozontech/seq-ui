@@ -94,7 +94,7 @@ func (a *API) serveGetAggregation(w http.ResponseWriter, r *http.Request) {
 
 	getAggResp := getAggregationResponseFromProto(resp)
 
-	if params.masker != nil {
+	if a.globalParams.masker != nil {
 		buf := make([]string, 0)
 		for i, agg := range getAggResp.Aggregations {
 			buf = buf[:0]
@@ -108,7 +108,7 @@ func (a *API) serveGetAggregation(w http.ResponseWriter, r *http.Request) {
 				field = aggReq.GroupBy
 			}
 
-			buf = params.masker.MaskAgg(field, buf)
+			buf = a.globalParams.masker.MaskAgg(field, buf)
 
 			for j, key := range buf {
 				getAggResp.Aggregations[i].Buckets[j].Key = key

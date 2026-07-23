@@ -12,8 +12,6 @@ import (
 )
 
 const (
-	configV1Name    = "config_v1"
-	configV2Name    = "config_v2"
 	previousVersion = 1
 	currentVersion  = 2
 )
@@ -52,7 +50,7 @@ func FromFile(cfgPath string) (v2.Config, error) {
 	}
 
 	if err := v2.Normalize(&cfg); err != nil {
-		return v2.Config{}, fmt.Errorf("normalize config: %w")
+		return v2.Config{}, fmt.Errorf("normalize config: %w", err)
 	}
 
 	return cfg, nil

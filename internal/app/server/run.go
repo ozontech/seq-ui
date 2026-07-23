@@ -18,7 +18,7 @@ func (s *Server) Run(ctx context.Context) error {
 
 	// run gRPC server
 	errWg.Go(func() error {
-		lis, err := net.Listen("tcp", s.config.GRPCAddr)
+		lis, err := net.Listen("tcp", s.config.GRPC.Addr)
 		if err != nil {
 			return err
 		}
@@ -28,7 +28,7 @@ func (s *Server) Run(ctx context.Context) error {
 
 	// run HTTP server
 	errWg.Go(func() error {
-		l, err := net.Listen("tcp", s.config.HTTPAddr)
+		l, err := net.Listen("tcp", s.config.HTTP.Addr)
 		if err != nil {
 			return err
 		}
@@ -38,7 +38,7 @@ func (s *Server) Run(ctx context.Context) error {
 
 	// run debug server
 	errWg.Go(func() error {
-		l, err := net.Listen("tcp", s.config.DebugAddr)
+		l, err := net.Listen("tcp", s.config.Debug.Addr)
 		if err != nil {
 			return err
 		}
@@ -47,12 +47,12 @@ func (s *Server) Run(ctx context.Context) error {
 	})
 
 	errWg.Go(func() error {
-		swaggerAddr := s.config.DebugAddr + swaggerUIPrefix
+		swaggerAddr := s.config.Debug.Addr + swaggerUIPrefix
 		logger.Info("app started",
-			zap.String("http", s.config.HTTPAddr),
-			zap.String("debug", s.config.DebugAddr),
+			zap.String("http", s.config.HTTP.Addr),
+			zap.String("debug", s.config.Debug.Addr),
 			zap.String("swagger", swaggerAddr),
-			zap.String("grpc", s.config.GRPCAddr),
+			zap.String("grpc", s.config.GRPC.Addr),
 		)
 		return nil
 	})
