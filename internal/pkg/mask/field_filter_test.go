@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
+	config "github.com/ozontech/seq-ui/internal/app/config/v2"
 )
 
 func TestFieldFilterSetCreate(t *testing.T) {

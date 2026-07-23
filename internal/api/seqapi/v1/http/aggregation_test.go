@@ -11,7 +11,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	config "github.com/ozontech/seq-ui/internal/app/config/v2"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
@@ -63,7 +63,7 @@ func TestServeGetAggregation(t *testing.T) {
 				PartialResponse: false,
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxAggregationsPerRequest: 3,
 				},
 			},
@@ -106,7 +106,7 @@ func TestServeGetAggregation(t *testing.T) {
 				PartialResponse: false,
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxAggregationsPerRequest: 3,
 				},
 			},
@@ -168,7 +168,7 @@ func TestServeGetAggregation(t *testing.T) {
 				PartialResponse: false,
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxAggregationsPerRequest: 3,
 				},
 			},
@@ -203,7 +203,7 @@ func TestServeGetAggregation(t *testing.T) {
 				PartialResponse: true,
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxAggregationsPerRequest: 3,
 				},
 			},
@@ -218,7 +218,7 @@ func TestServeGetAggregation(t *testing.T) {
 			},
 			wantErr: true,
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxAggregationsPerRequest: 2,
 				},
 			},
@@ -242,7 +242,7 @@ func TestServeGetAggregation(t *testing.T) {
 			},
 			wantErr: true,
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxAggregationsPerRequest: 3,
 				},
 			},

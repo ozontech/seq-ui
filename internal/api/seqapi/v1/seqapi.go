@@ -5,7 +5,7 @@ import (
 
 	grpc_api "github.com/ozontech/seq-ui/internal/api/seqapi/v1/grpc"
 	http_api "github.com/ozontech/seq-ui/internal/api/seqapi/v1/http"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	config "github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches"

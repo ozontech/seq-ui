@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
+	config "github.com/ozontech/seq-ui/internal/app/config/v2"
 )
 
 const maskSymbol = byte('*')

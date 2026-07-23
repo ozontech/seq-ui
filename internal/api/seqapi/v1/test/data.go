@@ -6,7 +6,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
+	config "github.com/ozontech/seq-ui/internal/app/config/v2"
 	mock_cache "github.com/ozontech/seq-ui/internal/pkg/cache/mock"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
 	mock_asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches/mock"
@@ -111,22 +111,22 @@ func MakeAggregations(aggCount, bucketCount int, opts *MakeAggOpts) []*seqapi.Ag
 }
 
 func SetCfgDefaults(cfg config.SeqAPI) config.SeqAPI {
-	if cfg.MaxAggregationsPerRequest <= 0 {
-		cfg.MaxAggregationsPerRequest = 1
+	if cfg.Options.MaxAggregationsPerRequest <= 0 {
+		cfg.Options.MaxAggregationsPerRequest = 1
 	}
-	if cfg.MaxParallelExportRequests <= 0 {
-		cfg.MaxParallelExportRequests = 1
+	if cfg.Options.MaxParallelExportRequests <= 0 {
+		cfg.Options.MaxParallelExportRequests = 1
 	}
-	if cfg.MaxSearchTotalLimit <= 0 {
-		cfg.MaxSearchTotalLimit = 1000000
+	if cfg.Options.MaxSearchTotalLimit <= 0 {
+		cfg.Options.MaxSearchTotalLimit = 1000000
 	}
-	if cfg.MaxSearchOffsetLimit <= 0 {
-		cfg.MaxSearchOffsetLimit = 1000000
+	if cfg.Options.MaxSearchOffsetLimit <= 0 {
+		cfg.Options.MaxSearchOffsetLimit = 1000000
 	}
 
 	for envName, envConfig := range cfg.Envs {
 		if envConfig.Options == nil {
-			envConfig.Options = cfg.SeqAPIOptions
+			envConfig.Options = &cfg.Options
 			cfg.Envs[envName] = envConfig
 		}
 	}
