@@ -810,6 +810,50 @@
                 }
             }
         },
+        "/seqapi/v1/async_search/export": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "seqapi_v1"
+                ],
+                "operationId": "seqapi_v1_export_async_search",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    },
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.ExportAsyncSearchRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful streaming responses",
+                        "schema": {
+                            "$ref": "#/definitions/seqapi.v1.ExportResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
         "/seqapi/v1/async_search/fetch": {
             "post": {
                 "security": [
@@ -2571,6 +2615,37 @@
                 "time": {
                     "type": "string",
                     "format": "date-time"
+                }
+            }
+        },
+        "seqapi.v1.ExportAsyncSearchRequest": {
+            "type": "object",
+            "properties": {
+                "fields": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "format": {
+                    "default": "jsonl",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/seqapi.v1.ExportFormat"
+                        }
+                    ]
+                },
+                "limit": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "offset": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "search_id": {
+                    "type": "string",
+                    "format": "uuid"
                 }
             }
         },

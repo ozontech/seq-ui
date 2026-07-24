@@ -123,6 +123,26 @@ func (mr *MockSeqProxyApiClientMockRecorder) Export(ctx, in any, opts ...any) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Export", reflect.TypeOf((*MockSeqProxyApiClient)(nil).Export), varargs...)
 }
 
+// ExportAsyncSearch mocks base method.
+func (m *MockSeqProxyApiClient) ExportAsyncSearch(ctx context.Context, in *seqproxyapi.ExportAsyncSearchRequest, opts ...grpc.CallOption) (seqproxyapi.SeqProxyApi_ExportAsyncSearchClient, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ExportAsyncSearch", varargs...)
+	ret0, _ := ret[0].(seqproxyapi.SeqProxyApi_ExportAsyncSearchClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExportAsyncSearch indicates an expected call of ExportAsyncSearch.
+func (mr *MockSeqProxyApiClientMockRecorder) ExportAsyncSearch(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportAsyncSearch", reflect.TypeOf((*MockSeqProxyApiClient)(nil).ExportAsyncSearch), varargs...)
+}
+
 // Fetch mocks base method.
 func (m *MockSeqProxyApiClient) Fetch(ctx context.Context, in *seqproxyapi.FetchRequest, opts ...grpc.CallOption) (seqproxyapi.SeqProxyApi_FetchClient, error) {
 	m.ctrl.T.Helper()
@@ -551,6 +571,130 @@ func (mr *MockSeqProxyApi_ExportClientMockRecorder) Trailer() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Trailer", reflect.TypeOf((*MockSeqProxyApi_ExportClient)(nil).Trailer))
 }
 
+// MockSeqProxyApi_ExportAsyncSearchClient is a mock of SeqProxyApi_ExportAsyncSearchClient interface.
+type MockSeqProxyApi_ExportAsyncSearchClient struct {
+	ctrl     *gomock.Controller
+	recorder *MockSeqProxyApi_ExportAsyncSearchClientMockRecorder
+	isgomock struct{}
+}
+
+// MockSeqProxyApi_ExportAsyncSearchClientMockRecorder is the mock recorder for MockSeqProxyApi_ExportAsyncSearchClient.
+type MockSeqProxyApi_ExportAsyncSearchClientMockRecorder struct {
+	mock *MockSeqProxyApi_ExportAsyncSearchClient
+}
+
+// NewMockSeqProxyApi_ExportAsyncSearchClient creates a new mock instance.
+func NewMockSeqProxyApi_ExportAsyncSearchClient(ctrl *gomock.Controller) *MockSeqProxyApi_ExportAsyncSearchClient {
+	mock := &MockSeqProxyApi_ExportAsyncSearchClient{ctrl: ctrl}
+	mock.recorder = &MockSeqProxyApi_ExportAsyncSearchClientMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockSeqProxyApi_ExportAsyncSearchClient) EXPECT() *MockSeqProxyApi_ExportAsyncSearchClientMockRecorder {
+	return m.recorder
+}
+
+// CloseSend mocks base method.
+func (m *MockSeqProxyApi_ExportAsyncSearchClient) CloseSend() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CloseSend")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CloseSend indicates an expected call of CloseSend.
+func (mr *MockSeqProxyApi_ExportAsyncSearchClientMockRecorder) CloseSend() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseSend", reflect.TypeOf((*MockSeqProxyApi_ExportAsyncSearchClient)(nil).CloseSend))
+}
+
+// Context mocks base method.
+func (m *MockSeqProxyApi_ExportAsyncSearchClient) Context() context.Context {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Context")
+	ret0, _ := ret[0].(context.Context)
+	return ret0
+}
+
+// Context indicates an expected call of Context.
+func (mr *MockSeqProxyApi_ExportAsyncSearchClientMockRecorder) Context() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockSeqProxyApi_ExportAsyncSearchClient)(nil).Context))
+}
+
+// Header mocks base method.
+func (m *MockSeqProxyApi_ExportAsyncSearchClient) Header() (metadata.MD, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Header")
+	ret0, _ := ret[0].(metadata.MD)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Header indicates an expected call of Header.
+func (mr *MockSeqProxyApi_ExportAsyncSearchClientMockRecorder) Header() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Header", reflect.TypeOf((*MockSeqProxyApi_ExportAsyncSearchClient)(nil).Header))
+}
+
+// Recv mocks base method.
+func (m *MockSeqProxyApi_ExportAsyncSearchClient) Recv() (*seqproxyapi.ExportResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Recv")
+	ret0, _ := ret[0].(*seqproxyapi.ExportResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Recv indicates an expected call of Recv.
+func (mr *MockSeqProxyApi_ExportAsyncSearchClientMockRecorder) Recv() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recv", reflect.TypeOf((*MockSeqProxyApi_ExportAsyncSearchClient)(nil).Recv))
+}
+
+// RecvMsg mocks base method.
+func (m_2 *MockSeqProxyApi_ExportAsyncSearchClient) RecvMsg(m any) error {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RecvMsg indicates an expected call of RecvMsg.
+func (mr *MockSeqProxyApi_ExportAsyncSearchClientMockRecorder) RecvMsg(m any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockSeqProxyApi_ExportAsyncSearchClient)(nil).RecvMsg), m)
+}
+
+// SendMsg mocks base method.
+func (m_2 *MockSeqProxyApi_ExportAsyncSearchClient) SendMsg(m any) error {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendMsg indicates an expected call of SendMsg.
+func (mr *MockSeqProxyApi_ExportAsyncSearchClientMockRecorder) SendMsg(m any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockSeqProxyApi_ExportAsyncSearchClient)(nil).SendMsg), m)
+}
+
+// Trailer mocks base method.
+func (m *MockSeqProxyApi_ExportAsyncSearchClient) Trailer() metadata.MD {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Trailer")
+	ret0, _ := ret[0].(metadata.MD)
+	return ret0
+}
+
+// Trailer indicates an expected call of Trailer.
+func (mr *MockSeqProxyApi_ExportAsyncSearchClientMockRecorder) Trailer() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Trailer", reflect.TypeOf((*MockSeqProxyApi_ExportAsyncSearchClient)(nil).Trailer))
+}
+
 // MockSeqProxyApiServer is a mock of SeqProxyApiServer interface.
 type MockSeqProxyApiServer struct {
 	ctrl     *gomock.Controller
@@ -632,6 +776,20 @@ func (m *MockSeqProxyApiServer) Export(arg0 *seqproxyapi.ExportRequest, arg1 seq
 func (mr *MockSeqProxyApiServerMockRecorder) Export(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Export", reflect.TypeOf((*MockSeqProxyApiServer)(nil).Export), arg0, arg1)
+}
+
+// ExportAsyncSearch mocks base method.
+func (m *MockSeqProxyApiServer) ExportAsyncSearch(arg0 *seqproxyapi.ExportAsyncSearchRequest, arg1 seqproxyapi.SeqProxyApi_ExportAsyncSearchServer) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExportAsyncSearch", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ExportAsyncSearch indicates an expected call of ExportAsyncSearch.
+func (mr *MockSeqProxyApiServerMockRecorder) ExportAsyncSearch(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportAsyncSearch", reflect.TypeOf((*MockSeqProxyApiServer)(nil).ExportAsyncSearch), arg0, arg1)
 }
 
 // Fetch mocks base method.
@@ -1042,4 +1200,124 @@ func (m *MockSeqProxyApi_ExportServer) SetTrailer(arg0 metadata.MD) {
 func (mr *MockSeqProxyApi_ExportServerMockRecorder) SetTrailer(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTrailer", reflect.TypeOf((*MockSeqProxyApi_ExportServer)(nil).SetTrailer), arg0)
+}
+
+// MockSeqProxyApi_ExportAsyncSearchServer is a mock of SeqProxyApi_ExportAsyncSearchServer interface.
+type MockSeqProxyApi_ExportAsyncSearchServer struct {
+	ctrl     *gomock.Controller
+	recorder *MockSeqProxyApi_ExportAsyncSearchServerMockRecorder
+	isgomock struct{}
+}
+
+// MockSeqProxyApi_ExportAsyncSearchServerMockRecorder is the mock recorder for MockSeqProxyApi_ExportAsyncSearchServer.
+type MockSeqProxyApi_ExportAsyncSearchServerMockRecorder struct {
+	mock *MockSeqProxyApi_ExportAsyncSearchServer
+}
+
+// NewMockSeqProxyApi_ExportAsyncSearchServer creates a new mock instance.
+func NewMockSeqProxyApi_ExportAsyncSearchServer(ctrl *gomock.Controller) *MockSeqProxyApi_ExportAsyncSearchServer {
+	mock := &MockSeqProxyApi_ExportAsyncSearchServer{ctrl: ctrl}
+	mock.recorder = &MockSeqProxyApi_ExportAsyncSearchServerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockSeqProxyApi_ExportAsyncSearchServer) EXPECT() *MockSeqProxyApi_ExportAsyncSearchServerMockRecorder {
+	return m.recorder
+}
+
+// Context mocks base method.
+func (m *MockSeqProxyApi_ExportAsyncSearchServer) Context() context.Context {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Context")
+	ret0, _ := ret[0].(context.Context)
+	return ret0
+}
+
+// Context indicates an expected call of Context.
+func (mr *MockSeqProxyApi_ExportAsyncSearchServerMockRecorder) Context() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockSeqProxyApi_ExportAsyncSearchServer)(nil).Context))
+}
+
+// RecvMsg mocks base method.
+func (m_2 *MockSeqProxyApi_ExportAsyncSearchServer) RecvMsg(m any) error {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RecvMsg indicates an expected call of RecvMsg.
+func (mr *MockSeqProxyApi_ExportAsyncSearchServerMockRecorder) RecvMsg(m any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockSeqProxyApi_ExportAsyncSearchServer)(nil).RecvMsg), m)
+}
+
+// Send mocks base method.
+func (m *MockSeqProxyApi_ExportAsyncSearchServer) Send(arg0 *seqproxyapi.ExportResponse) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Send", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Send indicates an expected call of Send.
+func (mr *MockSeqProxyApi_ExportAsyncSearchServerMockRecorder) Send(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockSeqProxyApi_ExportAsyncSearchServer)(nil).Send), arg0)
+}
+
+// SendHeader mocks base method.
+func (m *MockSeqProxyApi_ExportAsyncSearchServer) SendHeader(arg0 metadata.MD) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendHeader", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendHeader indicates an expected call of SendHeader.
+func (mr *MockSeqProxyApi_ExportAsyncSearchServerMockRecorder) SendHeader(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendHeader", reflect.TypeOf((*MockSeqProxyApi_ExportAsyncSearchServer)(nil).SendHeader), arg0)
+}
+
+// SendMsg mocks base method.
+func (m_2 *MockSeqProxyApi_ExportAsyncSearchServer) SendMsg(m any) error {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendMsg indicates an expected call of SendMsg.
+func (mr *MockSeqProxyApi_ExportAsyncSearchServerMockRecorder) SendMsg(m any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockSeqProxyApi_ExportAsyncSearchServer)(nil).SendMsg), m)
+}
+
+// SetHeader mocks base method.
+func (m *MockSeqProxyApi_ExportAsyncSearchServer) SetHeader(arg0 metadata.MD) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetHeader", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetHeader indicates an expected call of SetHeader.
+func (mr *MockSeqProxyApi_ExportAsyncSearchServerMockRecorder) SetHeader(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHeader", reflect.TypeOf((*MockSeqProxyApi_ExportAsyncSearchServer)(nil).SetHeader), arg0)
+}
+
+// SetTrailer mocks base method.
+func (m *MockSeqProxyApi_ExportAsyncSearchServer) SetTrailer(arg0 metadata.MD) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetTrailer", arg0)
+}
+
+// SetTrailer indicates an expected call of SetTrailer.
+func (mr *MockSeqProxyApi_ExportAsyncSearchServerMockRecorder) SetTrailer(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTrailer", reflect.TypeOf((*MockSeqProxyApi_ExportAsyncSearchServer)(nil).SetTrailer), arg0)
 }

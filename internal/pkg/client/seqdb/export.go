@@ -34,28 +34,46 @@ func (c *GRPCClient) Export(ctx context.Context, req *seqapi.ExportRequest, cw *
 		return err
 	}
 
+	stream := proxyResp.(seqproxyapi.SeqProxyApi_ExportClient)
+	return c.writeExportStream(stream, req.Format, req.Fields, cw, "Export")
+}
+
+// exportStream is the commonRecv part of both Export and ExportAsyncSearch
+// gRPC client streams, which both yield *seqproxyapi.ExportResponse messages.
+type exportStream interface {
+	Recv() (*seqproxyapi.ExportResponse, error)
+}
+
+// writeExportStream reads documents from the given gRPC stream and writes them
+// to cw in the requested format (JSONL or CSV), applying masking when enabled.
+// method is used for logging and metrics labels.
+func (c *GRPCClient) writeExportStream(
+	stream exportStream,
+	format seqapi.ExportFormat,
+	fields []string,
+	cw *httputil.ChunkedWriter,
+	method string,
+) error {
 	csvWriter := newCsvWriter(cw)
 
-	if req.Format == seqapi.ExportFormat_EXPORT_FORMAT_CSV {
-		err = csvWriter.Write(req.Fields)
-		if err != nil {
+	if format == seqapi.ExportFormat_EXPORT_FORMAT_CSV {
+		if err := csvWriter.Write(fields); err != nil {
 			return err
 		}
 	}
 
-	proxyStream := proxyResp.(seqproxyapi.SeqProxyApi_ExportClient)
 	i := 0
 	for {
-		eResp, err := proxyStream.Recv()
+		eResp, err := stream.Recv()
 		i++
 		if errors.Is(err, io.EOF) {
 			break
 		} else if err != nil {
 			logger.Error("grpc client stream recv failed",
-				zap.String("method", "Export"),
+				zap.String("method", method),
 				zap.Error(err),
 			)
-			metric.SeqDBClientStreamError.WithLabelValues("Export", "recv").Inc()
+			metric.SeqDBClientStreamError.WithLabelValues(method, "recv").Inc()
 			return err
 		}
 
@@ -63,7 +81,7 @@ func (c *GRPCClient) Export(ctx context.Context, req *seqapi.ExportRequest, cw *
 			continue
 		}
 
-		if req.Format == seqapi.ExportFormat_EXPORT_FORMAT_CSV {
+		if format == seqapi.ExportFormat_EXPORT_FORMAT_CSV {
 			m, err := newMapStringString(eResp.Doc.Data)
 			if err != nil {
 				continue
@@ -71,7 +89,7 @@ func (c *GRPCClient) Export(ctx context.Context, req *seqapi.ExportRequest, cw *
 			if c.masker != nil {
 				c.masker.Mask(m)
 			}
-			if err := csvWriter.Write(m.getValues(req.Fields, false)); err != nil {
+			if err := csvWriter.Write(m.getValues(fields, false)); err != nil {
 				continue
 			}
 		} else {
