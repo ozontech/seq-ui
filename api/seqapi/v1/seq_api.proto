@@ -213,6 +213,14 @@ message ExportRequest {
   uint32 downsample = 8;
 }
 
+message ExportAsyncSearchRequest {
+  string search_id = 1;
+  int32 limit = 4;
+  int32 offset = 5;
+  ExportFormat format = 6;
+  repeated string fields = 7;
+}
+
 message GetLimitsRequest {}
 
 message GetLimitsResponse {

@@ -160,6 +160,7 @@ func (a *API) Router() chi.Router {
 	mux.Post("/async_search/list", a.serveGetAsyncSearchesList)
 	mux.Post("/async_search/{id}/cancel", a.serveCancelAsyncSearch)
 	mux.Delete("/async_search/{id}", a.serveDeleteAsyncSearch)
+	mux.Post("/async_search/export", a.serveExportAsyncSearch)
 
 	return mux
 }

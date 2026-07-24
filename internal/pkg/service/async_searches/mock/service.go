@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	httputil "github.com/ozontech/seq-ui/internal/api/httputil"
 	seqapi "github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -69,6 +70,20 @@ func (m *MockService) DeleteAsyncSearch(arg0 context.Context, arg1 *seqapi.Delet
 func (mr *MockServiceMockRecorder) DeleteAsyncSearch(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAsyncSearch", reflect.TypeOf((*MockService)(nil).DeleteAsyncSearch), arg0, arg1)
+}
+
+// ExportAsyncSearch mocks base method.
+func (m *MockService) ExportAsyncSearch(arg0 context.Context, arg1 *seqapi.ExportAsyncSearchRequest, arg2 *httputil.ChunkedWriter) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExportAsyncSearch", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ExportAsyncSearch indicates an expected call of ExportAsyncSearch.
+func (mr *MockServiceMockRecorder) ExportAsyncSearch(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportAsyncSearch", reflect.TypeOf((*MockService)(nil).ExportAsyncSearch), arg0, arg1, arg2)
 }
 
 // FetchAsyncSearchResult mocks base method.
