@@ -87,6 +87,20 @@ func (mr *MockClientMockRecorder) Export(arg0, arg1, arg2 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Export", reflect.TypeOf((*MockClient)(nil).Export), arg0, arg1, arg2)
 }
 
+// ExportAsyncSearch mocks base method.
+func (m *MockClient) ExportAsyncSearch(arg0 context.Context, arg1 *seqapi.ExportAsyncSearchRequest, arg2 *httputil.ChunkedWriter) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExportAsyncSearch", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ExportAsyncSearch indicates an expected call of ExportAsyncSearch.
+func (mr *MockClientMockRecorder) ExportAsyncSearch(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportAsyncSearch", reflect.TypeOf((*MockClient)(nil).ExportAsyncSearch), arg0, arg1, arg2)
+}
+
 // FetchAsyncSearchResult mocks base method.
 func (m *MockClient) FetchAsyncSearchResult(arg0 context.Context, arg1 *seqapi.FetchAsyncSearchResultRequest) (*seqapi.FetchAsyncSearchResultResponse, error) {
 	m.ctrl.T.Helper()
