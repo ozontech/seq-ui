@@ -21,22 +21,22 @@ type Service interface {
 }
 
 type service struct {
-	admin        repository.Admin
-	userProfiles repository.UserProfiles
-	cache        adminCache
-	superUsers   map[string]struct{}
+	adminRepo        repository.Admin
+	userProfilesRepo repository.UserProfiles
+	cache            adminCache
+	superUsers       map[string]struct{}
 }
 
-func New(admin repository.Admin, up repository.UserProfiles, c cache.Cache, cfg *config.Admin) Service {
+func New(adminRepo repository.Admin, userProfilesRepo repository.UserProfiles, c cache.Cache, cfg *config.Admin) Service {
 	su := make(map[string]struct{}, len(cfg.SuperUsers))
 	for _, u := range cfg.SuperUsers {
 		su[u] = struct{}{}
 	}
 
 	return &service{
-		admin:        admin,
-		userProfiles: up,
-		cache:        newAdminCache(c, cfg.CacheTTL),
-		superUsers:   su,
+		adminRepo:        adminRepo,
+		userProfilesRepo: userProfilesRepo,
+		cache:            newAdminCache(c, cfg.CacheTTL),
+		superUsers:       su,
 	}
 }
