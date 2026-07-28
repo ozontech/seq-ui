@@ -179,7 +179,7 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 				logger.Info("redis cache config is not set, admin will run without cache")
 			}
 
-			adminSvc := admin.New(repo, adminCache, cfg.Handlers.Admin)
+			adminSvc := admin.New(repo.Admin, repo.UserProfiles, adminCache, cfg.Handlers.Admin)
 			adminV1 = admin_v1.New(adminSvc)
 		}
 	}

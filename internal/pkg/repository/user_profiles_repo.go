@@ -48,13 +48,13 @@ func (r *userProfilesRepository) GetOrCreate(ctx context.Context, req types.GetO
 		metricLabelsInsert := []string{"user_profiles", "INSERT"}
 		if err = r.queryRow(ctx, metricLabelsInsert, query, args...).Scan(&userProfile.ID); err != nil {
 			incErrorMetric(err, metricLabelsInsert)
-			return userProfile, fmt.Errorf("failed to create user profile: %w", err)
+			return userProfile, fmt.Errorf("failed to create user profile %q: %w", req.UserName, err)
 		}
 		return userProfile, nil
 	}
 	if err != nil {
 		incErrorMetric(err, metricLabelsSelect)
-		return userProfile, fmt.Errorf("failed to get user profile: %w", err)
+		return userProfile, fmt.Errorf("failed to get user profile %q: %w", req.UserName, err)
 	}
 
 	err = json.Unmarshal([]byte(logColumns), &userProfile.LogColumns.LogColumns)

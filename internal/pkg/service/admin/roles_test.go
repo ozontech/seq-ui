@@ -190,14 +190,15 @@ func TestCreateRole(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			repo := mock.NewMockAdmin(ctrl)
+			adminRepo := mock.NewMockAdmin(ctrl)
+			upRepo := mock.NewMockUserProfiles(ctrl)
 			cache := mock_cache.NewMockCache(ctrl)
-			svc := New(repo, cache, adminCfg)
+			svc := New(adminRepo, upRepo, cache, adminCfg)
 
-			ctx := setupAccessMock(context.Background(), repo, cache, tt.accessMock)
+			ctx := setupAccessMock(context.Background(), adminRepo, cache, tt.accessMock)
 
 			if tt.mockArgs != nil {
-				repo.EXPECT().
+				adminRepo.EXPECT().
 					CreateRole(gomock.Any(), tt.mockArgs.req).
 					Return(tt.mockArgs.roleID, tt.mockArgs.err).
 					Times(1)
@@ -315,7 +316,7 @@ func TestAddUsersToRole(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "err_repo",
+			name: "err_adminRepo",
 			req: types.AddUsersToRoleRequest{
 				RoleID:    1,
 				Usernames: []string{"user1"},
@@ -336,14 +337,22 @@ func TestAddUsersToRole(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			repo := mock.NewMockAdmin(ctrl)
+			adminRepo := mock.NewMockAdmin(ctrl)
+			upRepo := mock.NewMockUserProfiles(ctrl)
 			cache := mock_cache.NewMockCache(ctrl)
-			svc := New(repo, cache, adminCfg)
+			svc := New(adminRepo, upRepo, cache, adminCfg)
 
-			ctx := setupAccessMock(context.Background(), repo, cache, tt.accessMock)
+			ctx := setupAccessMock(context.Background(), adminRepo, cache, tt.accessMock)
 
 			if tt.mockArgs != nil {
-				repo.EXPECT().
+				for _, username := range tt.req.Usernames {
+					upRepo.EXPECT().
+						GetOrCreate(gomock.Any(), types.GetOrCreateUserProfileRequest{UserName: username}).
+						Return(types.UserProfile{UserName: username}, nil).
+						Times(1)
+				}
+
+				adminRepo.EXPECT().
 					AddUsersToRole(gomock.Any(), tt.req).
 					Return(tt.mockArgs.err).
 					Times(1)
@@ -429,7 +438,7 @@ func TestGetRoles(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "err_repo",
+			name: "err_adminRepo",
 			accessMock: &accessMock{
 				username:    "admin",
 				permissions: []string{permissionRolesRead},
@@ -446,11 +455,12 @@ func TestGetRoles(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			repo := mock.NewMockAdmin(ctrl)
+			adminRepo := mock.NewMockAdmin(ctrl)
+			upRepo := mock.NewMockUserProfiles(ctrl)
 			cache := mock_cache.NewMockCache(ctrl)
-			svc := New(repo, cache, adminCfg)
+			svc := New(adminRepo, upRepo, cache, adminCfg)
 
-			ctx := setupAccessMock(context.Background(), repo, cache, tt.accessMock)
+			ctx := setupAccessMock(context.Background(), adminRepo, cache, tt.accessMock)
 
 			if tt.mockArgs != nil {
 				cache.EXPECT().
@@ -458,7 +468,7 @@ func TestGetRoles(t *testing.T) {
 					Return("", errors.New("not found")).
 					Times(1)
 
-				repo.EXPECT().
+				adminRepo.EXPECT().
 					GetRoles(gomock.Any()).
 					Return(tt.mockArgs.roles, tt.mockArgs.err).
 					Times(1)
@@ -539,7 +549,7 @@ func TestGetRole(t *testing.T) {
 			},
 		},
 		{
-			name:    "err_repo",
+			name:    "err_adminRepo",
 			req:     types.GetRoleRequest{RoleID: 1},
 			wantErr: true,
 			accessMock: &accessMock{
@@ -557,14 +567,15 @@ func TestGetRole(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			repo := mock.NewMockAdmin(ctrl)
+			adminRepo := mock.NewMockAdmin(ctrl)
+			upRepo := mock.NewMockUserProfiles(ctrl)
 			cache := mock_cache.NewMockCache(ctrl)
-			svc := New(repo, cache, adminCfg)
+			svc := New(adminRepo, upRepo, cache, adminCfg)
 
-			ctx := setupAccessMock(context.Background(), repo, cache, tt.accessMock)
+			ctx := setupAccessMock(context.Background(), adminRepo, cache, tt.accessMock)
 
 			if tt.mockArgs != nil {
-				repo.EXPECT().
+				adminRepo.EXPECT().
 					GetRole(gomock.Any(), tt.req).
 					Return(tt.mockArgs.roleInfo, tt.mockArgs.err).
 					Times(1)
@@ -742,7 +753,7 @@ func TestUpdateRole(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "err_repo",
+			name: "err_adminRepo",
 			req: types.UpdateRoleRequest{
 				RoleID: 1,
 				Name:   &name,
@@ -767,14 +778,15 @@ func TestUpdateRole(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			repo := mock.NewMockAdmin(ctrl)
+			adminRepo := mock.NewMockAdmin(ctrl)
+			upRepo := mock.NewMockUserProfiles(ctrl)
 			cache := mock_cache.NewMockCache(ctrl)
-			svc := New(repo, cache, adminCfg)
+			svc := New(adminRepo, upRepo, cache, adminCfg)
 
-			ctx := setupAccessMock(context.Background(), repo, cache, tt.accessMock)
+			ctx := setupAccessMock(context.Background(), adminRepo, cache, tt.accessMock)
 
 			if tt.mockArgs != nil {
-				repo.EXPECT().
+				adminRepo.EXPECT().
 					UpdateRole(gomock.Any(), tt.mockArgs.req).
 					Return(tt.mockArgs.err).
 					Times(1)
@@ -785,7 +797,7 @@ func TestUpdateRole(t *testing.T) {
 						Times(1)
 
 					if len(tt.req.Permissions) > 0 {
-						repo.EXPECT().
+						adminRepo.EXPECT().
 							GetRole(gomock.Any(), types.GetRoleRequest{RoleID: tt.req.RoleID}).
 							Return(types.RoleInfo{Usernames: tt.mockArgs.resetUsers}, nil).
 							Times(1)
@@ -902,7 +914,7 @@ func TestDeleteRole(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "err_repo",
+			name: "err_adminRepo",
 			req: types.DeleteRoleRequest{
 				RoleID: 1,
 			},
@@ -924,14 +936,15 @@ func TestDeleteRole(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			repo := mock.NewMockAdmin(ctrl)
+			adminRepo := mock.NewMockAdmin(ctrl)
+			upRepo := mock.NewMockUserProfiles(ctrl)
 			cache := mock_cache.NewMockCache(ctrl)
-			svc := New(repo, cache, adminCfg)
+			svc := New(adminRepo, upRepo, cache, adminCfg)
 
-			ctx := setupAccessMock(context.Background(), repo, cache, tt.accessMock)
+			ctx := setupAccessMock(context.Background(), adminRepo, cache, tt.accessMock)
 
 			if tt.mockArgs != nil {
-				repo.EXPECT().
+				adminRepo.EXPECT().
 					GetRole(gomock.Any(), types.GetRoleRequest{RoleID: tt.req.RoleID}).
 					Return(types.RoleInfo{Usernames: tt.mockArgs.resetUsers}, nil).
 					Times(1)
@@ -942,7 +955,7 @@ func TestDeleteRole(t *testing.T) {
 						Times(1)
 				}
 
-				repo.EXPECT().
+				adminRepo.EXPECT().
 					DeleteRole(gomock.Any(), tt.mockArgs.req).
 					Return(tt.mockArgs.err).
 					Times(1)
@@ -1054,7 +1067,7 @@ func TestDeleteUsersFromRole(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "err_repo",
+			name: "err_adminRepo",
 			req: types.DeleteUsersFromRoleRequest{
 				RoleID:    1,
 				Usernames: []string{"user1"},
@@ -1079,14 +1092,15 @@ func TestDeleteUsersFromRole(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			repo := mock.NewMockAdmin(ctrl)
+			adminRepo := mock.NewMockAdmin(ctrl)
+			upRepo := mock.NewMockUserProfiles(ctrl)
 			cache := mock_cache.NewMockCache(ctrl)
-			svc := New(repo, cache, adminCfg)
+			svc := New(adminRepo, upRepo, cache, adminCfg)
 
-			ctx := setupAccessMock(context.Background(), repo, cache, tt.accessMock)
+			ctx := setupAccessMock(context.Background(), adminRepo, cache, tt.accessMock)
 
 			if tt.mockArgs != nil {
-				repo.EXPECT().
+				adminRepo.EXPECT().
 					DeleteUsersFromRole(gomock.Any(), tt.mockArgs.req).
 					Return(tt.mockArgs.err).
 					Times(1)

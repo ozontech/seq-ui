@@ -65,16 +65,17 @@ func TestCheckAccess(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			repo := mock.NewMockAdmin(ctrl)
+			adminRepo := mock.NewMockAdmin(ctrl)
+			upRepo := mock.NewMockUserProfiles(ctrl)
 			cache := mock_cache.NewMockCache(ctrl)
-			svc := New(repo, cache, adminCfg).(*service)
+			svc := New(adminRepo, upRepo, cache, adminCfg).(*service)
 
 			if tt.mockArgs != nil {
 				cache.EXPECT().
 					Get(gomock.Any(), cacheKeyUserPerms+tt.mockArgs.req.Username).
 					Return("", errors.New("not found")).
 					Times(1)
-				repo.EXPECT().
+				adminRepo.EXPECT().
 					GetUserPermissions(gomock.Any(), tt.mockArgs.req).
 					Return(tt.mockArgs.perms, tt.mockArgs.err).
 					Times(1)
@@ -148,9 +149,10 @@ func TestGetUserPermissions(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			repo := mock.NewMockAdmin(ctrl)
+			adminRepo := mock.NewMockAdmin(ctrl)
+			upRepo := mock.NewMockUserProfiles(ctrl)
 			cache := mock_cache.NewMockCache(ctrl)
-			svc := New(repo, cache, adminCfg).(*service)
+			svc := New(adminRepo, upRepo, cache, adminCfg).(*service)
 
 			cache.EXPECT().
 				Get(gomock.Any(), cacheKeyUserPerms+tt.mockArgs.req.Username).
@@ -158,7 +160,7 @@ func TestGetUserPermissions(t *testing.T) {
 				Times(1)
 
 			if tt.mockArgs != nil {
-				repo.EXPECT().
+				adminRepo.EXPECT().
 					GetUserPermissions(gomock.Any(), tt.mockArgs.req).
 					Return(tt.mockArgs.perms, tt.mockArgs.err).
 					Times(1)
@@ -215,9 +217,10 @@ func TestValidatePermissions(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			repo := mock.NewMockAdmin(ctrl)
+			adminRepo := mock.NewMockAdmin(ctrl)
+			upRepo := mock.NewMockUserProfiles(ctrl)
 			cache := mock_cache.NewMockCache(ctrl)
-			svc := New(repo, cache, adminCfg).(*service)
+			svc := New(adminRepo, upRepo, cache, adminCfg).(*service)
 
 			err := svc.validatePermissions(tt.perms)
 			require.Equal(t, tt.wantErr, err != nil)

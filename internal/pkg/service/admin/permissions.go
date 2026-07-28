@@ -51,7 +51,7 @@ func (s *service) getUserPermissions(ctx context.Context, req types.GetUserPermi
 		return perms, nil
 	}
 
-	perms, err := s.repo.GetUserPermissions(ctx, req)
+	perms, err := s.admin.GetUserPermissions(ctx, req)
 	if err != nil {
 		return nil, err
 	}

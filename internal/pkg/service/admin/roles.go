@@ -27,7 +27,7 @@ func (s *service) CreateRole(ctx context.Context, req types.CreateRoleRequest) (
 		return 0, err
 	}
 
-	roleID, err := s.repo.CreateRole(ctx, req)
+	roleID, err := s.admin.CreateRole(ctx, req)
 	if err != nil {
 		return 0, err
 	}
@@ -54,7 +54,13 @@ func (s *service) AddUsersToRole(ctx context.Context, req types.AddUsersToRoleRe
 		return types.NewErrInvalidRequestField("empty username")
 	}
 
-	if err := s.repo.AddUsersToRole(ctx, req); err != nil {
+	for _, username := range req.Usernames {
+		if _, err := s.userProfiles.GetOrCreate(ctx, types.GetOrCreateUserProfileRequest{UserName: username}); err != nil {
+			return err
+		}
+	}
+
+	if err := s.admin.AddUsersToRole(ctx, req); err != nil {
 		return err
 	}
 
@@ -80,7 +86,7 @@ func (s *service) DeleteUsersFromRole(ctx context.Context, req types.DeleteUsers
 		return types.NewErrInvalidRequestField("empty username")
 	}
 
-	if err := s.repo.DeleteUsersFromRole(ctx, req); err != nil {
+	if err := s.admin.DeleteUsersFromRole(ctx, req); err != nil {
 		return err
 	}
 
@@ -98,7 +104,7 @@ func (s *service) GetRoles(ctx context.Context) (types.GetRolesResponse, error) 
 		return types.GetRolesResponse{Roles: roles}, nil
 	}
 
-	roles, err := s.repo.GetRoles(ctx)
+	roles, err := s.admin.GetRoles(ctx)
 	if err != nil {
 		return types.GetRolesResponse{}, err
 	}
@@ -119,7 +125,7 @@ func (s *service) GetRole(ctx context.Context, req types.GetRoleRequest) (types.
 		return types.RoleInfo{}, types.NewErrInvalidRequestField("value role_id must be greater than 0")
 	}
 
-	return s.repo.GetRole(ctx, req)
+	return s.admin.GetRole(ctx, req)
 }
 
 func (s *service) UpdateRole(ctx context.Context, req types.UpdateRoleRequest) error {
@@ -141,14 +147,14 @@ func (s *service) UpdateRole(ctx context.Context, req types.UpdateRoleRequest) e
 		}
 	}
 
-	if err := s.repo.UpdateRole(ctx, req); err != nil {
+	if err := s.admin.UpdateRole(ctx, req); err != nil {
 		return err
 	}
 
 	s.cache.resetRoles(ctx)
 
 	if len(req.Permissions) > 0 {
-		if roleInfo, err := s.repo.GetRole(ctx, types.GetRoleRequest{RoleID: req.RoleID}); err == nil {
+		if roleInfo, err := s.admin.GetRole(ctx, types.GetRoleRequest{RoleID: req.RoleID}); err == nil {
 			s.cache.resetUsersPermissions(ctx, roleInfo.Usernames...)
 		}
 	}
@@ -174,11 +180,11 @@ func (s *service) DeleteRole(ctx context.Context, req types.DeleteRoleRequest) e
 		}
 	}
 
-	if roleInfo, err := s.repo.GetRole(ctx, types.GetRoleRequest{RoleID: req.RoleID}); err == nil {
+	if roleInfo, err := s.admin.GetRole(ctx, types.GetRoleRequest{RoleID: req.RoleID}); err == nil {
 		s.cache.resetUsersPermissions(ctx, roleInfo.Usernames...)
 	}
 
-	if err := s.repo.DeleteRole(ctx, req); err != nil {
+	if err := s.admin.DeleteRole(ctx, req); err != nil {
 		return err
 	}
 
