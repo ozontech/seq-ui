@@ -5,9 +5,10 @@ import (
 	"flag"
 	"os"
 
+	"go.uber.org/zap"
+
 	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/ozontech/seq-ui/logger"
-	"go.uber.org/zap"
 )
 
 var (

@@ -111,14 +111,12 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 	if err != nil {
 		logger.Fatal("failed to init seq-db client", zap.Error(err))
 	}
-
 	var massExportV1 *massexport_v1.MassExport
 	if cfg.Handlers.MassExport != nil {
 		massExportClient, ok := seqDBClients[cfg.Handlers.MassExport.SeqDBID]
 		if !ok {
 			logger.Fatal("mass_export seq_db client not found", zap.String("seq_db_id", cfg.Handlers.MassExport.SeqDBID))
 		}
-
 		exportServer, err := initExportService(ctx, *cfg.Handlers.MassExport, massExportClient)
 		if err != nil {
 			logger.Fatal("can't init export server", zap.Error(err))
@@ -126,17 +124,10 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 
 		massExportV1 = massexport_v1.New(exportServer)
 	}
-
-	logger.Info("initializing inmemory with redis seqapi cache")
-	inmemWithRedisCache, err := cache.NewInmemoryWithRedisOrInmemory(ctx, cfg.Server.Cache)
+	logger.Info("initializing caches")
+	caches, err := cache.FromConfig(ctx, cfg.Cache)
 	if err != nil {
-		logger.Fatal("failed to init inmemory with redis seqapi cache", zap.Error(err))
-	}
-
-	logger.Info("initializing redis seqapi cache")
-	redisCache, err := cache.NewRedisOrInmemory(ctx, cfg.Server.Cache)
-	if err != nil {
-		logger.Fatal("failed to init redis seqapi cache", zap.Error(err))
+		logger.Fatal("failed to init caches", zap.Error(err))
 	}
 
 	logger.Info("initializing db")
@@ -166,7 +157,10 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 		asyncSearchesService = asyncsearches.New(ctx, repo, asyncSearchClient, cfg.Handlers.AsyncSearch)
 	}
 
-	seqApiV1 := seqapi_v1.New(cfg.Handlers.SeqAPI, seqDBClients, inmemWithRedisCache, redisCache, asyncSearchesService)
+	seqApiCache := caches[cfg.Handlers.SeqAPI.CacheID]
+	seqApiRedisCache := caches[cfg.Handlers.SeqAPI.RedisID]
+
+	seqApiV1 := seqapi_v1.New(cfg.Handlers.SeqAPI, seqDBClients, seqApiCache, seqApiRedisCache, asyncSearchesService)
 
 	logger.Info("initializing clickhouse")
 	ch, err := initClickHouse(ctx, cfg.Server.CH)
@@ -176,7 +170,7 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 
 	var errorGroupsV1 *errorgroups_v1.ErrorGroups
 	if ch != nil {
-		repo := repositorych.New(ch, cfg.Server.CH.Sharded, cfg.Handlers.ErrorGroups.QueryFilter)
+		repo := repositorych.New(ch, cfg.Clients.ClickHouse.Sharded, cfg.Handlers.ErrorGroups.QueryFilter)
 		svc := errorgroups.New(repo, cfg.Handlers.ErrorGroups.LogTagsMapping)
 
 		errorGroupsV1 = errorgroups_v1.New(svc)
@@ -208,12 +202,10 @@ func createSeqBDClient(ctx context.Context, cfg config.SeqDBClient, seqAPI confi
 			maxSearchLimit = l
 		}
 	}
-
 	clientMaxRecvMsgSize := cfg.AvgDocSize * 1024 * maxSearchLimit
 	if clientMaxRecvMsgSize < defaultClientMaxRecvMsgSize {
 		clientMaxRecvMsgSize = defaultClientMaxRecvMsgSize
 	}
-
 	clientParams := seqdb.ClientParams{
 		Addrs:               cfg.Addrs,
 		Timeout:             cfg.Timeout,
@@ -232,18 +224,15 @@ func createSeqBDClient(ctx context.Context, cfg config.SeqDBClient, seqAPI confi
 
 	return seqdb.NewGRPCClient(ctx, clientParams)
 }
-
 func initDb(ctx context.Context, cfg *config_v2.DB) (*pgxpool.Pool, error) {
 	if cfg == nil {
 		logger.Warn("db config is nil, running without db")
 		return nil, nil
 	}
-
 	pgxCfg, err := pgxpool.ParseConfig(cfg.ConnString())
 	if err != nil {
 		return nil, fmt.Errorf("can't parse connection string: %w", err)
 	}
-
 	if !*cfg.UsePreparedStatements {
 		// By default, pgx uses the QueryExecModeCacheStatement and automatically prepares and caches prepared statements.
 		// However, this may be incompatible with proxies such as PGBouncer.

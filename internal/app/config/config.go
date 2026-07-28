@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"os"
 
+	"gopkg.in/yaml.v3"
+
 	"github.com/ozontech/seq-ui/internal/app/config/migrate"
 	v1 "github.com/ozontech/seq-ui/internal/app/config/v1"
 	v2 "github.com/ozontech/seq-ui/internal/app/config/v2"
-	"gopkg.in/yaml.v3"
 )
 
 const (
