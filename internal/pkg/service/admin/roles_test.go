@@ -316,7 +316,7 @@ func TestAddUsersToRole(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "err_adminRepo",
+			name: "err_repo",
 			req: types.AddUsersToRoleRequest{
 				RoleID:    1,
 				Usernames: []string{"user1"},
@@ -438,7 +438,7 @@ func TestGetRoles(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "err_adminRepo",
+			name: "err_repo",
 			accessMock: &accessMock{
 				username:    "admin",
 				permissions: []string{permissionRolesRead},
@@ -549,7 +549,7 @@ func TestGetRole(t *testing.T) {
 			},
 		},
 		{
-			name:    "err_adminRepo",
+			name:    "err_repo",
 			req:     types.GetRoleRequest{RoleID: 1},
 			wantErr: true,
 			accessMock: &accessMock{
@@ -753,7 +753,7 @@ func TestUpdateRole(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "err_adminRepo",
+			name: "err_repo",
 			req: types.UpdateRoleRequest{
 				RoleID: 1,
 				Name:   &name,
@@ -914,7 +914,7 @@ func TestDeleteRole(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "err_adminRepo",
+			name: "err_repo",
 			req: types.DeleteRoleRequest{
 				RoleID: 1,
 			},
@@ -1067,7 +1067,7 @@ func TestDeleteUsersFromRole(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "err_adminRepo",
+			name: "err_repo",
 			req: types.DeleteUsersFromRoleRequest{
 				RoleID:    1,
 				Usernames: []string{"user1"},
