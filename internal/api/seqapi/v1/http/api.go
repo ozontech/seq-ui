@@ -28,32 +28,43 @@ type apiParams struct {
 }
 
 type apiGlobalParams struct {
-	fieldsCache  *fieldsCache
-	masker       *mask.Masker
-	pinnedFields fields
-	systemFields fields
+	fieldsCache          *fieldsCache
+	masker               *mask.Masker
+	pinnedFields         fields
+	systemFields         fields
+	eventsCacheTTL       time.Duration
+	logsLifespanCacheKey string
+	logsLifespanCacheTTL time.Duration
+	fieldsCacheTTL       time.Duration
 }
 
 type API struct {
-	config        config.SeqAPI
-	globalParams  apiGlobalParams
-	paramsByEnv   map[string]apiParams
-	cache         cache.Cache
-	nowFn         func() time.Time
-	asyncSearches asyncsearches.Service
-	envsResponse  getEnvsResponse
+	config              config.SeqAPI
+	globalParams        apiGlobalParams
+	paramsByEnv         map[string]apiParams
+	inmemWithRedisCache cache.Cache
+	redisCache          cache.Cache
+	nowFn               func() time.Time
+	asyncSearches       asyncsearches.Service
+	envsResponse        getEnvsResponse
 }
 
 func New(
 	cfg config.SeqAPI,
 	seqDBСlients map[string]seqdb.Client,
-	cache cache.Cache,
+	inmemWithRedisCache cache.Cache,
+	redisCache cache.Cache,
 	asyncSearches asyncsearches.Service,
 ) *API {
 	globalParams := apiGlobalParams{
-		pinnedFields: parseFields(cfg.GlobalOptions.PinnedFields),
-		systemFields: parseFields(cfg.GlobalOptions.SystemFields),
+		pinnedFields:         parseFields(cfg.GlobalOptions.PinnedFields),
+		systemFields:         parseFields(cfg.GlobalOptions.SystemFields),
+		eventsCacheTTL:       cfg.GlobalOptions.EventsCacheTTL,
+		logsLifespanCacheKey: cfg.GlobalOptions.LogsLifespanCacheKey,
+		fieldsCacheTTL:       cfg.GlobalOptions.FieldsCacheTTL,
+		logsLifespanCacheTTL: cfg.GlobalOptions.LogsLifespanCacheTTL,
 	}
+
 	if cfg.GlobalOptions.FieldsCacheTTL > 0 {
 		globalParams.fieldsCache = newFieldsCache(cfg.GlobalOptions.FieldsCacheTTL)
 	}
@@ -100,13 +111,14 @@ func New(
 	}
 
 	return &API{
-		config:        cfg,
-		globalParams:  globalParams,
-		paramsByEnv:   paramsByEnv,
-		cache:         cache,
-		nowFn:         time.Now,
-		asyncSearches: asyncSearches,
-		envsResponse:  parseEnvs(cfg),
+		config:              cfg,
+		globalParams:        globalParams,
+		paramsByEnv:         paramsByEnv,
+		inmemWithRedisCache: inmemWithRedisCache,
+		redisCache:          redisCache,
+		nowFn:               time.Now,
+		asyncSearches:       asyncSearches,
+		envsResponse:        parseEnvs(cfg),
 	}
 }
 

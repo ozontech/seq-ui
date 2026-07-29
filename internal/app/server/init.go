@@ -30,7 +30,7 @@ var defaultCORSAllowedMethods = []string{"HEAD", "GET", "POST", "PATCH", "DELETE
 func (s *Server) init(ctx context.Context, registrar *api.Registrar) error {
 	var err error
 
-	s.authPrvds, err = mw.NewAuthProviders(ctx, s.config.Auth.JWT.SecretKey, s.config.Auth.OIDC, s.Cache)
+	s.authPrvds, err = mw.NewAuthProviders(ctx, s.config.Auth.JWT.SecretKey, s.config.Auth.OIDC, s.oidcCache)
 	if err != nil {
 		return err
 	}

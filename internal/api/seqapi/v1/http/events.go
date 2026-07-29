@@ -79,7 +79,7 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if data, err := proto.Marshal(resp.Event); err == nil {
-		_ = a.inmemWithRedisCache.SetWithTTL(ctx, id, string(data), params.options.EventsCacheTTL)
+		_ = a.inmemWithRedisCache.SetWithTTL(ctx, id, string(data), a.globalParams.eventsCacheTTL)
 	} else {
 		logger.Error("failed to marshal event proto for caching", zap.String("id", id), zap.Error(err))
 	}

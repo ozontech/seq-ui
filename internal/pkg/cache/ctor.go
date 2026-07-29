@@ -4,43 +4,77 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
-
 	config "github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/logger"
+	"go.uber.org/zap"
 )
 
-func NewInmemoryWithRedisOrInmemory(ctx context.Context, cfg config.Cache) (Cache, error) {
-	return newRedisBasedOrInmemory(ctx, cfg, true)
+func FromConfig(ctx context.Context, cfg *config.Cache) (map[string]Cache, error) {
+	caches := make(map[string]Cache, len(cfg.Redis)+len(cfg.Inmemory))
+
+	for i := range cfg.Redis {
+		redis := &cfg.Redis[i]
+		var inmem *config.InmemoryCache
+		if redis.WithInmemID != "" {
+			inmem = cfg.InmemByID(redis.WithInmemID)
+		}
+
+		cache, err := New(ctx, inmem, redis)
+		if err != nil {
+			return nil, fmt.Errorf("new cache %q: %w", redis.ID, err)
+		}
+
+		caches[redis.ID] = cache
+	}
+
+	for i := range cfg.Inmemory {
+		inmem := &cfg.Inmemory[i]
+		if hasWithInmem(inmem.ID, cfg.Redis) {
+			continue
+		}
+
+		cache, err := newInmemoryCache(*inmem)
+		if err != nil {
+			return nil, fmt.Errorf("new inmemory cache %q: %w", inmem.ID, err)
+		}
+
+		caches[inmem.ID] = cache
+	}
+
+	return caches, nil
 }
 
-func NewRedisOrInmemory(ctx context.Context, cfg config.Cache) (Cache, error) {
-	return newRedisBasedOrInmemory(ctx, cfg, false)
-}
+func New(ctx context.Context, inmemCfg *config.InmemoryCache, redisCfg *config.Redis) (Cache, error) {
+	redis, redisErr := newRedisCache(ctx, redisCfg)
+	if inmemCfg == nil {
+		if redisErr != nil {
+			return nil, fmt.Errorf("init redis cache: %w", redisErr)
+		}
+		return redis, nil
+	}
 
-func newRedisBasedOrInmemory(ctx context.Context, cfg config.Cache, withInmem bool) (Cache, error) {
-	inmem, err := newInmemoryCache(cfg.Inmemory)
+	inmem, err := newInmemoryCache(*inmemCfg)
 	if err != nil {
 		return nil, fmt.Errorf("init inmemory cache: %w", err)
 	}
 
-	if cfg.Redis == nil {
-		logger.Warn("redis cache config is nil; inmemory cache will be used instead")
-		return inmem, nil
-	}
-
-	redis, err := newRedisCache(ctx, cfg.Redis)
-	if err != nil {
+	if redisErr != nil {
 		logger.Warn("failed to init redis cache; inmemory cache will be used instead", zap.Error(err))
-		return inmem, nil
+		return inmem, err
 	}
 
-	if withInmem {
-		return &inmemWithRedis{
-			inmem: inmem,
-			redis: redis,
-		}, nil
+	return &inmemWithRedis{
+		inmem: inmem,
+		redis: redis,
+	}, nil
+}
+
+func hasWithInmem(inmemID string, redisCfgs []config.Redis) bool {
+	for _, r := range redisCfgs {
+		if r.WithInmemID == inmemID {
+			return true
+		}
 	}
 
-	return redis, nil
+	return false
 }

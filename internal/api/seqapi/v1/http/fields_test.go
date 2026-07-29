@@ -83,7 +83,7 @@ func TestServeGetFields(t *testing.T) {
 					},
 				},
 			},
-			cfg: config.SeqAPIOptions{
+			cfg: config.Options{
 				SystemFields: []config.Field{
 					{Name: "field1", Type: "keyword"},
 					{Name: "field2", Type: "text"},

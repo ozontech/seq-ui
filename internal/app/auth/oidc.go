@@ -13,7 +13,7 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	"go.uber.org/zap"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
+	config "github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/tls"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/logger"
@@ -42,20 +42,11 @@ type oidcProvider struct {
 	allowedClients []string
 }
 
-func NewOIDCProvider(ctx context.Context, cfg *config.OIDC, cacheCfg config.Cache) (OIDCProvider, error) {
+func NewOIDCProvider(ctx context.Context, cfg *config.OIDC, oidcCache cache.Cache) (OIDCProvider, error) {
 	var (
-		err       error
-		oidcCache cache.Cache
-		oidcCtx   context.Context
+		err     error
+		oidcCtx context.Context
 	)
-
-	if cfg.CacheSecretKey != "" {
-		logger.Info("initializing oidc cache")
-		oidcCache, err = cache.NewInmemoryWithRedisOrInmemory(ctx, cacheCfg)
-		if err != nil {
-			return nil, fmt.Errorf("init oidc cache: %w", err)
-		}
-	}
 
 	if !cfg.SkipVerify {
 		oidcCtx, err = newHTTPContext(

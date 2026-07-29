@@ -8,6 +8,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/app/auth"
 	config "github.com/ozontech/seq-ui/internal/app/config/v2"
+	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/logger"
 )
 
@@ -31,7 +32,7 @@ type AuthProviders struct {
 func NewAuthProviders(
 	ctx context.Context,
 	jwtSecretKey string, oidcCfg *config.OIDC,
-	cacheCfg config.Cache,
+	oidcCache cache.Cache,
 ) (AuthProviders, error) {
 	authPrvds := AuthProviders{}
 
@@ -47,7 +48,7 @@ func NewAuthProviders(
 	if oidcCfg != nil {
 		logger.Info("initializing oidc provider")
 		var err error
-		authPrvds.OidcProvider, err = auth.NewOIDCProvider(ctx, oidcCfg, cacheCfg)
+		authPrvds.OidcProvider, err = auth.NewOIDCProvider(ctx, oidcCfg, oidcCache)
 		if err != nil {
 			return authPrvds, fmt.Errorf("failed to init oidc provider: %w", err)
 		}

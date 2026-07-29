@@ -91,9 +91,20 @@ func run(ctx context.Context) {
 			zap.Float64("sampler_param", tracingCfg.SamplerParam))
 	}
 
-	registrar := initApp(ctx, cfg)
+	logger.Info("initializing caches")
+	caches, err := cache.FromConfig(ctx, cfg.Cache)
+	if err != nil {
+		logger.Fatal("failed to init caches", zap.Error(err))
+	}
 
-	serv, err := server.New(ctx, cfg.Server, registrar)
+	var oidcCache cache.Cache
+	if cfg.Server.Auth != nil && cfg.Server.Auth.OIDC != nil {
+		oidcCache = caches[cfg.Server.Auth.OIDC.CacheID]
+	}
+
+	registrar := initApp(ctx, cfg, caches)
+
+	serv, err := server.New(ctx, cfg.Server, registrar, oidcCache)
 	if err != nil {
 		logger.Fatal("app init error", zap.Error(err))
 	}
@@ -105,7 +116,7 @@ func run(ctx context.Context) {
 	}
 }
 
-func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
+func initApp(ctx context.Context, cfg config.Config, caches map[string]cache.Cache) *api.Registrar {
 	logger.Info("initializing seq-db clients")
 	seqDBClients, err := initSeqDBClients(ctx, cfg)
 	if err != nil {
@@ -123,11 +134,6 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 		}
 
 		massExportV1 = massexport_v1.New(exportServer)
-	}
-	logger.Info("initializing caches")
-	caches, err := cache.FromConfig(ctx, cfg.Cache)
-	if err != nil {
-		logger.Fatal("failed to init caches", zap.Error(err))
 	}
 
 	logger.Info("initializing db")

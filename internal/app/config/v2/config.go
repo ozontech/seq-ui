@@ -277,6 +277,7 @@ type CORS struct {
 }
 
 type OIDC struct {
+	CacheID        string   `yaml:"cache_id"`
 	SkipVerify     bool     `yaml:"skip_verify"`
 	AuthURLs       []string `yaml:"auth_urls"`
 	RootCA         string   `yaml:"root_ca"`
@@ -342,6 +343,34 @@ type Redis struct {
 type Cache struct {
 	Inmemory []InmemoryCache `yaml:"inmemory"`
 	Redis    []Redis         `yaml:"redis"`
+}
+
+func (c *Cache) InmemByID(id string) *InmemoryCache {
+	if c == nil {
+		return nil
+	}
+
+	for i := range c.Inmemory {
+		if c.Inmemory[i].ID == id {
+			return &c.Inmemory[i]
+		}
+	}
+
+	return nil
+}
+
+func (c *Cache) RedisByID(id string) *Redis {
+	if c == nil {
+		return nil
+	}
+
+	for i := range c.Redis {
+		if c.Redis[i].ID == id {
+			return &c.Redis[i]
+		}
+	}
+
+	return nil
 }
 
 type S3 struct {
@@ -472,6 +501,7 @@ type Field struct {
 
 type SeqAPI struct {
 	CacheID       string               `yaml:"cache_id"`
+	RedisID       string               `yaml:"redis_id"`
 	GlobalOptions SeqAPIGlobalOptions  `yaml:"global_options"`
 	Options       SeqAPIOptions        `yaml:"options"`
 	Envs          map[string]SeqAPIEnv `yaml:"envs"`
@@ -687,6 +717,24 @@ func Normalize(cfg *Config) error {
 			return fmt.Errorf("unknown handlers.mass_export.session_store.redis_id %q", cfg.Handlers.MassExport.SessionStore.RedisID)
 		}
 	}
+
+	if cfg.Server.Auth != nil && cfg.Server.Auth.OIDC != nil {
+		oidc := cfg.Server.Auth.OIDC
+		hasCacheKey := oidc.CacheSecretKey != ""
+		hasCacheID := oidc.CacheID != ""
+
+		switch {
+		case hasCacheKey && !hasCacheID:
+			return fmt.Errorf("auth.oidc.cache_secret_key is set but auth.oidc.cache_id is empty")
+		case !hasCacheKey && hasCacheID:
+			return fmt.Errorf("auth.oidc.cache_id is set but auth.oidc.cache_secret_key is empty")
+		case hasCacheID && hasCacheKey:
+			if cfg.Cache.InmemByID(oidc.CacheID) == nil && cfg.Cache.RedisByID(oidc.CacheID) == nil {
+				return fmt.Errorf("auth.oidc.cache_id %q not found", oidc.CacheID)
+			}
+		}
+	}
+
 	return nil
 }
 
