@@ -487,6 +487,20 @@ type Clients struct {
 	ClickHouse []CHClient    `yaml:"clickhouse"`
 }
 
+func (c *Clients) ClickHouseByID(id string) *CHClient {
+	if c == nil {
+		return nil
+	}
+
+	for i := range c.ClickHouse {
+		if c.ClickHouse[i].ID == id {
+			return &c.ClickHouse[i]
+		}
+	}
+
+	return nil
+}
+
 type Handlers struct {
 	SeqAPI      SeqAPI      `yaml:"seq_api"`
 	ErrorGroups ErrorGroups `yaml:"error_groups"`

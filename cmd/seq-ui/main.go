@@ -168,15 +168,15 @@ func initApp(ctx context.Context, cfg config.Config, caches map[string]cache.Cac
 
 	seqApiV1 := seqapi_v1.New(cfg.Handlers.SeqAPI, seqDBClients, seqApiCache, seqApiRedisCache, asyncSearchesService)
 
-	logger.Info("initializing clickhouse")
-	ch, err := initClickHouse(ctx, cfg.Server.CH)
+	logger.Info("initializing clickhouse clients")
+	chClients, err := initClickHouseClients(ctx, cfg)
 	if err != nil {
-		logger.Fatal("failed to init clickhouse", zap.Error(err))
+		logger.Fatal("failed to init clickhouse clients", zap.Error(err))
 	}
 
 	var errorGroupsV1 *errorgroups_v1.ErrorGroups
-	if ch != nil {
-		repo := repositorych.New(ch, cfg.Clients.ClickHouse.Sharded, cfg.Handlers.ErrorGroups.QueryFilter)
+	if chClients != nil {
+		repo := repositorych.New(chClients[cfg.Handlers.ErrorGroups.CHID], cfg.Clients.ClickHouse.Sharded, cfg.Handlers.ErrorGroups.QueryFilter)
 		svc := errorgroups.New(repo, cfg.Handlers.ErrorGroups.LogTagsMapping)
 
 		errorGroupsV1 = errorgroups_v1.New(svc)
@@ -186,7 +186,7 @@ func initApp(ctx context.Context, cfg config.Config, caches map[string]cache.Cac
 }
 
 func initSeqDBClients(ctx context.Context, cfg config.Config) (map[string]seqdb.Client, error) {
-	clients := make(map[string]seqdb.Client)
+	clients := make(map[string]seqdb.Client, len(cfg.Clients.SeqDB))
 	for _, clientCfg := range cfg.Clients.SeqDB {
 		client, err := createSeqBDClient(ctx, clientCfg, cfg.Handlers.SeqAPI)
 		if err != nil {
@@ -230,7 +230,7 @@ func createSeqBDClient(ctx context.Context, cfg config.SeqDBClient, seqAPI confi
 
 	return seqdb.NewGRPCClient(ctx, clientParams)
 }
-func initDb(ctx context.Context, cfg *config_v2.DB) (*pgxpool.Pool, error) {
+func initDb(ctx context.Context, cfg *config.DB) (*pgxpool.Pool, error) {
 	if cfg == nil {
 		logger.Warn("db config is nil, running without db")
 		return nil, nil
@@ -270,7 +270,20 @@ func initExportService(ctx context.Context, cfg config.MassExport, client seqdb.
 	return massexport.NewService(ctx, cfg, sessionStore, fileStore, client)
 }
 
-func initClickHouse(ctx context.Context, cfg *config.CH) (driver.Conn, error) {
+func initClickHouseClients(ctx context.Context, cfg config.Config) (map[string]driver.Conn, error) {
+	clients := make(map[string]driver.Conn, len(cfg.Clients.ClickHouse))
+	for _, clientCfg := range cfg.Clients.ClickHouse {
+		client, err := createClickHouseClient(ctx, &clientCfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create clickhouse client %s: %w", clientCfg.ID, err)
+		}
+		clients[clientCfg.ID] = client
+	}
+
+	return clients, nil
+}
+
+func createClickHouseClient(ctx context.Context, cfg *config.CHClient) (driver.Conn, error) {
 	if cfg == nil {
 		logger.Warn("clickhouse config is nil, running without clickhouse")
 		return nil, nil
