@@ -11,7 +11,7 @@ import (
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/api_error"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	config "github.com/ozontech/seq-ui/internal/app/config/v2"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
@@ -51,7 +51,7 @@ func TestServeSearch(t *testing.T) {
 				PartialResponse: false,
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxSearchLimit: 5,
 				},
 			}),
@@ -87,7 +87,7 @@ func TestServeSearch(t *testing.T) {
 				PartialResponse: false,
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxSearchLimit: 5,
 				},
 			}),
@@ -124,7 +124,7 @@ func TestServeSearch(t *testing.T) {
 				PartialResponse: false,
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxSearchLimit: 5,
 				},
 			}),
@@ -163,7 +163,7 @@ func TestServeSearch(t *testing.T) {
 				PartialResponse: false,
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxSearchLimit: 5,
 				},
 			}),
@@ -211,7 +211,7 @@ func TestServeSearch(t *testing.T) {
 				PartialResponse: false,
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxSearchLimit: 5,
 				},
 			}),
@@ -255,7 +255,7 @@ func TestServeSearch(t *testing.T) {
 				PartialResponse: false,
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxSearchLimit: 5,
 				},
 			}),
@@ -289,7 +289,7 @@ func TestServeSearch(t *testing.T) {
 				PartialResponse: true,
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxSearchLimit: 5,
 				},
 			}),
@@ -330,7 +330,7 @@ func TestServeSearch(t *testing.T) {
 				Limit: 10,
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxSearchLimit: 5,
 				},
 			},
@@ -346,7 +346,7 @@ func TestServeSearch(t *testing.T) {
 				Aggregations: aggregationQueries{{}, {}, {}},
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxSearchLimit:            5,
 					MaxAggregationsPerRequest: 2,
 				},
@@ -363,7 +363,7 @@ func TestServeSearch(t *testing.T) {
 				Offset: 11,
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxSearchLimit:       5,
 					MaxSearchOffsetLimit: 10,
 				},
@@ -386,7 +386,7 @@ func TestServeSearch(t *testing.T) {
 				PartialResponse: false,
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxSearchLimit:       5,
 					MaxSearchOffsetLimit: 10,
 				},
@@ -419,7 +419,7 @@ func TestServeSearch(t *testing.T) {
 				Limit: 3,
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxSearchLimit: 5,
 				},
 			}),

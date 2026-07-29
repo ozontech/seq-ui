@@ -93,7 +93,7 @@ func NewService(
 		tasksChannelSize = cfg.TasksChannelSize
 	}
 
-	downloader := newSeqProxyDownloader(client, *cfg.SeqProxyDownloader)
+	downloader := newSeqProxyDownloader(client, *cfg.DownloadParams)
 
 	return &exportService{
 		sessionStore: sessionStore,

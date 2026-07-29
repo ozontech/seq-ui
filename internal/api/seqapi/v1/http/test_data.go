@@ -9,7 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	config "github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches"
 )
@@ -23,15 +23,11 @@ var (
 )
 
 func setupTestAPI(data test.APITestData) *API {
-	// when test cases don't explicitly provide configuration.
-	if data.Cfg.SeqAPIOptions == nil {
-		data.Cfg.SeqAPIOptions = &config.SeqAPIOptions{}
-	}
 	seqDBClients := make(map[string]seqdb.Client)
 	seqDBClients[config.DefaultSeqDBClientID] = data.Mocks.SeqDB
 
 	for _, envConfig := range data.Cfg.Envs {
-		seqDBClients[envConfig.SeqDB] = data.Mocks.SeqDB
+		seqDBClients[envConfig.SeqDBID] = data.Mocks.SeqDB
 	}
 
 	var asyncSvc asyncsearches.Service
@@ -39,7 +35,7 @@ func setupTestAPI(data test.APITestData) *API {
 		asyncSvc = data.Mocks.AsyncSearchesSvc
 	}
 
-	return New(data.Cfg, seqDBClients, data.Mocks.Cache, data.Mocks.Cache, asyncSvc)
+	return New(&data.Cfg, seqDBClients, data.Mocks.Cache, data.Mocks.Cache, asyncSvc)
 }
 
 func withQueryParamID(h http.HandlerFunc, id string) http.HandlerFunc {

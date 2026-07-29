@@ -52,6 +52,9 @@ func migrateServer(src *v1.Server) *v2.Server {
 	}
 
 	if src.JWTSecretKey != "" {
+		if dst.Auth == nil {
+			dst.Auth = &v2.Auth{}
+		}
 		dst.Auth.JWT = &v2.JWT{SecretKey: src.JWTSecretKey}
 	}
 
@@ -152,7 +155,7 @@ func migrateClients(src v1.Config) *v2.Clients {
 	if src.Server != nil && src.Server.CH != nil {
 		ch := src.Server.CH
 		dst.ClickHouse = []v2.CHClient{{
-			ID:          v2.DefaultSeqDBClientID,
+			ID:          v2.DefaultCHClientID,
 			Addrs:       ch.Addrs,
 			Database:    ch.Database,
 			Username:    ch.Username,
@@ -381,8 +384,9 @@ func migrateFieldFilters(src *v1.FieldFilterSet) *v2.FieldFilterSet {
 	return dst
 }
 
-func migrateErrorGroups(eg v1.ErrorGroups) v2.ErrorGroups {
-	return v2.ErrorGroups{
+func migrateErrorGroups(eg v1.ErrorGroups) *v2.ErrorGroups {
+	return &v2.ErrorGroups{
+		CHID: v2.DefaultCHClientID,
 		LogTagsMapping: v2.LogTagsMapping{
 			Env:     eg.LogTagsMapping.Env,
 			Service: eg.LogTagsMapping.Service,

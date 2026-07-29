@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
+	config "github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
@@ -21,19 +21,25 @@ import (
 )
 
 type apiParams struct {
-	client       seqdb.Client
-	options      *config.SeqAPIOptions
-	fieldsCache  *fieldsCache
-	masker       *mask.Masker
-	pinnedFields []*seqapi.Field
-	systemFields []*seqapi.Field
+	client  seqdb.Client
+	options *config.SeqAPIOptions
+}
+
+type apiGlobalParams struct {
+	fieldsCache          *fieldsCache
+	masker               *mask.Masker
+	pinnedFields         []*seqapi.Field
+	systemFields         []*seqapi.Field
+	eventsCacheTTL       time.Duration
+	logsLifespanCacheKey string
+	logsLifespanCacheTTL time.Duration
 }
 
 type API struct {
 	seqapi.UnimplementedSeqAPIServiceServer
 
-	config              config.SeqAPI
-	params              apiParams
+	config              *config.SeqAPI
+	globalParams        apiGlobalParams
 	paramsByEnv         map[string]apiParams
 	inmemWithRedisCache cache.Cache
 	redisCache          cache.Cache
@@ -43,76 +49,57 @@ type API struct {
 }
 
 func New(
-	cfg config.SeqAPI,
+	cfg *config.SeqAPI,
 	seqDBСlients map[string]seqdb.Client,
 	inmemWithRedisCache cache.Cache,
 	redisCache cache.Cache,
 	asyncSearches asyncsearches.Service,
 ) *API {
-	var globalfCache *fieldsCache
-	if cfg.FieldsCacheTTL > 0 {
-		globalfCache = newFieldsCache(cfg.FieldsCacheTTL)
+	globalParams := apiGlobalParams{
+		pinnedFields:         parseFields(cfg.GlobalOptions.PinnedFields),
+		systemFields:         parseFields(cfg.GlobalOptions.SystemFields),
+		eventsCacheTTL:       cfg.GlobalOptions.EventsCacheTTL,
+		logsLifespanCacheKey: cfg.GlobalOptions.LogsLifespanCacheKey,
+		logsLifespanCacheTTL: cfg.GlobalOptions.LogsLifespanCacheTTL,
 	}
 
-	globalMasker, err := mask.New(cfg.Masking)
+	if cfg.GlobalOptions.FieldsCacheTTL > 0 {
+		globalParams.fieldsCache = newFieldsCache(cfg.GlobalOptions.FieldsCacheTTL)
+	}
+
+	globalMasker, err := mask.New(cfg.GlobalOptions.Masking)
 	if err != nil {
 		logger.Fatal("failed to init masking", zap.Error(err))
 	}
+	globalParams.masker = globalMasker
 
-	globalPinnedFields := parseFields(cfg.PinnedFields)
-	globalSystemFields := parseFields(cfg.SystemFields)
-
-	var params apiParams
-	var paramsByEnv map[string]apiParams
-
+	paramsByEnv := make(map[string]apiParams, max(1, len(cfg.Envs)))
 	if len(cfg.Envs) > 0 {
-		paramsByEnv = make(map[string]apiParams)
 		for envName, envConfig := range cfg.Envs {
-			client := seqDBСlients[envConfig.SeqDB]
-			options := envConfig.Options
-
-			var envfCache *fieldsCache
-			if options.FieldsCacheTTL > 0 {
-				envfCache = newFieldsCache(options.FieldsCacheTTL)
-			}
-
-			var envMasker, err = mask.New(options.Masking)
-			if err != nil {
-				logger.Fatal("failed to init env masking", zap.Error(err))
-			}
-
-			envPinnedFields := parseFields(options.PinnedFields)
-			envSystemFields := parseFields(options.SystemFields)
-
 			paramsByEnv[envName] = apiParams{
-				client:       client,
-				options:      options,
-				fieldsCache:  envfCache,
-				masker:       envMasker,
-				pinnedFields: envPinnedFields,
-				systemFields: envSystemFields,
+				client:  seqDBСlients[envConfig.SeqDBID],
+				options: envConfig.Options,
 			}
 		}
 	} else {
-		client, exists := seqDBСlients[config.DefaultSeqDBClientID]
-		if !exists {
-			logger.Fatal("default client not found",
-				zap.String("clientID", config.DefaultSeqDBClientID))
+		if len(seqDBСlients) != 1 {
+			logger.Fatal("seq_api.envs is empty, configure envs when clients.seq_db has more than one instance")
 		}
 
-		params = apiParams{
-			client:       client,
-			options:      cfg.SeqAPIOptions,
-			fieldsCache:  globalfCache,
-			masker:       globalMasker,
-			pinnedFields: globalPinnedFields,
-			systemFields: globalSystemFields,
+		var client seqdb.Client
+		for _, c := range seqDBСlients {
+			client = c
+		}
+
+		paramsByEnv[""] = apiParams{
+			client:  client,
+			options: &cfg.Options,
 		}
 	}
 
 	return &API{
 		config:              cfg,
-		params:              params,
+		globalParams:        globalParams,
 		paramsByEnv:         paramsByEnv,
 		inmemWithRedisCache: inmemWithRedisCache,
 		redisCache:          redisCache,
@@ -133,7 +120,7 @@ func parseFields(fields []config.Field) []*seqapi.Field {
 	return res
 }
 
-func parseEnvs(cfg config.SeqAPI) *seqapi.GetEnvsResponse {
+func parseEnvs(cfg *config.SeqAPI) *seqapi.GetEnvsResponse {
 	var envs []*seqapi.GetEnvsResponse_Env
 	if len(cfg.Envs) > 0 {
 		// sort environment names to ensure deterministic output
@@ -177,7 +164,7 @@ func parseEnvs(cfg config.SeqAPI) *seqapi.GetEnvsResponse {
 			envs = append(envs, createEnvInfo(name, envConfig.Options))
 		}
 	} else {
-		envs = []*seqapi.GetEnvsResponse_Env{createEnvInfo("", cfg.SeqAPIOptions)}
+		envs = []*seqapi.GetEnvsResponse_Env{createEnvInfo("", &cfg.Options)}
 	}
 	return &seqapi.GetEnvsResponse{Envs: envs}
 }
@@ -193,7 +180,7 @@ func (a *API) GetEnvFromContext(ctx context.Context) string {
 
 func (a *API) GetParams(env string) (apiParams, error) {
 	if len(a.config.Envs) == 0 {
-		return a.params, nil
+		return a.paramsByEnv[""], nil
 	}
 
 	if env == "" {

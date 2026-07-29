@@ -17,13 +17,13 @@ import (
 )
 
 type seqProxyDownloader struct {
-	cfg    config.SeqProxyDownloader
+	cfg    config.DownloadParams
 	client seqdb.Client
 }
 
 const defaultDelay = 1 * time.Second
 
-func newSeqProxyDownloader(client seqdb.Client, cfg config.SeqProxyDownloader) *seqProxyDownloader {
+func newSeqProxyDownloader(client seqdb.Client, cfg config.DownloadParams) *seqProxyDownloader {
 	if cfg.Delay <= 0 {
 		cfg.Delay = defaultDelay
 	}

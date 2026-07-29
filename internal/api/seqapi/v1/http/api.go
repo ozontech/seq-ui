@@ -35,11 +35,10 @@ type apiGlobalParams struct {
 	eventsCacheTTL       time.Duration
 	logsLifespanCacheKey string
 	logsLifespanCacheTTL time.Duration
-	fieldsCacheTTL       time.Duration
 }
 
 type API struct {
-	config              config.SeqAPI
+	config              *config.SeqAPI
 	globalParams        apiGlobalParams
 	paramsByEnv         map[string]apiParams
 	inmemWithRedisCache cache.Cache
@@ -50,7 +49,7 @@ type API struct {
 }
 
 func New(
-	cfg config.SeqAPI,
+	cfg *config.SeqAPI,
 	seqDBСlients map[string]seqdb.Client,
 	inmemWithRedisCache cache.Cache,
 	redisCache cache.Cache,
@@ -61,7 +60,6 @@ func New(
 		systemFields:         parseFields(cfg.GlobalOptions.SystemFields),
 		eventsCacheTTL:       cfg.GlobalOptions.EventsCacheTTL,
 		logsLifespanCacheKey: cfg.GlobalOptions.LogsLifespanCacheKey,
-		fieldsCacheTTL:       cfg.GlobalOptions.FieldsCacheTTL,
 		logsLifespanCacheTTL: cfg.GlobalOptions.LogsLifespanCacheTTL,
 	}
 
@@ -161,7 +159,7 @@ func parseFields(fields []config.Field) []field {
 	return res
 }
 
-func parseEnvs(cfg config.SeqAPI) getEnvsResponse {
+func parseEnvs(cfg *config.SeqAPI) getEnvsResponse {
 	var envs []envInfo
 	if len(cfg.Envs) > 0 {
 		// sort environment names to ensure deterministic output

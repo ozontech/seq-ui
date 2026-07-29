@@ -28,6 +28,7 @@ import (
 //     addr:
 //   auth:
 //     oidc:
+//       cache_id:
 //       skip_verify:
 //       auth_urls:
 //       root_ca:
@@ -80,15 +81,9 @@ import (
 //     read_timeout:
 // handlers:
 //   seq_api:
-//   	options:
-//       max_search_limit:
-//       max_search_total_limit:
-//       max_search_offset_limit:
-//       max_export_limit:
-//       seq_cli_max_search_limit:
-//       max_parallel_export_requests:
-//       max_aggregations_per_request:
-//       max_buckets_per_aggregation_ts:
+//     cache_id:
+//     redis_id:
+//   	global_options:
 //       events_cache_ttl:
 //       pinned_fields:
 //         name:
@@ -115,6 +110,15 @@ import (
 //               values:
 //         process_fields:
 //         ignore_fields:
+//     options:
+//       max_search_limit:
+//       max_search_total_limit:
+//       max_search_offset_limit:
+//       max_export_limit:
+//       seq_cli_max_search_limit:
+//       max_parallel_export_requests:
+//       max_aggregations_per_request:
+//       max_buckets_per_aggregation_ts:
 //     envs:
 //       <env_name>:
 //         seq_db_id:
@@ -127,34 +131,9 @@ import (
 //           max_parallel_export_requests:
 //           max_aggregations_per_request:
 //           max_buckets_per_aggregation_ts:
-//           events_cache_ttl:
-//           pinned_fields:
-//             name:
-//             type:
-//           system_fields:
-//             name:
-//             type:
-//           logs_lifespan_cache_key:
-//           logs_lifespan_cache_ttl:
-//           fields_cache_ttl:
-//           masking:
-//             masks:
-//               re:
-//               groups:
-//               mode:
-//               replace_word:
-//               process_fields:
-//               ignore_fields:
-//               field_filters:
-//                 condition:
-//                 filters:
-//                   field:
-//                   mode:
-//                   values:
-//             process_fields:
-//             ignore_fields:
 //     default_env:
 //   error_groups:
+//     ch_id:
 //     log_tags_mapping:
 //       env:
 //       service:
@@ -162,6 +141,7 @@ import (
 //     query_filter:
 //       <ch_column>:
 //   mass_export:
+//     seq_db_id:
 //     batch_size:
 //     workers_count:
 //     tasks_channel_size:
@@ -183,6 +163,7 @@ import (
 //       initial_retry_backoff:
 //       max_retry_backoff:
 //   async_search:
+//     seq_db_id:
 //     admin_users:
 //     list_query_length_limit:
 // db:
@@ -213,6 +194,7 @@ import (
 
 const (
 	DefaultSeqDBClientID     = "default"
+	DefaultCHClientID        = "default"
 	DefaultInmemCacheID      = "seqapi"
 	DefaultRedisID           = "default"
 	DefaultMassExportRedisID = "mass_export"
@@ -502,10 +484,10 @@ func (c *Clients) ClickHouseByID(id string) *CHClient {
 }
 
 type Handlers struct {
-	SeqAPI      SeqAPI      `yaml:"seq_api"`
-	ErrorGroups ErrorGroups `yaml:"error_groups"`
-	MassExport  *MassExport `yaml:"mass_export"`
-	AsyncSearch AsyncSearch `yaml:"async_search"`
+	SeqAPI      SeqAPI       `yaml:"seq_api"`
+	ErrorGroups *ErrorGroups `yaml:"error_groups"`
+	MassExport  *MassExport  `yaml:"mass_export"`
+	AsyncSearch AsyncSearch  `yaml:"async_search"`
 }
 
 type Field struct {
@@ -723,12 +705,37 @@ func Normalize(cfg *Config) error {
 	}
 
 	if cfg.Handlers.MassExport != nil {
-		if cfg.Handlers.MassExport.SessionStore.RedisID == "" {
-			return fmt.Errorf("handlers.mass_export.session_store.redis_id cannot be empty")
+		if cfg.Handlers.MassExport.SeqDBID == "" {
+			return fmt.Errorf("handlers.mass_export.seq_db_id cannot be empty")
+		}
+		if _, ok := seqDBIDs[cfg.Handlers.MassExport.SeqDBID]; !ok {
+			return fmt.Errorf("unknown handlers.mass_export.seq_db_id %q", cfg.Handlers.MassExport.SeqDBID)
 		}
 
-		if _, ok := redisIDs[cfg.Handlers.MassExport.SessionStore.RedisID]; !ok {
-			return fmt.Errorf("unknown handlers.mass_export.session_store.redis_id %q", cfg.Handlers.MassExport.SessionStore.RedisID)
+		if cfg.Handlers.MassExport.SessionStore != nil {
+			if cfg.Handlers.MassExport.SessionStore.RedisID == "" {
+				return fmt.Errorf("handlers.mass_export.session_store.redis_id cannot be empty")
+			}
+			if _, ok := redisIDs[cfg.Handlers.MassExport.SessionStore.RedisID]; !ok {
+				return fmt.Errorf("unknown handlers.mass_export.session_store.redis_id %q", cfg.Handlers.MassExport.SessionStore.RedisID)
+			}
+		}
+	}
+
+	if cfg.Handlers.AsyncSearch.SeqDBID == "" {
+		return fmt.Errorf("handlers.async_search.seq_db_id %q", cfg.Handlers.AsyncSearch.SeqDBID)
+	}
+	if _, ok := seqDBIDs[cfg.Handlers.AsyncSearch.SeqDBID]; !ok {
+		return fmt.Errorf("unknown handlers.async_search.seq_db_id %q", cfg.Handlers.AsyncSearch.SeqDBID)
+	}
+
+	if cfg.Handlers.ErrorGroups != nil {
+		if cfg.Handlers.ErrorGroups.CHID == "" {
+			return fmt.Errorf("handlers.error_groups.ch_id cannot be empty")
+		}
+
+		if _, ok := chIDs[cfg.Handlers.ErrorGroups.CHID]; !ok {
+			return fmt.Errorf("unknown handlers.error_groups.ch_id %q", cfg.Handlers.ErrorGroups.CHID)
 		}
 	}
 

@@ -80,7 +80,7 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 		return nil, err
 	}
 
-	if params.masker != nil {
+	if a.globalParams.masker != nil {
 		buf := make([]string, 0)
 		for i, agg := range resp.Aggregations {
 			if agg == nil {
@@ -98,7 +98,7 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 				field = aggReq.GroupBy
 			}
 
-			buf = params.masker.MaskAgg(field, buf)
+			buf = a.globalParams.masker.MaskAgg(field, buf)
 
 			for j, key := range buf {
 				if agg.Buckets[j] != nil {

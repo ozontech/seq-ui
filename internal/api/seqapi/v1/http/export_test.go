@@ -10,7 +10,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	config "github.com/ozontech/seq-ui/internal/app/config/v2"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
@@ -40,7 +40,7 @@ func TestServeExport(t *testing.T) {
 				Offset: 0,
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxExportLimit:            100,
 					MaxParallelExportRequests: 1,
 				},
@@ -67,7 +67,7 @@ func TestServeExport(t *testing.T) {
 				Fields: []string{"field1", "field2"},
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxExportLimit:            100,
 					MaxParallelExportRequests: 1,
 				},
@@ -94,7 +94,7 @@ func TestServeExport(t *testing.T) {
 				Offset: 0,
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxParallelExportRequests: 0,
 				},
 			},
@@ -110,7 +110,7 @@ func TestServeExport(t *testing.T) {
 				Offset: 0,
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxExportLimit:            5,
 					MaxParallelExportRequests: 1,
 				},
@@ -128,7 +128,7 @@ func TestServeExport(t *testing.T) {
 				Format: efCSV,
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxExportLimit:            100,
 					MaxParallelExportRequests: 1,
 				},
@@ -145,7 +145,7 @@ func TestServeExport(t *testing.T) {
 				Offset: 0,
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxExportLimit:            100,
 					MaxParallelExportRequests: 1,
 				},

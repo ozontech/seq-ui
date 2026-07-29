@@ -17,7 +17,7 @@ type SeqAPI struct {
 }
 
 func New(
-	cfg config.SeqAPI,
+	cfg *config.SeqAPI,
 	seqDB map[string]seqdb.Client,
 	inmemWithRedisCache cache.Cache,
 	redisCache cache.Cache,
