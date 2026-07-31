@@ -33,7 +33,6 @@ type apiGlobalParams struct {
 	pinnedFields         fields
 	systemFields         fields
 	eventsCacheTTL       time.Duration
-	logsLifespanCacheKey string
 	logsLifespanCacheTTL time.Duration
 }
 
@@ -59,7 +58,6 @@ func New(
 		pinnedFields:         parseFields(cfg.GlobalOptions.PinnedFields),
 		systemFields:         parseFields(cfg.GlobalOptions.SystemFields),
 		eventsCacheTTL:       cfg.GlobalOptions.EventsCacheTTL,
-		logsLifespanCacheKey: cfg.GlobalOptions.LogsLifespanCacheKey,
 		logsLifespanCacheTTL: cfg.GlobalOptions.LogsLifespanCacheTTL,
 	}
 
@@ -85,17 +83,8 @@ func New(
 			}
 		}
 	} else {
-		if len(seqDBСlients) != 1 {
-			logger.Fatal("seq_api.envs is empty, configure envs when clients.seq_db has more than one instance")
-		}
-
-		var client seqdb.Client
-		for _, c := range seqDBСlients {
-			client = c
-		}
-
 		paramsByEnv[""] = apiParams{
-			client:        client,
+			client:        seqDBСlients[cfg.SeqDBID],
 			options:       &cfg.Options,
 			exportLimiter: globalExportLimiter,
 		}

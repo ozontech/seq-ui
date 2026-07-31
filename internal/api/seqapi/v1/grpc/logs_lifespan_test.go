@@ -107,7 +107,6 @@ func TestGetLogsLifespan(t *testing.T) {
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
 					GlobalOptions: config.SeqAPIGlobalOptions{
-						LogsLifespanCacheKey: cacheKey,
 						LogsLifespanCacheTTL: cacheTTL,
 					},
 				},

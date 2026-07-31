@@ -5,7 +5,6 @@ import (
 )
 
 // Deprecated configuration scheme
-// version:
 // server:
 //   http_addr:
 //   grpc_addr:

@@ -29,14 +29,15 @@ import (
 //   auth:
 //     oidc:
 //       cache_id:
+//       cache_secret_key:
 //       skip_verify:
 //       auth_urls:
-//       root_ca:
-//       ca_cert:
-//       private_key:
-//       ssl_skip_verify:
+//       tls:
+//         root_ca:
+//         ca_cert:
+//         private_key:
+//         insecure:
 //       allowed_clients:
-//       cache_secret_key:
 //     jwt:
 //       secret_key:
 //   rate_limiters:
@@ -81,6 +82,7 @@ import (
 //     read_timeout:
 // handlers:
 //   seq_api:
+//     seq_db_id:
 //     cache_id:
 //     redis_id:
 //   	global_options:
@@ -91,7 +93,6 @@ import (
 //       system_fields:
 //         name:
 //         type:
-//       logs_lifespan_cache_key:
 //       logs_lifespan_cache_ttl:
 //       fields_cache_ttl:
 //       masking:
@@ -134,6 +135,10 @@ import (
 //     default_env:
 //   error_groups:
 //     ch_id:
+//     envs:
+//       <env_name>:
+//         ch_id:
+//     default_env:
 //     log_tags_mapping:
 //       env:
 //       service:
@@ -164,6 +169,11 @@ import (
 //       max_retry_backoff:
 //   async_search:
 //     seq_db_id:
+//     envs:
+//       <env_name>:
+//         seq_db_id:
+//         list_query_length_limit:
+//     default_env:
 //     admin_users:
 //     list_query_length_limit:
 // db:
@@ -193,10 +203,11 @@ import (
 //     max_retry_backoff:
 
 const (
-	DefaultSeqDBClientID     = "default"
-	DefaultCHClientID        = "default"
-	DefaultInmemCacheID      = "seqapi"
-	DefaultRedisID           = "default"
+	DefaultSeqDBClientID     = "defaultSeqDB"
+	DefaultCHClientID        = "defaultCH"
+	DefaultInmemCacheID      = "defaultInmemCache"
+	DefaultRedisID           = "defaultRedis"
+	DefaultRedis2ID          = "defaultRedis2"
 	DefaultMassExportRedisID = "mass_export"
 
 	ProxyClientModeGRPC = "grpc"
@@ -232,7 +243,6 @@ const (
 
 	defaultEventsCacheTTL = 24 * time.Hour
 
-	defaultLogsLifespanCacheKey = "logs_lifespan"
 	defaultLogsLifespanCacheTTL = 10 * time.Minute
 
 	defaultClickHouseDialTimeout = 5 * time.Second
@@ -258,16 +268,20 @@ type CORS struct {
 	OptionsPassthrough bool     `yaml:"options_passthrough"`
 }
 
+type TLS struct {
+	RootCA     string `yaml:"root_ca"`
+	CACert     string `yaml:"ca_cert"`
+	PrivateKey string `yaml:"private_key"`
+	Insecure   bool   `yaml:"insecure"`
+}
+
 type OIDC struct {
 	CacheID        string   `yaml:"cache_id"`
+	CacheSecretKey string   `yaml:"cache_secret_key"`
 	SkipVerify     bool     `yaml:"skip_verify"`
 	AuthURLs       []string `yaml:"auth_urls"`
-	RootCA         string   `yaml:"root_ca"`
-	CACert         string   `yaml:"ca_cert"`
-	PrivateKey     string   `yaml:"private_key"`
-	SSLSkipVerify  bool     `yaml:"ssl_skip_verify"`
+	TLS            *TLS     `yaml:"tls"`
 	AllowedClients []string `yaml:"allowed_clients"`
-	CacheSecretKey string   `yaml:"cache_secret_key"`
 }
 
 type DB struct {
@@ -496,6 +510,7 @@ type Field struct {
 }
 
 type SeqAPI struct {
+	SeqDBID       string               `yaml:"seq_db_id"`
 	CacheID       string               `yaml:"cache_id"`
 	RedisID       string               `yaml:"redis_id"`
 	GlobalOptions SeqAPIGlobalOptions  `yaml:"global_options"`
@@ -508,7 +523,6 @@ type SeqAPIGlobalOptions struct {
 	PinnedFields         []Field       `yaml:"pinned_fields"`
 	SystemFields         []Field       `yaml:"system_fields"`
 	Masking              *Masking      `yaml:"masking"`
-	LogsLifespanCacheKey string        `yaml:"logs_lifespan_cache_key"`
 	EventsCacheTTL       time.Duration `yaml:"events_cache_ttl"`
 	LogsLifespanCacheTTL time.Duration `yaml:"logs_lifespan_cache_ttl"`
 	FieldsCacheTTL       time.Duration `yaml:"fields_cache_ttl"`
@@ -566,15 +580,28 @@ type LogTagsMapping struct {
 }
 
 type ErrorGroups struct {
-	CHID           string            `yaml:"ch_id"`
-	LogTagsMapping LogTagsMapping    `yaml:"log_tags_mapping"`
-	QueryFilter    map[string]string `yaml:"query_filter"`
+	CHID           string                    `yaml:"ch_id"`
+	Envs           map[string]ErrorGroupsEnv `yaml:"envs"`
+	LogTagsMapping LogTagsMapping            `yaml:"log_tags_mapping"`
+	QueryFilter    map[string]string         `yaml:"query_filter"`
+	DefaultEnv     string                    `yaml:"default_env"`
+}
+
+type ErrorGroupsEnv struct {
+	CHID string `yaml:"ch_id"`
 }
 
 type AsyncSearch struct {
-	SeqDBID              string   `yaml:"seq_db_id"`
-	AdminUsers           []string `yaml:"admin_users"`
-	ListQueryLengthLimit int      `yaml:"list_query_length_limit"`
+	SeqDBID              string                    `yaml:"seq_db_id"`
+	Envs                 map[string]AsyncSearchEnv `yaml:"envs"`
+	AdminUsers           []string                  `yaml:"admin_users"`
+	ListQueryLengthLimit int                       `yaml:"list_query_length_limit"`
+	DefaultEnv           string                    `yaml:"default_env"`
+}
+
+type AsyncSearchEnv struct {
+	SeqDBID              string `yaml:"seq_db_id"`
+	ListQueryLengthLimit int    `yaml:"list_query_length_limit"`
 }
 
 func Normalize(cfg *Config) error {
@@ -685,6 +712,10 @@ func Normalize(cfg *Config) error {
 	setSeqAPIOptionsDefaults(&cfg.Handlers.SeqAPI.Options)
 
 	if len(cfg.Handlers.SeqAPI.Envs) > 0 {
+		if cfg.Handlers.SeqAPI.SeqDBID != "" {
+			return fmt.Errorf("seq_api.seq_db_id must be empty when envs is used. Put seq_db_id inside each env")
+		}
+
 		if cfg.Handlers.SeqAPI.DefaultEnv == "" {
 			return fmt.Errorf("default_env must be specified when using envs")
 		}
@@ -701,6 +732,14 @@ func Normalize(cfg *Config) error {
 			merged := mergeSeqAPIOptions(cfg.Handlers.SeqAPI.Options, envConfig.Options)
 			envConfig.Options = &merged
 			cfg.Handlers.SeqAPI.Envs[envName] = envConfig
+		}
+	} else {
+		if cfg.Handlers.SeqAPI.SeqDBID == "" {
+			return fmt.Errorf("seq_api.seq_db_id must be specified when envs is empty")
+		}
+
+		if _, ok := seqDBIDs[cfg.Handlers.SeqAPI.SeqDBID]; !ok {
+			return fmt.Errorf("unknown handlers.seq_api.seq_db_id %q", cfg.Handlers.SeqAPI.SeqDBID)
 		}
 	}
 
@@ -722,20 +761,69 @@ func Normalize(cfg *Config) error {
 		}
 	}
 
-	if cfg.Handlers.AsyncSearch.SeqDBID == "" {
-		return fmt.Errorf("handlers.async_search.seq_db_id %q", cfg.Handlers.AsyncSearch.SeqDBID)
-	}
-	if _, ok := seqDBIDs[cfg.Handlers.AsyncSearch.SeqDBID]; !ok {
-		return fmt.Errorf("unknown handlers.async_search.seq_db_id %q", cfg.Handlers.AsyncSearch.SeqDBID)
+	if len(cfg.Handlers.AsyncSearch.Envs) > 0 {
+		if cfg.Handlers.AsyncSearch.SeqDBID != "" {
+			return fmt.Errorf("async_search.seq_db_id must be empty when envs is used. Put seq_db_id inside each env")
+		}
+
+		if cfg.Handlers.AsyncSearch.DefaultEnv == "" {
+			return fmt.Errorf("default_env must be specified when using envs")
+		}
+
+		if _, exists := cfg.Handlers.AsyncSearch.Envs[cfg.Handlers.AsyncSearch.DefaultEnv]; !exists {
+			return fmt.Errorf("default_env '%s' not found in async_search.envs", cfg.Handlers.AsyncSearch.DefaultEnv)
+		}
+
+		for envName, envConfig := range cfg.Handlers.AsyncSearch.Envs {
+			if envConfig.SeqDBID == "" {
+				return fmt.Errorf("handlers.async_search.envs[%q].seq_db_id cannot be empty", envName)
+			}
+
+			if _, ok := seqDBIDs[cfg.Handlers.AsyncSearch.SeqDBID]; !ok {
+				return fmt.Errorf("unknown handlers.async_search.envs[%q].seq_db_id %q", envName, envConfig.SeqDBID)
+			}
+		}
+	} else {
+		if cfg.Handlers.AsyncSearch.SeqDBID == "" {
+			return fmt.Errorf("handlers.async_search.seq_db_id %q", cfg.Handlers.AsyncSearch.SeqDBID)
+		}
+		if _, ok := seqDBIDs[cfg.Handlers.AsyncSearch.SeqDBID]; !ok {
+			return fmt.Errorf("unknown handlers.async_search.seq_db_id %q", cfg.Handlers.AsyncSearch.SeqDBID)
+		}
 	}
 
 	if cfg.Handlers.ErrorGroups != nil {
-		if cfg.Handlers.ErrorGroups.CHID == "" {
-			return fmt.Errorf("handlers.error_groups.ch_id cannot be empty")
-		}
+		eg := cfg.Handlers.ErrorGroups
+		if len(eg.Envs) > 0 {
+			if eg.CHID != "" {
+				return fmt.Errorf("handlers.error_groups.ch_id must be empty when envs is used. Put ch_id inside each env")
+			}
 
-		if _, ok := chIDs[cfg.Handlers.ErrorGroups.CHID]; !ok {
-			return fmt.Errorf("unknown handlers.error_groups.ch_id %q", cfg.Handlers.ErrorGroups.CHID)
+			if eg.DefaultEnv == "" {
+				return fmt.Errorf("default_env must be specified when using envs")
+			}
+
+			if _, exists := eg.Envs[eg.DefaultEnv]; !exists {
+				return fmt.Errorf("default_env '%s' not found in error_groups.envs", eg.DefaultEnv)
+			}
+
+			for envName, envConfig := range eg.Envs {
+				if envConfig.CHID == "" {
+					return fmt.Errorf("client '%s' for env '%s' not found", envConfig.CHID, envName)
+				}
+
+				if _, ok := chIDs[envConfig.CHID]; !ok {
+					return fmt.Errorf("unknown handlers.error_groups.ch_id %q", envConfig.CHID)
+				}
+			}
+		} else {
+			if cfg.Handlers.ErrorGroups.CHID == "" {
+				return fmt.Errorf("handlers.error_groups.ch_id cannot be empty")
+			}
+
+			if _, ok := chIDs[cfg.Handlers.ErrorGroups.CHID]; !ok {
+				return fmt.Errorf("unknown handlers.error_groups.ch_id %q", cfg.Handlers.ErrorGroups.CHID)
+			}
 		}
 	}
 
@@ -817,9 +905,6 @@ func mergeSeqAPIOptions(global SeqAPIOptions, envOptions *SeqAPIOptions) SeqAPIO
 func setSeqAPIGlobalOptionsDefaults(options *SeqAPIGlobalOptions) {
 	if options.EventsCacheTTL <= 0 {
 		options.EventsCacheTTL = defaultEventsCacheTTL
-	}
-	if options.LogsLifespanCacheKey == "" {
-		options.LogsLifespanCacheKey = defaultLogsLifespanCacheKey
 	}
 	if options.LogsLifespanCacheTTL <= 0 {
 		options.LogsLifespanCacheTTL = defaultLogsLifespanCacheTTL

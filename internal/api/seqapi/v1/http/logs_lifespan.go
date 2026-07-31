@@ -37,7 +37,8 @@ func (a *API) serveGetLogsLifespan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if resStr, err := a.redisCache.Get(ctx, a.globalParams.logsLifespanCacheKey); err == nil {
+	cacheKey := "logs_lifespan"
+	if resStr, err := a.redisCache.Get(ctx, cacheKey); err == nil {
 		res := 0
 		res, err = strconv.Atoi(resStr)
 		if err == nil {
@@ -64,7 +65,7 @@ func (a *API) serveGetLogsLifespan(w http.ResponseWriter, r *http.Request) {
 
 	res := int(a.nowFn().Sub(clientStatus.OldestStorageTime.AsTime()) / lifespan.MeasureUnit)
 
-	err = a.redisCache.SetWithTTL(ctx, a.globalParams.logsLifespanCacheKey, strconv.Itoa(res), a.globalParams.logsLifespanCacheTTL)
+	err = a.redisCache.SetWithTTL(ctx, cacheKey, strconv.Itoa(res), a.globalParams.logsLifespanCacheTTL)
 	if err != nil {
 		logger.Error("can't set logs lifespan to cache", zap.Error(err))
 	}

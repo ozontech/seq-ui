@@ -30,7 +30,8 @@ func (a *API) GetLogsLifespan(ctx context.Context, _ *seqapi.GetLogsLifespanRequ
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if countStr, err := a.redisCache.Get(ctx, a.globalParams.logsLifespanCacheKey); err == nil {
+	cacheKey := "logs_lifespan"
+	if countStr, err := a.redisCache.Get(ctx, cacheKey); err == nil {
 		count := 0
 		count, err = strconv.Atoi(countStr)
 		if err == nil {
@@ -56,7 +57,7 @@ func (a *API) GetLogsLifespan(ctx context.Context, _ *seqapi.GetLogsLifespanRequ
 	count := int(a.nowFn().Sub(clientStatus.OldestStorageTime.AsTime()) / lifespan.MeasureUnit)
 	res := time.Duration(count) * lifespan.MeasureUnit
 
-	err = a.redisCache.SetWithTTL(ctx, a.globalParams.logsLifespanCacheKey, strconv.Itoa(count), a.globalParams.logsLifespanCacheTTL)
+	err = a.redisCache.SetWithTTL(ctx, cacheKey, strconv.Itoa(count), a.globalParams.logsLifespanCacheTTL)
 	if err != nil {
 		logger.Error("can't set logs lifespan to cache", zap.Error(err))
 	}

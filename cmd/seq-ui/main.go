@@ -23,7 +23,7 @@ import (
 	massexport_v1 "github.com/ozontech/seq-ui/internal/api/massexport/v1"
 	seqapi_v1 "github.com/ozontech/seq-ui/internal/api/seqapi/v1"
 	userprofile_v1 "github.com/ozontech/seq-ui/internal/api/userprofile/v1"
-	configloader "github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/loader"
 	config "github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/server"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
@@ -75,7 +75,7 @@ func run(ctx context.Context) {
 		logger.Warn("app uses the default config file, to provide your own config use -config flag")
 	}
 
-	cfg, err := configloader.FromFile(*configPath)
+	cfg, err := loader.FromFile(*configPath)
 	if err != nil {
 		logger.Fatal("read config file error", zap.Error(err))
 	}
@@ -174,7 +174,7 @@ func initApp(ctx context.Context, cfg config.Config, caches map[string]cache.Cac
 		repo := repositorych.New(chClients[cfg.Handlers.ErrorGroups.CHID], chCfg.Sharded, cfg.Handlers.ErrorGroups.QueryFilter)
 		svc := errorgroups.New(repo, cfg.Handlers.ErrorGroups.LogTagsMapping)
 
-		errorGroupsV1 = errorgroups_v1.New(svc)
+		errorGroupsV1 = errorgroups_v1.New(svc, chClients)
 	}
 
 	return api.NewRegistrar(seqApiV1, userProfileV1, dashboardsV1, massExportV1, errorGroupsV1)

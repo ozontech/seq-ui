@@ -49,15 +49,7 @@ func NewOIDCProvider(ctx context.Context, cfg *config.OIDC, oidcCache cache.Cach
 	)
 
 	if !cfg.SkipVerify {
-		oidcCtx, err = newHTTPContext(
-			context.Background(),
-			httpContextCfg{
-				rootCA:        cfg.RootCA,
-				caCert:        cfg.CACert,
-				privateKey:    cfg.PrivateKey,
-				sslSkipVerify: cfg.SSLSkipVerify,
-			},
-		)
+		oidcCtx, err = newHTTPContext(context.Background(), cfg.TLS)
 		if err != nil {
 			return nil, err
 		}
@@ -176,24 +168,24 @@ type httpContextCfg struct {
 	sslSkipVerify bool
 }
 
-func newHTTPContext(ctx context.Context, conf httpContextCfg) (context.Context, error) {
+func newHTTPContext(ctx context.Context, cfg *config.TLS) (context.Context, error) {
 	hc := &http.Client{
 		Timeout: oidcClientTimeout,
 	}
-	if conf.isZero() {
+	if cfg == nil {
 		return oidc.ClientContext(ctx, hc), nil
 	}
 	b := tls.NewConfigBuilder()
-	if conf.sslSkipVerify {
-		b.SetInsecureSkipVerify(conf.sslSkipVerify)
-	} else if !conf.sslSkipVerify && (conf.rootCA != "" || conf.caCert != "" || conf.privateKey != "") {
-		if conf.rootCA != "" {
-			if err := b.AppendCARoot(conf.rootCA); err != nil {
+	if cfg.Insecure {
+		b.SetInsecureSkipVerify(cfg.Insecure)
+	} else if !cfg.Insecure && (cfg.RootCA != "" || cfg.CACert != "" || cfg.PrivateKey != "") {
+		if cfg.RootCA != "" {
+			if err := b.AppendCARoot(cfg.RootCA); err != nil {
 				return nil, fmt.Errorf("can't append CA root: %w", err)
 			}
 		}
-		if conf.caCert != "" || conf.privateKey != "" {
-			if err := b.AppendX509KeyPair(conf.caCert, conf.privateKey); err != nil {
+		if cfg.CACert != "" || cfg.PrivateKey != "" {
+			if err := b.AppendX509KeyPair(cfg.CACert, cfg.PrivateKey); err != nil {
 				return nil, fmt.Errorf("can't append key pair: %w", err)
 			}
 		}

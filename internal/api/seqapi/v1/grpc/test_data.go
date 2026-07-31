@@ -18,6 +18,10 @@ var (
 )
 
 func setupTestAPI(data test.APITestData) *API {
+	if len(data.Cfg.Envs) == 0 && data.Cfg.SeqDBID == "" {
+		data.Cfg.SeqDBID = config.DefaultSeqDBClientID
+	}
+
 	seqDBClients := make(map[string]seqdb.Client)
 	seqDBClients[config.DefaultSeqDBClientID] = data.Mocks.SeqDB
 

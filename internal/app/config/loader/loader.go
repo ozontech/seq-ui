@@ -1,4 +1,4 @@
-package config
+package loader
 
 import (
 	"bytes"
@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	previousVersion = 1
-	currentVersion  = 2
+	V1 = 1
+	V2 = 2
 )
 
 type configMeta struct {
@@ -35,13 +35,13 @@ func FromFile(cfgPath string) (v2.Config, error) {
 
 	cfg := v2.Config{}
 	switch {
-	case meta.Version == nil || *meta.Version == previousVersion:
+	case meta.Version == nil || *meta.Version == V1:
 		cfgV1, err := parse[v1.Config](cfgBytes, true)
 		if err != nil {
 			return v2.Config{}, err
 		}
 		cfg = migrate.V1ToV2(cfgV1)
-	case *meta.Version == currentVersion:
+	case *meta.Version == V2:
 		cfg, err = parse[v2.Config](cfgBytes, true)
 		if err != nil {
 			return v2.Config{}, err
@@ -57,13 +57,24 @@ func FromFile(cfgPath string) (v2.Config, error) {
 	return cfg, nil
 }
 
+func ReadVersion(cfgBytes []byte) (int, error) {
+	meta, err := parse[configMeta](cfgBytes, false)
+	if err != nil {
+		return 0, err
+	}
+
+	if meta.Version == nil {
+		return V1, nil
+	}
+
+	return *meta.Version, nil
+}
+
 func parse[T any](cfg []byte, strict bool) (T, error) {
 	var result T
 
 	decoder := yaml.NewDecoder(bytes.NewReader(cfg))
-	if strict {
-		decoder.KnownFields(true)
-	}
+	decoder.KnownFields(strict)
 	if err := decoder.Decode(&result); err != nil {
 		return result, fmt.Errorf("error parsing config: %w", err)
 	}

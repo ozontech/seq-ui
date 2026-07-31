@@ -12,7 +12,7 @@ func V1ToV2(src v1.Config) v2.Config {
 	dst.Cache = migrateCache(src.Server)
 	dst.Clients = migrateClients(src)
 	dst.DB = migrateDB(src.Server)
-	dst.Handlers = migrateHandlers(src.Handlers, &dst)
+	dst.Handlers = migrateHandlers(src.Handlers, &dst, src.Server.Cache)
 
 	return dst
 }
@@ -37,18 +37,19 @@ func migrateServer(src *v1.Server) *v2.Server {
 	}
 
 	if src.OIDC != nil {
-		dst.Auth = &v2.Auth{
-			OIDC: &v2.OIDC{
-				SkipVerify:     src.OIDC.SkipVerify,
-				AuthURLs:       src.OIDC.AuthURLs,
-				RootCA:         src.OIDC.RootCA,
-				CACert:         src.OIDC.CACert,
-				PrivateKey:     src.OIDC.PrivateKey,
-				SSLSkipVerify:  src.OIDC.SSLSkipVerify,
-				AllowedClients: src.OIDC.AllowedClients,
-				CacheSecretKey: src.OIDC.CacheSecretKey,
-			},
+		oidc := &v2.OIDC{
+			SkipVerify:     src.OIDC.SkipVerify,
+			AuthURLs:       src.OIDC.AuthURLs,
+			TLS:            migrateTLS(src.OIDC),
+			AllowedClients: src.OIDC.AllowedClients,
 		}
+
+		if src.OIDC.CacheSecretKey != "" {
+			cacheID, _ := defaultCacheIDs(src.Cache)
+			oidc.CacheID = cacheID
+		}
+
+		dst.Auth = &v2.Auth{OIDC: oidc}
 	}
 
 	if src.JWTSecretKey != "" {
@@ -59,6 +60,20 @@ func migrateServer(src *v1.Server) *v2.Server {
 	}
 
 	return dst
+}
+
+func migrateTLS(src *v1.OIDC) *v2.TLS {
+	if src.RootCA == "" && src.CACert == "" &&
+		src.PrivateKey == "" && !src.SSLSkipVerify {
+		return nil
+	}
+
+	return &v2.TLS{
+		RootCA:     src.RootCA,
+		CACert:     src.CACert,
+		PrivateKey: src.PrivateKey,
+		Insecure:   src.SSLSkipVerify,
+	}
 }
 
 func migrateCORS(src *v1.CORS) *v2.CORS {
@@ -134,8 +149,8 @@ func migrateClients(src v1.Config) *v2.Clients {
 	if src.Clients != nil {
 		if len(src.Clients.SeqDB) > 0 {
 			dst.SeqDB = make([]v2.SeqDBClient, 0, len(src.Clients.SeqDB))
-			for _, s := range src.Clients.SeqDB {
-				dst.SeqDB = append(dst.SeqDB, migrateSeqDBClient(s))
+			for i := range src.Clients.SeqDB {
+				dst.SeqDB = append(dst.SeqDB, migrateSeqDBClient(&src.Clients.SeqDB[i]))
 			}
 		} else {
 			dst.SeqDB = []v2.SeqDBClient{{
@@ -169,7 +184,7 @@ func migrateClients(src v1.Config) *v2.Clients {
 	return dst
 }
 
-func migrateSeqDBClient(src v1.SeqDBClient) v2.SeqDBClient {
+func migrateSeqDBClient(src *v1.SeqDBClient) v2.SeqDBClient {
 	return v2.SeqDBClient{
 		ID:                  src.ID,
 		Timeout:             src.Timeout,
@@ -206,15 +221,25 @@ func migrateCache(src *v1.Server) *v2.Cache {
 	}
 
 	cache := &v2.Cache{}
-	cache.Inmemory = append(cache.Inmemory, v2.InmemoryCache{
-		ID:          v2.DefaultInmemCacheID,
-		NumCounters: src.Cache.Inmemory.NumCounters,
-		MaxCost:     src.Cache.Inmemory.MaxCost,
-		BufferItems: src.Cache.Inmemory.BufferItems,
-	})
+
+	if !isInmemEmpty(src.Cache.Inmemory) {
+		cache.Inmemory = append(cache.Inmemory, v2.InmemoryCache{
+			ID:          v2.DefaultInmemCacheID,
+			NumCounters: src.Cache.Inmemory.NumCounters,
+			MaxCost:     src.Cache.Inmemory.MaxCost,
+			BufferItems: src.Cache.Inmemory.BufferItems,
+		})
+	}
 
 	if src.Cache.Redis != nil {
-		cache.Redis = append(cache.Redis, migrateRedis(src.Cache.Redis, v2.DefaultRedisID, v2.DefaultInmemCacheID))
+		if len(cache.Inmemory) > 0 {
+			cache.Redis = append(cache.Redis,
+				migrateRedis(src.Cache.Redis, v2.DefaultRedisID, v2.DefaultInmemCacheID),
+				migrateRedis(src.Cache.Redis, v2.DefaultRedis2ID, ""),
+			)
+		} else {
+			cache.Redis = append(cache.Redis, migrateRedis(src.Cache.Redis, v2.DefaultRedisID, ""))
+		}
 	}
 
 	return cache
@@ -234,13 +259,13 @@ func migrateRedis(src *v1.Redis, id, withInmemID string) v2.Redis {
 	}
 }
 
-func migrateHandlers(src *v1.Handlers, cfg *v2.Config) *v2.Handlers {
+func migrateHandlers(src *v1.Handlers, cfg *v2.Config, v1Cache v1.Cache) *v2.Handlers {
 	if src == nil {
 		return &v2.Handlers{}
 	}
 
 	dst := &v2.Handlers{
-		SeqAPI:      migrateSeqAPI(src.SeqAPI),
+		SeqAPI:      migrateSeqAPI(src.SeqAPI, v1Cache),
 		ErrorGroups: migrateErrorGroups(src.ErrorGroups),
 		AsyncSearch: migrateAsyncSearch(src.AsyncSearch),
 	}
@@ -252,10 +277,17 @@ func migrateHandlers(src *v1.Handlers, cfg *v2.Config) *v2.Handlers {
 	return dst
 }
 
-func migrateSeqAPI(src v1.SeqAPI) v2.SeqAPI {
+func migrateSeqAPI(src v1.SeqAPI, v1Cache v1.Cache) v2.SeqAPI {
+	cacheID, redisID := defaultCacheIDs(v1Cache)
 	dst := v2.SeqAPI{
+		CacheID:    cacheID,
+		RedisID:    redisID,
 		Envs:       migrateSeqAPIEnvs(src.Envs),
 		DefaultEnv: src.DefaultEnv,
+	}
+
+	if len(src.Envs) == 0 {
+		dst.SeqDBID = v2.DefaultSeqDBClientID
 	}
 
 	if src.SeqAPIOptions != nil {
@@ -292,7 +324,6 @@ func migrateSeqAPIOptionsToGlobal(options *v1.SeqAPIOptions) v2.SeqAPIGlobalOpti
 		EventsCacheTTL:       options.EventsCacheTTL,
 		PinnedFields:         migrateFields(options.PinnedFields),
 		SystemFields:         migrateFields(options.SystemFields),
-		LogsLifespanCacheKey: options.LogsLifespanCacheKey,
 		LogsLifespanCacheTTL: options.LogsLifespanCacheTTL,
 		FieldsCacheTTL:       options.FieldsCacheTTL,
 		Masking:              migrateMasking(options.Masking),
@@ -346,7 +377,8 @@ func migrateMasks(ms []v1.Mask) []v2.Mask {
 	}
 
 	dst := make([]v2.Mask, len(ms))
-	for i, m := range ms {
+	for i := range ms {
+		m := &ms[i]
 		dst[i] = v2.Mask{
 			Re:            m.Re,
 			Groups:        m.Groups,
@@ -385,6 +417,10 @@ func migrateFieldFilters(src *v1.FieldFilterSet) *v2.FieldFilterSet {
 }
 
 func migrateErrorGroups(eg v1.ErrorGroups) *v2.ErrorGroups {
+	if isEgEmpty(eg) {
+		return nil
+	}
+
 	return &v2.ErrorGroups{
 		CHID: v2.DefaultCHClientID,
 		LogTagsMapping: v2.LogTagsMapping{
@@ -398,6 +434,7 @@ func migrateErrorGroups(eg v1.ErrorGroups) *v2.ErrorGroups {
 
 func migrateAsyncSearch(a v1.AsyncSearch) v2.AsyncSearch {
 	return v2.AsyncSearch{
+		SeqDBID:              v2.DefaultSeqDBClientID,
 		AdminUsers:           a.AdminUsers,
 		ListQueryLengthLimit: a.ListQueryLengthLimit,
 	}
@@ -405,6 +442,7 @@ func migrateAsyncSearch(a v1.AsyncSearch) v2.AsyncSearch {
 
 func migrateMassExport(me *v1.MassExport, cfg *v2.Config) *v2.MassExport {
 	dst := &v2.MassExport{
+		SeqDBID:          v2.DefaultSeqDBClientID,
 		BatchSize:        me.BatchSize,
 		WorkersCount:     me.WorkersCount,
 		TasksChannelSize: me.TasksChannelSize,
@@ -456,4 +494,29 @@ func migrateDownloadParams(src *v1.SeqProxyDownloader) *v2.DownloadParams {
 		InitialRetryBackoff: src.InitialRetryBackoff,
 		MaxRetryBackoff:     src.MaxRetryBackoff,
 	}
+}
+
+func defaultCacheIDs(src v1.Cache) (cacheID, redisID string) {
+	hasInmem := !isInmemEmpty(src.Inmemory)
+	hasRedis := src.Redis != nil
+
+	switch {
+	case hasInmem && hasRedis:
+		return v2.DefaultRedisID, v2.DefaultRedis2ID
+	case hasRedis:
+		return v2.DefaultRedisID, v2.DefaultRedisID
+	case hasInmem:
+		return v2.DefaultInmemCacheID, ""
+	default:
+		return "", ""
+	}
+}
+
+func isInmemEmpty(src v1.InmemoryCache) bool {
+	return src.BufferItems == 0 && src.MaxCost == 0 && src.NumCounters == 0
+}
+
+func isEgEmpty(src v1.ErrorGroups) bool {
+	return len(src.LogTagsMapping.Env) == 0 && len(src.LogTagsMapping.Service) == 0 &&
+		len(src.LogTagsMapping.Release) == 0 && len(src.QueryFilter) == 0
 }
