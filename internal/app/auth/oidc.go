@@ -161,13 +161,6 @@ func (p *oidcProvider) checkClients(clients []string) error {
 	return fmt.Errorf("no allowed client found (clients: %v; allowed clients: %v)", clients, p.allowedClients)
 }
 
-type httpContextCfg struct {
-	rootCA        string
-	caCert        string
-	privateKey    string
-	sslSkipVerify bool
-}
-
 func newHTTPContext(ctx context.Context, cfg *config.TLS) (context.Context, error) {
 	hc := &http.Client{
 		Timeout: oidcClientTimeout,
@@ -194,10 +187,6 @@ func newHTTPContext(ctx context.Context, cfg *config.TLS) (context.Context, erro
 		TLSClientConfig: b.Build(),
 	}
 	return oidc.ClientContext(ctx, hc), nil
-}
-
-func (c httpContextCfg) isZero() bool {
-	return c.rootCA == "" && c.caCert == "" && c.privateKey == "" && !c.sslSkipVerify
 }
 
 func hashToken(token, secret string) string {
