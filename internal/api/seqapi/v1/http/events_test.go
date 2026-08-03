@@ -367,7 +367,7 @@ func TestGetEventWithMasking(t *testing.T) {
 	}
 
 	eventsData := make([]eventData, 0, len(tests))
-	for i := 0; i < len(tests); i++ {
+	for i := range tests {
 		eventsData = append(eventsData, formEventData(i, tests[i].shouldMask))
 	}
 

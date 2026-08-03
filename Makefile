@@ -138,6 +138,10 @@ mock:
 		-destination=internal/pkg/service/massexport/mock/service.go \
 		github.com/ozontech/seq-ui/internal/pkg/service/massexport \
 		Service
+	PATH="$(LOCAL_BIN):$(PATH)" mockgen \
+		-destination=internal/pkg/service/admin/mock/service.go \
+		github.com/ozontech/seq-ui/internal/pkg/service/admin \
+		Service
 
 .PHONY: protoc
 protoc:

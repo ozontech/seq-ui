@@ -18,7 +18,7 @@ import (
 // serveGetAggregation go doc.
 //
 //	@Router		/seqapi/v1/aggregation [post]
-//	@ID			seqapi_v1_getAggregation
+//	@ID			seqapi_v1_get_aggregation
 //	@Tags		seqapi_v1
 //	@Accept		json
 //	@Produce	json

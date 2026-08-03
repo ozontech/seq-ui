@@ -61,3 +61,23 @@ func (p *pool) exec(ctx context.Context, metricLabels []string, query string, ar
 
 	return tag, err
 }
+
+func (p *pool) execTx(ctx context.Context, tx pgx.Tx, metricLabels []string, query string, args ...any) (pgconn.CommandTag, error) {
+	metric.RepositoryRequestSent.WithLabelValues(metricLabels...).Inc()
+	start := time.Now()
+	tag, err := tx.Exec(ctx, query, args...)
+	took := time.Since(start)
+	metric.RepositoryRequestDuration.WithLabelValues(metricLabels...).Observe(took.Seconds())
+
+	return tag, err
+}
+
+func (p *pool) queryRowTx(ctx context.Context, tx pgx.Tx, metricLabels []string, query string, args ...any) pgx.Row {
+	metric.RepositoryRequestSent.WithLabelValues(metricLabels...).Inc()
+	start := time.Now()
+	row := tx.QueryRow(ctx, query, args...)
+	took := time.Since(start)
+	metric.RepositoryRequestDuration.WithLabelValues(metricLabels...).Observe(took.Seconds())
+
+	return row
+}

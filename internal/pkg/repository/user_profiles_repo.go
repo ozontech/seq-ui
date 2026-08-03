@@ -26,7 +26,9 @@ func (r *userProfilesRepository) GetOrCreate(ctx context.Context, req types.GetO
 		UserName: req.UserName,
 	}
 
-	query, args := "SELECT id, timezone, onboarding_version, log_columns FROM user_profiles WHERE user_name = $1 LIMIT 1",
+	query, args := `SELECT up.id, up.timezone, up.onboarding_version, up.log_columns,
+	COALESCE((SELECT array_agg(role_id) FROM users_roles WHERE user_id = up.id), '{}') AS role_ids
+	FROM user_profiles up WHERE user_name=$1`,
 		[]any{req.UserName}
 
 	metricLabelsSelect := []string{"user_profiles", "SELECT"}
@@ -36,6 +38,7 @@ func (r *userProfilesRepository) GetOrCreate(ctx context.Context, req types.GetO
 		&userProfile.Timezone,
 		&userProfile.OnboardingVersion,
 		&logColumns,
+		&userProfile.RoleIDs,
 	)
 
 	// create user profile if it doesn't exist
@@ -46,13 +49,13 @@ func (r *userProfilesRepository) GetOrCreate(ctx context.Context, req types.GetO
 		metricLabelsInsert := []string{"user_profiles", "INSERT"}
 		if err = r.queryRow(ctx, metricLabelsInsert, query, args...).Scan(&userProfile.ID); err != nil {
 			incErrorMetric(err, metricLabelsInsert)
-			return userProfile, fmt.Errorf("failed to create user profile: %w", err)
+			return userProfile, fmt.Errorf("failed to create user profile %q: %w", req.UserName, err)
 		}
 		return userProfile, nil
 	}
 	if err != nil {
 		incErrorMetric(err, metricLabelsSelect)
-		return userProfile, fmt.Errorf("failed to get user profile: %w", err)
+		return userProfile, fmt.Errorf("failed to get user profile %q: %w", req.UserName, err)
 	}
 
 	err = json.Unmarshal([]byte(logColumns), &userProfile.LogColumns.LogColumns)

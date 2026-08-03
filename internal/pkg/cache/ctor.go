@@ -10,6 +10,14 @@ import (
 	"github.com/ozontech/seq-ui/logger"
 )
 
+func NewRedis(ctx context.Context, cfg *config.Redis) (Cache, error) {
+	if cfg == nil {
+		return nil, nil
+	}
+
+	return newRedisCache(ctx, cfg)
+}
+
 func NewInmemoryWithRedisOrInmemory(ctx context.Context, cfg config.Cache) (Cache, error) {
 	return newRedisBasedOrInmemory(ctx, cfg, true)
 }

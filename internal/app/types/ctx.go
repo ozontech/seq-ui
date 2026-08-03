@@ -5,29 +5,23 @@ import (
 	"errors"
 )
 
-var (
-	ErrUnauthenticated     = errors.New("unauthenticated")
-	ErrBadUserKeyValueType = errors.New("invalid JWT token")
-)
+var ErrUnauthenticated = errors.New("unauthenticated")
 
 type UserKey struct{}
 
+// SetUserKey returns a new context with the username.
+func SetUserKey(ctx context.Context, username string) context.Context {
+	return context.WithValue(ctx, UserKey{}, username)
+}
+
 // GetUserKey returns username from context.
 func GetUserKey(ctx context.Context) (string, error) {
-	userStr := ""
 	userVal := ctx.Value(UserKey{})
-
 	if userVal == nil {
 		return "", ErrUnauthenticated
 	}
 
-	userStr, ok := userVal.(string)
-	// foolproof.
-	if !ok {
-		return "", ErrBadUserKeyValueType
-	}
-
-	return userStr, nil
+	return userVal.(string), nil
 }
 
 type UseSeqQL struct{}
