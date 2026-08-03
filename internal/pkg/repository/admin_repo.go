@@ -161,25 +161,26 @@ func (r *adminRepository) UpdateRole(ctx context.Context, req types.UpdateRoleRe
 func (r *adminRepository) DeleteRole(ctx context.Context, req types.DeleteRoleRequest) error {
 	return r.txManager.Do(ctx, func(tx pgx.Tx) error {
 		if req.ReplacementRoleID != nil {
-			metricLabels := []string{"users_roles", "UPDATE"}
-			query, args := "UPDATE users_roles SET role_id=$1 WHERE role_id=$2", []any{*req.ReplacementRoleID, req.RoleID}
+			metricLabels := []string{"users_roles", "INSERT"}
+			query, args := `INSERT INTO users_roles (user_id, role_id)
+			SELECT user_id, $1 FROM users_roles WHERE role_id=$2 ON CONFLICT DO NOTHING`, []any{*req.ReplacementRoleID, req.RoleID}
 
 			if _, err := r.pool.execTx(ctx, tx, metricLabels, query, args...); err != nil {
 				incErrorMetric(err, metricLabels)
 				return fmt.Errorf("failed to reassign users: %w", err)
 			}
-		} else {
-			metricLabels := []string{"users_roles", "DELETE"}
-			query, args := "DELETE FROM users_roles WHERE role_id=$1", []any{req.RoleID}
-
-			if _, err := r.pool.execTx(ctx, tx, metricLabels, query, args...); err != nil {
-				incErrorMetric(err, metricLabels)
-				return fmt.Errorf("failed to remove users from role: %w", err)
-			}
 		}
 
-		metricLabels := []string{"roles_permissions", "DELETE"}
-		query, args := "DELETE FROM roles_permissions WHERE role_id=$1", []any{req.RoleID}
+		metricLabels := []string{"users_roles", "DELETE"}
+		query, args := "DELETE FROM users_roles WHERE role_id=$1", []any{req.RoleID}
+
+		if _, err := r.pool.execTx(ctx, tx, metricLabels, query, args...); err != nil {
+			incErrorMetric(err, metricLabels)
+			return fmt.Errorf("failed to remove users from role: %w", err)
+		}
+
+		metricLabels = []string{"roles_permissions", "DELETE"}
+		query, args = "DELETE FROM roles_permissions WHERE role_id=$1", []any{req.RoleID}
 
 		if _, err := r.pool.execTx(ctx, tx, metricLabels, query, args...); err != nil {
 			incErrorMetric(err, metricLabels)

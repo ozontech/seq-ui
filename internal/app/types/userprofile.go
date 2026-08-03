@@ -15,7 +15,7 @@ type UserProfile struct {
 	Timezone          string     `json:"timezone"`
 	OnboardingVersion string     `json:"onboarding_version"`
 	LogColumns        LogColumns `json:"log_columns"`
-	RoleID            *int32     `json:"role_id"`
+	RoleIDs           []int32    `json:"role_ids"`
 }
 
 func (up UserProfile) ToProto() *userprofile.GetUserProfileResponse {
@@ -23,7 +23,7 @@ func (up UserProfile) ToProto() *userprofile.GetUserProfileResponse {
 		Timezone:          up.Timezone,
 		OnboardingVersion: up.OnboardingVersion,
 		LogColumns:        &userprofile.LogColumns{LogColumns: up.LogColumns.LogColumns},
-		RoleId:            up.RoleID,
+		RoleIds:           up.RoleIDs,
 	}
 }
 

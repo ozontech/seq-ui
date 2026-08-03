@@ -3619,8 +3619,11 @@
                 "onboardingVersion": {
                     "type": "string"
                 },
-                "role_id": {
-                    "type": "integer"
+                "role_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "timezone": {
                     "type": "string"
