@@ -15,7 +15,7 @@ func TestLimiter(t *testing.T) {
 	// check nil channel
 	l.Fill(user)
 
-	for i := 0; i < maxTokens; i++ {
+	for range maxTokens {
 		require.Equal(t, false, l.Limited(user))
 	}
 	require.Equal(t, true, l.Limited(user))
@@ -23,7 +23,7 @@ func TestLimiter(t *testing.T) {
 	l.Fill(user)
 	require.Equal(t, false, l.Limited(user))
 
-	for i := 0; i < maxTokens; i++ {
+	for range maxTokens {
 		l.Fill(user)
 	}
 

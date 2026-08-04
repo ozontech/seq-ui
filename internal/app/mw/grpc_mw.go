@@ -163,7 +163,7 @@ func GRPCAuthInterceptor(providers *AuthProviders) grpc.UnaryServerInterceptor {
 			logger.Error("token auth failed", zap.Error(err))
 			return nil, errUnauth
 		}
-		ctx = context.WithValue(ctx, types.UserKey{}, userName)
+		ctx = types.SetUserKey(ctx, userName)
 
 		return h(ctx, req)
 	}

@@ -15,7 +15,7 @@ func ProcessError(w *Writer, err error) {
 	switch {
 	case err == nil:
 		return
-	case errors.Is(err, types.ErrUnauthenticated) || errors.Is(err, types.ErrBadUserKeyValueType):
+	case errors.Is(err, types.ErrUnauthenticated):
 		w.Error(err, http.StatusUnauthorized)
 	case errors.Is(err, types.ErrEmptyUpdateRequest) || errors.Is(err, types.ErrInvalidRequestField):
 		w.Error(err, http.StatusBadRequest)

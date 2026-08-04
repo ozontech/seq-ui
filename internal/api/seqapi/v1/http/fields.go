@@ -92,7 +92,7 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 // serveGetPinnedFields go doc.
 //
 //	@Router		/seqapi/v1/fields/pinned [get]
-//	@ID			seqapi_v1_getPinnedFields
+//	@ID			seqapi_v1_get_pinned_fields
 //	@Tags		seqapi_v1
 //	@Param		env		query		string				false	"Environment"
 //	@Success	200		{object}	getFieldsResponse	"A successful response"

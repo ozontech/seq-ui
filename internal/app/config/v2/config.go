@@ -245,6 +245,8 @@ const (
 
 	defaultLogsLifespanCacheTTL = 10 * time.Minute
 
+	defaultAdminCacheTTL = time.Hour
+
 	defaultClickHouseDialTimeout = 5 * time.Second
 	defaultClickHouseReadTimeout = 30 * time.Second
 )
@@ -334,6 +336,7 @@ type Redis struct {
 	MaxRetries      int           `yaml:"max_retries"`
 	MinRetryBackoff time.Duration `yaml:"min_retry_backoff"`
 	MaxRetryBackoff time.Duration `yaml:"max_retry_backoff"`
+	KeyPrefix       string        `yaml:"key_prefix"`
 }
 
 type Cache struct {
@@ -501,7 +504,14 @@ type Handlers struct {
 	SeqAPI      SeqAPI       `yaml:"seq_api"`
 	ErrorGroups *ErrorGroups `yaml:"error_groups"`
 	MassExport  *MassExport  `yaml:"mass_export"`
+	Admin       *Admin       `yaml:"admin"`
 	AsyncSearch AsyncSearch  `yaml:"async_search"`
+}
+
+type Admin struct {
+	RedisID    string        `yaml:"redis_id"`
+	SuperUsers []string      `yaml:"super_users"`
+	CacheTTL   time.Duration `yaml:"cache_ttl"`
 }
 
 type Field struct {
@@ -840,6 +850,22 @@ func Normalize(cfg *Config) error {
 		case hasCacheID && hasCacheKey:
 			if cfg.Cache.InmemByID(oidc.CacheID) == nil && cfg.Cache.RedisByID(oidc.CacheID) == nil {
 				return fmt.Errorf("auth.oidc.cache_id %q not found", oidc.CacheID)
+			}
+		}
+	}
+
+	if cfg.Handlers.Admin != nil {
+		if cfg.Handlers.Admin.CacheTTL <= 0 {
+			cfg.Handlers.Admin.CacheTTL = defaultAdminCacheTTL
+		}
+
+		if cfg.Handlers.Admin.RedisID != "" {
+			redisCfg := cfg.Cache.RedisByID(cfg.Handlers.Admin.RedisID)
+			if redisCfg == nil {
+				return fmt.Errorf("unknown handlers.admin.redis_id %q", cfg.Handlers.Admin.RedisID)
+			}
+			if redisCfg.WithInmemID != "" {
+				return fmt.Errorf("handlers.admin.redis_id %q: with_inmem_id is not allowed", cfg.Handlers.Admin.RedisID)
 			}
 		}
 	}

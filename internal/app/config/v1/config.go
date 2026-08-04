@@ -294,6 +294,7 @@ type Redis struct {
 	MaxRetries      int           `yaml:"max_retries"`
 	MinRetryBackoff time.Duration `yaml:"min_retry_backoff"`
 	MaxRetryBackoff time.Duration `yaml:"max_retry_backoff"`
+	KeyPrefix       string        `yaml:"key_prefix"`
 }
 
 type Cache struct {
@@ -397,6 +398,7 @@ type Handlers struct {
 	ErrorGroups ErrorGroups `yaml:"error_groups"`
 	MassExport  *MassExport `yaml:"mass_export"`
 	AsyncSearch AsyncSearch `yaml:"async_search"`
+	Admin       *Admin      `yaml:"admin"`
 }
 
 type Field struct {
@@ -476,4 +478,9 @@ type ErrorGroups struct {
 type AsyncSearch struct {
 	AdminUsers           []string `yaml:"admin_users"`
 	ListQueryLengthLimit int      `yaml:"list_query_length_limit"`
+}
+
+type Admin struct {
+	SuperUsers []string      `yaml:"super_users"`
+	CacheTTL   time.Duration `yaml:"cache_ttl"`
 }

@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/ozontech/seq-ui/internal/api"
+	admin_v1 "github.com/ozontech/seq-ui/internal/api/admin/v1"
 	dashboards_v1 "github.com/ozontech/seq-ui/internal/api/dashboards/v1"
 	errorgroups_v1 "github.com/ozontech/seq-ui/internal/api/errorgroups/v1"
 	massexport_v1 "github.com/ozontech/seq-ui/internal/api/massexport/v1"
@@ -30,6 +31,7 @@ import (
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	"github.com/ozontech/seq-ui/internal/pkg/repository"
 	repositorych "github.com/ozontech/seq-ui/internal/pkg/repository_ch"
+	"github.com/ozontech/seq-ui/internal/pkg/service/admin"
 	asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches"
 	"github.com/ozontech/seq-ui/internal/pkg/service/dashboards"
 	"github.com/ozontech/seq-ui/internal/pkg/service/errorgroups"
@@ -148,6 +150,7 @@ func initApp(ctx context.Context, cfg config.Config, caches map[string]cache.Cac
 	}
 
 	var (
+		adminV1              *admin_v1.Admin
 		asyncSearchesService asyncsearches.Service
 		userProfileV1        *userprofile_v1.UserProfile
 		dashboardsV1         *dashboards_v1.Dashboards
@@ -162,6 +165,18 @@ func initApp(ctx context.Context, cfg config.Config, caches map[string]cache.Cac
 		dashboardsV1 = dashboards_v1.New(dashboardsSvc)
 
 		asyncSearchesService = asyncsearches.New(ctx, repo, seqDBClients[cfg.Handlers.AsyncSearch.SeqDBID], cfg.Handlers.AsyncSearch)
+
+		if cfg.Handlers.Admin != nil {
+			logger.Info("initializing redis admin cache")
+
+			adminCache := caches[cfg.Handlers.Admin.RedisID]
+			if adminCache == nil {
+				logger.Info("redis cache config is not set, admin will run without cache")
+			}
+
+			adminSvc := admin.New(repo.Admin, repo.UserProfiles, adminCache, cfg.Handlers.Admin)
+			adminV1 = admin_v1.New(adminSvc)
+		}
 	}
 
 	seqApiCache := caches[cfg.Handlers.SeqAPI.CacheID]
@@ -177,7 +192,7 @@ func initApp(ctx context.Context, cfg config.Config, caches map[string]cache.Cac
 		errorGroupsV1 = errorgroups_v1.New(svc, chClients)
 	}
 
-	return api.NewRegistrar(seqApiV1, userProfileV1, dashboardsV1, massExportV1, errorGroupsV1)
+	return api.NewRegistrar(adminV1, seqApiV1, userProfileV1, dashboardsV1, massExportV1, errorGroupsV1)
 }
 
 func initSeqDBClients(ctx context.Context, cfg config.Config) (map[string]seqdb.Client, error) {
@@ -204,9 +219,8 @@ func createSeqBDClient(ctx context.Context, cfg *config.SeqDBClient, seqAPI *con
 		}
 	}
 	clientMaxRecvMsgSize := cfg.AvgDocSize * 1024 * maxSearchLimit
-	if clientMaxRecvMsgSize < defaultClientMaxRecvMsgSize {
-		clientMaxRecvMsgSize = defaultClientMaxRecvMsgSize
-	}
+	clientMaxRecvMsgSize = max(clientMaxRecvMsgSize, defaultClientMaxRecvMsgSize)
+
 	clientParams := seqdb.ClientParams{
 		Addrs:               cfg.Addrs,
 		Timeout:             cfg.Timeout,

@@ -71,8 +71,8 @@ func New(ctx context.Context, inmemCfg *config.InmemoryCache, redisCfg *config.R
 }
 
 func hasWithInmem(inmemID string, redisCfgs []config.Redis) bool {
-	for _, r := range redisCfgs {
-		if r.WithInmemID == inmemID {
+	for i := range redisCfgs {
+		if redisCfgs[i].WithInmemID == inmemID {
 			return true
 		}
 	}
