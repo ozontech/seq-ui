@@ -10,6 +10,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"go.uber.org/zap"
 
+	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/app/config"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
@@ -33,6 +34,7 @@ type Service interface {
 	CancelAsyncSearch(context.Context, *seqapi.CancelAsyncSearchRequest) (*seqapi.CancelAsyncSearchResponse, error)
 	FetchAsyncSearchResult(context.Context, *seqapi.FetchAsyncSearchResultRequest) (*seqapi.FetchAsyncSearchResultResponse, error)
 	GetAsyncSearchesList(context.Context, *seqapi.GetAsyncSearchesListRequest) (*seqapi.GetAsyncSearchesListResponse, error)
+	ExportAsyncSearch(context.Context, *seqapi.ExportAsyncSearchRequest, *httputil.ChunkedWriter) error
 }
 
 type service struct {
@@ -158,6 +160,13 @@ func (s *service) FetchAsyncSearchResult(ctx context.Context, req *seqapi.FetchA
 	resp.Meta = searchInfo.Meta
 
 	return resp, nil
+}
+
+func (s *service) ExportAsyncSearch(ctx context.Context, req *seqapi.ExportAsyncSearchRequest, cw *httputil.ChunkedWriter) error {
+	if err := s.seqDB.ExportAsyncSearch(ctx, req, cw); err != nil {
+		return fmt.Errorf("failed to export async search: %w", err)
+	}
+	return nil
 }
 
 func (s *service) GetAsyncSearchesList(ctx context.Context, req *seqapi.GetAsyncSearchesListRequest) (*seqapi.GetAsyncSearchesListResponse, error) {

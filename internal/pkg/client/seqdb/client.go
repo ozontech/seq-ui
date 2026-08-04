@@ -17,6 +17,7 @@ type Client interface {
 	Search(context.Context, *seqapi.SearchRequest) (*seqapi.SearchResponse, error)
 	Status(context.Context, *seqapi.StatusRequest) (*seqapi.StatusResponse, error)
 	Export(context.Context, *seqapi.ExportRequest, *httputil.ChunkedWriter) error
+	ExportAsyncSearch(context.Context, *seqapi.ExportAsyncSearchRequest, *httputil.ChunkedWriter) error
 	StartAsyncSearch(context.Context, *seqapi.StartAsyncSearchRequest) (*seqapi.StartAsyncSearchResponse, error)
 	FetchAsyncSearchResult(context.Context, *seqapi.FetchAsyncSearchResultRequest) (*seqapi.FetchAsyncSearchResultResponse, error)
 	GetAsyncSearchesList(context.Context, *seqapi.GetAsyncSearchesListRequest, []string) (*seqapi.GetAsyncSearchesListResponse, error)
