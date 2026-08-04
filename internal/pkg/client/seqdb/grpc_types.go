@@ -316,6 +316,14 @@ func newProxyExportReq(req *seqapi.ExportRequest) *seqproxyapi.ExportRequest {
 	}
 }
 
+func newProxyExportAsyncSearchReq(req *seqapi.ExportAsyncSearchRequest) *seqproxyapi.ExportAsyncSearchRequest {
+	return &seqproxyapi.ExportAsyncSearchRequest{
+		SearchId: req.SearchId,
+		Size:     int64(req.Limit),
+		Offset:   int64(req.Offset),
+	}
+}
+
 func asyncSearchStatusToProto(s seqproxyapi.AsyncSearchStatus) seqapi.AsyncSearchStatus {
 	switch s {
 	case seqproxyapi.AsyncSearchStatus_AsyncSearchStatusInProgress:
