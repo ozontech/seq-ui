@@ -46,7 +46,7 @@ func (s *Server) init(ctx context.Context, registrar *api.Registrar) error {
 
 	err = s.prepareDebugServer(ctx)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	return nil

@@ -142,7 +142,7 @@ func initApp(ctx context.Context, cfg config.Config, caches map[string]cache.Cac
 		me := cfg.Handlers.MassExport
 		redisCfg := cfg.Cache.RedisByID(me.SessionStore.RedisID)
 
-		exportServer, err := initExportService(ctx, *me, redisCfg, seqDBClients[cfg.Handlers.MassExport.SeqDBID])
+		exportServer, err := initExportService(ctx, *me, redisCfg, seqDBClients[me.SeqDBID])
 		if err != nil {
 			logger.Fatal("can't init export server", zap.Error(err))
 		}
@@ -239,6 +239,7 @@ func createSeqBDClient(ctx context.Context, cfg *config.SeqDBClient, seqAPI *con
 
 	return seqdb.NewGRPCClient(ctx, clientParams)
 }
+
 func initDb(ctx context.Context, cfg *config.DB) (*pgxpool.Pool, error) {
 	if cfg == nil {
 		logger.Warn("db config is nil, running without db")

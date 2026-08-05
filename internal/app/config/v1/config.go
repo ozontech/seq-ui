@@ -57,6 +57,7 @@ import (
 //       max_retries:
 //       min_retry_backoff:
 //       max_retry_backoff:
+//       key_prefix:
 //   db:
 //     name:
 //     host:

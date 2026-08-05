@@ -100,12 +100,7 @@ func migrateApiRateLimiters(src v1.ApiToRateLimiters) v2.ApiToRateLimiters {
 	dst := make(v2.ApiToRateLimiters, len(src))
 	for api, rl := range src {
 		dst[api] = v2.ApiRateLimiters{
-			Default: v2.RateLimiter{
-				RatePerSec:   rl.Default.RatePerSec,
-				MaxBurst:     rl.Default.MaxBurst,
-				StoreMaxKeys: rl.Default.StoreMaxKeys,
-				PerHandler:   rl.Default.PerHandler,
-			},
+			Default:      migrateRateLimiter(rl.Default),
 			SpecialUsers: migrateUserToRateLimiter(rl.SpecialUsers),
 		}
 	}
@@ -120,15 +115,19 @@ func migrateUserToRateLimiter(src v1.UserToRateLimiter) v2.UserToRateLimiter {
 
 	dst := make(v2.UserToRateLimiter, len(src))
 	for k, rl := range src {
-		dst[k] = v2.RateLimiter{
-			RatePerSec:   rl.RatePerSec,
-			MaxBurst:     rl.MaxBurst,
-			StoreMaxKeys: rl.StoreMaxKeys,
-			PerHandler:   rl.PerHandler,
-		}
+		dst[k] = migrateRateLimiter(rl)
 	}
 
 	return dst
+}
+
+func migrateRateLimiter(src v1.RateLimiter) v2.RateLimiter {
+	return v2.RateLimiter{
+		RatePerSec:   src.RatePerSec,
+		MaxBurst:     src.MaxBurst,
+		StoreMaxKeys: src.StoreMaxKeys,
+		PerHandler:   src.PerHandler,
+	}
 }
 
 func migrateGRPCKeepaliveParams(src *v1.GRPCKeepaliveParams) *v2.GRPCKeepaliveParams {
@@ -256,6 +255,7 @@ func migrateRedis(src *v1.Redis, id, withInmemID string) v2.Redis {
 		MaxRetries:      src.MaxRetries,
 		MinRetryBackoff: src.MinRetryBackoff,
 		MaxRetryBackoff: src.MaxRetryBackoff,
+		KeyPrefix:       src.KeyPrefix,
 	}
 }
 
@@ -268,6 +268,7 @@ func migrateHandlers(src *v1.Handlers, cfg *v2.Config, v1Cache v1.Cache) *v2.Han
 		SeqAPI:      migrateSeqAPI(src.SeqAPI, v1Cache),
 		ErrorGroups: migrateErrorGroups(src.ErrorGroups),
 		AsyncSearch: migrateAsyncSearch(src.AsyncSearch),
+		Admin:       migrateAdmin(src.Admin, v1Cache),
 	}
 
 	if src.MassExport != nil {
@@ -493,6 +494,19 @@ func migrateDownloadParams(src *v1.SeqProxyDownloader) *v2.DownloadParams {
 		Delay:               src.Delay,
 		InitialRetryBackoff: src.InitialRetryBackoff,
 		MaxRetryBackoff:     src.MaxRetryBackoff,
+	}
+}
+
+func migrateAdmin(src *v1.Admin, v1Cache v1.Cache) *v2.Admin {
+	if src == nil {
+		return nil
+	}
+
+	_, redisID := defaultCacheIDs(v1Cache)
+	return &v2.Admin{
+		RedisID:    redisID,
+		SuperUsers: src.SuperUsers,
+		CacheTTL:   src.CacheTTL,
 	}
 }
 

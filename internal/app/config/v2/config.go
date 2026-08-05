@@ -85,7 +85,7 @@ import (
 //     seq_db_id:
 //     cache_id:
 //     redis_id:
-//   	global_options:
+//     global_options:
 //       events_cache_ttl:
 //       pinned_fields:
 //         name:
@@ -176,6 +176,10 @@ import (
 //     default_env:
 //     admin_users:
 //     list_query_length_limit:
+//   admin:
+//     redis_id:
+//     super_users:
+//     cache_ttl:
 // db:
 //   name:
 //   host:
@@ -201,6 +205,7 @@ import (
 //     max_retries:
 //     min_retry_backoff:
 //     max_retry_backoff:
+//     key_prefix:
 
 const (
 	DefaultSeqDBClientID     = "defaultSeqDB"
@@ -623,10 +628,10 @@ func Normalize(cfg *Config) error {
 	for i := range cfg.Clients.SeqDB {
 		c := &cfg.Clients.SeqDB[i]
 		if c.ID == "" {
-			return fmt.Errorf("seq_db client ID cannot be empty")
+			return fmt.Errorf("clients.seq_db[%d].id cannot be empty", i)
 		}
 		if _, ok := seqDBIDs[c.ID]; ok {
-			return fmt.Errorf("duplicate seq_db client ID: %s", c.ID)
+			return fmt.Errorf("duplicate clients.seq_db.id %q", c.ID)
 		}
 
 		seqDBIDs[c.ID] = struct{}{}
@@ -634,16 +639,12 @@ func Normalize(cfg *Config) error {
 		if c.ClientMode == "" {
 			c.ClientMode = ProxyClientModeGRPC
 		} else if c.ClientMode != ProxyClientModeGRPC {
-			return fmt.Errorf("invalid clients.seq_db[%s].client_mode: %q (allowed: %q)", c.ID, c.ClientMode, ProxyClientModeGRPC)
+			return fmt.Errorf("invalid clients.seq_db[%q].client_mode: %q (allowed: %q)", c.ID, c.ClientMode, ProxyClientModeGRPC)
 		}
 
 		if c.GRPCKeepaliveParams != nil {
-			if c.GRPCKeepaliveParams.Time < minGRPCKeepaliveTime {
-				c.GRPCKeepaliveParams.Time = minGRPCKeepaliveTime
-			}
-			if c.GRPCKeepaliveParams.Timeout < minGRPCKeepaliveTimeout {
-				c.GRPCKeepaliveParams.Timeout = minGRPCKeepaliveTimeout
-			}
+			c.GRPCKeepaliveParams.Time = max(c.GRPCKeepaliveParams.Time, minGRPCKeepaliveTime)
+			c.GRPCKeepaliveParams.Timeout = max(c.GRPCKeepaliveParams.Timeout, minGRPCKeepaliveTimeout)
 		}
 	}
 
@@ -651,10 +652,10 @@ func Normalize(cfg *Config) error {
 	for i := range cfg.Clients.ClickHouse {
 		ch := &cfg.Clients.ClickHouse[i]
 		if ch.ID == "" {
-			return fmt.Errorf("clickhouse client ID cannot be empty")
+			return fmt.Errorf("clients.clickhouse[%d].id cannot be empty", i)
 		}
 		if _, ok := chIDs[ch.ID]; ok {
-			return fmt.Errorf("duplicate clickhouse client ID: %s", ch.ID)
+			return fmt.Errorf("duplicate clients.clickhouse.id %q", ch.ID)
 		}
 
 		chIDs[ch.ID] = struct{}{}
@@ -671,10 +672,10 @@ func Normalize(cfg *Config) error {
 	for i := range cfg.Cache.Inmemory {
 		inm := &cfg.Cache.Inmemory[i]
 		if inm.ID == "" {
-			return fmt.Errorf("inmemory cache ID cannot be empty")
+			return fmt.Errorf("cache.inmemory[%d].id cannot be empty", i)
 		}
 		if _, ok := inmemIDs[inm.ID]; ok {
-			return fmt.Errorf("duplicate inmemory cache ID: %s", inm.ID)
+			return fmt.Errorf("duplicate cache.inmemory.id %q", inm.ID)
 		}
 
 		inmemIDs[inm.ID] = struct{}{}
@@ -694,17 +695,17 @@ func Normalize(cfg *Config) error {
 	for i := range cfg.Cache.Redis {
 		r := &cfg.Cache.Redis[i]
 		if r.ID == "" {
-			return fmt.Errorf("redis cache ID cannot be empty")
+			return fmt.Errorf("cache.redis[%d].id cannot be empty", i)
 		}
 		if _, ok := redisIDs[r.ID]; ok {
-			return fmt.Errorf("duplicate redis cache ID: %s", r.ID)
+			return fmt.Errorf("duplicate cache.redis.id %q", r.ID)
 		}
 
 		redisIDs[r.ID] = struct{}{}
 
 		if r.WithInmemID != "" {
 			if _, ok := inmemIDs[r.WithInmemID]; !ok {
-				return fmt.Errorf("redis cache %q references unknown inmem cache id %q", r.ID, r.WithInmemID)
+				return fmt.Errorf("cache.redis[%q].with_inmem_id %q not found in cache.inmemory", r.ID, r.WithInmemID)
 			}
 		}
 	}
@@ -723,31 +724,36 @@ func Normalize(cfg *Config) error {
 
 	if len(cfg.Handlers.SeqAPI.Envs) > 0 {
 		if cfg.Handlers.SeqAPI.SeqDBID != "" {
-			return fmt.Errorf("seq_api.seq_db_id must be empty when envs is used. Put seq_db_id inside each env")
+			return fmt.Errorf("handlers.seq_api.seq_db_id must be empty when envs is used. Put seq_db_id inside each env")
 		}
-
 		if cfg.Handlers.SeqAPI.DefaultEnv == "" {
-			return fmt.Errorf("default_env must be specified when using envs")
+			return fmt.Errorf("handlers.seq_api.default_env must be specified when envs is used")
 		}
-
 		if _, exists := cfg.Handlers.SeqAPI.Envs[cfg.Handlers.SeqAPI.DefaultEnv]; !exists {
-			return fmt.Errorf("default_env '%s' not found in seq_api.envs", cfg.Handlers.SeqAPI.DefaultEnv)
+			return fmt.Errorf("handlers.seq_api.default_env %q not found in envs", cfg.Handlers.SeqAPI.DefaultEnv)
 		}
 
 		for envName, envConfig := range cfg.Handlers.SeqAPI.Envs {
+			if envConfig.SeqDBID == "" {
+				return fmt.Errorf("handlers.seq_api.envs[%q].seq_db_id cannot be empty", envName)
+			}
 			if _, ok := seqDBIDs[envConfig.SeqDBID]; !ok {
-				return fmt.Errorf("client '%s' for env '%s' not found", envConfig.SeqDBID, envName)
+				return fmt.Errorf("unknown handlers.seq_api.envs[%q].seq_db_id %q", envName, envConfig.SeqDBID)
 			}
 
-			merged := mergeSeqAPIOptions(cfg.Handlers.SeqAPI.Options, envConfig.Options)
-			envConfig.Options = &merged
+			if envConfig.Options == nil {
+				envConfig.Options = &cfg.Handlers.SeqAPI.Options
+			} else {
+				merged := mergeSeqAPIOptions(cfg.Handlers.SeqAPI.Options, *envConfig.Options)
+				envConfig.Options = &merged
+			}
+
 			cfg.Handlers.SeqAPI.Envs[envName] = envConfig
 		}
 	} else {
 		if cfg.Handlers.SeqAPI.SeqDBID == "" {
-			return fmt.Errorf("seq_api.seq_db_id must be specified when envs is empty")
+			return fmt.Errorf("handlers.seq_api.seq_db_id cannot be empty when envs is not used")
 		}
-
 		if _, ok := seqDBIDs[cfg.Handlers.SeqAPI.SeqDBID]; !ok {
 			return fmt.Errorf("unknown handlers.seq_api.seq_db_id %q", cfg.Handlers.SeqAPI.SeqDBID)
 		}
@@ -773,29 +779,31 @@ func Normalize(cfg *Config) error {
 
 	if len(cfg.Handlers.AsyncSearch.Envs) > 0 {
 		if cfg.Handlers.AsyncSearch.SeqDBID != "" {
-			return fmt.Errorf("async_search.seq_db_id must be empty when envs is used. Put seq_db_id inside each env")
+			return fmt.Errorf("handlers.async_search.seq_db_id must be empty when envs is used. Put seq_db_id inside each env")
 		}
-
 		if cfg.Handlers.AsyncSearch.DefaultEnv == "" {
-			return fmt.Errorf("default_env must be specified when using envs")
+			return fmt.Errorf("handlers.async_search.default_env must be specified when using envs")
 		}
-
-		if _, exists := cfg.Handlers.AsyncSearch.Envs[cfg.Handlers.AsyncSearch.DefaultEnv]; !exists {
-			return fmt.Errorf("default_env '%s' not found in async_search.envs", cfg.Handlers.AsyncSearch.DefaultEnv)
+		if _, ok := cfg.Handlers.AsyncSearch.Envs[cfg.Handlers.AsyncSearch.DefaultEnv]; !ok {
+			return fmt.Errorf("handlers.async_search.default_env %q not found in envs", cfg.Handlers.AsyncSearch.DefaultEnv)
 		}
 
 		for envName, envConfig := range cfg.Handlers.AsyncSearch.Envs {
 			if envConfig.SeqDBID == "" {
 				return fmt.Errorf("handlers.async_search.envs[%q].seq_db_id cannot be empty", envName)
 			}
-
-			if _, ok := seqDBIDs[cfg.Handlers.AsyncSearch.SeqDBID]; !ok {
+			if _, ok := seqDBIDs[envConfig.SeqDBID]; !ok {
 				return fmt.Errorf("unknown handlers.async_search.envs[%q].seq_db_id %q", envName, envConfig.SeqDBID)
 			}
+			if envConfig.ListQueryLengthLimit <= 0 {
+				envConfig.ListQueryLengthLimit = cfg.Handlers.AsyncSearch.ListQueryLengthLimit
+			}
+
+			cfg.Handlers.AsyncSearch.Envs[envName] = envConfig
 		}
 	} else {
 		if cfg.Handlers.AsyncSearch.SeqDBID == "" {
-			return fmt.Errorf("handlers.async_search.seq_db_id %q", cfg.Handlers.AsyncSearch.SeqDBID)
+			return fmt.Errorf("handlers.async_search.seq_db_id cannot be empty when envs is not used")
 		}
 		if _, ok := seqDBIDs[cfg.Handlers.AsyncSearch.SeqDBID]; !ok {
 			return fmt.Errorf("unknown handlers.async_search.seq_db_id %q", cfg.Handlers.AsyncSearch.SeqDBID)
@@ -808,29 +816,25 @@ func Normalize(cfg *Config) error {
 			if eg.CHID != "" {
 				return fmt.Errorf("handlers.error_groups.ch_id must be empty when envs is used. Put ch_id inside each env")
 			}
-
 			if eg.DefaultEnv == "" {
-				return fmt.Errorf("default_env must be specified when using envs")
+				return fmt.Errorf("handlers.error_groups.default_env must be specified when using envs")
 			}
-
-			if _, exists := eg.Envs[eg.DefaultEnv]; !exists {
-				return fmt.Errorf("default_env '%s' not found in error_groups.envs", eg.DefaultEnv)
+			if _, ok := eg.Envs[eg.DefaultEnv]; !ok {
+				return fmt.Errorf("handlers.error_groups.default_env %q not found in envs", eg.DefaultEnv)
 			}
 
 			for envName, envConfig := range eg.Envs {
 				if envConfig.CHID == "" {
-					return fmt.Errorf("client '%s' for env '%s' not found", envConfig.CHID, envName)
+					return fmt.Errorf("handlers.error_groups.envs[%q].ch_id cannot be empty", envName)
 				}
-
 				if _, ok := chIDs[envConfig.CHID]; !ok {
-					return fmt.Errorf("unknown handlers.error_groups.ch_id %q", envConfig.CHID)
+					return fmt.Errorf("unknown handlers.error_groups.envs[%q].ch_id %q", envName, envConfig.CHID)
 				}
 			}
 		} else {
 			if cfg.Handlers.ErrorGroups.CHID == "" {
-				return fmt.Errorf("handlers.error_groups.ch_id cannot be empty")
+				return fmt.Errorf("handlers.error_groups.ch_id cannot be empty when envs is not used")
 			}
-
 			if _, ok := chIDs[cfg.Handlers.ErrorGroups.CHID]; !ok {
 				return fmt.Errorf("unknown handlers.error_groups.ch_id %q", cfg.Handlers.ErrorGroups.CHID)
 			}
@@ -894,11 +898,8 @@ func setSeqAPIOptionsDefaults(options *SeqAPIOptions) {
 	}
 }
 
-func mergeSeqAPIOptions(global SeqAPIOptions, envOptions *SeqAPIOptions) SeqAPIOptions {
+func mergeSeqAPIOptions(global SeqAPIOptions, envOptions SeqAPIOptions) SeqAPIOptions {
 	merged := global
-	if envOptions == nil {
-		return merged
-	}
 
 	if envOptions.MaxAggregationsPerRequest > 0 {
 		merged.MaxAggregationsPerRequest = envOptions.MaxAggregationsPerRequest

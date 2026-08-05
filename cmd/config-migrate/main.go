@@ -39,7 +39,7 @@ func run(source string) {
 
 	sourceCfg, err := os.ReadFile(source) //nolint:gosec
 	if err != nil {
-		logger.Fatal("error reading source config", zap.String("source", source), zap.Error(err))
+		logger.Fatal("read source config", zap.String("source", source), zap.Error(err))
 	}
 
 	version, err := loader.ReadVersion(sourceCfg)
@@ -47,8 +47,7 @@ func run(source string) {
 		logger.Fatal("read config version", zap.Error(err))
 	}
 	if version != loader.V1 {
-		errStr := fmt.Sprintf("source config is not v%d, nothing to migrate", loader.V1)
-		logger.Fatal(errStr, zap.Int("version", version))
+		logger.Fatal(fmt.Sprintf("source config is not v%d, nothing to migrate", loader.V1), zap.Int("version", version))
 	}
 
 	backupPath := strings.TrimSuffix(source, filepath.Ext(source)) + ".bck" + filepath.Ext(source)
@@ -56,14 +55,14 @@ func run(source string) {
 		logger.Fatal("backup already exists, remove it before re-running", zap.String("backup", backupPath))
 	}
 	if err := os.WriteFile(backupPath, sourceCfg, stat.Mode()); err != nil {
-		logger.Fatal("error writing backup legacy config", zap.String("backup", backupPath), zap.Error(err))
+		logger.Fatal("write backup config", zap.String("backup", backupPath), zap.Error(err))
 	}
 
 	var cfg v1.Config
 	decoder := yaml.NewDecoder(bytes.NewReader(sourceCfg))
 	decoder.KnownFields(true)
 	if err := decoder.Decode(&cfg); err != nil {
-		logger.Fatal("error parsing config v1", zap.Error(err))
+		logger.Fatal("parse config v1", zap.Error(err))
 	}
 
 	migratedCfg := migrate.V1ToV2(cfg)
@@ -72,7 +71,7 @@ func run(source string) {
 	encoder := yaml.NewEncoder(&buf)
 	encoder.SetIndent(2)
 	if err := encoder.Encode(&migratedCfg); err != nil {
-		logger.Fatal("error encoding config v2", zap.Error(err))
+		logger.Fatal("encode config v2", zap.Error(err))
 	}
 	if err := encoder.Close(); err != nil {
 		logger.Fatal("close encoder", zap.Error(err))

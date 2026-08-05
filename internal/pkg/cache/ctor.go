@@ -60,8 +60,8 @@ func New(ctx context.Context, inmemCfg *config.InmemoryCache, redisCfg *config.R
 	}
 
 	if redisErr != nil {
-		logger.Warn("failed to init redis cache; inmemory cache will be used instead", zap.Error(err))
-		return inmem, err
+		logger.Warn("failed to init redis cache; inmemory cache will be used instead", zap.Error(redisErr))
+		return inmem, redisErr
 	}
 
 	return &inmemWithRedis{

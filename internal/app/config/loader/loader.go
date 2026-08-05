@@ -25,29 +25,29 @@ type configMeta struct {
 func FromFile(cfgPath string) (v2.Config, error) {
 	cfgBytes, err := os.ReadFile(cfgPath) //nolint:gosec
 	if err != nil {
-		return v2.Config{}, fmt.Errorf("error reading file: %s", err)
+		return v2.Config{}, fmt.Errorf("error reading file: %w", err)
 	}
 
-	meta, err := parse[configMeta](cfgBytes, false)
+	version, err := ReadVersion(cfgBytes)
 	if err != nil {
-		return v2.Config{}, err
+		return v2.Config{}, fmt.Errorf("error reading version: %w", err)
 	}
 
 	cfg := v2.Config{}
-	switch {
-	case meta.Version == nil || *meta.Version == V1:
+	switch version {
+	case V1:
 		cfgV1, err := parse[v1.Config](cfgBytes, true)
 		if err != nil {
-			return v2.Config{}, err
+			return v2.Config{}, fmt.Errorf("error parsing config v1: %w", err)
 		}
 		cfg = migrate.V1ToV2(cfgV1)
-	case *meta.Version == V2:
+	case V2:
 		cfg, err = parse[v2.Config](cfgBytes, true)
 		if err != nil {
-			return v2.Config{}, err
+			return v2.Config{}, fmt.Errorf("error parsing config v2: %w", err)
 		}
 	default:
-		return v2.Config{}, fmt.Errorf("unsupported config version: %d", *meta.Version)
+		return v2.Config{}, fmt.Errorf("unsupported config version: %d", version)
 	}
 
 	if err := v2.Normalize(&cfg); err != nil {
@@ -76,7 +76,7 @@ func parse[T any](cfg []byte, strict bool) (T, error) {
 	decoder := yaml.NewDecoder(bytes.NewReader(cfg))
 	decoder.KnownFields(strict)
 	if err := decoder.Decode(&result); err != nil {
-		return result, fmt.Errorf("error parsing config: %w", err)
+		return result, err
 	}
 
 	return result, nil
