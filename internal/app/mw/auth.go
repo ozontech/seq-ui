@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/ozontech/seq-ui/internal/app/auth"
-	config "github.com/ozontech/seq-ui/internal/app/config/v2"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/logger"
 )

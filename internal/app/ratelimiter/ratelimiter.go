@@ -8,7 +8,7 @@ import (
 	"github.com/throttled/throttled/v2"
 	"github.com/throttled/throttled/v2/store/memstore"
 
-	config "github.com/ozontech/seq-ui/internal/app/config/v2"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 )
 
 const rateLimiterQuantityPerCall = 1

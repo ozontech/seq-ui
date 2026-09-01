@@ -1,10 +1,10 @@
-package v1
+package config
 
 import (
 	"time"
 )
 
-// Deprecated configuration scheme
+// Configuration scheme
 // server:
 //   http_addr:
 //   grpc_addr:
@@ -50,6 +50,7 @@ import (
 //       max_cost:
 //       buffer_items:
 //     redis:
+//       key_prefix:
 //       addr:
 //       username:
 //       password:
@@ -57,7 +58,6 @@ import (
 //       max_retries:
 //       min_retry_backoff:
 //       max_retry_backoff:
-//       key_prefix:
 //   db:
 //     name:
 //     host:
@@ -88,18 +88,18 @@ import (
 //     timeout:
 //     permit_without_stream:
 //   seq_db:
-//     id:
-//     timeout:
-//     avg_doc_size:
-//     addrs:
-//     request_retries:
-//     initial_retry_backoff:
-//     max_retry_backoff:
-//     client_mode:
-//     grpc_keepalive_params:
-//       time:
+//     - id:
 //       timeout:
-//       permit_without_stream:
+//       avg_doc_size:
+//       addrs:
+//       request_retries:
+//       initial_retry_backoff:
+//       max_retry_backoff:
+//       client_mode:
+//       grpc_keepalive_params:
+//         time:
+//         timeout:
+//         permit_without_stream:
 // handlers:
 //   seq_api:
 //     max_search_limit:
@@ -112,30 +112,30 @@ import (
 //     max_buckets_per_aggregation_ts:
 //     events_cache_ttl:
 //     pinned_fields:
-//       name:
-//       type:
+//       - name:
+//         type:
 //     system_fields:
-//       name:
-//       type:
+//       - name:
+//         type:
 //     logs_lifespan_cache_key:
 //     logs_lifespan_cache_ttl:
 //     fields_cache_ttl:
 //     masking:
 //       masks:
-//         re:
-//         groups:
-//         mode:
-//         replace_word:
+//         - re:
+//           groups:
+//           mode:
+//           replace_word:
+//           process_fields:
+//           ignore_fields:
+//           field_filters:
+//             condition:
+//             filters:
+//               - field:
+//                 mode:
+//                 values:
 //         process_fields:
 //         ignore_fields:
-//         field_filters:
-//           condition:
-//           filters:
-//             field:
-//             mode:
-//             values:
-//       process_fields:
-//       ignore_fields:
 //     envs:
 //       <env_name>:
 //         seq_db_id:
@@ -150,28 +150,28 @@ import (
 //           max_buckets_per_aggregation_ts:
 //           events_cache_ttl:
 //           pinned_fields:
-//             name:
-//             type:
+//             - name:
+//               type:
 //           system_fields:
-//             name:
-//             type:
+//             - name:
+//               type:
 //           logs_lifespan_cache_key:
 //           logs_lifespan_cache_ttl:
 //           fields_cache_ttl:
 //           masking:
 //             masks:
-//               re:
-//               groups:
-//               mode:
-//               replace_word:
-//               process_fields:
-//               ignore_fields:
-//               field_filters:
-//                 condition:
-//                 filters:
-//                   field:
-//                   mode:
-//                   values:
+//               - re:
+//                 groups:
+//                 mode:
+//                 replace_word:
+//                 process_fields:
+//                 ignore_fields:
+//                 field_filters:
+//                   condition:
+//                   filters:
+//                     - field:
+//                       mode:
+//                       values:
 //             process_fields:
 //             ignore_fields:
 //     default_env:
@@ -288,6 +288,7 @@ type InmemoryCache struct {
 }
 
 type Redis struct {
+	KeyPrefix       string        `yaml:"key_prefix"`
 	Addr            string        `yaml:"addr"`
 	Username        string        `yaml:"username"`
 	Password        string        `yaml:"password"`
@@ -295,7 +296,6 @@ type Redis struct {
 	MaxRetries      int           `yaml:"max_retries"`
 	MinRetryBackoff time.Duration `yaml:"min_retry_backoff"`
 	MaxRetryBackoff time.Duration `yaml:"max_retry_backoff"`
-	KeyPrefix       string        `yaml:"key_prefix"`
 }
 
 type Cache struct {

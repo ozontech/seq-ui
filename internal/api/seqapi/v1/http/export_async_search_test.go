@@ -8,7 +8,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
-	config "github.com/ozontech/seq-ui/internal/app/config/v2"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	mock_asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )

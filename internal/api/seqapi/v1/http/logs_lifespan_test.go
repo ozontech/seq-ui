@@ -12,7 +12,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
-	config "github.com/ozontech/seq-ui/internal/app/config/v2"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	mock_cache "github.com/ozontech/seq-ui/internal/pkg/cache/mock"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"

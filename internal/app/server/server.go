@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/ozontech/seq-ui/internal/api"
-	config "github.com/ozontech/seq-ui/internal/app/config/v2"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/mw"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
 )

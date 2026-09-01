@@ -6,7 +6,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	config "github.com/ozontech/seq-ui/internal/app/config/v2"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	mock_cache "github.com/ozontech/seq-ui/internal/pkg/cache/mock"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
 	mock_asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches/mock"

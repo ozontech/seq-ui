@@ -3,7 +3,7 @@ package admin
 import (
 	"context"
 
-	config "github.com/ozontech/seq-ui/internal/app/config/v2"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/internal/pkg/repository"

@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	config "github.com/ozontech/seq-ui/internal/app/config/v2"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 )
 
 type filterCondition int8

@@ -1,19 +1,15 @@
 package main
 
 import (
-	"bytes"
+	"errors"
 	"flag"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v3"
 
 	"github.com/ozontech/seq-ui/internal/app/config/loader"
-	"github.com/ozontech/seq-ui/internal/app/config/migrate"
-	v1 "github.com/ozontech/seq-ui/internal/app/config/v1"
 	"github.com/ozontech/seq-ui/logger"
 )
 
@@ -29,7 +25,7 @@ func main() {
 
 func run(source string) {
 	if source == "" {
-		logger.Fatal("missing required parameter", zap.String("param", "-source"))
+		logger.Fatal("miss required parameter", zap.String("param", "-source"))
 	}
 
 	stat, err := os.Stat(source)
@@ -42,12 +38,12 @@ func run(source string) {
 		logger.Fatal("read source config", zap.String("source", source), zap.Error(err))
 	}
 
-	version, err := loader.ReadVersion(sourceCfg)
-	if err != nil {
-		logger.Fatal("read config version", zap.Error(err))
-	}
-	if version != loader.V1 {
-		logger.Fatal(fmt.Sprintf("source config is not v%d, nothing to migrate", loader.V1), zap.Int("version", version))
+	migratedCfg, err := loader.ToLatestVersion(sourceCfg)
+	if errors.Is(err, loader.ErrAlreadyLatestConfigVersion) {
+		logger.Info("source config is already at the latest schema version, nothing to migrate", zap.String("source", source))
+		return
+	} else if err != nil {
+		logger.Fatal("migrate config", zap.String("source", source), zap.Error(err))
 	}
 
 	backupPath := strings.TrimSuffix(source, filepath.Ext(source)) + ".bck" + filepath.Ext(source)
@@ -58,26 +54,7 @@ func run(source string) {
 		logger.Fatal("write backup config", zap.String("backup", backupPath), zap.Error(err))
 	}
 
-	var cfg v1.Config
-	decoder := yaml.NewDecoder(bytes.NewReader(sourceCfg))
-	decoder.KnownFields(true)
-	if err := decoder.Decode(&cfg); err != nil {
-		logger.Fatal("parse config v1", zap.Error(err))
-	}
-
-	migratedCfg := migrate.V1ToV2(cfg)
-
-	var buf bytes.Buffer
-	encoder := yaml.NewEncoder(&buf)
-	encoder.SetIndent(2)
-	if err := encoder.Encode(&migratedCfg); err != nil {
-		logger.Fatal("encode config v2", zap.Error(err))
-	}
-	if err := encoder.Close(); err != nil {
-		logger.Fatal("close encoder", zap.Error(err))
-	}
-
-	if err := os.WriteFile(source, buf.Bytes(), stat.Mode()); err != nil {
+	if err := os.WriteFile(source, migratedCfg, stat.Mode()); err != nil {
 		logger.Fatal("write migrated config", zap.Error(err))
 	}
 

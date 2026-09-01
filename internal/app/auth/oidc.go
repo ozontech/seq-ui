@@ -13,7 +13,7 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	"go.uber.org/zap"
 
-	config "github.com/ozontech/seq-ui/internal/app/config/v2"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/tls"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/logger"

@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/ozontech/seq-ui/internal/api"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/mw"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/tracing"
@@ -29,8 +30,17 @@ var defaultCORSAllowedMethods = []string{"HEAD", "GET", "POST", "PATCH", "DELETE
 
 func (s *Server) init(ctx context.Context, registrar *api.Registrar) error {
 	var err error
+	var jwtSecretKey string
+	var oidcCfg *config.OIDC
 
-	s.authPrvds, err = mw.NewAuthProviders(ctx, s.config.Auth.JWT.SecretKey, s.config.Auth.OIDC, s.oidcCache)
+	if s.config.Auth != nil {
+		if s.config.Auth.JWT != nil {
+			jwtSecretKey = s.config.Auth.JWT.SecretKey
+		}
+		oidcCfg = s.config.Auth.OIDC
+	}
+
+	s.authPrvds, err = mw.NewAuthProviders(ctx, jwtSecretKey, oidcCfg, s.oidcCache)
 	if err != nil {
 		return err
 	}

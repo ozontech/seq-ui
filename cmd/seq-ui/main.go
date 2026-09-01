@@ -25,7 +25,7 @@ import (
 	seqapi_v1 "github.com/ozontech/seq-ui/internal/api/seqapi/v1"
 	userprofile_v1 "github.com/ozontech/seq-ui/internal/api/userprofile/v1"
 	"github.com/ozontech/seq-ui/internal/app/config/loader"
-	config "github.com/ozontech/seq-ui/internal/app/config/v2"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/server"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"

@@ -9,7 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
-	config "github.com/ozontech/seq-ui/internal/app/config/v2"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches"
 )

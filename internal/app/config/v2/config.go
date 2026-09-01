@@ -1,11 +1,11 @@
-package v2
+package config
 
 import (
 	"fmt"
 	"time"
 )
 
-// Actual configuration scheme
+// Configuration scheme
 // version:
 // server:
 //   http:
@@ -55,31 +55,31 @@ import (
 //           per_handler:
 // clients:
 //   seq_db:
-//     id:
-//     timeout:
-//     avg_doc_size:
-//     addrs:
-//     request_retries:
-//     initial_retry_backoff:
-//     max_retry_backoff:
-//     client_mode:
-//     grpc_keepalive_params:
-//       time:
+//     - id:
 //       timeout:
-//       permit_without_stream:
-//     download_params:
-//       delay:
+//       avg_doc_size:
+//       addrs:
+//       request_retries:
 //       initial_retry_backoff:
 //       max_retry_backoff:
+//       client_mode:
+//       grpc_keepalive_params:
+//         time:
+//         timeout:
+//         permit_without_stream:
+//       download_params:
+//         delay:
+//         initial_retry_backoff:
+//         max_retry_backoff:
 //   clickhouse:
-//     id:
-//     addrs:
-//     database:
-//     username:
-//     password:
-//     sharded:
-//     dial_timeout:
-//     read_timeout:
+//     - id:
+//       addrs:
+//       database:
+//       username:
+//       password:
+//       sharded:
+//       dial_timeout:
+//       read_timeout:
 // handlers:
 //   seq_api:
 //     seq_db_id:
@@ -88,27 +88,27 @@ import (
 //     global_options:
 //       events_cache_ttl:
 //       pinned_fields:
-//         name:
-//         type:
+//         - name:
+//           type:
 //       system_fields:
-//         name:
-//         type:
+//         - name:
+//           type:
 //       logs_lifespan_cache_ttl:
 //       fields_cache_ttl:
 //       masking:
 //         masks:
-//           re:
-//           groups:
-//           mode:
-//           replace_word:
-//           process_fields:
-//           ignore_fields:
-//           field_filters:
-//             condition:
-//             filters:
-//               field:
-//               mode:
-//               values:
+//           - re:
+//             groups:
+//             mode:
+//             replace_word:
+//             process_fields:
+//             ignore_fields:
+//             field_filters:
+//               condition:
+//               filters:
+//                 - field:
+//                   mode:
+//                   values:
 //         process_fields:
 //         ignore_fields:
 //     options:
@@ -191,31 +191,31 @@ import (
 //   use_prepared_statements:
 // cache:
 //   inmemory:
-//     id:
-//     num_counters:
-//     max_cost:
-//     buffer_items:
+//     - id:
+//       num_counters:
+//       max_cost:
+//       buffer_items:
 //   redis:
-//     id:
-//     with_inmem_id:
-//     addr:
-//     username:
-//     password:
-//     timeout:
-//     max_retries:
-//     min_retry_backoff:
-//     max_retry_backoff:
-//     key_prefix:
+//     - id:
+//       key_prefix:
+//       with_inmem_id:
+//       addr:
+//       username:
+//       password:
+//       timeout:
+//       max_retries:
+//       min_retry_backoff:
+//       max_retry_backoff:
 
 const (
-	DefaultSeqDBClientID     = "defaultSeqDB"
-	DefaultCHClientID        = "defaultCH"
-	DefaultInmemCacheID      = "defaultInmemCache"
-	DefaultRedisID           = "defaultRedis"
-	DefaultRedis2ID          = "defaultRedis2"
+	DefaultSeqDBClientID     = "default_seq_db"
+	DefaultCHClientID        = "default_ch"
+	DefaultInmemCacheID      = "default_inmem_cache"
+	DefaultRedisID           = "default_redis"
+	DefaultRedis2ID          = "default_redis_2"
 	DefaultMassExportRedisID = "mass_export"
 
-	ProxyClientModeGRPC = "grpc"
+	SeqDBClientModeGRPC = "grpc"
 
 	MaskModeMask    = "mask"
 	MaskModeReplace = "replace"
@@ -333,6 +333,7 @@ type InmemoryCache struct {
 
 type Redis struct {
 	ID              string        `yaml:"id"`
+	KeyPrefix       string        `yaml:"key_prefix"`
 	WithInmemID     string        `yaml:"with_inmem_id"`
 	Addr            string        `yaml:"addr"`
 	Username        string        `yaml:"username"`
@@ -341,7 +342,6 @@ type Redis struct {
 	MaxRetries      int           `yaml:"max_retries"`
 	MinRetryBackoff time.Duration `yaml:"min_retry_backoff"`
 	MaxRetryBackoff time.Duration `yaml:"max_retry_backoff"`
-	KeyPrefix       string        `yaml:"key_prefix"`
 }
 
 type Cache struct {
@@ -549,14 +549,14 @@ type SeqAPIEnv struct {
 }
 
 type SeqAPIOptions struct {
-	MaxSearchLimit             int32 `yaml:"max_search_limit"`
-	MaxSearchTotalLimit        int64 `yaml:"max_search_total_limit"`
-	MaxSearchOffsetLimit       int32 `yaml:"max_search_offset_limit"`
-	MaxExportLimit             int32 `yaml:"max_export_limit"`
-	SeqCLIMaxSearchLimit       int   `yaml:"seq_cli_max_search_limit"`
-	MaxParallelExportRequests  int   `yaml:"max_parallel_export_requests"`
-	MaxAggregationsPerRequest  int   `yaml:"max_aggregations_per_request"`
-	MaxBucketsPerAggregationTs int   `yaml:"max_buckets_per_aggregation_ts"`
+	MaxSearchLimit             int32 `yaml:"max_search_limit,omitempty"`
+	MaxSearchTotalLimit        int64 `yaml:"max_search_total_limit,omitempty"`
+	MaxSearchOffsetLimit       int32 `yaml:"max_search_offset_limit,omitempty"`
+	MaxExportLimit             int32 `yaml:"max_export_limit,omitempty"`
+	SeqCLIMaxSearchLimit       int   `yaml:"seq_cli_max_search_limit,omitempty"`
+	MaxParallelExportRequests  int   `yaml:"max_parallel_export_requests,omitempty"`
+	MaxAggregationsPerRequest  int   `yaml:"max_aggregations_per_request,omitempty"`
+	MaxBucketsPerAggregationTs int   `yaml:"max_buckets_per_aggregation_ts,omitempty"`
 }
 
 type Masking struct {
@@ -637,9 +637,9 @@ func Normalize(cfg *Config) error {
 		seqDBIDs[c.ID] = struct{}{}
 
 		if c.ClientMode == "" {
-			c.ClientMode = ProxyClientModeGRPC
-		} else if c.ClientMode != ProxyClientModeGRPC {
-			return fmt.Errorf("invalid clients.seq_db[%q].client_mode: %q (allowed: %q)", c.ID, c.ClientMode, ProxyClientModeGRPC)
+			c.ClientMode = SeqDBClientModeGRPC
+		} else if c.ClientMode != SeqDBClientModeGRPC {
+			return fmt.Errorf("invalid clients.seq_db[%q].client_mode: %q (allowed: %q)", c.ID, c.ClientMode, SeqDBClientModeGRPC)
 		}
 
 		if c.GRPCKeepaliveParams != nil {
@@ -740,15 +740,6 @@ func Normalize(cfg *Config) error {
 			if _, ok := seqDBIDs[envConfig.SeqDBID]; !ok {
 				return fmt.Errorf("unknown handlers.seq_api.envs[%q].seq_db_id %q", envName, envConfig.SeqDBID)
 			}
-
-			if envConfig.Options == nil {
-				envConfig.Options = &cfg.Handlers.SeqAPI.Options
-			} else {
-				merged := mergeSeqAPIOptions(cfg.Handlers.SeqAPI.Options, *envConfig.Options)
-				envConfig.Options = &merged
-			}
-
-			cfg.Handlers.SeqAPI.Envs[envName] = envConfig
 		}
 	} else {
 		if cfg.Handlers.SeqAPI.SeqDBID == "" {
@@ -896,37 +887,6 @@ func setSeqAPIOptionsDefaults(options *SeqAPIOptions) {
 	if options.MaxExportLimit <= 0 {
 		options.MaxExportLimit = defaultMaxExportLimit
 	}
-}
-
-func mergeSeqAPIOptions(global SeqAPIOptions, envOptions SeqAPIOptions) SeqAPIOptions {
-	merged := global
-
-	if envOptions.MaxAggregationsPerRequest > 0 {
-		merged.MaxAggregationsPerRequest = envOptions.MaxAggregationsPerRequest
-	}
-	if envOptions.MaxBucketsPerAggregationTs > 0 {
-		merged.MaxBucketsPerAggregationTs = envOptions.MaxBucketsPerAggregationTs
-	}
-	if envOptions.MaxParallelExportRequests > 0 {
-		merged.MaxParallelExportRequests = envOptions.MaxParallelExportRequests
-	}
-	if envOptions.MaxSearchLimit > 0 {
-		merged.MaxSearchLimit = envOptions.MaxSearchLimit
-	}
-	if envOptions.MaxSearchTotalLimit > 0 {
-		merged.MaxSearchTotalLimit = envOptions.MaxSearchTotalLimit
-	}
-	if envOptions.MaxSearchOffsetLimit > 0 {
-		merged.MaxSearchOffsetLimit = envOptions.MaxSearchOffsetLimit
-	}
-	if envOptions.MaxExportLimit > 0 {
-		merged.MaxExportLimit = envOptions.MaxExportLimit
-	}
-	if envOptions.SeqCLIMaxSearchLimit > 0 {
-		merged.SeqCLIMaxSearchLimit = envOptions.SeqCLIMaxSearchLimit
-	}
-
-	return merged
 }
 
 func setSeqAPIGlobalOptionsDefaults(options *SeqAPIGlobalOptions) {

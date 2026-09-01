@@ -10,7 +10,7 @@ import (
 	"github.com/gofrs/uuid"
 	"go.uber.org/zap"
 
-	config "github.com/ozontech/seq-ui/internal/app/config/v2"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/tokenlimiter"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
