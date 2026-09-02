@@ -128,14 +128,14 @@ func encode(cfg v2.Config) ([]byte, error) {
 }
 
 func mergeHandlersEnvOptions(cfgBytes []byte) ([]byte, error) {
-	var root map[any]any
+	var root map[string]any
 	if err := yaml.Unmarshal(cfgBytes, &root); err != nil {
 		return nil, fmt.Errorf("parse yaml for merge: %w", err)
 	}
 
 	handlers := getMap(root, "handlers")
 	for _, h := range handlers {
-		handler, _ := h.(map[any]any)
+		handler, _ := h.(map[string]any)
 		if handler == nil {
 			continue
 		}
@@ -147,12 +147,12 @@ func mergeHandlersEnvOptions(cfgBytes []byte) ([]byte, error) {
 		}
 
 		for _, e := range envs {
-			env, _ := e.(map[any]any)
+			env, _ := e.(map[string]any)
 			if env == nil {
 				continue
 			}
 
-			envOpts, _ := env["options"].(map[any]any)
+			envOpts, _ := env["options"].(map[string]any)
 			env["options"] = mergeYAMLs(rootOpts, envOpts)
 		}
 	}
@@ -164,10 +164,10 @@ func mergeHandlersEnvOptions(cfgBytes []byte) ([]byte, error) {
 	return out, nil
 }
 
-func getMap(root map[any]any, path ...string) map[any]any {
+func getMap(root map[string]any, path ...string) map[string]any {
 	cur := root
 	for _, p := range path {
-		next, _ := cur[p].(map[any]any)
+		next, _ := cur[p].(map[string]any)
 		if next == nil {
 			return nil
 		}
@@ -177,14 +177,14 @@ func getMap(root map[any]any, path ...string) map[any]any {
 	return cur
 }
 
-func mergeYAMLs(a, b map[any]any) map[any]any {
-	merged := make(map[any]any)
+func mergeYAMLs(a, b map[string]any) map[string]any {
+	merged := make(map[string]any)
 	maps.Copy(merged, a)
 
 	for k, v := range b {
 		if existingValue, exists := merged[k]; exists {
-			if existingMap, ok := existingValue.(map[any]any); ok {
-				if newMap, ok := v.(map[any]any); ok {
+			if existingMap, ok := existingValue.(map[string]any); ok {
+				if newMap, ok := v.(map[string]any); ok {
 					merged[k] = mergeYAMLs(existingMap, newMap)
 					continue
 				}

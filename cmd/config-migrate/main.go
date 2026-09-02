@@ -42,7 +42,8 @@ func run(source string) {
 	if errors.Is(err, loader.ErrAlreadyLatestConfigVersion) {
 		logger.Info("source config is already at the latest schema version, nothing to migrate", zap.String("source", source))
 		return
-	} else if err != nil {
+	}
+	if err != nil {
 		logger.Fatal("migrate config", zap.String("source", source), zap.Error(err))
 	}
 

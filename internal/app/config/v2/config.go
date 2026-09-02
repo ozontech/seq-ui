@@ -27,32 +27,42 @@ import (
 //   debug:
 //     addr:
 //   auth:
-//     oidc:
-//       cache_id:
-//       cache_secret_key:
-//       skip_verify:
-//       auth_urls:
-//       tls:
-//         root_ca:
-//         ca_cert:
-//         private_key:
-//         insecure:
-//       allowed_clients:
-//     jwt:
-//       secret_key:
+// 	options:
+// 	  oidc:
+//         cache_id:
+//         cache_secret_key:
+//         skip_verify:
+//         auth_urls:
+//         tls:
+//           root_ca:
+//           ca_cert:
+//           private_key:
+//           insecure:
+//         allowed_clients:
+//       jwt:
+//         secret_key:
+// 	   envs:
+// 	     <env_name>:
+// 		   options:
+// 		     oidc:
+// 			 jwt:
 //   rate_limiters:
-//     <api_name>:
-//       default:
-//         rate_per_sec:
-//         max_burst:
-//         store_max_keys:
-//         per_handler:
-//       spec_users:
-//         <username>:
+//     options:
+//       <api_name>:
+//         default:
 //           rate_per_sec:
 //           max_burst:
 //           store_max_keys:
 //           per_handler:
+//         spec_users:
+//           <username>:
+//             rate_per_sec:
+//             max_burst:
+//             store_max_keys:
+//             per_handler:
+//     envs:
+//       <env_name>:
+//         options:
 // clients:
 //   seq_db:
 //     - id:
@@ -83,18 +93,16 @@ import (
 // handlers:
 //   seq_api:
 //     seq_db_id:
-//     cache_id:
-//     redis_id:
-//     global_options:
-//       events_cache_ttl:
-//       pinned_fields:
-//         - name:
-//           type:
-//       system_fields:
-//         - name:
-//           type:
-//       logs_lifespan_cache_ttl:
-//       fields_cache_ttl:
+//     options:
+//       limits:
+//         max_search_limit:
+//         max_search_total_limit:
+//         max_search_offset_limit:
+//         max_export_limit:
+//         seq_cli_max_search_limit:
+//         max_parallel_export_requests:
+//         max_aggregations_per_request:
+//         max_buckets_per_aggregation_ts:
 //       masking:
 //         masks:
 //           - re:
@@ -111,40 +119,38 @@ import (
 //                   values:
 //         process_fields:
 //         ignore_fields:
-//     options:
-//       max_search_limit:
-//       max_search_total_limit:
-//       max_search_offset_limit:
-//       max_export_limit:
-//       seq_cli_max_search_limit:
-//       max_parallel_export_requests:
-//       max_aggregations_per_request:
-//       max_buckets_per_aggregation_ts:
+//       caches:
+//         cache_id:
+//         redis_id:
+//         ttl:
+//           events:
+//           logs_lifespan:
+//           fields:
+//       pinned_fields:
+//         - name:
+//           type:
+//       system_fields:
+//         - name:
+//           type:
 //     envs:
 //       <env_name>:
 //         seq_db_id:
 //         options:
-//           max_search_limit:
-//           max_search_total_limit:
-//           max_search_offset_limit:
-//           max_export_limit:
-//           seq_cli_max_search_limit:
-//           max_parallel_export_requests:
-//           max_aggregations_per_request:
-//           max_buckets_per_aggregation_ts:
 //     default_env:
 //   error_groups:
 //     ch_id:
+//     options:
+//       log_tags_mapping:
+//         env:
+//         service:
+//         release:
+//       query_filter:
+//         <ch_column>:
 //     envs:
 //       <env_name>:
 //         ch_id:
+//         options:
 //     default_env:
-//     log_tags_mapping:
-//       env:
-//       service:
-//       release:
-//     query_filter:
-//       <ch_column>:
 //   mass_export:
 //     seq_db_id:
 //     batch_size:
@@ -169,17 +175,26 @@ import (
 //       max_retry_backoff:
 //   async_search:
 //     seq_db_id:
+//     options:
+//    	  admin_users:
+//       list_query_length_limit:
 //     envs:
 //       <env_name>:
 //         seq_db_id:
-//         list_query_length_limit:
+//         options:
 //     default_env:
-//     admin_users:
-//     list_query_length_limit:
 //   admin:
-//     redis_id:
-//     super_users:
-//     cache_ttl:
+//   	options:
+//       redis_id:
+//       super_users:
+//       cache_ttl:
+//     envs:
+//       <env_name>:
+//         options:
+//           redis_id:
+//           super_users:
+//           cache_ttl:
+//     default_env:
 // db:
 //   name:
 //   host:
@@ -197,8 +212,8 @@ import (
 //       buffer_items:
 //   redis:
 //     - id:
-//       key_prefix:
 //       with_inmem_id:
+//       key_prefix:
 //       addr:
 //       username:
 //       password:
@@ -206,55 +221,6 @@ import (
 //       max_retries:
 //       min_retry_backoff:
 //       max_retry_backoff:
-
-const (
-	DefaultSeqDBClientID     = "default_seq_db"
-	DefaultCHClientID        = "default_ch"
-	DefaultInmemCacheID      = "default_inmem_cache"
-	DefaultRedisID           = "default_redis"
-	DefaultRedis2ID          = "default_redis_2"
-	DefaultMassExportRedisID = "mass_export"
-
-	SeqDBClientModeGRPC = "grpc"
-
-	MaskModeMask    = "mask"
-	MaskModeReplace = "replace"
-	MaskModeCut     = "cut"
-
-	FieldFilterConditionAnd = "and"
-	FieldFilterConditionOr  = "or"
-	FieldFilterConditionNot = "not"
-
-	FieldFilterModeEqual    = "equal"
-	FieldFilterModeContains = "contains"
-	FieldFilterModePrefix   = "prefix"
-	FieldFilterModeSuffix   = "suffix"
-
-	minGRPCKeepaliveTime    = 10 * time.Second
-	minGRPCKeepaliveTimeout = 1 * time.Second
-
-	defaultAsyncSearchListQueryLengthLimit = 1000
-
-	defaultMaxSearchTotalLimit        = 1000000
-	defaultMaxSearchOffsetLimit       = 1000000
-	defaultMaxExportLimit             = 100000
-	defaultMaxAggregationsPerRequest  = 1
-	defaultMaxBucketsPerAggregationTs = 200
-	defaultMaxParallelExportRequests  = 1
-
-	defaultInmemCacheNumCounters = 10000000
-	defaultInmemCacheMaxCost     = 1000000
-	defaultInmemCacheBufferItems = 64
-
-	defaultEventsCacheTTL = 24 * time.Hour
-
-	defaultLogsLifespanCacheTTL = 10 * time.Minute
-
-	defaultAdminCacheTTL = time.Hour
-
-	defaultClickHouseDialTimeout = 5 * time.Second
-	defaultClickHouseReadTimeout = 30 * time.Second
-)
 
 type Config struct {
 	Version  int       `yaml:"version"`
@@ -333,8 +299,8 @@ type InmemoryCache struct {
 
 type Redis struct {
 	ID              string        `yaml:"id"`
-	KeyPrefix       string        `yaml:"key_prefix"`
 	WithInmemID     string        `yaml:"with_inmem_id"`
+	KeyPrefix       string        `yaml:"key_prefix"`
 	Addr            string        `yaml:"addr"`
 	Username        string        `yaml:"username"`
 	Password        string        `yaml:"password"`
@@ -435,16 +401,34 @@ type JWT struct {
 }
 
 type Auth struct {
+	Options AuthOptions        `yaml:"options"`
+	Envs    map[string]AuthEnv `yaml:"envs"`
+}
+
+type AuthEnv struct {
+	Options *AuthOptions `yaml:"options"`
+}
+
+type AuthOptions struct {
 	OIDC *OIDC `yaml:"oidc"`
 	JWT  *JWT  `yaml:"jwt"`
 }
 
 type Server struct {
-	HTTP         HTTP              `yaml:"http"`
-	GRPC         GRPC              `yaml:"grpc"`
-	Debug        Debug             `yaml:"debug"`
-	Auth         *Auth             `yaml:"auth"`
-	RateLimiters ApiToRateLimiters `yaml:"rate_limiters"`
+	HTTP         HTTP         `yaml:"http"`
+	GRPC         GRPC         `yaml:"grpc"`
+	Debug        Debug        `yaml:"debug"`
+	Auth         *Auth        `yaml:"auth"`
+	RateLimiters RateLimiters `yaml:"rate_limiters"`
+}
+
+type RateLimiters struct {
+	Options ApiRateLimiters            `yaml:"options"`
+	Envs    map[string]RateLimitersEnv `yaml:"envs"`
+}
+
+type RateLimitersEnv struct {
+	Options ApiRateLimiters `yaml:"options"`
 }
 
 type GRPCKeepaliveParams struct {
@@ -507,13 +491,23 @@ func (c *Clients) ClickHouseByID(id string) *CHClient {
 
 type Handlers struct {
 	SeqAPI      SeqAPI       `yaml:"seq_api"`
-	ErrorGroups *ErrorGroups `yaml:"error_groups"`
 	MassExport  *MassExport  `yaml:"mass_export"`
+	AsyncSearch *AsyncSearch `yaml:"async_search"`
+	ErrorGroups *ErrorGroups `yaml:"error_groups"`
 	Admin       *Admin       `yaml:"admin"`
-	AsyncSearch AsyncSearch  `yaml:"async_search"`
 }
 
 type Admin struct {
+	Options    *AdminOptions       `yaml:"options"`
+	Envs       map[string]AdminEnv `yaml:"envs"`
+	DefaultEnv string              `yaml:"default_env"`
+}
+
+type AdminEnv struct {
+	Options *AdminOptions `yaml:"options"`
+}
+
+type AdminOptions struct {
 	RedisID    string        `yaml:"redis_id"`
 	SuperUsers []string      `yaml:"super_users"`
 	CacheTTL   time.Duration `yaml:"cache_ttl"`
@@ -525,22 +519,10 @@ type Field struct {
 }
 
 type SeqAPI struct {
-	SeqDBID       string               `yaml:"seq_db_id"`
-	CacheID       string               `yaml:"cache_id"`
-	RedisID       string               `yaml:"redis_id"`
-	GlobalOptions SeqAPIGlobalOptions  `yaml:"global_options"`
-	Options       SeqAPIOptions        `yaml:"options"`
-	Envs          map[string]SeqAPIEnv `yaml:"envs"`
-	DefaultEnv    string               `yaml:"default_env"`
-}
-
-type SeqAPIGlobalOptions struct {
-	PinnedFields         []Field       `yaml:"pinned_fields"`
-	SystemFields         []Field       `yaml:"system_fields"`
-	Masking              *Masking      `yaml:"masking"`
-	EventsCacheTTL       time.Duration `yaml:"events_cache_ttl"`
-	LogsLifespanCacheTTL time.Duration `yaml:"logs_lifespan_cache_ttl"`
-	FieldsCacheTTL       time.Duration `yaml:"fields_cache_ttl"`
+	SeqDBID    string               `yaml:"seq_db_id"`
+	Options    SeqAPIOptions        `yaml:"options"`
+	Envs       map[string]SeqAPIEnv `yaml:"envs"`
+	DefaultEnv string               `yaml:"default_env"`
 }
 
 type SeqAPIEnv struct {
@@ -549,14 +531,34 @@ type SeqAPIEnv struct {
 }
 
 type SeqAPIOptions struct {
+	Limits       SeqAPILimits `yaml:"limits"`
+	Caches       SeqAPICaches `yaml:"caches"`
+	Masking      *Masking     `yaml:"masking"`
+	PinnedFields []Field      `yaml:"pinned_fields"`
+	SystemFields []Field      `yaml:"system_fields"`
+}
+
+type SeqAPILimits struct {
 	MaxSearchLimit             int32 `yaml:"max_search_limit,omitempty"`
-	MaxSearchTotalLimit        int64 `yaml:"max_search_total_limit,omitempty"`
-	MaxSearchOffsetLimit       int32 `yaml:"max_search_offset_limit,omitempty"`
+	MaxSearchTotal             int64 `yaml:"max_search_total,omitempty"`
+	MaxSearchOffset            int32 `yaml:"max_search_offset,omitempty"`
 	MaxExportLimit             int32 `yaml:"max_export_limit,omitempty"`
 	SeqCLIMaxSearchLimit       int   `yaml:"seq_cli_max_search_limit,omitempty"`
 	MaxParallelExportRequests  int   `yaml:"max_parallel_export_requests,omitempty"`
 	MaxAggregationsPerRequest  int   `yaml:"max_aggregations_per_request,omitempty"`
 	MaxBucketsPerAggregationTs int   `yaml:"max_buckets_per_aggregation_ts,omitempty"`
+}
+
+type SeqAPICaches struct {
+	CacheID string          `yaml:"cache_id"` // redis + inmem
+	RedisID string          `yaml:"redis_id"` // redis only
+	TTL     SeqAPICachesTTL `yaml:"ttl"`
+}
+
+type SeqAPICachesTTL struct {
+	Events       time.Duration `yaml:"events"`
+	LogsLifespan time.Duration `yaml:"logs_lifespan"`
+	Fields       time.Duration `yaml:"fields"`
 }
 
 type Masking struct {
@@ -595,305 +597,35 @@ type LogTagsMapping struct {
 }
 
 type ErrorGroups struct {
-	CHID           string                    `yaml:"ch_id"`
-	Envs           map[string]ErrorGroupsEnv `yaml:"envs"`
-	LogTagsMapping LogTagsMapping            `yaml:"log_tags_mapping"`
-	QueryFilter    map[string]string         `yaml:"query_filter"`
-	DefaultEnv     string                    `yaml:"default_env"`
+	CHID       string                    `yaml:"ch_id"`
+	Options    *ErrorGroupsOptions       `yaml:"options"`
+	Envs       map[string]ErrorGroupsEnv `yaml:"envs"`
+	DefaultEnv string                    `yaml:"default_env"`
 }
 
 type ErrorGroupsEnv struct {
-	CHID string `yaml:"ch_id"`
+	CHID    string              `yaml:"ch_id"`
+	Options *ErrorGroupsOptions `yaml:"options"`
+}
+
+type ErrorGroupsOptions struct {
+	LogTagsMapping LogTagsMapping    `yaml:"log_tags_mapping"`
+	QueryFilter    map[string]string `yaml:"query_filter"`
 }
 
 type AsyncSearch struct {
-	SeqDBID              string                    `yaml:"seq_db_id"`
-	Envs                 map[string]AsyncSearchEnv `yaml:"envs"`
-	AdminUsers           []string                  `yaml:"admin_users"`
-	ListQueryLengthLimit int                       `yaml:"list_query_length_limit"`
-	DefaultEnv           string                    `yaml:"default_env"`
+	SeqDBID    string                    `yaml:"seq_db_id"`
+	Options    AsyncSearchOptions        `yaml:"options"`
+	Envs       map[string]AsyncSearchEnv `yaml:"envs"`
+	DefaultEnv string                    `yaml:"default_env"`
 }
 
 type AsyncSearchEnv struct {
-	SeqDBID              string `yaml:"seq_db_id"`
-	ListQueryLengthLimit int    `yaml:"list_query_length_limit"`
+	SeqDBID string              `yaml:"seq_db_id"`
+	Options *AsyncSearchOptions `yaml:"options"`
 }
 
-func Normalize(cfg *Config) error {
-	if len(cfg.Clients.SeqDB) == 0 {
-		return fmt.Errorf("clients.seq_db must contain at least one client")
-	}
-
-	seqDBIDs := make(map[string]struct{}, len(cfg.Clients.SeqDB))
-	for i := range cfg.Clients.SeqDB {
-		c := &cfg.Clients.SeqDB[i]
-		if c.ID == "" {
-			return fmt.Errorf("clients.seq_db[%d].id cannot be empty", i)
-		}
-		if _, ok := seqDBIDs[c.ID]; ok {
-			return fmt.Errorf("duplicate clients.seq_db.id %q", c.ID)
-		}
-
-		seqDBIDs[c.ID] = struct{}{}
-
-		if c.ClientMode == "" {
-			c.ClientMode = SeqDBClientModeGRPC
-		} else if c.ClientMode != SeqDBClientModeGRPC {
-			return fmt.Errorf("invalid clients.seq_db[%q].client_mode: %q (allowed: %q)", c.ID, c.ClientMode, SeqDBClientModeGRPC)
-		}
-
-		if c.GRPCKeepaliveParams != nil {
-			c.GRPCKeepaliveParams.Time = max(c.GRPCKeepaliveParams.Time, minGRPCKeepaliveTime)
-			c.GRPCKeepaliveParams.Timeout = max(c.GRPCKeepaliveParams.Timeout, minGRPCKeepaliveTimeout)
-		}
-	}
-
-	chIDs := make(map[string]struct{}, len(cfg.Clients.ClickHouse))
-	for i := range cfg.Clients.ClickHouse {
-		ch := &cfg.Clients.ClickHouse[i]
-		if ch.ID == "" {
-			return fmt.Errorf("clients.clickhouse[%d].id cannot be empty", i)
-		}
-		if _, ok := chIDs[ch.ID]; ok {
-			return fmt.Errorf("duplicate clients.clickhouse.id %q", ch.ID)
-		}
-
-		chIDs[ch.ID] = struct{}{}
-
-		if ch.DialTimeout <= 0 {
-			ch.DialTimeout = defaultClickHouseDialTimeout
-		}
-		if ch.ReadTimeout <= 0 {
-			ch.ReadTimeout = defaultClickHouseReadTimeout
-		}
-	}
-
-	inmemIDs := make(map[string]struct{}, len(cfg.Cache.Inmemory))
-	for i := range cfg.Cache.Inmemory {
-		inm := &cfg.Cache.Inmemory[i]
-		if inm.ID == "" {
-			return fmt.Errorf("cache.inmemory[%d].id cannot be empty", i)
-		}
-		if _, ok := inmemIDs[inm.ID]; ok {
-			return fmt.Errorf("duplicate cache.inmemory.id %q", inm.ID)
-		}
-
-		inmemIDs[inm.ID] = struct{}{}
-
-		if inm.NumCounters <= 0 {
-			inm.NumCounters = defaultInmemCacheNumCounters
-		}
-		if inm.MaxCost <= 0 {
-			inm.MaxCost = defaultInmemCacheMaxCost
-		}
-		if inm.BufferItems <= 0 {
-			inm.BufferItems = defaultInmemCacheBufferItems
-		}
-	}
-
-	redisIDs := make(map[string]struct{}, len(cfg.Cache.Redis))
-	for i := range cfg.Cache.Redis {
-		r := &cfg.Cache.Redis[i]
-		if r.ID == "" {
-			return fmt.Errorf("cache.redis[%d].id cannot be empty", i)
-		}
-		if _, ok := redisIDs[r.ID]; ok {
-			return fmt.Errorf("duplicate cache.redis.id %q", r.ID)
-		}
-
-		redisIDs[r.ID] = struct{}{}
-
-		if r.WithInmemID != "" {
-			if _, ok := inmemIDs[r.WithInmemID]; !ok {
-				return fmt.Errorf("cache.redis[%q].with_inmem_id %q not found in cache.inmemory", r.ID, r.WithInmemID)
-			}
-		}
-	}
-
-	if cfg.DB != nil && cfg.DB.UsePreparedStatements == nil {
-		cfg.DB.UsePreparedStatements = new(bool)
-		*cfg.DB.UsePreparedStatements = true
-	}
-
-	if cfg.Handlers.AsyncSearch.ListQueryLengthLimit <= 0 {
-		cfg.Handlers.AsyncSearch.ListQueryLengthLimit = defaultAsyncSearchListQueryLengthLimit
-	}
-
-	setSeqAPIGlobalOptionsDefaults(&cfg.Handlers.SeqAPI.GlobalOptions)
-	setSeqAPIOptionsDefaults(&cfg.Handlers.SeqAPI.Options)
-
-	if len(cfg.Handlers.SeqAPI.Envs) > 0 {
-		if cfg.Handlers.SeqAPI.SeqDBID != "" {
-			return fmt.Errorf("handlers.seq_api.seq_db_id must be empty when envs is used. Put seq_db_id inside each env")
-		}
-		if cfg.Handlers.SeqAPI.DefaultEnv == "" {
-			return fmt.Errorf("handlers.seq_api.default_env must be specified when envs is used")
-		}
-		if _, exists := cfg.Handlers.SeqAPI.Envs[cfg.Handlers.SeqAPI.DefaultEnv]; !exists {
-			return fmt.Errorf("handlers.seq_api.default_env %q not found in envs", cfg.Handlers.SeqAPI.DefaultEnv)
-		}
-
-		for envName, envConfig := range cfg.Handlers.SeqAPI.Envs {
-			if envConfig.SeqDBID == "" {
-				return fmt.Errorf("handlers.seq_api.envs[%q].seq_db_id cannot be empty", envName)
-			}
-			if _, ok := seqDBIDs[envConfig.SeqDBID]; !ok {
-				return fmt.Errorf("unknown handlers.seq_api.envs[%q].seq_db_id %q", envName, envConfig.SeqDBID)
-			}
-		}
-	} else {
-		if cfg.Handlers.SeqAPI.SeqDBID == "" {
-			return fmt.Errorf("handlers.seq_api.seq_db_id cannot be empty when envs is not used")
-		}
-		if _, ok := seqDBIDs[cfg.Handlers.SeqAPI.SeqDBID]; !ok {
-			return fmt.Errorf("unknown handlers.seq_api.seq_db_id %q", cfg.Handlers.SeqAPI.SeqDBID)
-		}
-	}
-
-	if cfg.Handlers.MassExport != nil {
-		if cfg.Handlers.MassExport.SeqDBID == "" {
-			return fmt.Errorf("handlers.mass_export.seq_db_id cannot be empty")
-		}
-		if _, ok := seqDBIDs[cfg.Handlers.MassExport.SeqDBID]; !ok {
-			return fmt.Errorf("unknown handlers.mass_export.seq_db_id %q", cfg.Handlers.MassExport.SeqDBID)
-		}
-
-		if cfg.Handlers.MassExport.SessionStore != nil {
-			if cfg.Handlers.MassExport.SessionStore.RedisID == "" {
-				return fmt.Errorf("handlers.mass_export.session_store.redis_id cannot be empty")
-			}
-			if _, ok := redisIDs[cfg.Handlers.MassExport.SessionStore.RedisID]; !ok {
-				return fmt.Errorf("unknown handlers.mass_export.session_store.redis_id %q", cfg.Handlers.MassExport.SessionStore.RedisID)
-			}
-		}
-	}
-
-	if len(cfg.Handlers.AsyncSearch.Envs) > 0 {
-		if cfg.Handlers.AsyncSearch.SeqDBID != "" {
-			return fmt.Errorf("handlers.async_search.seq_db_id must be empty when envs is used. Put seq_db_id inside each env")
-		}
-		if cfg.Handlers.AsyncSearch.DefaultEnv == "" {
-			return fmt.Errorf("handlers.async_search.default_env must be specified when using envs")
-		}
-		if _, ok := cfg.Handlers.AsyncSearch.Envs[cfg.Handlers.AsyncSearch.DefaultEnv]; !ok {
-			return fmt.Errorf("handlers.async_search.default_env %q not found in envs", cfg.Handlers.AsyncSearch.DefaultEnv)
-		}
-
-		for envName, envConfig := range cfg.Handlers.AsyncSearch.Envs {
-			if envConfig.SeqDBID == "" {
-				return fmt.Errorf("handlers.async_search.envs[%q].seq_db_id cannot be empty", envName)
-			}
-			if _, ok := seqDBIDs[envConfig.SeqDBID]; !ok {
-				return fmt.Errorf("unknown handlers.async_search.envs[%q].seq_db_id %q", envName, envConfig.SeqDBID)
-			}
-			if envConfig.ListQueryLengthLimit <= 0 {
-				envConfig.ListQueryLengthLimit = cfg.Handlers.AsyncSearch.ListQueryLengthLimit
-			}
-
-			cfg.Handlers.AsyncSearch.Envs[envName] = envConfig
-		}
-	} else {
-		if cfg.Handlers.AsyncSearch.SeqDBID == "" {
-			return fmt.Errorf("handlers.async_search.seq_db_id cannot be empty when envs is not used")
-		}
-		if _, ok := seqDBIDs[cfg.Handlers.AsyncSearch.SeqDBID]; !ok {
-			return fmt.Errorf("unknown handlers.async_search.seq_db_id %q", cfg.Handlers.AsyncSearch.SeqDBID)
-		}
-	}
-
-	if cfg.Handlers.ErrorGroups != nil {
-		eg := cfg.Handlers.ErrorGroups
-		if len(eg.Envs) > 0 {
-			if eg.CHID != "" {
-				return fmt.Errorf("handlers.error_groups.ch_id must be empty when envs is used. Put ch_id inside each env")
-			}
-			if eg.DefaultEnv == "" {
-				return fmt.Errorf("handlers.error_groups.default_env must be specified when using envs")
-			}
-			if _, ok := eg.Envs[eg.DefaultEnv]; !ok {
-				return fmt.Errorf("handlers.error_groups.default_env %q not found in envs", eg.DefaultEnv)
-			}
-
-			for envName, envConfig := range eg.Envs {
-				if envConfig.CHID == "" {
-					return fmt.Errorf("handlers.error_groups.envs[%q].ch_id cannot be empty", envName)
-				}
-				if _, ok := chIDs[envConfig.CHID]; !ok {
-					return fmt.Errorf("unknown handlers.error_groups.envs[%q].ch_id %q", envName, envConfig.CHID)
-				}
-			}
-		} else {
-			if cfg.Handlers.ErrorGroups.CHID == "" {
-				return fmt.Errorf("handlers.error_groups.ch_id cannot be empty when envs is not used")
-			}
-			if _, ok := chIDs[cfg.Handlers.ErrorGroups.CHID]; !ok {
-				return fmt.Errorf("unknown handlers.error_groups.ch_id %q", cfg.Handlers.ErrorGroups.CHID)
-			}
-		}
-	}
-
-	if cfg.Server.Auth != nil && cfg.Server.Auth.OIDC != nil {
-		oidc := cfg.Server.Auth.OIDC
-		hasCacheKey := oidc.CacheSecretKey != ""
-		hasCacheID := oidc.CacheID != ""
-
-		switch {
-		case hasCacheKey && !hasCacheID:
-			return fmt.Errorf("auth.oidc.cache_secret_key is set but auth.oidc.cache_id is empty")
-		case !hasCacheKey && hasCacheID:
-			return fmt.Errorf("auth.oidc.cache_id is set but auth.oidc.cache_secret_key is empty")
-		case hasCacheID && hasCacheKey:
-			if cfg.Cache.InmemByID(oidc.CacheID) == nil && cfg.Cache.RedisByID(oidc.CacheID) == nil {
-				return fmt.Errorf("auth.oidc.cache_id %q not found", oidc.CacheID)
-			}
-		}
-	}
-
-	if cfg.Handlers.Admin != nil {
-		if cfg.Handlers.Admin.CacheTTL <= 0 {
-			cfg.Handlers.Admin.CacheTTL = defaultAdminCacheTTL
-		}
-
-		if cfg.Handlers.Admin.RedisID != "" {
-			redisCfg := cfg.Cache.RedisByID(cfg.Handlers.Admin.RedisID)
-			if redisCfg == nil {
-				return fmt.Errorf("unknown handlers.admin.redis_id %q", cfg.Handlers.Admin.RedisID)
-			}
-			if redisCfg.WithInmemID != "" {
-				return fmt.Errorf("handlers.admin.redis_id %q: with_inmem_id is not allowed", cfg.Handlers.Admin.RedisID)
-			}
-		}
-	}
-
-	return nil
-}
-
-func setSeqAPIOptionsDefaults(options *SeqAPIOptions) {
-	if options.MaxAggregationsPerRequest <= 0 {
-		options.MaxAggregationsPerRequest = defaultMaxAggregationsPerRequest
-	}
-	if options.MaxBucketsPerAggregationTs <= 0 {
-		options.MaxBucketsPerAggregationTs = defaultMaxBucketsPerAggregationTs
-	}
-	if options.MaxParallelExportRequests <= 0 {
-		options.MaxParallelExportRequests = defaultMaxParallelExportRequests
-	}
-	if options.MaxSearchTotalLimit <= 0 {
-		options.MaxSearchTotalLimit = defaultMaxSearchTotalLimit
-	}
-	if options.MaxSearchOffsetLimit <= 0 {
-		options.MaxSearchOffsetLimit = defaultMaxSearchOffsetLimit
-	}
-	if options.MaxExportLimit <= 0 {
-		options.MaxExportLimit = defaultMaxExportLimit
-	}
-}
-
-func setSeqAPIGlobalOptionsDefaults(options *SeqAPIGlobalOptions) {
-	if options.EventsCacheTTL <= 0 {
-		options.EventsCacheTTL = defaultEventsCacheTTL
-	}
-	if options.LogsLifespanCacheTTL <= 0 {
-		options.LogsLifespanCacheTTL = defaultLogsLifespanCacheTTL
-	}
+type AsyncSearchOptions struct {
+	AdminUsers           []string `yaml:"admin_users"`
+	ListQueryLengthLimit int      `yaml:"list_query_length_limit"`
 }

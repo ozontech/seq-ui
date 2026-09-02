@@ -281,10 +281,14 @@ func migrateHandlers(src *v1.Handlers, cfg *v2.Config, v1Cache v1.Cache) *v2.Han
 func migrateSeqAPI(src v1.SeqAPI, v1Cache v1.Cache) v2.SeqAPI {
 	cacheID, redisID := defaultCacheIDs(v1Cache)
 	dst := v2.SeqAPI{
-		CacheID:    cacheID,
-		RedisID:    redisID,
-		Envs:       migrateSeqAPIEnvs(src.Envs),
+		Envs:       migrateSeqAPIEnvs(src.Envs, cacheID, redisID),
 		DefaultEnv: src.DefaultEnv,
+		Options: v2.SeqAPIOptions{
+			Caches: v2.SeqAPICaches{
+				CacheID: cacheID,
+				RedisID: redisID,
+			},
+		},
 	}
 
 	if len(src.Envs) == 0 {
@@ -292,14 +296,13 @@ func migrateSeqAPI(src v1.SeqAPI, v1Cache v1.Cache) v2.SeqAPI {
 	}
 
 	if src.SeqAPIOptions != nil {
-		dst.GlobalOptions = migrateSeqAPIOptionsToGlobal(src.SeqAPIOptions)
-		dst.Options = migrateSeqAPIOptions(src.SeqAPIOptions)
+		dst.Options = migrateSeqAPIOptions(src.SeqAPIOptions, cacheID, redisID)
 	}
 
 	return dst
 }
 
-func migrateSeqAPIEnvs(envs map[string]v1.SeqAPIEnv) map[string]v2.SeqAPIEnv {
+func migrateSeqAPIEnvs(envs map[string]v1.SeqAPIEnv, cacheID, redisID string) map[string]v2.SeqAPIEnv {
 	if len(envs) == 0 {
 		return nil
 	}
@@ -310,7 +313,7 @@ func migrateSeqAPIEnvs(envs map[string]v1.SeqAPIEnv) map[string]v2.SeqAPIEnv {
 			SeqDBID: cfg.SeqDB,
 		}
 		if cfg.Options != nil {
-			envOptions := migrateSeqAPIOptions(cfg.Options)
+			envOptions := migrateSeqAPIOptions(cfg.Options, cacheID, redisID)
 			env.Options = &envOptions
 		}
 
@@ -320,27 +323,30 @@ func migrateSeqAPIEnvs(envs map[string]v1.SeqAPIEnv) map[string]v2.SeqAPIEnv {
 	return dst
 }
 
-func migrateSeqAPIOptionsToGlobal(options *v1.SeqAPIOptions) v2.SeqAPIGlobalOptions {
-	return v2.SeqAPIGlobalOptions{
-		EventsCacheTTL:       options.EventsCacheTTL,
-		PinnedFields:         migrateFields(options.PinnedFields),
-		SystemFields:         migrateFields(options.SystemFields),
-		LogsLifespanCacheTTL: options.LogsLifespanCacheTTL,
-		FieldsCacheTTL:       options.FieldsCacheTTL,
-		Masking:              migrateMasking(options.Masking),
-	}
-}
-
-func migrateSeqAPIOptions(options *v1.SeqAPIOptions) v2.SeqAPIOptions {
+func migrateSeqAPIOptions(options *v1.SeqAPIOptions, cacheID, redisID string) v2.SeqAPIOptions {
 	return v2.SeqAPIOptions{
-		MaxSearchLimit:             options.MaxSearchLimit,
-		MaxSearchTotalLimit:        options.MaxSearchTotalLimit,
-		MaxSearchOffsetLimit:       options.MaxSearchOffsetLimit,
-		MaxExportLimit:             options.MaxExportLimit,
-		SeqCLIMaxSearchLimit:       options.SeqCLIMaxSearchLimit,
-		MaxParallelExportRequests:  options.MaxParallelExportRequests,
-		MaxAggregationsPerRequest:  options.MaxAggregationsPerRequest,
-		MaxBucketsPerAggregationTs: options.MaxBucketsPerAggregationTs,
+		Limits: v2.SeqAPILimits{
+			MaxSearchLimit:             options.MaxSearchLimit,
+			MaxSearchTotal:             options.MaxSearchTotalLimit,
+			MaxSearchOffset:            options.MaxSearchOffsetLimit,
+			MaxExportLimit:             options.MaxExportLimit,
+			SeqCLIMaxSearchLimit:       options.SeqCLIMaxSearchLimit,
+			MaxParallelExportRequests:  options.MaxParallelExportRequests,
+			MaxAggregationsPerRequest:  options.MaxAggregationsPerRequest,
+			MaxBucketsPerAggregationTs: options.MaxBucketsPerAggregationTs,
+		},
+		Masking:      migrateMasking(options.Masking),
+		PinnedFields: migrateFields(options.PinnedFields),
+		SystemFields: migrateFields(options.SystemFields),
+		Caches: v2.SeqAPICaches{
+			CacheID: cacheID,
+			RedisID: redisID,
+			TTL: v2.SeqAPICachesTTL{
+				Events:       options.EventsCacheTTL,
+				LogsLifespan: options.LogsLifespanCacheTTL,
+				Fields:       options.FieldsCacheTTL,
+			},
+		},
 	}
 }
 
@@ -433,8 +439,12 @@ func migrateErrorGroups(eg v1.ErrorGroups) *v2.ErrorGroups {
 	}
 }
 
-func migrateAsyncSearch(a v1.AsyncSearch) v2.AsyncSearch {
-	return v2.AsyncSearch{
+func migrateAsyncSearch(a v1.AsyncSearch) *v2.AsyncSearch {
+	if len(a.AdminUsers) == 0 && a.ListQueryLengthLimit == 0 {
+		return nil
+	}
+
+	return &v2.AsyncSearch{
 		SeqDBID:              v2.DefaultSeqDBClientID,
 		AdminUsers:           a.AdminUsers,
 		ListQueryLengthLimit: a.ListQueryLengthLimit,

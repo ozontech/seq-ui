@@ -150,10 +150,10 @@ func initApp(ctx context.Context, cfg config.Config, caches map[string]cache.Cac
 	}
 
 	var (
-		adminV1              *admin_v1.Admin
-		asyncSearchesService asyncsearches.Service
-		userProfileV1        *userprofile_v1.UserProfile
-		dashboardsV1         *dashboards_v1.Dashboards
+		adminV1          *admin_v1.Admin
+		asyncSearchesSvc asyncsearches.Service
+		userProfileV1    *userprofile_v1.UserProfile
+		dashboardsV1     *dashboards_v1.Dashboards
 	)
 	if db != nil {
 		repo := repository.New(db, cfg.DB.RequestTimeout)
@@ -164,7 +164,9 @@ func initApp(ctx context.Context, cfg config.Config, caches map[string]cache.Cac
 		userProfileV1 = userprofile_v1.New(userProfilesSvc)
 		dashboardsV1 = dashboards_v1.New(dashboardsSvc)
 
-		asyncSearchesService = asyncsearches.New(ctx, repo, seqDBClients[cfg.Handlers.AsyncSearch.SeqDBID], cfg.Handlers.AsyncSearch)
+		if cfg.Handlers.AsyncSearch != nil {
+			asyncSearchesSvc = asyncsearches.New(ctx, repo, seqDBClients[cfg.Handlers.AsyncSearch.SeqDBID], *cfg.Handlers.AsyncSearch)
+		}
 
 		if cfg.Handlers.Admin != nil {
 			logger.Info("initializing redis admin cache")
@@ -181,7 +183,7 @@ func initApp(ctx context.Context, cfg config.Config, caches map[string]cache.Cac
 
 	seqApiCache := caches[cfg.Handlers.SeqAPI.CacheID]
 	seqApiRedisCache := caches[cfg.Handlers.SeqAPI.RedisID]
-	seqApiV1 := seqapi_v1.New(&cfg.Handlers.SeqAPI, seqDBClients, seqApiCache, seqApiRedisCache, asyncSearchesService)
+	seqApiV1 := seqapi_v1.New(&cfg.Handlers.SeqAPI, seqDBClients, seqApiCache, seqApiRedisCache, asyncSearchesSvc)
 
 	var errorGroupsV1 *errorgroups_v1.ErrorGroups
 	if cfg.Handlers.ErrorGroups != nil {
@@ -209,12 +211,12 @@ func initSeqDBClients(ctx context.Context, cfg config.Config) (map[string]seqdb.
 }
 
 func createSeqBDClient(ctx context.Context, cfg *config.SeqDBClient, seqAPI *config.SeqAPI) (seqdb.Client, error) {
-	maxSearchLimit := int(seqAPI.Options.MaxSearchLimit)
+	maxSearchLimit := int(seqAPI.Options.Limits.MaxSearchLimit)
 	for _, env := range seqAPI.Envs {
 		if env.SeqDBID != cfg.ID {
 			continue
 		}
-		if l := int(env.Options.MaxSearchLimit); l > maxSearchLimit {
+		if l := int(env.Options.Limits.MaxSearchLimit); l > maxSearchLimit {
 			maxSearchLimit = l
 		}
 	}
