@@ -12,7 +12,7 @@ import (
 	"github.com/ozontech/seq-ui/tracing"
 )
 
-// serveGetReleases go doc.
+// serveGetServices go doc.
 //
 //	@Router		/errorgroups/v1/services [post]
 //	@ID			errorgroups_v1_get_services

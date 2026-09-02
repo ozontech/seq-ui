@@ -22,6 +22,7 @@ func TestGetGroups(t *testing.T) {
 		env           = "test-env"
 		source        = "test-source"
 		release       = "test-release"
+		filter        = map[string]string{"f1": "v1", "f2": "v2"}
 		duration      = 2 * time.Minute
 		now           = time.Now().Truncate(0).UTC()
 		oneMinuteAgo  = now.Add(-1 * time.Minute)
@@ -307,6 +308,80 @@ func TestGetGroups(t *testing.T) {
 					Env:       &env,
 					Source:    &source,
 					Release:   &release,
+					Limit:     2,
+					Offset:    0,
+					Order:     types.OrderOldest,
+					WithTotal: true,
+				},
+
+				groups: []types.ErrorGroup{
+					{
+						Hash:        123,
+						Message:     "some error 1",
+						Source:      source,
+						Count:       10,
+						FirstSeenAt: twoMinutesAgo,
+						LastSeenAt:  oneMinuteAgo,
+					},
+					{
+						Hash:        456,
+						Message:     "some error 2",
+						Source:      source,
+						Count:       5,
+						FirstSeenAt: twoMinutesAgo,
+						LastSeenAt:  oneMinuteAgo,
+					},
+				},
+				total: 10,
+			},
+		},
+		{
+			name: "ok_filters",
+
+			req: &errorgroups_v1.GetGroupsRequest{
+				Service: service,
+				Env:     &env,
+				Source:  &source,
+				Release: &release,
+				Filter: &errorgroups_v1.GetGroupsRequest_Filter{
+					Custom: filter,
+				},
+				Limit:     2,
+				Offset:    0,
+				Order:     errorgroups_v1.Order_ORDER_OLDEST,
+				WithTotal: true,
+			},
+			want: &errorgroups_v1.GetGroupsResponse{
+				Total: 10,
+				Groups: []*errorgroups_v1.GetGroupsResponse_Group{
+					{
+						Hash:        123,
+						Message:     "some error 1",
+						Source:      source,
+						SeenTotal:   10,
+						FirstSeenAt: timestamppb.New(twoMinutesAgo),
+						LastSeenAt:  timestamppb.New(oneMinuteAgo),
+					},
+					{
+						Hash:        456,
+						Message:     "some error 2",
+						Source:      source,
+						SeenTotal:   5,
+						FirstSeenAt: timestamppb.New(twoMinutesAgo),
+						LastSeenAt:  timestamppb.New(oneMinuteAgo),
+					},
+				},
+			},
+
+			mockArgs: &mockArgs{
+				req: types.GetErrorGroupsRequest{
+					Service: service,
+					Env:     &env,
+					Source:  &source,
+					Release: &release,
+					Filter: &types.ErrorGroupsFilter{
+						Custom: filter,
+					},
 					Limit:     2,
 					Offset:    0,
 					Order:     types.OrderOldest,

@@ -1,20 +1,20 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
-    image: postgres
+    image: postgres:18.4
     restart: always
     ports:
       - "5432:5432"
     environment:
       POSTGRES_PASSWORD: "postgres"
   redis:
-    image: redis
+    image: redis:8.10
     restart: always
     ports:
       - "6379:6379"
   clickhouse:
-    image: clickhouse/clickhouse-server:24.8
+    image: clickhouse/clickhouse-server:25.8
     restart: always
     ports:
       - "8123:8123"

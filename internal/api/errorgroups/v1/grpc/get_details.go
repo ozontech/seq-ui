@@ -2,6 +2,9 @@ package grpc
 
 import (
 	"context"
+	"encoding/json"
+	"maps"
+	"slices"
 	"strconv"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -32,6 +35,10 @@ func (a *API) GetDetails(ctx context.Context, req *errorgroups.GetDetailsRequest
 	if req.Source != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "source", Value: attribute.StringValue(*req.Source)})
 	}
+	if req.Filter != nil {
+		filterRaw, _ := json.Marshal(req.Filter)
+		attributes = append(attributes, attribute.KeyValue{Key: "filter", Value: attribute.StringValue(string(filterRaw))})
+	}
 	span.SetAttributes(attributes...)
 
 	request := types.GetErrorGroupDetailsRequest{
@@ -41,6 +48,13 @@ func (a *API) GetDetails(ctx context.Context, req *errorgroups.GetDetailsRequest
 		Source:    req.Source,
 		Release:   req.Release,
 	}
+
+	if req.Filter != nil && len(req.Filter.Custom) > 0 {
+		request.Filter = &types.ErrorGroupsFilter{
+			Custom: req.Filter.Custom,
+		}
+	}
+
 	details, err := a.service.GetDetails(ctx, request)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
@@ -75,10 +89,23 @@ func distributionsToProto(source types.ErrorGroupDistributions) *errorgroups.Get
 		return res
 	}
 
+	var byFilter map[string]*errorgroups.GetDetailsResponse_DistributionArray
+	if len(source.ByFilter) > 0 {
+		byFilter = make(map[string]*errorgroups.GetDetailsResponse_DistributionArray, len(source.ByFilter))
+		keys := slices.Collect(maps.Keys(source.ByFilter))
+		slices.Sort(keys)
+		for _, key := range keys {
+			byFilter[key] = &errorgroups.GetDetailsResponse_DistributionArray{
+				Array: distrToProto(source.ByFilter[key]),
+			}
+		}
+	}
+
 	return &errorgroups.GetDetailsResponse_Distributions{
 		ByEnv:     distrToProto(source.ByEnv),
 		BySource:  distrToProto(source.BySource),
 		ByService: distrToProto(source.ByService),
 		ByRelease: distrToProto(source.ByRelease),
+		ByFilter:  byFilter,
 	}
 }

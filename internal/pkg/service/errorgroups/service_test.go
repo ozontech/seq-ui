@@ -849,6 +849,7 @@ func TestGetDetails(t *testing.T) {
 		source  = "test-source"
 		service = "test-svc"
 		release = "test-release"
+		filter  = map[string]string{"filter1": "value1", "filter2": "value2"}
 		someErr = errors.New("some err")
 	)
 
@@ -908,6 +909,9 @@ func TestGetDetails(t *testing.T) {
 				GroupHash: hash,
 				Env:       &env,
 				Service:   &service,
+				Filter: &types.ErrorGroupsFilter{
+					Custom: filter,
+				},
 			},
 			want: types.ErrorGroupDetails{
 				SeenTotal: 10,
@@ -920,6 +924,18 @@ func TestGetDetails(t *testing.T) {
 						{Value: "release1", Percent: 70},
 						{Value: "release2", Percent: 30},
 					},
+					ByFilter: map[string][]types.ErrorGroupDistribution{
+						"filter1": {
+							{Value: "value1", Percent: 100},
+						},
+						"filter2": {
+							{Value: "value2", Percent: 100},
+						},
+						"filter3": {
+							{Value: "value1", Percent: 70},
+							{Value: "value2", Percent: 30},
+						},
+					},
 				},
 			},
 
@@ -928,6 +944,9 @@ func TestGetDetails(t *testing.T) {
 					GroupHash: hash,
 					Env:       &env,
 					Service:   &service,
+					Filter: &types.ErrorGroupsFilter{
+						Custom: filter,
+					},
 				},
 
 				details: types.ErrorGroupDetails{
@@ -943,6 +962,14 @@ func TestGetDetails(t *testing.T) {
 					ByRelease: types.ErrorGroupCount{
 						"release1": 7,
 						"release2": 3,
+					},
+					ByFilter: map[string]types.ErrorGroupCount{
+						"filter1": {"value1": 10},
+						"filter2": {"value2": 10},
+						"filter3": {
+							"value1": 7,
+							"value2": 3,
+						},
 					},
 				},
 			},
@@ -1093,12 +1120,10 @@ func TestGetDetails(t *testing.T) {
 					Return(ma.details, ma.errDetails).
 					Times(1)
 
-				if !tt.req.IsFullyFilled() {
-					mockedRepo.EXPECT().
-						GetErrorCounts(gomock.Any(), ma.req).
-						Return(ma.counts, ma.errCounts).
-						Times(1)
-				}
+				mockedRepo.EXPECT().
+					GetErrorCounts(gomock.Any(), ma.req).
+					Return(ma.counts, ma.errCounts).
+					Times(1)
 			}
 
 			got, err := svc.GetDetails(context.Background(), tt.req)
@@ -1475,6 +1500,102 @@ func TestDiffByReleases(t *testing.T) {
 
 			require.Equal(t, tt.wantGroupsCount, len(gotGroups))
 			require.Equal(t, tt.wantTotal, gotTotal)
+		})
+	}
+}
+
+func TestGetServiceFilters(t *testing.T) {
+	var (
+		service = "test-svc"
+		someErr = errors.New("some err")
+	)
+
+	type mockArgs struct {
+		req types.GetServiceFiltersRequest
+
+		filters []types.ServiceFilter
+		err     error
+	}
+
+	tests := []struct {
+		name string
+
+		req     types.GetServiceFiltersRequest
+		want    []types.ServiceFilter
+		wantErr bool
+
+		mockArgs *mockArgs
+	}{
+		{
+			name: "ok",
+
+			req: types.GetServiceFiltersRequest{
+				Service: service,
+			},
+			want: []types.ServiceFilter{
+				{Key: "filter1", Values: []string{"val1", "val2"}},
+				{Key: "filter2", Values: []string{"val10", "val20"}},
+			},
+
+			mockArgs: &mockArgs{
+				req: types.GetServiceFiltersRequest{
+					Service: service,
+				},
+
+				filters: []types.ServiceFilter{
+					{Key: "filter1", Values: []string{"val1", "val2"}},
+					{Key: "filter2", Values: []string{"val10", "val20"}},
+				},
+			},
+		},
+		{
+			name: "err_no_service",
+
+			req:     types.GetServiceFiltersRequest{},
+			wantErr: true,
+		},
+		{
+			name: "err_repo",
+
+			req: types.GetServiceFiltersRequest{
+				Service: service,
+			},
+			wantErr: true,
+
+			mockArgs: &mockArgs{
+				req: types.GetServiceFiltersRequest{
+					Service: service,
+				},
+
+				err: someErr,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			mockedRepo := mock.NewMockRepository(ctrl)
+
+			svc := New(mockedRepo, config.LogTagsMapping{})
+
+			if ma := tt.mockArgs; ma != nil {
+				mockedRepo.EXPECT().
+					GetServiceFilters(gomock.Any(), ma.req).
+					Return(ma.filters, ma.err).
+					Times(1)
+			}
+
+			got, err := svc.GetServiceFilters(context.Background(), tt.req)
+
+			require.Equal(t, tt.wantErr, err != nil)
+			if tt.wantErr {
+				return
+			}
+
+			require.Equal(t, tt.want, got)
 		})
 	}
 }

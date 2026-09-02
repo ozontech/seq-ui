@@ -3,6 +3,7 @@ package errorgroups
 import (
 	"context"
 	"fmt"
+	"maps"
 	"math"
 	"slices"
 
@@ -29,6 +30,8 @@ type Service interface {
 	GetReleases(context.Context, types.GetReleasesRequest) ([]string, error)
 
 	DiffByReleases(context.Context, types.DiffByReleasesRequest) ([]types.DiffGroup, uint64, error)
+
+	GetServiceFilters(context.Context, types.GetServiceFiltersRequest) ([]types.ServiceFilter, error)
 }
 
 type service struct {
@@ -167,15 +170,6 @@ func (s *service) GetDetails(
 		return details, types.NewErrInvalidRequestField("'group_hash' must not be empty")
 	}
 
-	// fast way without calc distributions
-	if req.IsFullyFilled() {
-		details, err := s.repo.GetErrorDetails(ctx, req)
-		if err != nil {
-			return details, fmt.Errorf("get error details failed: %w", err)
-		}
-		return details, nil
-	}
-
 	eg, groupCtx := errgroup.WithContext(ctx)
 
 	eg.Go(func() error {
@@ -218,11 +212,22 @@ func (s *service) GetDetails(
 	}
 
 	if details.SeenTotal > 0 {
+		var byFilter map[string][]types.ErrorGroupDistribution
+		if len(counts.ByFilter) > 0 {
+			byFilter = make(map[string][]types.ErrorGroupDistribution)
+			keys := slices.Collect(maps.Keys(counts.ByFilter))
+			slices.Sort(keys)
+			for _, key := range keys {
+				byFilter[key] = calcDistribution(counts.ByFilter[key], nil)
+			}
+		}
+
 		details.Distributions = types.ErrorGroupDistributions{
 			ByEnv:     calcDistribution(counts.ByEnv, req.Env),
 			BySource:  calcDistribution(counts.BySource, req.Source),
 			ByService: calcDistribution(counts.ByService, req.Service),
 			ByRelease: calcDistribution(counts.ByRelease, req.Release),
+			ByFilter:  byFilter,
 		}
 	}
 
@@ -302,6 +307,16 @@ func (s *service) DiffByReleases(
 	}
 
 	return groups, total, err
+}
+
+func (s *service) GetServiceFilters(
+	ctx context.Context,
+	req types.GetServiceFiltersRequest,
+) ([]types.ServiceFilter, error) {
+	if req.Service == "" {
+		return nil, types.NewErrInvalidRequestField("'service' must be non-empty")
+	}
+	return s.repo.GetServiceFilters(ctx, req)
 }
 
 func validateTimeRange(tr *types.TimeRange) error {
