@@ -6,11 +6,17 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
+	"strings"
 	"time"
 
 	sq "github.com/n-r-w/squirrel"
 
 	"github.com/ozontech/seq-ui/internal/app/types"
+)
+
+const (
+	notSetValue = "_not_set"
 )
 
 func (r *repository) GetErrorGroups(
@@ -32,6 +38,7 @@ func (r *repository) GetErrorGroups(
 	if req.Release != nil && *req.Release != "" {
 		where["release"] = *req.Release
 	}
+	filters := convertFilter(req.Filter)
 
 	if !req.TimeRange.IsEmpty() {
 		var (
@@ -46,6 +53,7 @@ func (r *repository) GetErrorGroups(
 			counts, err = r.getErrorCounts(ctx, getErrorCountsParams{
 				tr:      req.TimeRange,
 				where:   where,
+				filters: filters,
 				orderBy: "count DESC",
 				limit:   uint64(req.Limit),
 				offset:  uint64(req.Offset),
@@ -69,7 +77,8 @@ func (r *repository) GetErrorGroups(
 					"minMerge(first_seen_at) as first_seen_at",
 					"maxMerge(last_seen_at) as last_seen_at",
 				},
-				where: where,
+				where:   where,
+				filters: filters,
 			})
 			if err != nil {
 				return nil, err
@@ -78,6 +87,7 @@ func (r *repository) GetErrorGroups(
 			subQuery := r.getHashSubQuery(getHashSubQueryParams{
 				table:   "error_groups",
 				where:   where,
+				filters: filters,
 				tr:      req.TimeRange,
 				orderBy: orderBy(req.Order, true),
 				limit:   uint64(req.Limit),
@@ -93,6 +103,7 @@ func (r *repository) GetErrorGroups(
 					"maxMerge(last_seen_at) as last_seen_at",
 				},
 				where:    where,
+				filters:  filters,
 				subQuery: &subQuery,
 				orderBy:  orderBy(req.Order, false),
 			})
@@ -108,8 +119,9 @@ func (r *repository) GetErrorGroups(
 
 			where["_group_hash"] = hashes
 			counts, err = r.getErrorCounts(ctx, getErrorCountsParams{
-				tr:    req.TimeRange,
-				where: where,
+				tr:      req.TimeRange,
+				where:   where,
+				filters: filters,
 			})
 			if err != nil {
 				return nil, err
@@ -121,12 +133,19 @@ func (r *repository) GetErrorGroups(
 
 		var groups []types.ErrorGroup
 		for _, hash := range hashes {
-			info := infoByHash[hash]
+			info, ok := infoByHash[hash]
+			if !ok {
+				continue
+			}
+			count, ok := countByHash[hash]
+			if !ok {
+				continue
+			}
 			groups = append(groups, types.ErrorGroup{
 				Hash:        hash,
 				Source:      info.Source,
 				Message:     info.Message,
-				Count:       countByHash[hash].Count,
+				Count:       count.Count,
 				FirstSeenAt: info.FirstSeenAt,
 				LastSeenAt:  info.LastSeenAt,
 			})
@@ -138,6 +157,7 @@ func (r *repository) GetErrorGroups(
 	subQ := r.getHashSubQuery(getHashSubQueryParams{
 		table:   "error_groups",
 		where:   where,
+		filters: filters,
 		orderBy: orderBy(req.Order, true),
 		limit:   uint64(req.Limit),
 		offset:  uint64(req.Offset),
@@ -153,6 +173,7 @@ func (r *repository) GetErrorGroups(
 			"maxMerge(last_seen_at) as last_seen_at",
 		},
 		where:    where,
+		filters:  filters,
 		subQuery: &subQ,
 		orderBy:  orderBy(req.Order, false),
 	})
@@ -194,11 +215,13 @@ func (r *repository) GetErrorGroupsTotal(
 	if req.Release != nil && *req.Release != "" {
 		where["release"] = *req.Release
 	}
+	filters := convertFilter(req.Filter)
 
 	return r.getTotal(ctx, getTotalParams{
-		where: where,
-		table: "error_groups",
-		tr:    req.TimeRange,
+		table:   "error_groups",
+		where:   where,
+		filters: filters,
+		tr:      req.TimeRange,
 	})
 }
 
@@ -218,10 +241,12 @@ func (r *repository) GetNewErrorGroups(
 	if req.Source != nil && *req.Source != "" {
 		where["source"] = *req.Source
 	}
+	filters := convertFilter(req.Filter)
 
 	subQ := r.getHashSubQuery(getHashSubQueryParams{
 		table:   "error_groups",
 		where:   where,
+		filters: filters,
 		orderBy: orderBy(req.Order, true),
 		limit:   uint64(req.Limit),
 		offset:  uint64(req.Offset),
@@ -245,6 +270,7 @@ func (r *repository) GetNewErrorGroups(
 			"maxMerge(last_seen_at) as last_seen_at",
 		},
 		where:    where,
+		filters:  filters,
 		subQuery: &subQ,
 		orderBy:  orderBy(req.Order, false),
 	})
@@ -285,6 +311,9 @@ func (r *repository) GetNewErrorGroupsTotal(
 	}
 	if req.Source != nil && *req.Source != "" {
 		subQ = subQ.Where(sq.Eq{"source": *req.Source})
+	}
+	if f := convertFilter(req.Filter); f != nil {
+		subQ = subQ.Where(f)
 	}
 
 	if req.Release != nil && *req.Release != "" { // new by releases, ignore time range
@@ -468,9 +497,12 @@ func (r *repository) GetErrorHist(
 	if !req.TimeRange.IsEmpty() {
 		q = q.Where(r.timeRangeCond(histData.column, req.TimeRange))
 	}
+	if f := convertFilter(req.Filter); f != nil {
+		q = q.Where(f)
+	}
 
 	query, args := q.MustSql()
-	metricLabels := []string{"agg_events_10min", "SELECT"}
+	metricLabels := []string{histData.table, "SELECT"}
 	rows, err := r.conn.Query(ctx, metricLabels, query, args...)
 	if err != nil {
 		incErrorMetric(err, metricLabels)
@@ -503,11 +535,11 @@ func (r *repository) GetErrorDetails(
 		Select(
 			"_group_hash",
 			"source",
-			"any(message) as message",
+			"anyLast(message) as message",
 			"countMerge(seen_total) as seen_total",
 			"minMerge(first_seen_at) as first_seen_at",
 			"maxMerge(last_seen_at) as last_seen_at",
-			"max(log_tags) as log_tags",
+			"anyLast(log_tags) as log_tags",
 		).
 		From("error_groups").
 		Where(sq.Eq{"_group_hash": req.GroupHash}).
@@ -524,9 +556,14 @@ func (r *repository) GetErrorDetails(
 	}
 	if req.Service != nil && *req.Service != "" {
 		q = q.Where(sq.Eq{"service": *req.Service})
-	}
-	if req.Release != nil && *req.Release != "" {
-		q = q.Where(sq.Eq{"release": *req.Release})
+
+		// only with service
+		if req.Release != nil && *req.Release != "" {
+			q = q.Where(sq.Eq{"release": *req.Release})
+		}
+		if f := convertFilter(req.Filter); f != nil {
+			q = q.Where(f)
+		}
 	}
 
 	query, args := q.MustSql()
@@ -551,11 +588,12 @@ func (r *repository) GetErrorDetails(
 }
 
 type errDetailsCount struct {
-	Count   uint64 `ch:"count"`
-	Env     string `ch:"env"`
-	Source  string `ch:"source"`
-	Service string `ch:"service"`
-	Release string `ch:"release"`
+	Count      uint64   `ch:"count"`
+	Env        string   `ch:"env"`
+	Source     string   `ch:"source"`
+	Service    string   `ch:"service"`
+	Release    string   `ch:"release"`
+	Attributes []string `ch:"attributes"`
 }
 
 func (r *repository) GetErrorCounts(
@@ -567,6 +605,7 @@ func (r *repository) GetErrorCounts(
 		BySource:  types.ErrorGroupCount{},
 		ByService: types.ErrorGroupCount{},
 		ByRelease: types.ErrorGroupCount{},
+		ByFilter:  map[string]types.ErrorGroupCount{},
 	}
 
 	q := sq.
@@ -594,12 +633,18 @@ func (r *repository) GetErrorCounts(
 	addFilter("source", req.Source)
 	addFilter("service", req.Service)
 
-	// releases only with service
-	withRelease := false
+	// releases & attributes only with service
+	withService := false
 	if req.Service != nil && *req.Service != "" {
-		withRelease = true
+		withService = true
+
 		q = q.Columns("release").GroupBy("release")
 		addFilter("release", req.Release)
+
+		q = q.Columns("attributes").GroupBy("attributes")
+		if f := convertFilter(req.Filter); f != nil {
+			q = q.Where(f)
+		}
 	}
 
 	query, args := q.MustSql()
@@ -610,6 +655,22 @@ func (r *repository) GetErrorCounts(
 		return counts, fmt.Errorf("failed to get error counts: %w", err)
 	}
 
+	// collect service filters
+	var filters []types.ServiceFilter
+	if withService {
+		filters, err = r.GetServiceFilters(ctx, types.GetServiceFiltersRequest{
+			Service: *req.Service,
+			Env:     req.Env,
+		})
+		if err != nil {
+			return counts, err
+		}
+	}
+
+	for _, f := range filters {
+		counts.ByFilter[f.Key] = types.ErrorGroupCount{}
+	}
+
 	var ec errDetailsCount
 	for rows.Next() {
 		if err = rows.ScanStruct(&ec); err != nil {
@@ -618,8 +679,17 @@ func (r *repository) GetErrorCounts(
 		counts.ByEnv[ec.Env] += ec.Count
 		counts.BySource[ec.Source] += ec.Count
 		counts.ByService[ec.Service] += ec.Count
-		if withRelease {
+		if withService {
 			counts.ByRelease[ec.Release] += ec.Count
+
+			attrs := parseAttributes(ec.Attributes)
+			for key := range counts.ByFilter {
+				val := notSetValue
+				if v, ok := attrs[key]; ok {
+					val = v
+				}
+				counts.ByFilter[key][val] += ec.Count
+			}
 		}
 	}
 
@@ -856,9 +926,91 @@ func (r *repository) DiffByReleasesTotal(
 	})
 }
 
+func (r *repository) GetServiceFilters(
+	ctx context.Context,
+	req types.GetServiceFiltersRequest,
+) ([]types.ServiceFilter, error) {
+	q := sq.
+		Select(
+			"key",
+			"groupUniqArrayMerge(values) as values",
+		).
+		From("service_attributes").
+		Where(sq.Eq{"service": req.Service}).
+		GroupBy("key").
+		Having(sq.Gt{"length(values)": 0}).
+		OrderBy("key")
+
+	for col, val := range r.queryFilters() {
+		q = q.Where(sq.Eq{col: val})
+	}
+	if req.Env != nil && *req.Env != "" {
+		q = q.Where(sq.Eq{"env": *req.Env})
+	}
+
+	query, args := q.MustSql()
+	metricLabels := []string{"service_attributes", "SELECT"}
+	rows, err := r.conn.Query(ctx, metricLabels, query, args...)
+	if err != nil {
+		incErrorMetric(err, metricLabels)
+		return nil, fmt.Errorf("failed to get service filters: %w", err)
+	}
+
+	filters := make([]types.ServiceFilter, 0)
+	for rows.Next() {
+		var filter types.ServiceFilter
+		if err := rows.Scan(&filter.Key, &filter.Values); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+		slices.Sort(filter.Values)
+		filters = append(filters, filter)
+	}
+
+	return filters, nil
+}
+
+type attributesFilter struct {
+	key   string
+	value string
+}
+
+func (f attributesFilter) ToSql() (string, []any, error) {
+	return "has(attributes, ?)", []any{f.key + "=" + f.value}, nil
+}
+
+func convertFilter(src *types.ErrorGroupsFilter) sq.And {
+	if src == nil || len(src.Custom) == 0 {
+		return nil
+	}
+	res := make(sq.And, 0, len(src.Custom))
+	for key, val := range src.CustomOrdered() {
+		res = append(res, attributesFilter{
+			key:   key,
+			value: val,
+		})
+	}
+	return res
+}
+
+func parseAttributes(src []string) map[string]string {
+	if len(src) == 0 {
+		return nil
+	}
+	res := make(map[string]string)
+	for _, f := range src {
+		key, val, ok := strings.Cut(f, "=")
+		if !ok {
+			continue
+		}
+		res[key] = val
+	}
+	return res
+}
+
 type getHashSubQueryParams struct {
 	table   string
 	where   sq.Eq
+	filters sq.And
 	tr      *types.TimeRange
 	orderBy string
 	limit   uint64
@@ -875,6 +1027,9 @@ func (r *repository) getHashSubQuery(params getHashSubQueryParams) sq.SelectBuil
 		Limit(params.limit).
 		Offset(params.offset)
 
+	if params.filters != nil {
+		subQ = subQ.Where(params.filters)
+	}
 	if !params.tr.IsEmpty() {
 		subQ = subQ.Having(r.timeRangeCond("maxMerge(last_seen_at)", params.tr))
 	}
@@ -886,9 +1041,10 @@ func (r *repository) getHashSubQuery(params getHashSubQueryParams) sq.SelectBuil
 }
 
 type getTotalParams struct {
-	table string
-	where sq.Eq
-	tr    *types.TimeRange
+	table   string
+	where   sq.Eq
+	filters sq.And
+	tr      *types.TimeRange
 }
 
 func (r *repository) getTotal(
@@ -898,6 +1054,10 @@ func (r *repository) getTotal(
 	q := sq.
 		Select("uniq(_group_hash)").
 		Where(params.where)
+
+	if params.filters != nil {
+		q = q.Where(params.filters)
+	}
 
 	var table string
 	if tr := params.tr; !tr.IsEmpty() {
@@ -955,6 +1115,7 @@ func (i errorInfos) mapByHash() map[uint64]errorInfo {
 type getErrorInfosParams struct {
 	columns  []string
 	where    sq.Eq
+	filters  sq.And
 	subQuery *sq.SelectBuilder
 	orderBy  string
 }
@@ -969,6 +1130,9 @@ func (r *repository) getErrorInfos(
 		Where(params.where).
 		GroupBy("_group_hash", "source")
 
+	if params.filters != nil {
+		q = q.Where(params.filters)
+	}
 	if params.subQuery != nil {
 		subQ, subArgs := params.subQuery.MustSql()
 		q = q.Where(fmt.Sprintf("_group_hash %s (%s)", r.in(), subQ), subArgs...)
@@ -1023,6 +1187,7 @@ func (c errorCounts) mapByHash() map[uint64]errorCount {
 type getErrorCountsParams struct {
 	tr      *types.TimeRange
 	where   sq.Eq
+	filters sq.And
 	orderBy string
 	limit   uint64
 	offset  uint64
@@ -1044,6 +1209,9 @@ func (r *repository) getErrorCounts(
 		Where(r.timeRangeCond(histData.column, params.tr)).
 		GroupBy("_group_hash")
 
+	if params.filters != nil {
+		q = q.Where(params.filters)
+	}
 	if params.orderBy != "" {
 		q = q.OrderBy(params.orderBy)
 	}

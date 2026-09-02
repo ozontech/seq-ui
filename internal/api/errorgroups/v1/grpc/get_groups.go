@@ -58,6 +58,12 @@ func (a *API) GetGroups(ctx context.Context, req *errorgroups.GetGroupsRequest) 
 		WithTotal: req.WithTotal,
 	}
 
+	if req.Filter != nil && len(req.Filter.Custom) > 0 {
+		request.Filter = &types.ErrorGroupsFilter{
+			Custom: req.Filter.Custom,
+		}
+	}
+
 	var (
 		groups []types.ErrorGroup
 		total  uint64

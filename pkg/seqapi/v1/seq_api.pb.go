@@ -1540,7 +1540,7 @@ type ExportAsyncSearchRequest struct {
 	Limit    int32        `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
 	Offset   int32        `protobuf:"varint,5,opt,name=offset,proto3" json:"offset,omitempty"`
 	Format   ExportFormat `protobuf:"varint,6,opt,name=format,proto3,enum=seqapi.v1.ExportFormat" json:"format,omitempty"`
-	Fields   []string     `protobuf:"bytes,7,rep,name=fields,proto3" json:"fields,omitempty"` // TODO: ???
+	Fields   []string     `protobuf:"bytes,7,rep,name=fields,proto3" json:"fields,omitempty"`
 }
 
 func (x *ExportAsyncSearchRequest) Reset() {
