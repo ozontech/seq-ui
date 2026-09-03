@@ -150,6 +150,23 @@ func Normalize(cfg *Config) error {
 		*cfg.DB.UsePreparedStatements = true
 	}
 
+	if cfg.Server.Auth != nil && cfg.Server.Auth.Options.OIDC != nil {
+		oidc := cfg.Server.Auth.Options.OIDC
+		hasCacheKey := oidc.CacheSecretKey != ""
+		hasCacheID := oidc.CacheID != ""
+
+		switch {
+		case hasCacheKey && !hasCacheID:
+			return fmt.Errorf("auth.oidc.cache_secret_key is set but auth.oidc.cache_id is empty")
+		case !hasCacheKey && hasCacheID:
+			return fmt.Errorf("auth.oidc.cache_id is set but auth.oidc.cache_secret_key is empty")
+		case hasCacheID && hasCacheKey:
+			if cfg.Cache.InmemByID(oidc.CacheID) == nil && cfg.Cache.RedisByID(oidc.CacheID) == nil {
+				return fmt.Errorf("auth.oidc.cache_id %q not found", oidc.CacheID)
+			}
+		}
+	}
+
 	setSeqAPIOptionsDefaults(&cfg.Handlers.SeqAPI.Options)
 
 	if len(cfg.Handlers.SeqAPI.Envs) > 0 {
@@ -170,7 +187,6 @@ func Normalize(cfg *Config) error {
 			if _, ok := seqDBIDs[envConfig.SeqDBID]; !ok {
 				return fmt.Errorf("unknown handlers.seq_api.envs[%q].seq_db_id %q", envName, envConfig.SeqDBID)
 			}
-
 			setSeqAPIOptionsDefaults(envConfig.Options)
 		}
 	} else {
@@ -203,8 +219,8 @@ func Normalize(cfg *Config) error {
 	if cfg.Handlers.AsyncSearch != nil {
 		as := cfg.Handlers.AsyncSearch
 
-		if as.ListQueryLengthLimit <= 0 {
-			as.ListQueryLengthLimit = defaultAsyncSearchListQueryLengthLimit
+		if as.Options.ListQueryLengthLimit <= 0 {
+			as.Options.ListQueryLengthLimit = defaultAsyncSearchListQueryLengthLimit
 		}
 
 		if len(as.Envs) > 0 {
@@ -212,7 +228,7 @@ func Normalize(cfg *Config) error {
 				return fmt.Errorf("handlers.async_search.seq_db_id must be empty when envs is used. Put seq_db_id inside each env")
 			}
 			if as.DefaultEnv == "" {
-				return fmt.Errorf("handlers.async_search.default_env must be specified when using envs")
+				return fmt.Errorf("handlers.async_search.default_env must be specified when envs is used")
 			}
 			if _, ok := as.Envs[as.DefaultEnv]; !ok {
 				return fmt.Errorf("handlers.async_search.default_env %q not found in envs", as.DefaultEnv)
@@ -225,11 +241,9 @@ func Normalize(cfg *Config) error {
 				if _, ok := seqDBIDs[envConfig.SeqDBID]; !ok {
 					return fmt.Errorf("unknown handlers.async_search.envs[%q].seq_db_id %q", envName, envConfig.SeqDBID)
 				}
-				if envConfig.ListQueryLengthLimit <= 0 {
-					envConfig.ListQueryLengthLimit = as.ListQueryLengthLimit
+				if envConfig.Options.ListQueryLengthLimit <= 0 {
+					envConfig.Options.ListQueryLengthLimit = defaultAsyncSearchListQueryLengthLimit
 				}
-
-				as.Envs[envName] = envConfig
 			}
 		} else {
 			if as.SeqDBID == "" {
@@ -248,7 +262,7 @@ func Normalize(cfg *Config) error {
 				return fmt.Errorf("handlers.error_groups.ch_id must be empty when envs is used. Put ch_id inside each env")
 			}
 			if eg.DefaultEnv == "" {
-				return fmt.Errorf("handlers.error_groups.default_env must be specified when using envs")
+				return fmt.Errorf("handlers.error_groups.default_env must be specified when envs is used")
 			}
 			if _, ok := eg.Envs[eg.DefaultEnv]; !ok {
 				return fmt.Errorf("handlers.error_groups.default_env %q not found in envs", eg.DefaultEnv)
@@ -272,35 +286,19 @@ func Normalize(cfg *Config) error {
 		}
 	}
 
-	if cfg.Server.Auth != nil && cfg.Server.Auth.OIDC != nil {
-		oidc := cfg.Server.Auth.OIDC
-		hasCacheKey := oidc.CacheSecretKey != ""
-		hasCacheID := oidc.CacheID != ""
-
-		switch {
-		case hasCacheKey && !hasCacheID:
-			return fmt.Errorf("auth.oidc.cache_secret_key is set but auth.oidc.cache_id is empty")
-		case !hasCacheKey && hasCacheID:
-			return fmt.Errorf("auth.oidc.cache_id is set but auth.oidc.cache_secret_key is empty")
-		case hasCacheID && hasCacheKey:
-			if cfg.Cache.InmemByID(oidc.CacheID) == nil && cfg.Cache.RedisByID(oidc.CacheID) == nil {
-				return fmt.Errorf("auth.oidc.cache_id %q not found", oidc.CacheID)
-			}
-		}
-	}
-
 	if cfg.Handlers.Admin != nil {
-		if cfg.Handlers.Admin.CacheTTL <= 0 {
-			cfg.Handlers.Admin.CacheTTL = defaultAdminCacheTTL
+		admin := cfg.Handlers.Admin
+		if admin.Options.CacheTTL <= 0 {
+			admin.Options.CacheTTL = defaultAdminCacheTTL
 		}
 
-		if cfg.Handlers.Admin.RedisID != "" {
-			redisCfg := cfg.Cache.RedisByID(cfg.Handlers.Admin.RedisID)
+		if admin.Options.RedisID != "" {
+			redisCfg := cfg.Cache.RedisByID(admin.Options.RedisID)
 			if redisCfg == nil {
-				return fmt.Errorf("unknown handlers.admin.redis_id %q", cfg.Handlers.Admin.RedisID)
+				return fmt.Errorf("unknown handlers.admin.redis_id %q", admin.Options.RedisID)
 			}
 			if redisCfg.WithInmemID != "" {
-				return fmt.Errorf("handlers.admin.redis_id %q: with_inmem_id is not allowed", cfg.Handlers.Admin.RedisID)
+				return fmt.Errorf("handlers.admin.redis_id %q: with_inmem_id is not allowed", admin.Options.RedisID)
 			}
 		}
 	}
@@ -333,7 +331,6 @@ func setSeqAPIOptionsDefaults(options *SeqAPIOptions) {
 	if options.Limits.SeqCLIMaxSearchLimit <= 0 {
 		options.Limits.SeqCLIMaxSearchLimit = 1000 // Сюда тоже или в них не было небходимости вообще, чтобы они были по нулям
 	}
-
 	if options.Caches.TTL.Events <= 0 {
 		options.Caches.TTL.Events = defaultEventsCacheTTL
 	}

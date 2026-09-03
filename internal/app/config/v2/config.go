@@ -27,8 +27,8 @@ import (
 //   debug:
 //     addr:
 //   auth:
-// 	options:
-// 	  oidc:
+// 	   options:
+// 	     oidc:
 //         cache_id:
 //         cache_secret_key:
 //         skip_verify:
@@ -43,9 +43,7 @@ import (
 //         secret_key:
 // 	   envs:
 // 	     <env_name>:
-// 		   options:
-// 		     oidc:
-// 			 jwt:
+// 		   options: # same as root options
 //   rate_limiters:
 //     options:
 //       <api_name>:
@@ -62,7 +60,7 @@ import (
 //             per_handler:
 //     envs:
 //       <env_name>:
-//         options:
+//         options: # same as root options
 // clients:
 //   seq_db:
 //     - id:
@@ -96,8 +94,8 @@ import (
 //     options:
 //       limits:
 //         max_search_limit:
-//         max_search_total_limit:
-//         max_search_offset_limit:
+//         max_search_total:
+//         max_search_offset:
 //         max_export_limit:
 //         seq_cli_max_search_limit:
 //         max_parallel_export_requests:
@@ -135,7 +133,7 @@ import (
 //     envs:
 //       <env_name>:
 //         seq_db_id:
-//         options:
+//         options: # same as root options
 //     default_env:
 //   error_groups:
 //     ch_id:
@@ -149,7 +147,7 @@ import (
 //     envs:
 //       <env_name>:
 //         ch_id:
-//         options:
+//         options: # same as root options
 //     default_env:
 //   mass_export:
 //     seq_db_id:
@@ -177,23 +175,20 @@ import (
 //     seq_db_id:
 //     options:
 //    	  admin_users:
-//       list_query_length_limit:
+//        list_query_length_limit:
 //     envs:
 //       <env_name>:
 //         seq_db_id:
-//         options:
+//         options: # same as root options
 //     default_env:
 //   admin:
-//   	options:
+//     options:
 //       redis_id:
 //       super_users:
 //       cache_ttl:
 //     envs:
 //       <env_name>:
-//         options:
-//           redis_id:
-//           super_users:
-//           cache_ttl:
+//         options: # same as root options
 //     default_env:
 // db:
 //   name:
@@ -423,12 +418,12 @@ type Server struct {
 }
 
 type RateLimiters struct {
-	Options ApiRateLimiters            `yaml:"options"`
+	Options ApiToRateLimiters          `yaml:"options"`
 	Envs    map[string]RateLimitersEnv `yaml:"envs"`
 }
 
 type RateLimitersEnv struct {
-	Options ApiRateLimiters `yaml:"options"`
+	Options ApiToRateLimiters `yaml:"options"`
 }
 
 type GRPCKeepaliveParams struct {
@@ -498,7 +493,7 @@ type Handlers struct {
 }
 
 type Admin struct {
-	Options    *AdminOptions       `yaml:"options"`
+	Options    AdminOptions        `yaml:"options"`
 	Envs       map[string]AdminEnv `yaml:"envs"`
 	DefaultEnv string              `yaml:"default_env"`
 }
@@ -598,7 +593,7 @@ type LogTagsMapping struct {
 
 type ErrorGroups struct {
 	CHID       string                    `yaml:"ch_id"`
-	Options    *ErrorGroupsOptions       `yaml:"options"`
+	Options    ErrorGroupsOptions        `yaml:"options"`
 	Envs       map[string]ErrorGroupsEnv `yaml:"envs"`
 	DefaultEnv string                    `yaml:"default_env"`
 }

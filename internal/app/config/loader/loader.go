@@ -45,7 +45,7 @@ func FromFile(cfgPath string) (v2.Config, error) {
 		}
 		cfgBytes, err = encode(migrate.V1ToV2(cfgV1))
 		if err != nil {
-			return v2.Config{}, nil
+			return v2.Config{}, err
 		}
 	case V2:
 	default:
@@ -59,7 +59,7 @@ func FromFile(cfgPath string) (v2.Config, error) {
 
 	cfg, err := parse[v2.Config](cfgBytes, true)
 	if err != nil {
-		return v2.Config{}, fmt.Errorf("error parsing config v2: %w", err)
+		return v2.Config{}, fmt.Errorf("parse config v2: %w", err)
 	}
 
 	if err := v2.Normalize(&cfg); err != nil {

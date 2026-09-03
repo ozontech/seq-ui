@@ -198,6 +198,7 @@ import (
 //         enable_ssl:
 //     session_store:
 //       redis:
+//         key_prefix
 //         addr:
 //         username:
 //         password:
@@ -213,6 +214,9 @@ import (
 //   async_search:
 //     admin_users:
 //     list_query_length_limit:
+//   admin:
+//     admin_users:
+//     cache_ttl:
 
 type Config struct {
 	Version  *int      `yaml:"version"`
