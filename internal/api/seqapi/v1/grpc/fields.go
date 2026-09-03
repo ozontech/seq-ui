@@ -22,23 +22,23 @@ func (a *API) GetFields(ctx context.Context, req *seqapi.GetFieldsRequest) (*seq
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if params.fieldsCache == nil {
+	if a.globalParams.fieldsCache == nil {
 		resp, err := params.client.GetFields(ctx, req)
 		if err != nil {
 			return nil, err
 		}
 
-		resp.SystemFields = params.systemFields
-		resp.PinnedFields = params.pinnedFields
+		resp.SystemFields = a.globalParams.systemFields
+		resp.PinnedFields = a.globalParams.pinnedFields
 		return resp, nil
 	}
 
-	fields, cached, isActual := params.fieldsCache.getFields()
+	fields, cached, isActual := a.globalParams.fieldsCache.getFields()
 	if cached && isActual {
 		return &seqapi.GetFieldsResponse{
 			Fields:       fields,
-			SystemFields: params.systemFields,
-			PinnedFields: params.pinnedFields,
+			SystemFields: a.globalParams.systemFields,
+			PinnedFields: a.globalParams.pinnedFields,
 		}, nil
 	}
 
@@ -48,31 +48,22 @@ func (a *API) GetFields(ctx context.Context, req *seqapi.GetFieldsRequest) (*seq
 			logger.Error("can't get fields; use cached fields", zap.Error(err))
 			return &seqapi.GetFieldsResponse{
 				Fields:       fields,
-				SystemFields: params.systemFields,
-				PinnedFields: params.pinnedFields,
+				SystemFields: a.globalParams.systemFields,
+				PinnedFields: a.globalParams.pinnedFields,
 			}, nil
 		}
 
 		return nil, err
 	}
 
-	params.fieldsCache.setFields(resp.GetFields())
-	resp.SystemFields = params.systemFields
-	resp.PinnedFields = params.pinnedFields
+	a.globalParams.fieldsCache.setFields(resp.GetFields())
+	resp.SystemFields = a.globalParams.systemFields
+	resp.PinnedFields = a.globalParams.pinnedFields
 	return resp, nil
 }
 
 func (a *API) GetPinnedFields(ctx context.Context, _ *seqapi.GetFieldsRequest) (*seqapi.GetFieldsResponse, error) {
-	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_get_fields")
-	defer span.End()
-
-	env := a.GetEnvFromContext(ctx)
-	params, err := a.GetParams(env)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	return &seqapi.GetFieldsResponse{
-		Fields: params.pinnedFields,
+		Fields: a.globalParams.pinnedFields,
 	}, nil
 }

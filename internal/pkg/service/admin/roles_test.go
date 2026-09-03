@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	mock_cache "github.com/ozontech/seq-ui/internal/pkg/cache/mock"
 	mock "github.com/ozontech/seq-ui/internal/pkg/repository/mock"
