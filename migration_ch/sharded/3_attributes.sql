@@ -89,7 +89,7 @@ SELECT
     anyLast(attributes) as attributes,
     attributes_hash
 FROM seq_ui_server_replicated.sharded_agg_events_10min
-GROUP BY start_date, _group_hash, service, env, release, source, cluster, attributes_hash;
+GROUP BY cluster, source, env, service, release, _group_hash, start_date, attributes_hash;
 
 CREATE TABLE IF NOT EXISTS seq_ui_server_replicated.sharded_service_attributes
 (
