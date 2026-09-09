@@ -1034,6 +1034,44 @@ func TestGetDetails(t *testing.T) {
 			},
 		},
 		{
+			name: "ok_log_tags_filters",
+
+			req: types.GetErrorGroupDetailsRequest{
+				GroupHash: hash,
+				Filter: &types.ErrorGroupsFilter{
+					Custom: map[string]string{
+						"f1": "v1",
+						"f2": "v2",
+					},
+				},
+			},
+			want: types.ErrorGroupDetails{
+				LogTags: map[string]string{
+					"hash": "123",
+					"f1":   "v1",
+					"f2":   "v2",
+				},
+			},
+
+			mockArgs: &mockArgs{
+				req: types.GetErrorGroupDetailsRequest{
+					GroupHash: hash,
+					Filter: &types.ErrorGroupsFilter{
+						Custom: map[string]string{
+							"f1": "v1",
+							"f2": "v2",
+						},
+					},
+				},
+
+				details: types.ErrorGroupDetails{
+					LogTags: map[string]string{
+						"hash": "123",
+					},
+				},
+			},
+		},
+		{
 			name: "err_full_repo",
 
 			req: types.GetErrorGroupDetailsRequest{

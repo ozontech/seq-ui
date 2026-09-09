@@ -244,6 +244,11 @@ func (s *service) GetDetails(
 	clearLogTags(req.Service, s.logTagsMapping.Service)
 	clearLogTags(req.Release, s.logTagsMapping.Release)
 
+	// add filters to tags
+	if req.Filter != nil && details.LogTags != nil {
+		maps.Insert(details.LogTags, maps.All(req.Filter.Custom))
+	}
+
 	return details, nil
 }
 
