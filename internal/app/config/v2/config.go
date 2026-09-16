@@ -34,9 +34,9 @@ import (
 //         skip_verify:
 //         auth_urls:
 //         tls:
-//           root_ca:
 //           ca_cert:
-//           private_key:
+//           client_cert:
+//           client_key:
 //           insecure:
 //         allowed_clients:
 //       jwt:
@@ -71,10 +71,11 @@ import (
 //       initial_retry_backoff:
 //       max_retry_backoff:
 //       client_mode:
-//       grpc_keepalive_params:
-//         time:
-//         timeout:
-//         permit_without_stream:
+//       grpc_params:
+//       	keep_alive:
+//           time:
+//           timeout:
+//           permit_without_stream:
 //       download_params:
 //         delay:
 //         initial_retry_backoff:
@@ -117,19 +118,22 @@ import (
 //                   values:
 //         process_fields:
 //         ignore_fields:
-//       caches:
-//         cache_id:
-//         redis_id:
-//         ttl:
-//           events:
-//           logs_lifespan:
-//           fields:
-//       pinned_fields:
-//         - name:
-//           type:
-//       system_fields:
-//         - name:
-//           type:
+//      caches:
+//        events:
+//          id:
+//          ttl:
+//        logs_lifespan:
+//          id:
+//          ttl:
+//        fields:
+//          id:
+//          ttl:
+//      pinned_fields:
+//        - name:
+//          type:
+//      system_fields:
+//        - name:
+//          type:
 //     envs:
 //       <env_name>:
 //         seq_db_id:
@@ -181,11 +185,12 @@ import (
 //         seq_db_id:
 //         options: # same as root options
 //     default_env:
-//   admin:
-//     options:
-//       redis_id:
-//       super_users:
-//       cache_ttl:
+//  admin:
+//    options:
+//      super_users:
+//      cache:
+//        id:
+//        ttl:
 //     envs:
 //       <env_name>:
 //         options: # same as root options
@@ -237,9 +242,9 @@ type CORS struct {
 }
 
 type TLS struct {
-	RootCA     string `yaml:"root_ca"`
 	CACert     string `yaml:"ca_cert"`
-	PrivateKey string `yaml:"private_key"`
+	ClientCert string `yaml:"client_cert"`
+	ClientKey  string `yaml:"client_key"`
 	Insecure   bool   `yaml:"insecure"`
 }
 
@@ -426,7 +431,7 @@ type RateLimitersEnv struct {
 	Options ApiToRateLimiters `yaml:"options"`
 }
 
-type GRPCKeepaliveParams struct {
+type KeepaliveParams struct {
 	// After a duration of this time if the client doesn't see any activity it
 	// pings the server to see if the transport is still alive.
 	// If set below 10s, a minimum value of 10s will be used instead.
@@ -441,17 +446,21 @@ type GRPCKeepaliveParams struct {
 	PermitWithoutStream bool `yaml:"permit_without_stream"`
 }
 
+type GRPCParams struct {
+	Keepalive *KeepaliveParams `yaml:"keep_alive"`
+}
+
 type SeqDBClient struct {
-	ID                  string               `yaml:"id"`
-	Timeout             time.Duration        `yaml:"timeout"`
-	AvgDocSize          int                  `yaml:"avg_doc_size"`
-	Addrs               []string             `yaml:"addrs"`
-	RequestRetries      int                  `yaml:"request_retries"`
-	InitialRetryBackoff time.Duration        `yaml:"initial_retry_backoff"`
-	MaxRetryBackoff     time.Duration        `yaml:"max_retry_backoff"`
-	ClientMode          string               `yaml:"client_mode"`
-	GRPCKeepaliveParams *GRPCKeepaliveParams `yaml:"grpc_keepalive_params"`
-	DownloadParams      *DownloadParams      `yaml:"download_params"`
+	ID                  string          `yaml:"id"`
+	Timeout             time.Duration   `yaml:"timeout"`
+	AvgDocSize          int             `yaml:"avg_doc_size"`
+	Addrs               []string        `yaml:"addrs"`
+	RequestRetries      int             `yaml:"request_retries"`
+	InitialRetryBackoff time.Duration   `yaml:"initial_retry_backoff"`
+	MaxRetryBackoff     time.Duration   `yaml:"max_retry_backoff"`
+	ClientMode          string          `yaml:"client_mode"`
+	GRPCParams          *GRPCParams     `yaml:"grpc_params"`
+	DownloadParams      *DownloadParams `yaml:"download_params"`
 }
 
 type CHClient struct {
@@ -503,9 +512,8 @@ type AdminEnv struct {
 }
 
 type AdminOptions struct {
-	RedisID    string        `yaml:"redis_id"`
-	SuperUsers []string      `yaml:"super_users"`
-	CacheTTL   time.Duration `yaml:"cache_ttl"`
+	SuperUsers []string     `yaml:"super_users"`
+	Cache      HandlerCache `yaml:"cache"`
 }
 
 type Field struct {
@@ -545,15 +553,14 @@ type SeqAPILimits struct {
 }
 
 type SeqAPICaches struct {
-	CacheID string          `yaml:"cache_id"` // redis + inmem
-	RedisID string          `yaml:"redis_id"` // redis only
-	TTL     SeqAPICachesTTL `yaml:"ttl"`
+	Events       HandlerCache `yaml:"events"`
+	LogsLifespan HandlerCache `yaml:"logs_lifespan"`
+	Fields       HandlerCache `yaml:"fields"`
 }
 
-type SeqAPICachesTTL struct {
-	Events       time.Duration `yaml:"events"`
-	LogsLifespan time.Duration `yaml:"logs_lifespan"`
-	Fields       time.Duration `yaml:"fields"`
+type HandlerCache struct {
+	ID  string        `yaml:"id"`
+	TTL time.Duration `yaml:"ttl"`
 }
 
 type Masking struct {

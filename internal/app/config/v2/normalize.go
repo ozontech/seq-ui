@@ -52,9 +52,11 @@ const (
 
 	defaultClickHouseDialTimeout = 5 * time.Second
 	defaultClickHouseReadTimeout = 30 * time.Second
+
+	defaultUsePreparedStatements = true
 )
 
-func Normalize(cfg *Config) error {
+func (cfg *Config) Validate() error {
 	if len(cfg.Clients.SeqDB) == 0 {
 		return fmt.Errorf("clients.seq_db must contain at least one client")
 	}
@@ -77,9 +79,11 @@ func Normalize(cfg *Config) error {
 			return fmt.Errorf("invalid clients.seq_db[%q].client_mode: %q (allowed: %q)", c.ID, c.ClientMode, SeqDBClientModeGRPC)
 		}
 
-		if c.GRPCKeepaliveParams != nil {
-			c.GRPCKeepaliveParams.Time = max(c.GRPCKeepaliveParams.Time, minGRPCKeepaliveTime)
-			c.GRPCKeepaliveParams.Timeout = max(c.GRPCKeepaliveParams.Timeout, minGRPCKeepaliveTimeout)
+		if c.GRPCParams != nil {
+			if c.GRPCParams.Keepalive != nil {
+				c.GRPCParams.Keepalive.Time = max(c.GRPCParams.Keepalive.Time, minGRPCKeepaliveTime)
+				c.GRPCParams.Keepalive.Timeout = max(c.GRPCParams.Keepalive.Timeout, minGRPCKeepaliveTimeout)
+			}
 		}
 	}
 
@@ -146,8 +150,8 @@ func Normalize(cfg *Config) error {
 	}
 
 	if cfg.DB != nil && cfg.DB.UsePreparedStatements == nil {
-		cfg.DB.UsePreparedStatements = new(bool)
-		*cfg.DB.UsePreparedStatements = true
+		v := defaultUsePreparedStatements
+		cfg.DB.UsePreparedStatements = &v
 	}
 
 	if cfg.Server.Auth != nil && cfg.Server.Auth.Options.OIDC != nil {
@@ -288,17 +292,19 @@ func Normalize(cfg *Config) error {
 
 	if cfg.Handlers.Admin != nil {
 		admin := cfg.Handlers.Admin
-		if admin.Options.CacheTTL <= 0 {
-			admin.Options.CacheTTL = defaultAdminCacheTTL
-		}
-
-		if admin.Options.RedisID != "" {
-			redisCfg := cfg.Cache.RedisByID(admin.Options.RedisID)
-			if redisCfg == nil {
-				return fmt.Errorf("unknown handlers.admin.redis_id %q", admin.Options.RedisID)
+		if admin.Options.Cache != nil {
+			if admin.Options.Cache.TTL <= 0 {
+				admin.Options.Cache.TTL = defaultAdminCacheTTL
 			}
-			if redisCfg.WithInmemID != "" {
-				return fmt.Errorf("handlers.admin.redis_id %q: with_inmem_id is not allowed", admin.Options.RedisID)
+
+			if admin.Options.Cache.ID != "" {
+				redisCfg := cfg.Cache.RedisByID(admin.Options.Cache.ID)
+				if redisCfg == nil {
+					return fmt.Errorf("unknown handlers.admin.redis_id %q", admin.Options.Cache.ID)
+				}
+				if redisCfg.WithInmemID != "" {
+					return fmt.Errorf("handlers.admin.redis_id %q: with_inmem_id is not allowed", admin.Options.Cache.ID)
+				}
 			}
 		}
 	}
@@ -331,10 +337,10 @@ func setSeqAPIOptionsDefaults(options *SeqAPIOptions) {
 	if options.Limits.SeqCLIMaxSearchLimit <= 0 {
 		options.Limits.SeqCLIMaxSearchLimit = 1000 // Сюда тоже или в них не было небходимости вообще, чтобы они были по нулям
 	}
-	if options.Caches.TTL.Events <= 0 {
-		options.Caches.TTL.Events = defaultEventsCacheTTL
+	if options.Caches.Events.TTL <= 0 {
+		options.Caches.Events.TTL = defaultEventsCacheTTL
 	}
-	if options.Caches.TTL.LogsLifespan <= 0 {
-		options.Caches.TTL.LogsLifespan = defaultLogsLifespanCacheTTL
+	if options.Caches.LogsLifespan.TTL <= 0 {
+		options.Caches.LogsLifespan.TTL = defaultLogsLifespanCacheTTL
 	}
 }

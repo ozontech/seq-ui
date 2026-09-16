@@ -32,14 +32,14 @@ func FromFile(cfgPath string) (v2.Config, error) {
 		return v2.Config{}, fmt.Errorf("read file: %w", err)
 	}
 
-	version, err := ReadVersion(cfgBytes)
+	version, err := readVersion(cfgBytes)
 	if err != nil {
 		return v2.Config{}, fmt.Errorf("read version: %w", err)
 	}
 
 	switch version {
 	case V1:
-		cfgV1, err := parse[v1.Config](cfgBytes, true)
+		cfgV1, err := decode[v1.Config](cfgBytes, true)
 		if err != nil {
 			return v2.Config{}, fmt.Errorf("parse config v1: %w", err)
 		}
@@ -57,12 +57,12 @@ func FromFile(cfgPath string) (v2.Config, error) {
 		return v2.Config{}, fmt.Errorf("merge env options: %w", err)
 	}
 
-	cfg, err := parse[v2.Config](cfgBytes, true)
+	cfg, err := decode[v2.Config](cfgBytes, true)
 	if err != nil {
 		return v2.Config{}, fmt.Errorf("parse config v2: %w", err)
 	}
 
-	if err := v2.Normalize(&cfg); err != nil {
+	if err := cfg.Validate(); err != nil {
 		return v2.Config{}, fmt.Errorf("normalize config: %w", err)
 	}
 
@@ -70,14 +70,14 @@ func FromFile(cfgPath string) (v2.Config, error) {
 }
 
 func ToLatestVersion(cfgBytes []byte) ([]byte, error) {
-	version, err := ReadVersion(cfgBytes)
+	version, err := readVersion(cfgBytes)
 	if err != nil {
 		return nil, fmt.Errorf("read version: %w", err)
 	}
 
 	switch version {
 	case V1:
-		cfgV1, err := parse[v1.Config](cfgBytes, true)
+		cfgV1, err := decode[v1.Config](cfgBytes, true)
 		if err != nil {
 			return nil, fmt.Errorf("parse config v1: %w", err)
 		}
@@ -89,8 +89,8 @@ func ToLatestVersion(cfgBytes []byte) ([]byte, error) {
 	}
 }
 
-func ReadVersion(cfgBytes []byte) (int, error) {
-	meta, err := parse[configMeta](cfgBytes, false)
+func readVersion(cfgBytes []byte) (int, error) {
+	meta, err := decode[configMeta](cfgBytes, false)
 	if err != nil {
 		return 0, err
 	}
@@ -102,7 +102,7 @@ func ReadVersion(cfgBytes []byte) (int, error) {
 	return *meta.Version, nil
 }
 
-func parse[T any](cfg []byte, strict bool) (T, error) {
+func decode[T any](cfg []byte, strict bool) (T, error) {
 	var result T
 
 	decoder := yaml.NewDecoder(bytes.NewReader(cfg))
@@ -133,15 +133,15 @@ func mergeHandlersEnvOptions(cfgBytes []byte) ([]byte, error) {
 		return nil, fmt.Errorf("parse yaml for merge: %w", err)
 	}
 
-	handlers := getMap(root, "handlers")
+	handlers, _ := root["handlers"].(map[string]any)
 	for _, h := range handlers {
 		handler, _ := h.(map[string]any)
 		if handler == nil {
 			continue
 		}
 
-		rootOpts := getMap(handler, "options")
-		envs := getMap(handler, "envs")
+		rootOpts := handler["options"].(map[string]any)
+		envs := handlers["envs"].(map[string]any)
 		if rootOpts == nil || len(envs) == 0 {
 			continue
 		}
@@ -162,19 +162,6 @@ func mergeHandlersEnvOptions(cfgBytes []byte) ([]byte, error) {
 		return nil, fmt.Errorf("marshal merged yaml: %w", err)
 	}
 	return out, nil
-}
-
-func getMap(root map[string]any, path ...string) map[string]any {
-	cur := root
-	for _, p := range path {
-		next, _ := cur[p].(map[string]any)
-		if next == nil {
-			return nil
-		}
-		cur = next
-	}
-
-	return cur
 }
 
 func mergeYAMLs(a, b map[string]any) map[string]any {

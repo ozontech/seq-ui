@@ -5,26 +5,35 @@ import (
 	v2 "github.com/ozontech/seq-ui/internal/app/config/v2"
 )
 
+type v1tov2 struct {
+	src v1.Config
+}
+
 func V1ToV2(src v1.Config) v2.Config {
+	m := v1tov2{src: src}
+	return m.migrate()
+}
+
+func (m *v1tov2) migrate() v2.Config {
 	dst := v2.Config{Version: 2}
 
-	dst.Server = migrateServer(src.Server)
-	dst.Cache = migrateCache(src.Server)
-	dst.Clients = migrateClients(src)
-	dst.DB = migrateDB(src.Server)
-	dst.Handlers = migrateHandlers(src.Handlers, &dst, src.Server.Cache)
+	dst.Server = m.migrateServer(m.src.Server)
+	dst.Cache = m.migrateCache(m.src.Server)
+	dst.Clients = m.migrateClients(m.src)
+	dst.DB = m.migrateDB(m.src.Server)
+	dst.Handlers = m.migrateHandlers(m.src.Handlers, &dst, m.src.Server.Cache)
 
 	return dst
 }
 
-func migrateServer(src *v1.Server) *v2.Server {
+func (m *v1tov2) migrateServer(src *v1.Server) *v2.Server {
 	dst := &v2.Server{
 		HTTP: v2.HTTP{
 			Addr:              src.HTTPAddr,
 			ReadTimeout:       src.HTTPReadTimeout,
 			ReadHeaderTimeout: src.HTTPReadHeaderTimeout,
 			WriteTimeout:      src.HTTPWriteTimeout,
-			CORS:              migrateCORS(src.CORS),
+			CORS:              m.migrateCORS(src.CORS),
 		},
 		GRPC: v2.GRPC{
 			Addr:              src.GRPCAddr,
@@ -33,19 +42,19 @@ func migrateServer(src *v1.Server) *v2.Server {
 		Debug: v2.Debug{
 			Addr: src.DebugAddr,
 		},
-		RateLimiters: migrateApiRateLimiters(src.RateLimiters),
+		RateLimiters: m.migrateApiRateLimiters(src.RateLimiters),
 	}
 
 	if src.OIDC != nil {
 		oidc := &v2.OIDC{
 			SkipVerify:     src.OIDC.SkipVerify,
 			AuthURLs:       src.OIDC.AuthURLs,
-			TLS:            migrateTLS(src.OIDC),
+			TLS:            m.migrateTLS(src.OIDC),
 			AllowedClients: src.OIDC.AllowedClients,
 		}
 
 		if src.OIDC.CacheSecretKey != "" {
-			cacheID, _ := defaultCacheIDs(src.Cache)
+			cacheID, _ := m.defaultCacheIDs(src.Cache)
 			oidc.CacheID = cacheID
 		}
 
@@ -62,21 +71,21 @@ func migrateServer(src *v1.Server) *v2.Server {
 	return dst
 }
 
-func migrateTLS(src *v1.OIDC) *v2.TLS {
+func (m *v1tov2) migrateTLS(src *v1.OIDC) *v2.TLS {
 	if src.RootCA == "" && src.CACert == "" &&
 		src.PrivateKey == "" && !src.SSLSkipVerify {
 		return nil
 	}
 
 	return &v2.TLS{
-		RootCA:     src.RootCA,
-		CACert:     src.CACert,
-		PrivateKey: src.PrivateKey,
+		CACert:     src.RootCA,
+		ClientCert: src.CACert,
+		ClientKey:  src.PrivateKey,
 		Insecure:   src.SSLSkipVerify,
 	}
 }
 
-func migrateCORS(src *v1.CORS) *v2.CORS {
+func (m *v1tov2) migrateCORS(src *v1.CORS) *v2.CORS {
 	if src == nil {
 		return nil
 	}
@@ -92,7 +101,7 @@ func migrateCORS(src *v1.CORS) *v2.CORS {
 	}
 }
 
-func migrateApiRateLimiters(src v1.ApiToRateLimiters) v2.ApiToRateLimiters {
+func (m *v1tov2) migrateApiRateLimiters(src v1.ApiToRateLimiters) v2.ApiToRateLimiters {
 	if src == nil {
 		return nil
 	}
@@ -100,28 +109,28 @@ func migrateApiRateLimiters(src v1.ApiToRateLimiters) v2.ApiToRateLimiters {
 	dst := make(v2.ApiToRateLimiters, len(src))
 	for api, rl := range src {
 		dst[api] = v2.ApiRateLimiters{
-			Default:      migrateRateLimiter(rl.Default),
-			SpecialUsers: migrateUserToRateLimiter(rl.SpecialUsers),
+			Default:      m.migrateRateLimiter(rl.Default),
+			SpecialUsers: m.migrateUserToRateLimiter(rl.SpecialUsers),
 		}
 	}
 
 	return dst
 }
 
-func migrateUserToRateLimiter(src v1.UserToRateLimiter) v2.UserToRateLimiter {
+func (m *v1tov2) migrateUserToRateLimiter(src v1.UserToRateLimiter) v2.UserToRateLimiter {
 	if src == nil {
 		return nil
 	}
 
 	dst := make(v2.UserToRateLimiter, len(src))
 	for k, rl := range src {
-		dst[k] = migrateRateLimiter(rl)
+		dst[k] = m.migrateRateLimiter(rl)
 	}
 
 	return dst
 }
 
-func migrateRateLimiter(src v1.RateLimiter) v2.RateLimiter {
+func (m *v1tov2) migrateRateLimiter(src v1.RateLimiter) v2.RateLimiter {
 	return v2.RateLimiter{
 		RatePerSec:   src.RatePerSec,
 		MaxBurst:     src.MaxBurst,
@@ -130,26 +139,28 @@ func migrateRateLimiter(src v1.RateLimiter) v2.RateLimiter {
 	}
 }
 
-func migrateGRPCKeepaliveParams(src *v1.GRPCKeepaliveParams) *v2.GRPCKeepaliveParams {
+func (m *v1tov2) migrateGRPCParams(src *v1.GRPCKeepaliveParams) *v2.GRPCParams {
 	if src == nil {
 		return nil
 	}
 
-	return &v2.GRPCKeepaliveParams{
-		Time:                src.Time,
-		Timeout:             src.Timeout,
-		PermitWithoutStream: src.PermitWithoutStream,
+	return &v2.GRPCParams{
+		Keepalive: &v2.KeepaliveParams{
+			Time:                src.Time,
+			Timeout:             src.Timeout,
+			PermitWithoutStream: src.PermitWithoutStream,
+		},
 	}
 }
 
-func migrateClients(src v1.Config) *v2.Clients {
+func (m *v1tov2) migrateClients(src v1.Config) *v2.Clients {
 	dst := &v2.Clients{}
 
 	if src.Clients != nil {
 		if len(src.Clients.SeqDB) > 0 {
 			dst.SeqDB = make([]v2.SeqDBClient, 0, len(src.Clients.SeqDB))
 			for i := range src.Clients.SeqDB {
-				dst.SeqDB = append(dst.SeqDB, migrateSeqDBClient(&src.Clients.SeqDB[i]))
+				dst.SeqDB = append(dst.SeqDB, m.migrateSeqDBClient(&src.Clients.SeqDB[i]))
 			}
 		} else {
 			dst.SeqDB = []v2.SeqDBClient{{
@@ -161,7 +172,7 @@ func migrateClients(src v1.Config) *v2.Clients {
 				InitialRetryBackoff: src.Clients.InitialRetryBackoff,
 				MaxRetryBackoff:     src.Clients.MaxRetryBackoff,
 				ClientMode:          src.Clients.ProxyClientMode,
-				GRPCKeepaliveParams: migrateGRPCKeepaliveParams(src.Clients.GRPCKeepaliveParams),
+				GRPCParams:          m.migrateGRPCParams(src.Clients.GRPCKeepaliveParams),
 			}}
 		}
 	}
@@ -183,7 +194,7 @@ func migrateClients(src v1.Config) *v2.Clients {
 	return dst
 }
 
-func migrateSeqDBClient(src *v1.SeqDBClient) v2.SeqDBClient {
+func (m *v1tov2) migrateSeqDBClient(src *v1.SeqDBClient) v2.SeqDBClient {
 	return v2.SeqDBClient{
 		ID:                  src.ID,
 		Timeout:             src.Timeout,
@@ -193,11 +204,11 @@ func migrateSeqDBClient(src *v1.SeqDBClient) v2.SeqDBClient {
 		InitialRetryBackoff: src.InitialRetryBackoff,
 		MaxRetryBackoff:     src.MaxRetryBackoff,
 		ClientMode:          src.ClientMode,
-		GRPCKeepaliveParams: migrateGRPCKeepaliveParams(src.GRPCKeepaliveParams),
+		GRPCParams:          m.migrateGRPCParams(src.GRPCKeepaliveParams),
 	}
 }
 
-func migrateDB(src *v1.Server) *v2.DB {
+func (m *v1tov2) migrateDB(src *v1.Server) *v2.DB {
 	if src == nil || src.DB == nil {
 		return nil
 	}
@@ -214,14 +225,14 @@ func migrateDB(src *v1.Server) *v2.DB {
 	}
 }
 
-func migrateCache(src *v1.Server) *v2.Cache {
+func (m *v1tov2) migrateCache(src *v1.Server) *v2.Cache {
 	if src == nil {
 		return &v2.Cache{}
 	}
 
 	cache := &v2.Cache{}
 
-	if !isInmemEmpty(src.Cache.Inmemory) {
+	if !m.isInmemEmpty(src.Cache.Inmemory) {
 		cache.Inmemory = append(cache.Inmemory, v2.InmemoryCache{
 			ID:          v2.DefaultInmemCacheID,
 			NumCounters: src.Cache.Inmemory.NumCounters,
@@ -233,18 +244,18 @@ func migrateCache(src *v1.Server) *v2.Cache {
 	if src.Cache.Redis != nil {
 		if len(cache.Inmemory) > 0 {
 			cache.Redis = append(cache.Redis,
-				migrateRedis(src.Cache.Redis, v2.DefaultRedisID, v2.DefaultInmemCacheID),
-				migrateRedis(src.Cache.Redis, v2.DefaultRedis2ID, ""),
+				m.migrateRedis(src.Cache.Redis, v2.DefaultRedisID, v2.DefaultInmemCacheID),
+				m.migrateRedis(src.Cache.Redis, v2.DefaultRedis2ID, ""),
 			)
 		} else {
-			cache.Redis = append(cache.Redis, migrateRedis(src.Cache.Redis, v2.DefaultRedisID, ""))
+			cache.Redis = append(cache.Redis, m.migrateRedis(src.Cache.Redis, v2.DefaultRedisID, ""))
 		}
 	}
 
 	return cache
 }
 
-func migrateRedis(src *v1.Redis, id, withInmemID string) v2.Redis {
+func (m *v1tov2) migrateRedis(src *v1.Redis, id, withInmemID string) v2.Redis {
 	return v2.Redis{
 		ID:              id,
 		WithInmemID:     withInmemID,
@@ -259,34 +270,44 @@ func migrateRedis(src *v1.Redis, id, withInmemID string) v2.Redis {
 	}
 }
 
-func migrateHandlers(src *v1.Handlers, cfg *v2.Config, v1Cache v1.Cache) *v2.Handlers {
+func (m *v1tov2) migrateHandlers(src *v1.Handlers, cfg *v2.Config, v1Cache v1.Cache) *v2.Handlers {
 	if src == nil {
 		return &v2.Handlers{}
 	}
 
 	dst := &v2.Handlers{
-		SeqAPI:      migrateSeqAPI(src.SeqAPI, v1Cache),
-		ErrorGroups: migrateErrorGroups(src.ErrorGroups),
-		AsyncSearch: migrateAsyncSearch(src.AsyncSearch),
-		Admin:       migrateAdmin(src.Admin, v1Cache),
+		SeqAPI:      m.migrateSeqAPI(src.SeqAPI, v1Cache),
+		ErrorGroups: m.migrateErrorGroups(src.ErrorGroups),
+		AsyncSearch: m.migrateAsyncSearch(src.AsyncSearch),
+		Admin:       m.migrateAdmin(src.Admin, v1Cache),
 	}
 
 	if src.MassExport != nil {
-		dst.MassExport = migrateMassExport(src.MassExport, cfg)
+		dst.MassExport = m.migrateMassExport(src.MassExport, cfg)
 	}
 
 	return dst
 }
 
-func migrateSeqAPI(src v1.SeqAPI, v1Cache v1.Cache) v2.SeqAPI {
-	cacheID, redisID := defaultCacheIDs(v1Cache)
+func (m *v1tov2) migrateSeqAPI(src v1.SeqAPI, v1Cache v1.Cache) v2.SeqAPI {
+	cacheID, redisID := m.defaultCacheIDs(v1Cache)
 	dst := v2.SeqAPI{
-		Envs:       migrateSeqAPIEnvs(src.Envs, cacheID, redisID),
+		Envs:       m.migrateSeqAPIEnvs(src.Envs, cacheID, redisID),
 		DefaultEnv: src.DefaultEnv,
 		Options: v2.SeqAPIOptions{
 			Caches: v2.SeqAPICaches{
-				CacheID: cacheID,
-				RedisID: redisID,
+				Events: v2.SeqAPICache{
+					ID:  cacheID,
+					TTL: src.EventsCacheTTL,
+				},
+				LogsLifespan: v2.SeqAPICache{
+					ID:  redisID,
+					TTL: src.LogsLifespanCacheTTL,
+				},
+				Fields: v2.SeqAPICache{
+					ID:  cacheID,
+					TTL: src.FieldsCacheTTL,
+				},
 			},
 		},
 	}
@@ -296,13 +317,13 @@ func migrateSeqAPI(src v1.SeqAPI, v1Cache v1.Cache) v2.SeqAPI {
 	}
 
 	if src.SeqAPIOptions != nil {
-		dst.Options = migrateSeqAPIOptions(src.SeqAPIOptions, cacheID, redisID)
+		dst.Options = m.migrateSeqAPIOptions(src.SeqAPIOptions, cacheID, redisID)
 	}
 
 	return dst
 }
 
-func migrateSeqAPIEnvs(envs map[string]v1.SeqAPIEnv, cacheID, redisID string) map[string]v2.SeqAPIEnv {
+func (m *v1tov2) migrateSeqAPIEnvs(envs map[string]v1.SeqAPIEnv, cacheID, redisID string) map[string]v2.SeqAPIEnv {
 	if len(envs) == 0 {
 		return nil
 	}
@@ -313,7 +334,7 @@ func migrateSeqAPIEnvs(envs map[string]v1.SeqAPIEnv, cacheID, redisID string) ma
 			SeqDBID: cfg.SeqDB,
 		}
 		if cfg.Options != nil {
-			envOptions := migrateSeqAPIOptions(cfg.Options, cacheID, redisID)
+			envOptions := m.migrateSeqAPIOptions(cfg.Options, cacheID, redisID)
 			env.Options = &envOptions
 		}
 
@@ -323,7 +344,7 @@ func migrateSeqAPIEnvs(envs map[string]v1.SeqAPIEnv, cacheID, redisID string) ma
 	return dst
 }
 
-func migrateSeqAPIOptions(options *v1.SeqAPIOptions, cacheID, redisID string) v2.SeqAPIOptions {
+func (m *v1tov2) migrateSeqAPIOptions(options *v1.SeqAPIOptions, cacheID, redisID string) v2.SeqAPIOptions {
 	return v2.SeqAPIOptions{
 		Limits: v2.SeqAPILimits{
 			MaxSearchLimit:             options.MaxSearchLimit,
@@ -335,22 +356,27 @@ func migrateSeqAPIOptions(options *v1.SeqAPIOptions, cacheID, redisID string) v2
 			MaxAggregationsPerRequest:  options.MaxAggregationsPerRequest,
 			MaxBucketsPerAggregationTs: options.MaxBucketsPerAggregationTs,
 		},
-		Masking:      migrateMasking(options.Masking),
-		PinnedFields: migrateFields(options.PinnedFields),
-		SystemFields: migrateFields(options.SystemFields),
+		Masking:      m.migrateMasking(options.Masking),
+		PinnedFields: m.migrateFields(options.PinnedFields),
+		SystemFields: m.migrateFields(options.SystemFields),
 		Caches: v2.SeqAPICaches{
-			CacheID: cacheID,
-			RedisID: redisID,
-			TTL: v2.SeqAPICachesTTL{
-				Events:       options.EventsCacheTTL,
-				LogsLifespan: options.LogsLifespanCacheTTL,
-				Fields:       options.FieldsCacheTTL,
+			Events: v2.SeqAPICache{
+				ID:  cacheID,
+				TTL: options.EventsCacheTTL,
+			},
+			LogsLifespan: v2.SeqAPICache{
+				ID:  redisID,
+				TTL: options.LogsLifespanCacheTTL,
+			},
+			Fields: v2.SeqAPICache{
+				ID:  cacheID,
+				TTL: options.FieldsCacheTTL,
 			},
 		},
 	}
 }
 
-func migrateFields(fs []v1.Field) []v2.Field {
+func (m *v1tov2) migrateFields(fs []v1.Field) []v2.Field {
 	if fs == nil {
 		return nil
 	}
@@ -366,19 +392,19 @@ func migrateFields(fs []v1.Field) []v2.Field {
 	return dst
 }
 
-func migrateMasking(src *v1.Masking) *v2.Masking {
+func (m *v1tov2) migrateMasking(src *v1.Masking) *v2.Masking {
 	if src == nil {
 		return nil
 	}
 
 	return &v2.Masking{
-		Masks:         migrateMasks(src.Masks),
+		Masks:         m.migrateMasks(src.Masks),
 		ProcessFields: src.ProcessFields,
 		IgnoreFields:  src.IgnoreFields,
 	}
 }
 
-func migrateMasks(ms []v1.Mask) []v2.Mask {
+func (m *v1tov2) migrateMasks(ms []v1.Mask) []v2.Mask {
 	if ms == nil {
 		return nil
 	}
@@ -393,14 +419,14 @@ func migrateMasks(ms []v1.Mask) []v2.Mask {
 			ReplaceWord:   m.ReplaceWord,
 			ProcessFields: m.ProcessFields,
 			IgnoreFields:  m.IgnoreFields,
-			FieldFilters:  migrateFieldFilters(m.FieldFilters),
+			FieldFilters:  m.migrateFieldFilters(m.FieldFilters),
 		}
 	}
 
 	return dst
 }
 
-func migrateFieldFilters(src *v1.FieldFilterSet) *v2.FieldFilterSet {
+func (m *v1tov2) migrateFieldFilters(src *v1.FieldFilterSet) *v2.FieldFilterSet {
 	if src == nil {
 		return nil
 	}
@@ -423,8 +449,8 @@ func migrateFieldFilters(src *v1.FieldFilterSet) *v2.FieldFilterSet {
 	return dst
 }
 
-func migrateErrorGroups(eg v1.ErrorGroups) *v2.ErrorGroups {
-	if isEgEmpty(eg) {
+func (m *v1tov2) migrateErrorGroups(eg v1.ErrorGroups) *v2.ErrorGroups {
+	if m.isEgEmpty(eg) {
 		return nil
 	}
 
@@ -439,7 +465,7 @@ func migrateErrorGroups(eg v1.ErrorGroups) *v2.ErrorGroups {
 	}
 }
 
-func migrateAsyncSearch(a v1.AsyncSearch) *v2.AsyncSearch {
+func (m *v1tov2) migrateAsyncSearch(a v1.AsyncSearch) *v2.AsyncSearch {
 	if len(a.AdminUsers) == 0 && a.ListQueryLengthLimit == 0 {
 		return nil
 	}
@@ -451,7 +477,7 @@ func migrateAsyncSearch(a v1.AsyncSearch) *v2.AsyncSearch {
 	}
 }
 
-func migrateMassExport(me *v1.MassExport, cfg *v2.Config) *v2.MassExport {
+func (m *v1tov2) migrateMassExport(me *v1.MassExport, cfg *v2.Config) *v2.MassExport {
 	dst := &v2.MassExport{
 		SeqDBID:          v2.DefaultSeqDBClientID,
 		BatchSize:        me.BatchSize,
@@ -460,12 +486,12 @@ func migrateMassExport(me *v1.MassExport, cfg *v2.Config) *v2.MassExport {
 		PartLength:       me.PartLength,
 		URLPrefix:        me.URLPrefix,
 		AllowedUsers:     me.AllowedUsers,
-		FileStore:        migrateFileStore(me.FileStore),
-		DownloadParams:   migrateDownloadParams(me.SeqProxyDownloader),
+		FileStore:        m.migrateFileStore(me.FileStore),
+		DownloadParams:   m.migrateDownloadParams(me.SeqProxyDownloader),
 	}
 
 	if me.SessionStore != nil {
-		cfg.Cache.Redis = append(cfg.Cache.Redis, migrateRedis(&me.SessionStore.Redis, v2.DefaultMassExportRedisID, ""))
+		cfg.Cache.Redis = append(cfg.Cache.Redis, m.migrateRedis(&me.SessionStore.Redis, v2.DefaultMassExportRedisID, ""))
 
 		dst.SessionStore = &v2.SessionStore{
 			RedisID:        v2.DefaultMassExportRedisID,
@@ -476,7 +502,7 @@ func migrateMassExport(me *v1.MassExport, cfg *v2.Config) *v2.MassExport {
 	return dst
 }
 
-func migrateFileStore(fs *v1.FileStore) *v2.FileStore {
+func (m *v1tov2) migrateFileStore(fs *v1.FileStore) *v2.FileStore {
 	if fs == nil {
 		return nil
 	}
@@ -495,7 +521,7 @@ func migrateFileStore(fs *v1.FileStore) *v2.FileStore {
 	return dst
 }
 
-func migrateDownloadParams(src *v1.SeqProxyDownloader) *v2.DownloadParams {
+func (m *v1tov2) migrateDownloadParams(src *v1.SeqProxyDownloader) *v2.DownloadParams {
 	if src == nil {
 		return nil
 	}
@@ -507,21 +533,23 @@ func migrateDownloadParams(src *v1.SeqProxyDownloader) *v2.DownloadParams {
 	}
 }
 
-func migrateAdmin(src *v1.Admin, v1Cache v1.Cache) *v2.Admin {
+func (m *v1tov2) migrateAdmin(src *v1.Admin, v1Cache v1.Cache) *v2.Admin {
 	if src == nil {
 		return nil
 	}
 
-	_, redisID := defaultCacheIDs(v1Cache)
+	_, redisID := m.defaultCacheIDs(v1Cache)
 	return &v2.Admin{
-		RedisID:    redisID,
 		SuperUsers: src.SuperUsers,
-		CacheTTL:   src.CacheTTL,
+		Options: v2.HandlerCache{
+			ID:  redisID,
+			TTL: src.CacheTTL,
+		},
 	}
 }
 
-func defaultCacheIDs(src v1.Cache) (cacheID, redisID string) {
-	hasInmem := !isInmemEmpty(src.Inmemory)
+func (m *v1tov2) defaultCacheIDs(src v1.Cache) (cacheID, redisID string) {
+	hasInmem := !m.isInmemEmpty(src.Inmemory)
 	hasRedis := src.Redis != nil
 
 	switch {
@@ -536,11 +564,11 @@ func defaultCacheIDs(src v1.Cache) (cacheID, redisID string) {
 	}
 }
 
-func isInmemEmpty(src v1.InmemoryCache) bool {
+func (m *v1tov2) isInmemEmpty(src v1.InmemoryCache) bool {
 	return src.BufferItems == 0 && src.MaxCost == 0 && src.NumCounters == 0
 }
 
-func isEgEmpty(src v1.ErrorGroups) bool {
+func (m *v1tov2) isEgEmpty(src v1.ErrorGroups) bool {
 	return len(src.LogTagsMapping.Env) == 0 && len(src.LogTagsMapping.Service) == 0 &&
 		len(src.LogTagsMapping.Release) == 0 && len(src.QueryFilter) == 0
 }
