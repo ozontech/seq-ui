@@ -123,9 +123,9 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 		}
 	}
 
-	if params.masker != nil {
+	if a.globalParams.masker != nil {
 		for _, e := range resp.Events {
-			params.masker.Mask(e.Data)
+			a.globalParams.masker.Mask(e.Data)
 		}
 	}
 

@@ -41,8 +41,8 @@ func (a *API) GetEvent(ctx context.Context, req *seqapi.GetEventRequest) (*seqap
 	if cached, err := a.inmemWithRedisCache.Get(ctx, req.Id); err == nil {
 		event := &seqapi.Event{}
 		if err = proto.Unmarshal([]byte(cached), event); err == nil {
-			if params.masker != nil {
-				params.masker.Mask(event.Data)
+			if a.globalParams.masker != nil {
+				a.globalParams.masker.Mask(event.Data)
 			}
 			return &seqapi.GetEventResponse{Event: event}, nil
 		}
@@ -53,12 +53,12 @@ func (a *API) GetEvent(ctx context.Context, req *seqapi.GetEventRequest) (*seqap
 		return nil, err
 	}
 
-	if params.masker != nil && resp.Event != nil {
-		params.masker.Mask(resp.Event.Data)
+	if a.globalParams.masker != nil && resp.Event != nil {
+		a.globalParams.masker.Mask(resp.Event.Data)
 	}
 
 	if data, err := proto.Marshal(resp.Event); err == nil {
-		_ = a.inmemWithRedisCache.SetWithTTL(ctx, req.Id, string(data), params.options.EventsCacheTTL)
+		_ = a.inmemWithRedisCache.SetWithTTL(ctx, req.Id, string(data), a.globalParams.eventsCacheTTL)
 	} else {
 		logger.Error("failed to marshal event proto for caching", zap.String("id", req.Id), zap.Error(err))
 	}

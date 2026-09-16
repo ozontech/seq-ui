@@ -12,7 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
@@ -50,7 +50,7 @@ func TestGetAggregation(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxAggregationsPerRequest: 3,
 				},
 			},
@@ -65,7 +65,7 @@ func TestGetAggregation(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxAggregationsPerRequest: 2,
 				},
 			},
@@ -82,7 +82,7 @@ func TestGetAggregation(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxAggregationsPerRequest: 1,
 				},
 			},
@@ -178,7 +178,7 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxAggregationsPerRequest: 3,
 				},
 			},
@@ -221,7 +221,7 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxAggregationsPerRequest: 3,
 				},
 			},

@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
 
@@ -20,7 +20,7 @@ func TestGetEnvs(t *testing.T) {
 		{
 			name: "single_env",
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxSearchLimit:            100,
 					MaxExportLimit:            200,
 					MaxParallelExportRequests: 2,
@@ -144,8 +144,8 @@ func TestGetEnvs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			api := API{
-				config:       tt.cfg,
-				envsResponse: parseEnvs(tt.cfg),
+				config:       &tt.cfg,
+				envsResponse: parseEnvs(&tt.cfg),
 			}
 			resp, err := api.GetEnvs(context.TODO(), &seqapi.GetEnvsRequest{})
 			require.NoError(t, err)

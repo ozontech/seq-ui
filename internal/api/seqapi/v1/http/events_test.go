@@ -14,7 +14,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	mock_cache "github.com/ozontech/seq-ui/internal/pkg/cache/mock"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
@@ -121,7 +121,7 @@ func TestServeGetEvent(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					SeqAPIOptions: &config.SeqAPIOptions{
+					GlobalOptions: config.SeqAPIGlobalOptions{
 						EventsCacheTTL: cacheTTL,
 					},
 				},
@@ -381,7 +381,7 @@ func TestGetEventWithMasking(t *testing.T) {
 
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					SeqAPIOptions: &config.SeqAPIOptions{
+					GlobalOptions: config.SeqAPIGlobalOptions{
 						EventsCacheTTL: cacheTTL,
 						Masking:        tt.maskingCfg,
 					},

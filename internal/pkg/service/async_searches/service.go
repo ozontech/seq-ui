@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	"github.com/ozontech/seq-ui/internal/pkg/repository"

@@ -37,6 +37,13 @@ func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
 	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_start_async_search")
 	defer span.End()
 
+	env := getEnvFromContext(ctx)
+	params, err := a.GetEnvParams(env)
+	if err != nil {
+		httputil.NewWriter(w).Error(err, http.StatusBadRequest)
+		return
+	}
+
 	var httpReq startAsyncSearchRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
 		wr.Error(fmt.Errorf("failed to parse search request: %w", err), http.StatusBadRequest)
@@ -54,7 +61,7 @@ func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if err := api_error.CheckAggregationTsInterval(agg.Interval, httpReq.From, httpReq.To,
-			a.config.MaxBucketsPerAggregationTs,
+			params.options.MaxBucketsPerAggregationTs,
 		); err != nil {
 			wr.Error(err, http.StatusBadRequest)
 			return

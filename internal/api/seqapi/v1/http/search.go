@@ -140,9 +140,9 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	searchResp := searchResponseFromProto(resp, httpReq.WithTotal)
-	if params.masker != nil {
+	if a.globalParams.masker != nil {
 		for i := range searchResp.Events {
-			params.masker.Mask(searchResp.Events[i].Data)
+			a.globalParams.masker.Mask(searchResp.Events[i].Data)
 		}
 	}
 

@@ -34,7 +34,7 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if params.fieldsCache == nil {
+	if a.globalParams.fieldsCache == nil {
 		resp, err := params.client.GetFields(ctx, &seqapi.GetFieldsRequest{})
 		if err != nil {
 			wr.Error(err, http.StatusInternalServerError)
@@ -43,14 +43,14 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 
 		res := getFieldsResponse{
 			Fields:       fieldsFromProto(resp.GetFields()),
-			SystemFields: params.systemFields,
-			PinnedFields: params.pinnedFields,
+			SystemFields: a.globalParams.systemFields,
+			PinnedFields: a.globalParams.pinnedFields,
 		}
 		wr.WriteJson(res)
 		return
 	}
 
-	rawFields, cached, isActual := params.fieldsCache.getFields()
+	rawFields, cached, isActual := a.globalParams.fieldsCache.getFields()
 	if cached && isActual {
 		_, _ = wr.Write(rawFields)
 		return
@@ -70,8 +70,8 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 
 	res := getFieldsResponse{
 		Fields:       fieldsFromProto(resp.GetFields()),
-		SystemFields: params.systemFields,
-		PinnedFields: params.pinnedFields,
+		SystemFields: a.globalParams.systemFields,
+		PinnedFields: a.globalParams.pinnedFields,
 	}
 	resData, err := json.Marshal(res)
 	if err != nil {
@@ -85,7 +85,7 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	params.fieldsCache.setFields(resData)
+	a.globalParams.fieldsCache.setFields(resData)
 	_, _ = wr.Write(resData)
 }
 
@@ -98,18 +98,8 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 //	@Success	200		{object}	getFieldsResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
 func (a *API) serveGetPinnedFields(w http.ResponseWriter, r *http.Request) {
-	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_get_pinned_fields")
-	defer span.End()
-
-	env := getEnvFromContext(ctx)
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		httputil.NewWriter(w).Error(err, http.StatusBadRequest)
-		return
-	}
-
 	httputil.NewWriter(w).WriteJson(getFieldsResponse{
-		Fields: params.pinnedFields,
+		Fields: a.globalParams.pinnedFields,
 	})
 }
 

@@ -7,7 +7,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	"github.com/ozontech/seq-ui/internal/pkg/service/massexport/filestore"
@@ -93,7 +93,7 @@ func NewService(
 		tasksChannelSize = cfg.TasksChannelSize
 	}
 
-	downloader := newSeqProxyDownloader(client, *cfg.SeqProxyDownloader)
+	downloader := newSeqProxyDownloader(client, *cfg.DownloadParams)
 
 	return &exportService{
 		sessionStore: sessionStore,
