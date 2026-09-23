@@ -134,6 +134,21 @@ func (mr *MockServiceMockRecorder) GetReleases(arg0, arg1 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReleases", reflect.TypeOf((*MockService)(nil).GetReleases), arg0, arg1)
 }
 
+// GetServiceFilters mocks base method.
+func (m *MockService) GetServiceFilters(arg0 context.Context, arg1 types.GetServiceFiltersRequest) ([]types.ServiceFilter, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetServiceFilters", arg0, arg1)
+	ret0, _ := ret[0].([]types.ServiceFilter)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetServiceFilters indicates an expected call of GetServiceFilters.
+func (mr *MockServiceMockRecorder) GetServiceFilters(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServiceFilters", reflect.TypeOf((*MockService)(nil).GetServiceFilters), arg0, arg1)
+}
+
 // GetServices mocks base method.
 func (m *MockService) GetServices(arg0 context.Context, arg1 types.GetServicesRequest) ([]string, error) {
 	m.ctrl.T.Helper()

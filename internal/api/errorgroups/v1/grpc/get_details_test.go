@@ -23,6 +23,7 @@ func TestGetDetails(t *testing.T) {
 		release       = "test-release"
 		source        = "test-source"
 		msg           = "some error"
+		filter        = map[string]string{"f1": "v1", "f2": "v2"}
 		now           = time.Now()
 		oneMinuteAgo  = now.Add(-1 * time.Minute)
 		twoMinutesAgo = now.Add(-2 * time.Minute)
@@ -122,6 +123,118 @@ func TestGetDetails(t *testing.T) {
 						ByRelease: []types.ErrorGroupDistribution{
 							{Value: "release1", Percent: 60},
 							{Value: "release2", Percent: 40},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "ok_filters",
+
+			req: &errorgroups_v1.GetDetailsRequest{
+				GroupHash: groupHash,
+				Service:   &service,
+				Env:       &env,
+				Release:   &release,
+				Source:    &source,
+				Filter: &errorgroups_v1.GetDetailsRequest_Filter{
+					Custom: filter,
+				},
+			},
+			want: &errorgroups_v1.GetDetailsResponse{
+				GroupHash:   groupHash,
+				Message:     msg,
+				SeenTotal:   10,
+				FirstSeenAt: timestamppb.New(twoMinutesAgo),
+				LastSeenAt:  timestamppb.New(oneMinuteAgo),
+				Source:      source,
+				LogTags: map[string]string{
+					"tag1": "val1",
+					"tag2": "val2",
+				},
+				Distributions: &errorgroups_v1.GetDetailsResponse_Distributions{
+					ByEnv: []*errorgroups_v1.GetDetailsResponse_Distribution{
+						{Value: "env1", Percent: 70},
+						{Value: "env2", Percent: 30},
+					},
+					BySource: []*errorgroups_v1.GetDetailsResponse_Distribution{
+						{Value: "source1", Percent: 50},
+						{Value: "source2", Percent: 50},
+					},
+					ByService: []*errorgroups_v1.GetDetailsResponse_Distribution{
+						{Value: "service1", Percent: 100},
+						{Value: "service2", Percent: 0},
+					},
+					ByRelease: []*errorgroups_v1.GetDetailsResponse_Distribution{
+						{Value: "release1", Percent: 60},
+						{Value: "release2", Percent: 40},
+					},
+					ByFilter: map[string]*errorgroups_v1.GetDetailsResponse_DistributionArray{
+						"filter1": {
+							Array: []*errorgroups_v1.GetDetailsResponse_Distribution{
+								{Value: "value1", Percent: 90},
+								{Value: "value2", Percent: 10},
+							},
+						},
+						"filter2": {
+							Array: []*errorgroups_v1.GetDetailsResponse_Distribution{
+								{Value: "value1", Percent: 50},
+								{Value: "value2", Percent: 50},
+							},
+						},
+					},
+				},
+			},
+
+			mockArgs: &mockArgs{
+				req: types.GetErrorGroupDetailsRequest{
+					Service:   &service,
+					GroupHash: groupHash,
+					Env:       &env,
+					Release:   &release,
+					Source:    &source,
+					Filter: &types.ErrorGroupsFilter{
+						Custom: filter,
+					},
+				},
+
+				details: types.ErrorGroupDetails{
+					Hash:        groupHash,
+					Message:     msg,
+					SeenTotal:   10,
+					FirstSeenAt: twoMinutesAgo,
+					LastSeenAt:  oneMinuteAgo,
+					Source:      source,
+					LogTags: map[string]string{
+						"tag1": "val1",
+						"tag2": "val2",
+					},
+					Distributions: types.ErrorGroupDistributions{
+						ByEnv: []types.ErrorGroupDistribution{
+							{Value: "env1", Percent: 70},
+							{Value: "env2", Percent: 30},
+						},
+						BySource: []types.ErrorGroupDistribution{
+							{Value: "source1", Percent: 50},
+							{Value: "source2", Percent: 50},
+						},
+						ByService: []types.ErrorGroupDistribution{
+							{Value: "service1", Percent: 100},
+							{Value: "service2", Percent: 0},
+						},
+						ByRelease: []types.ErrorGroupDistribution{
+							{Value: "release1", Percent: 60},
+							{Value: "release2", Percent: 40},
+						},
+						ByFilter: map[string][]types.ErrorGroupDistribution{
+							"filter1": {
+								{Value: "value1", Percent: 90},
+								{Value: "value2", Percent: 10},
+							},
+							"filter2": {
+								{Value: "value1", Percent: 50},
+								{Value: "value2", Percent: 50},
+							},
 						},
 					},
 				},

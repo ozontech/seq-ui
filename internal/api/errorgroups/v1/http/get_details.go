@@ -3,7 +3,9 @@ package http
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/http"
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -55,16 +57,27 @@ func (a *API) serveGetDetails(w http.ResponseWriter, r *http.Request) {
 	if httpReq.Source != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "source", Value: attribute.StringValue(*httpReq.Source)})
 	}
+	if httpReq.Filter != nil {
+		filterRaw, _ := json.Marshal(httpReq.Filter)
+		attributes = append(attributes, attribute.KeyValue{Key: "filter", Value: attribute.StringValue(string(filterRaw))})
+	}
 	span.SetAttributes(attributes...)
 
-	request := types.GetErrorGroupDetailsRequest{
+	req := types.GetErrorGroupDetailsRequest{
 		GroupHash: *parsedGroupHash,
 		Env:       httpReq.Env,
 		Source:    httpReq.Source,
 		Service:   httpReq.Service,
 		Release:   httpReq.Release,
 	}
-	details, err := a.service.GetDetails(ctx, request)
+
+	if httpReq.Filter != nil && len(httpReq.Filter.Custom) > 0 {
+		req.Filter = &types.ErrorGroupsFilter{
+			Custom: httpReq.Filter.Custom,
+		}
+	}
+
+	details, err := a.service.GetDetails(ctx, req)
 	if err != nil {
 		httputil.ProcessError(wr, err)
 		return
@@ -82,12 +95,18 @@ func (a *API) serveGetDetails(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+type detailsFilter struct {
+	Custom map[string]string `json:"custom"`
+} //	@name	errorgroups.v1.DetailsFilter
+
 type getDetailsRequest struct {
 	GroupHash string  `json:"group_hash" format:"uint64"`
 	Env       *string `json:"env,omitempty"`
 	Service   *string `json:"service,omitempty"`
 	Release   *string `json:"release,omitempty"`
 	Source    *string `json:"source,omitempty"`
+
+	Filter *detailsFilter `json:"filter,omitempty"`
 } //	@name	errorgroups.v1.GetDetailsRequest
 
 type getDetailsResponse struct {
@@ -107,10 +126,11 @@ type distribution struct {
 } //	@name	errorgroups.v1.Distribution
 
 type distributions struct {
-	ByEnv     []distribution `json:"by_env"`
-	BySource  []distribution `json:"by_source"`
-	ByService []distribution `json:"by_service"`
-	ByRelease []distribution `json:"by_release"`
+	ByEnv     []distribution            `json:"by_env"`
+	BySource  []distribution            `json:"by_source"`
+	ByService []distribution            `json:"by_service"`
+	ByRelease []distribution            `json:"by_release"`
+	ByFilter  map[string][]distribution `json:"by_filter"`
 } //	@name	errorgroups.v1.Distributions
 
 func newDistributions(source types.ErrorGroupDistributions) distributions {
@@ -130,10 +150,21 @@ func newDistributions(source types.ErrorGroupDistributions) distributions {
 		return res
 	}
 
+	var byFilter map[string][]distribution
+	if len(source.ByFilter) > 0 {
+		byFilter = make(map[string][]distribution, len(source.ByFilter))
+		keys := slices.Collect(maps.Keys(source.ByFilter))
+		slices.Sort(keys)
+		for _, key := range keys {
+			byFilter[key] = newDistr(source.ByFilter[key])
+		}
+	}
+
 	return distributions{
 		ByEnv:     newDistr(source.ByEnv),
 		BySource:  newDistr(source.BySource),
 		ByService: newDistr(source.ByService),
 		ByRelease: newDistr(source.ByRelease),
+		ByFilter:  byFilter,
 	}
 }

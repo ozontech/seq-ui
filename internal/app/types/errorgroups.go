@@ -1,6 +1,9 @@
 package types
 
 import (
+	"iter"
+	"maps"
+	"slices"
 	"time"
 )
 
@@ -38,12 +41,29 @@ func (tr *TimeRange) IsEmpty() bool {
 	return tr == nil || !tr.IsAbsolute() && !tr.IsRelative()
 }
 
+type ErrorGroupsFilter struct {
+	Custom map[string]string
+}
+
+func (f *ErrorGroupsFilter) CustomOrdered() iter.Seq2[string, string] {
+	keys := slices.Collect(maps.Keys(f.Custom))
+	slices.Sort(keys)
+	return func(yield func(string, string) bool) {
+		for _, key := range keys {
+			if !yield(key, f.Custom[key]) {
+				return
+			}
+		}
+	}
+}
+
 type GetErrorGroupsRequest struct {
 	Service   string
 	Env       *string
 	Source    *string
 	Release   *string
 	TimeRange *TimeRange
+	Filter    *ErrorGroupsFilter
 	Limit     uint32
 	Offset    uint32
 	Order     ErrorGroupsOrder
@@ -82,6 +102,7 @@ type GetErrorHistRequest struct {
 	Source    *string
 	Release   *string
 	TimeRange *TimeRange
+	Filter    *ErrorGroupsFilter
 }
 
 type ErrorHistBucket struct {
@@ -100,13 +121,7 @@ type GetErrorGroupDetailsRequest struct {
 	Source    *string
 	Service   *string
 	Release   *string
-}
-
-func (r GetErrorGroupDetailsRequest) IsFullyFilled() bool {
-	return r.Env != nil && *r.Env != "" &&
-		r.Release != nil && *r.Release != "" &&
-		r.Service != nil && *r.Service != "" &&
-		r.Source != nil && *r.Source != ""
+	Filter    *ErrorGroupsFilter
 }
 
 type ErrorGroupDetails struct {
@@ -130,6 +145,7 @@ type ErrorGroupDistributions struct {
 	BySource  []ErrorGroupDistribution
 	ByService []ErrorGroupDistribution
 	ByRelease []ErrorGroupDistribution
+	ByFilter  map[string][]ErrorGroupDistribution
 }
 
 type ErrorGroupCount map[string]uint64
@@ -139,6 +155,7 @@ type ErrorGroupCounts struct {
 	BySource  ErrorGroupCount
 	ByService ErrorGroupCount
 	ByRelease ErrorGroupCount
+	ByFilter  map[string]ErrorGroupCount
 }
 
 type GetServicesRequest struct {
@@ -175,4 +192,14 @@ type DiffGroup struct {
 	LastSeenAt   time.Time
 	Source       string
 	ReleaseInfos map[string]DiffReleaseInfo
+}
+
+type GetServiceFiltersRequest struct {
+	Service string
+	Env     *string
+}
+
+type ServiceFilter struct {
+	Key    string
+	Values []string
 }

@@ -721,6 +721,44 @@
                 }
             }
         },
+        "/errorgroups/v1/service_filters": {
+            "post": {
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "tags": [
+                    "errorgroups_v1"
+                ],
+                "operationId": "errorgroups_v1_get_service_filters",
+                "parameters": [
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/errorgroups.v1.GetServiceFiltersRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A successful response",
+                        "schema": {
+                            "$ref": "#/definitions/errorgroups.v1.GetServiceFiltersResponse"
+                        }
+                    },
+                    "default": {
+                        "description": "An unexpected error response",
+                        "schema": {
+                            "$ref": "#/definitions/UnexpectedError"
+                        }
+                    }
+                }
+            }
+        },
         "/errorgroups/v1/services": {
             "post": {
                 "security": [
@@ -2096,6 +2134,17 @@
                 }
             }
         },
+        "errorgroups.v1.DetailsFilter": {
+            "type": "object",
+            "properties": {
+                "custom": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "errorgroups.v1.DiffByReleasesRequest": {
             "type": "object",
             "properties": {
@@ -2199,6 +2248,15 @@
                         "$ref": "#/definitions/errorgroups.v1.Distribution"
                     }
                 },
+                "by_filter": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/definitions/errorgroups.v1.Distribution"
+                        }
+                    }
+                },
                 "by_release": {
                     "type": "array",
                     "items": {
@@ -2224,6 +2282,9 @@
             "properties": {
                 "env": {
                     "type": "string"
+                },
+                "filter": {
+                    "$ref": "#/definitions/errorgroups.v1.DetailsFilter"
                 },
                 "group_hash": {
                     "type": "string",
@@ -2342,6 +2403,9 @@
                 "env": {
                     "type": "string"
                 },
+                "filter": {
+                    "$ref": "#/definitions/errorgroups.v1.HistFilter"
+                },
                 "group_hash": {
                     "type": "string",
                     "format": "uint64"
@@ -2393,6 +2457,28 @@
                     "type": "array",
                     "items": {
                         "type": "string"
+                    }
+                }
+            }
+        },
+        "errorgroups.v1.GetServiceFiltersRequest": {
+            "type": "object",
+            "properties": {
+                "env": {
+                    "type": "string"
+                },
+                "service": {
+                    "type": "string"
+                }
+            }
+        },
+        "errorgroups.v1.GetServiceFiltersResponse": {
+            "type": "object",
+            "properties": {
+                "filters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/errorgroups.v1.ServiceFilter"
                     }
                 }
             }
@@ -2497,8 +2583,25 @@
         "errorgroups.v1.GroupsFilter": {
             "type": "object",
             "properties": {
+                "custom": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
                 "is_new": {
                     "type": "boolean"
+                }
+            }
+        },
+        "errorgroups.v1.HistFilter": {
+            "type": "object",
+            "properties": {
+                "custom": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -2514,6 +2617,20 @@
                 "OrderLatest",
                 "OrderOldest"
             ]
+        },
+        "errorgroups.v1.ServiceFilter": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "values": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
         },
         "errorgroups.v1.TimeRange": {
             "type": "object",

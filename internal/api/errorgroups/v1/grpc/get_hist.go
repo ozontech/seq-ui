@@ -43,6 +43,10 @@ func (a *API) GetHist(ctx context.Context, req *errorgroups.GetHistRequest) (*er
 		trRaw, _ := json.Marshal(req.TimeRange)
 		attributes = append(attributes, attribute.KeyValue{Key: "time_range", Value: attribute.StringValue(string(trRaw))})
 	}
+	if req.Filter != nil {
+		filterRaw, _ := json.Marshal(req.Filter)
+		attributes = append(attributes, attribute.KeyValue{Key: "filter", Value: attribute.StringValue(string(filterRaw))})
+	}
 	span.SetAttributes(attributes...)
 
 	request := types.GetErrorHistRequest{
@@ -53,6 +57,13 @@ func (a *API) GetHist(ctx context.Context, req *errorgroups.GetHistRequest) (*er
 		Release:   req.Release,
 		TimeRange: parseTimeRange(req),
 	}
+
+	if req.Filter != nil && len(req.Filter.Custom) > 0 {
+		request.Filter = &types.ErrorGroupsFilter{
+			Custom: req.Filter.Custom,
+		}
+	}
+
 	hist, err := a.service.GetHist(ctx, request)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
