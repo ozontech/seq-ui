@@ -7,12 +7,12 @@ MIGRATION_DSN_CLICKHOUSE ?= tcp://default@localhost:9000/seq_ui_server
 
 LOCAL_BIN := $(CURDIR)/bin
 
-GOLANGCI_LINT_VER=2.8.0
+GOLANGCI_LINT_VER=2.14.0
 GCI_VER=0.14.0
-PROTOC_GEN_GO_VER=1.34.2
-PROTOC_GEN_GO_GRPC_VER=1.4.0
+PROTOC_GEN_GO_VER=1.36.12
+PROTOC_GEN_GO_GRPC_VER=1.6.2
 MOCKGEN_VER=0.6.0
-SWAG_VER=1.16.2
+SWAG_VER=1.16.6
 
 export GOBIN=$(LOCAL_BIN)
 
@@ -115,6 +115,11 @@ mock:
 	PATH="$(LOCAL_BIN):$(PATH)" mockgen \
     	-source=internal/pkg/client/seqdb/seqproxyapi/v1/seq_proxy_api_grpc.pb.go \
     	-destination=internal/pkg/client/seqdb/seqproxyapi/v1/mock/seq_proxy_api_grpc.pb.go
+	PATH="$(LOCAL_BIN):$(PATH)" mockgen \
+        -destination=internal/pkg/client/seqdb/seqproxyapi/v1/mock/seq_proxy_api_grpc_streams.go \
+        -package=mock_seqproxyapi \
+        github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1 \
+        SeqProxyApi_FetchClient,SeqProxyApi_ExportClient,SeqProxyApi_ExportAsyncSearchClient
 	PATH="$(LOCAL_BIN):$(PATH)" mockgen \
 		-source=internal/pkg/cache/cache.go \
 		-destination=internal/pkg/cache/mock/cache.go

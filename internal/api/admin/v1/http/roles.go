@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/ozontech/seq-ui/internal/api/admin/v1/util"
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/tracing"
@@ -42,11 +43,11 @@ func (a *API) serveCreateRole(w http.ResponseWriter, r *http.Request) {
 
 	span.SetAttributes(
 		attribute.KeyValue{
-			Key:   "role_name",
+			Key:   util.AttrRoleName,
 			Value: attribute.StringValue(httpReq.Name),
 		},
 		attribute.KeyValue{
-			Key:   "permissions_count",
+			Key:   util.AttrPermissionsCount,
 			Value: attribute.IntValue(len(httpReq.Permissions)),
 		},
 	)
@@ -93,11 +94,11 @@ func (a *API) serveAddUsersToRole(w http.ResponseWriter, r *http.Request) {
 
 	span.SetAttributes(
 		attribute.KeyValue{
-			Key:   "role_id",
+			Key:   util.AttrRoleID,
 			Value: attribute.IntValue(int(roleID)),
 		},
 		attribute.KeyValue{
-			Key:   "users_count",
+			Key:   util.AttrUsersCount,
 			Value: attribute.IntValue(len(httpReq.Usernames)),
 		},
 	)
@@ -143,11 +144,11 @@ func (a *API) serveDeleteUsersFromRole(w http.ResponseWriter, r *http.Request) {
 
 	span.SetAttributes(
 		attribute.KeyValue{
-			Key:   "role_id",
+			Key:   util.AttrRoleID,
 			Value: attribute.IntValue(int(roleID)),
 		},
 		attribute.KeyValue{
-			Key:   "users_count",
+			Key:   util.AttrUsersCount,
 			Value: attribute.IntValue(len(httpReq.Usernames)),
 		},
 	)
@@ -212,7 +213,7 @@ func (a *API) serveGetRole(w http.ResponseWriter, r *http.Request) {
 
 	span.SetAttributes(
 		attribute.KeyValue{
-			Key:   "role_id",
+			Key:   util.AttrRoleID,
 			Value: attribute.IntValue(int(roleID)),
 		},
 	)
@@ -260,17 +261,17 @@ func (a *API) serveUpdateRole(w http.ResponseWriter, r *http.Request) {
 
 	spanAttributes := []attribute.KeyValue{
 		{
-			Key:   "role_id",
+			Key:   util.AttrRoleID,
 			Value: attribute.IntValue(int(roleID)),
 		},
 		{
-			Key:   "permissions_count",
+			Key:   util.AttrPermissionsCount,
 			Value: attribute.IntValue(len(httpReq.Permissions)),
 		},
 	}
 	if httpReq.Name != nil {
 		spanAttributes = append(spanAttributes, attribute.KeyValue{
-			Key:   "role_name",
+			Key:   util.AttrRoleName,
 			Value: attribute.StringValue(*httpReq.Name),
 		})
 	}
@@ -318,13 +319,13 @@ func (a *API) serveDeleteRole(w http.ResponseWriter, r *http.Request) {
 
 	spanAttributes := []attribute.KeyValue{
 		{
-			Key:   "role_id",
+			Key:   util.AttrRoleID,
 			Value: attribute.IntValue(int(roleID)),
 		},
 	}
 	if httpReq.ReplacementRoleID != nil {
 		spanAttributes = append(spanAttributes, attribute.KeyValue{
-			Key:   "replacement_role_id",
+			Key:   util.AttrReplacementRoleID,
 			Value: attribute.IntValue(int(*httpReq.ReplacementRoleID)),
 		})
 	}
@@ -408,7 +409,7 @@ func parseStringsToPermissionGroups(permissions []string) []permissionGroup {
 type permissionGroup struct {
 	Group       string   `json:"group"`
 	Permissions []string `json:"permissions"`
-} // @name admin.v1.PermissionGroup
+} //	@name	admin.v1.PermissionGroup
 
 type role struct {
 	ID          int32             `json:"id"`

@@ -6,6 +6,7 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/ozontech/seq-ui/internal/api/admin/v1/util"
 	"github.com/ozontech/seq-ui/internal/api/grpcutil"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/pkg/admin/v1"
@@ -20,11 +21,11 @@ func (a *API) CreateRole(ctx context.Context, req *admin.CreateRoleRequest) (*ad
 
 	span.SetAttributes(
 		attribute.KeyValue{
-			Key:   "role_name",
+			Key:   util.AttrRoleName,
 			Value: attribute.StringValue(req.GetName()),
 		},
 		attribute.KeyValue{
-			Key:   "permissions_count",
+			Key:   util.AttrPermissionsCount,
 			Value: attribute.IntValue(len(req.GetPermissions())),
 		},
 	)
@@ -50,11 +51,11 @@ func (a *API) AddUsersToRole(ctx context.Context, req *admin.AddUsersToRoleReque
 
 	span.SetAttributes(
 		attribute.KeyValue{
-			Key:   "role_id",
+			Key:   util.AttrRoleID,
 			Value: attribute.IntValue(int(req.GetRoleId())),
 		},
 		attribute.KeyValue{
-			Key:   "users_count",
+			Key:   util.AttrUsersCount,
 			Value: attribute.IntValue(len(req.GetUsernames())),
 		},
 	)
@@ -75,11 +76,11 @@ func (a *API) DeleteUsersFromRole(ctx context.Context, req *admin.DeleteUsersFro
 
 	span.SetAttributes(
 		attribute.KeyValue{
-			Key:   "role_id",
+			Key:   util.AttrRoleID,
 			Value: attribute.IntValue(int(req.GetRoleId())),
 		},
 		attribute.KeyValue{
-			Key:   "users_count",
+			Key:   util.AttrUsersCount,
 			Value: attribute.IntValue(len(req.GetUsernames())),
 		},
 	)
@@ -112,7 +113,7 @@ func (a *API) GetRole(ctx context.Context, req *admin.GetRoleRequest) (*admin.Ge
 
 	span.SetAttributes(
 		attribute.KeyValue{
-			Key:   "role_id",
+			Key:   util.AttrRoleID,
 			Value: attribute.IntValue(int(req.GetId())),
 		},
 	)
@@ -135,17 +136,17 @@ func (a *API) UpdateRole(ctx context.Context, req *admin.UpdateRoleRequest) (*ad
 
 	spanAttributes := []attribute.KeyValue{
 		{
-			Key:   "role_id",
+			Key:   util.AttrRoleID,
 			Value: attribute.IntValue(int(req.GetId())),
 		},
 		{
-			Key:   "permissions_count",
+			Key:   util.AttrPermissionsCount,
 			Value: attribute.IntValue(len(req.GetPermissions())),
 		},
 	}
 	if req.Name != nil {
 		spanAttributes = append(spanAttributes, attribute.KeyValue{
-			Key:   "role_name",
+			Key:   util.AttrRoleName,
 			Value: attribute.StringValue(req.GetName()),
 		})
 	}
@@ -168,13 +169,13 @@ func (a *API) DeleteRole(ctx context.Context, req *admin.DeleteRoleRequest) (*ad
 
 	spanAttributes := []attribute.KeyValue{
 		{
-			Key:   "role_id",
+			Key:   util.AttrRoleID,
 			Value: attribute.IntValue(int(req.GetId())),
 		},
 	}
 	if req.ReplacementRoleId != nil {
 		spanAttributes = append(spanAttributes, attribute.KeyValue{
-			Key:   "replacement_role_id",
+			Key:   util.AttrReplacementRoleID,
 			Value: attribute.IntValue(int(req.GetReplacementRoleId())),
 		})
 	}

@@ -27,7 +27,7 @@ func Test_GRPCClient_ExportAsyncSearch(t *testing.T) {
 
 	type mockArgs struct {
 		req  *seqproxyapi.ExportAsyncSearchRequest
-		resp *mock.MockSeqProxyApi_ExportAsyncSearchClient
+		resp *mock.MockSeqProxyApi_ExportAsyncSearchClient[seqproxyapi.ExportResponse]
 		err  error
 	}
 
@@ -38,7 +38,7 @@ func Test_GRPCClient_ExportAsyncSearch(t *testing.T) {
 		errType streamErrorType,
 	) mockArgs {
 		var proxyReq *seqproxyapi.ExportAsyncSearchRequest
-		var proxyResp *mock.MockSeqProxyApi_ExportAsyncSearchClient
+		var proxyResp *mock.MockSeqProxyApi_ExportAsyncSearchClient[seqproxyapi.ExportResponse]
 
 		if req != nil {
 			proxyReq = &seqproxyapi.ExportAsyncSearchRequest{
@@ -56,7 +56,7 @@ func Test_GRPCClient_ExportAsyncSearch(t *testing.T) {
 			}
 		}
 
-		proxyResp = mock.NewMockSeqProxyApi_ExportAsyncSearchClient(ctrl)
+		proxyResp = mock.NewMockSeqProxyApi_ExportAsyncSearchClient[seqproxyapi.ExportResponse](ctrl)
 		if errType == streamErrRecv {
 			proxyResp.EXPECT().Recv().Return(nil, errors.New("recv error")).Times(1)
 		} else {

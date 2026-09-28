@@ -29,13 +29,13 @@ func Test_GRPCClient_Export(t *testing.T) {
 
 	type mockArgs struct {
 		req  *seqproxyapi.ExportRequest
-		resp *mock.MockSeqProxyApi_ExportClient
+		resp *mock.MockSeqProxyApi_ExportClient[seqproxyapi.ExportResponse]
 		err  error
 	}
 
 	prepareMockArgs := func(ctrl *gomock.Controller, req *seqapi.ExportRequest, docs []seqproxyapi.Document, errType streamErrorType) mockArgs {
 		var proxyReq *seqproxyapi.ExportRequest
-		var proxyResp *mock.MockSeqProxyApi_ExportClient
+		var proxyResp *mock.MockSeqProxyApi_ExportClient[seqproxyapi.ExportResponse]
 
 		if req != nil {
 			proxyReq = &seqproxyapi.ExportRequest{
@@ -53,7 +53,7 @@ func Test_GRPCClient_Export(t *testing.T) {
 			}
 		}
 
-		proxyResp = mock.NewMockSeqProxyApi_ExportClient(ctrl)
+		proxyResp = mock.NewMockSeqProxyApi_ExportClient[seqproxyapi.ExportResponse](ctrl)
 		if errType == streamErrRecv {
 			proxyResp.EXPECT().Recv().Return(nil, errors.New("recv error")).Times(1)
 		} else {
