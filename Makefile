@@ -90,6 +90,10 @@ gci:
 .PHONY: deps
 deps: .protoc-plugins .install-tools
 
+SEQPROXY_MOCK_INTERFACES = SeqProxyApiClient,SeqProxyApiServer,UnsafeSeqProxyApiServer
+SEQPROXY_MOCK_CLIENT_STREAMS = SeqProxyApi_FetchClient,SeqProxyApi_ExportClient,SeqProxyApi_ExportAsyncSearchClient
+SEQPROXY_MOCK_SERVER_STREAMS = SeqProxyApi_FetchServer,SeqProxyApi_ExportServer,SeqProxyApi_ExportAsyncSearchServer
+
 .PHONY: mock
 mock:
 	PATH="$(LOCAL_BIN):$(PATH)" mockgen \
@@ -113,13 +117,10 @@ mock:
 		-source=internal/pkg/client/seqdb/client.go \
 		-destination=internal/pkg/client/seqdb/mock/client.go
 	PATH="$(LOCAL_BIN):$(PATH)" mockgen \
-    	-source=internal/pkg/client/seqdb/seqproxyapi/v1/seq_proxy_api_grpc.pb.go \
-    	-destination=internal/pkg/client/seqdb/seqproxyapi/v1/mock/seq_proxy_api_grpc.pb.go
-	PATH="$(LOCAL_BIN):$(PATH)" mockgen \
-        -destination=internal/pkg/client/seqdb/seqproxyapi/v1/mock/seq_proxy_api_grpc_streams.go \
+        -destination=internal/pkg/client/seqdb/seqproxyapi/v1/mock/seq_proxy_api_grpc.pb.go \
         -package=mock_seqproxyapi \
         github.com/ozontech/seq-ui/internal/pkg/client/seqdb/seqproxyapi/v1 \
-        SeqProxyApi_FetchClient,SeqProxyApi_ExportClient,SeqProxyApi_ExportAsyncSearchClient
+        $(SEQPROXY_MOCK_INTERFACES),$(SEQPROXY_MOCK_SERVER_STREAMS),$(SEQPROXY_MOCK_CLIENT_STREAMS)
 	PATH="$(LOCAL_BIN):$(PATH)" mockgen \
 		-source=internal/pkg/cache/cache.go \
 		-destination=internal/pkg/cache/mock/cache.go

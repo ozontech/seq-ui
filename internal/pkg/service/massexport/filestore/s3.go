@@ -5,48 +5,49 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	aws_cfg "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/transfermanager"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 
 	"github.com/ozontech/seq-ui/internal/app/config"
 )
 
 type s3FileStore struct {
-	uploader *s3manager.Uploader
+	tm *transfermanager.Client
 
 	bucketName string
 }
 
-func NewS3(cfg *config.S3) (FileStore, error) {
-	disableSSL := !cfg.EnableSSl
-	s3Session, err := session.NewSessionWithOptions(session.Options{
-		Config: aws.Config{
-			Endpoint:         aws.String(cfg.Endpoint),
-			S3ForcePathStyle: aws.Bool(true),
-			Region:           aws.String("us-east-1"),
-			Credentials:      credentials.NewStaticCredentials(cfg.AccessKeyID, cfg.SecretAccessKey, ""),
-			DisableSSL:       &disableSSL,
-		},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("create s3 session: %w", err)
+func NewS3(ctx context.Context, cfg *config.S3) (FileStore, error) {
+	scheme := "http"
+	if cfg.EnableSSl {
+		scheme = "https"
 	}
 
-	client := s3.New(s3Session, aws.NewConfig())
+	awsCfg, err := aws_cfg.LoadDefaultConfig(
+		ctx,
+		aws_cfg.WithBaseEndpoint(scheme+"://"+cfg.Endpoint),
+		aws_cfg.WithRegion("us-east-1"),
+		aws_cfg.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(cfg.AccessKeyID, cfg.SecretAccessKey, "")),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("load aws config: %w", err)
+	}
 
-	uploader := s3manager.NewUploaderWithClient(client)
+	client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
+		o.UsePathStyle = true
+	})
 
 	return &s3FileStore{
-		uploader:   uploader,
+		tm:         transfermanager.New(client),
 		bucketName: cfg.BucketName,
 	}, nil
 }
 
 func (s *s3FileStore) PutObject(ctx context.Context, objectName string, reader io.Reader) error {
-	_, err := s.uploader.UploadWithContext(ctx, &s3manager.UploadInput{
+	_, err := s.tm.UploadObject(ctx, &transfermanager.UploadObjectInput{
 		Key:    aws.String(objectName),
 		Bucket: aws.String(s.bucketName),
 		Body:   reader,
