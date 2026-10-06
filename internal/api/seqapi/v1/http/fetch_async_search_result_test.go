@@ -148,6 +148,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 				},
 				StartedAt: timestamppb.New(testTimestamp.Add(-30 * time.Second)),
 				ExpiresAt: timestamppb.New(testTimestamp.Add(30 * time.Second)),
+				DoneAt:    timestamppb.New(testTimestamp),
 				Progress:  1,
 				DiskUsage: 512,
 				Error: &seqapi.Error{
@@ -270,6 +271,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 					},
 					StartedAt: timestamppb.New(testTimestamp.Add(-30 * time.Second)),
 					ExpiresAt: timestamppb.New(testTimestamp.Add(30 * time.Second)),
+					DoneAt:    timestamppb.New(testTimestamp),
 					Progress:  1,
 					DiskUsage: 512,
 					Error: &seqapi.Error{
@@ -325,6 +327,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 				},
 				StartedAt: timestamppb.New(testTimestamp.Add(-30 * time.Second)),
 				ExpiresAt: timestamppb.New(testTimestamp.Add(30 * time.Second)),
+				DoneAt:    timestamppb.New(testTimestamp),
 				Progress:  1,
 				DiskUsage: 512,
 				Error: &seqapi.Error{
@@ -378,6 +381,7 @@ func TestServeFetchAsyncSearchResult(t *testing.T) {
 					},
 					StartedAt: timestamppb.New(testTimestamp.Add(-30 * time.Second)),
 					ExpiresAt: timestamppb.New(testTimestamp.Add(30 * time.Second)),
+					DoneAt:    timestamppb.New(testTimestamp),
 					Progress:  1,
 					DiskUsage: 512,
 					Error: &seqapi.Error{

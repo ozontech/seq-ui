@@ -102,6 +102,7 @@ type fetchAsyncSearchResultResponse struct {
 	StartedAt  time.Time               `json:"started_at" format:"date-time"`
 	ExpiresAt  time.Time               `json:"expires_at" format:"date-time"`
 	CanceledAt *time.Time              `json:"canceled_at,omitempty" format:"date-time"`
+	DoneAt     *time.Time              `json:"done_at,omitempty" format:"date-time"`
 	Progress   float64                 `json:"progress"`
 	DiskUsage  string                  `json:"disk_usage" format:"int64"`
 	Meta       string                  `json:"meta"`
@@ -124,6 +125,12 @@ func fetchAsyncSearchResultResponseFromProto(resp *seqapi.FetchAsyncSearchResult
 		canceledAt = &t
 	}
 
+	var doneAt *time.Time
+	if resp.DoneAt != nil {
+		t := resp.DoneAt.AsTime()
+		doneAt = &t
+	}
+
 	return fetchAsyncSearchResultResponse{
 		Status:     asyncSearchStatusFromProto(resp.Status),
 		Request:    startAsyncSearchRequestFromProto(resp.Request),
@@ -131,6 +138,7 @@ func fetchAsyncSearchResultResponseFromProto(resp *seqapi.FetchAsyncSearchResult
 		StartedAt:  resp.StartedAt.AsTime(),
 		ExpiresAt:  resp.ExpiresAt.AsTime(),
 		CanceledAt: canceledAt,
+		DoneAt:     doneAt,
 		Progress:   resp.Progress,
 		DiskUsage:  strconv.FormatUint(resp.DiskUsage, 10),
 		Meta:       resp.Meta,

@@ -123,6 +123,7 @@ type asyncSearchesListItem struct {
 	StartedAt  time.Time               `json:"started_at" format:"date-time"`
 	ExpiresAt  time.Time               `json:"expires_at" format:"date-time"`
 	CanceledAt *time.Time              `json:"canceled_at,omitempty" format:"date-time"`
+	DoneAt     *time.Time              `json:"done_at,omitempty" format:"date-time"`
 	Progress   float64                 `json:"progress"`
 	DiskUsage  string                  `json:"disk_usage" format:"int64"`
 	OwnerName  string                  `json:"owner_name"`
@@ -139,6 +140,12 @@ func getAsyncSearchesListResponseFromProto(resp *seqapi.GetAsyncSearchesListResp
 			canceledAt = &t
 		}
 
+		var doneAt *time.Time
+		if s.DoneAt != nil {
+			t := s.DoneAt.AsTime()
+			doneAt = &t
+		}
+
 		searches = append(searches, asyncSearchesListItem{
 			SearchID:   s.SearchId,
 			Status:     asyncSearchStatusFromProto(s.Status),
@@ -146,6 +153,7 @@ func getAsyncSearchesListResponseFromProto(resp *seqapi.GetAsyncSearchesListResp
 			StartedAt:  s.StartedAt.AsTime(),
 			ExpiresAt:  s.ExpiresAt.AsTime(),
 			CanceledAt: canceledAt,
+			DoneAt:     doneAt,
 			Progress:   s.Progress,
 			DiskUsage:  strconv.FormatUint(s.DiskUsage, 10),
 			OwnerName:  s.OwnerName,

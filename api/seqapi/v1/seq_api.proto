@@ -301,6 +301,7 @@ message FetchAsyncSearchResultResponse {
   uint64 disk_usage = 8;
   string meta = 9;
   Error error = 10;
+  optional google.protobuf.Timestamp done_at = 12;
 }
 
 message GetAsyncSearchesListRequest {
@@ -322,6 +323,7 @@ message GetAsyncSearchesListResponse {
     uint64 disk_usage = 8;
     string owner_name = 9;
     optional string error = 10;
+    optional google.protobuf.Timestamp done_at = 11;
   }
 
   repeated ListItem searches = 1;

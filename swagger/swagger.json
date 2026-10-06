@@ -3017,6 +3017,10 @@
                     "type": "string",
                     "format": "int64"
                 },
+                "done_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
                 "error": {
                     "type": "string"
                 },
@@ -3242,6 +3246,10 @@
                 "disk_usage": {
                     "type": "string",
                     "format": "int64"
+                },
+                "done_at": {
+                    "type": "string",
+                    "format": "date-time"
                 },
                 "error": {
                     "$ref": "#/definitions/seqapi.v1.Error"
