@@ -57,6 +57,10 @@ func (a *API) serveGetHist(w http.ResponseWriter, r *http.Request) {
 		trRaw, _ := json.Marshal(httpReq.TimeRange)
 		attributes = append(attributes, attribute.KeyValue{Key: "time_range", Value: attribute.StringValue(string(trRaw))})
 	}
+	if httpReq.Filter != nil {
+		filterRaw, _ := json.Marshal(httpReq.Filter)
+		attributes = append(attributes, attribute.KeyValue{Key: "filter", Value: attribute.StringValue(string(filterRaw))})
+	}
 	span.SetAttributes(attributes...)
 
 	parsedGroupHash, err := parseGroupHash(httpReq.GroupHash)
@@ -79,6 +83,13 @@ func (a *API) serveGetHist(w http.ResponseWriter, r *http.Request) {
 		Release:   httpReq.Release,
 		TimeRange: tr,
 	}
+
+	if httpReq.Filter != nil && len(httpReq.Filter.Custom) > 0 {
+		req.Filter = &types.ErrorGroupsFilter{
+			Custom: httpReq.Filter.Custom,
+		}
+	}
+
 	hist, err := a.service.GetHist(ctx, req)
 	if err != nil {
 		httputil.ProcessError(wr, err)
@@ -87,6 +98,10 @@ func (a *API) serveGetHist(w http.ResponseWriter, r *http.Request) {
 
 	wr.WriteJson(newHistResp(hist))
 }
+
+type histFilter struct {
+	Custom map[string]string `json:"custom"`
+} //	@name	errorgroups.v1.HistFilter
 
 type getHistRequest struct {
 	Service   *string `json:"service"`
@@ -97,6 +112,8 @@ type getHistRequest struct {
 	// Deprecated: Use time_range instead
 	Duration  *string    `json:"duration,omitempty" format:"duration" example:"1h"`
 	TimeRange *timeRange `json:"time_range,omitempty"`
+
+	Filter *histFilter `json:"filter,omitempty"`
 } //	@name	errorgroups.v1.GetHistRequest
 
 type getHistResponse struct {

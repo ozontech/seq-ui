@@ -82,6 +82,12 @@ func (a *API) serveGetGroups(w http.ResponseWriter, r *http.Request) {
 		WithTotal: httpReq.WithTotal,
 	}
 
+	if httpReq.Filter != nil && len(httpReq.Filter.Custom) > 0 {
+		req.Filter = &types.ErrorGroupsFilter{
+			Custom: httpReq.Filter.Custom,
+		}
+	}
+
 	var (
 		groups []types.ErrorGroup
 		total  uint64
@@ -125,7 +131,8 @@ func (o order) toDomain() types.ErrorGroupsOrder {
 }
 
 type groupsFilter struct {
-	IsNew bool `json:"is_new"`
+	IsNew  bool              `json:"is_new"`
+	Custom map[string]string `json:"custom"`
 } //	@name	errorgroups.v1.GroupsFilter
 
 type getGroupsRequest struct {

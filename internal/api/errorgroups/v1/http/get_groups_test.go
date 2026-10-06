@@ -19,6 +19,7 @@ func TestServeGetGroups(t *testing.T) {
 		env           = "test-env"
 		release       = "test-release"
 		source        = "test-source"
+		filter        = map[string]string{"f1": "v1", "f2": "v2"}
 		durationStr   = "2m"
 		duration      = 2 * time.Minute
 		now           = time.Now().Truncate(0).UTC()
@@ -329,6 +330,76 @@ func TestServeGetGroups(t *testing.T) {
 					},
 				},
 				total: 10,
+			},
+		},
+		{
+			name: "ok_filters",
+
+			req: getGroupsRequest{
+				Service: service,
+				Env:     &env,
+				Source:  &source,
+				Release: &release,
+				Limit:   2,
+				Offset:  0,
+				Order:   OrderFrequent,
+				Filter: &groupsFilter{
+					Custom: filter,
+				},
+			},
+			want: getGroupsResponse{
+				Groups: []group{
+					{
+						Hash:        "123",
+						Message:     "some error 1",
+						Source:      source,
+						SeenTotal:   5,
+						FirstSeenAt: twoMinutesAgo,
+						LastSeenAt:  oneMinuteAgo,
+					},
+					{
+						Hash:        "456",
+						Message:     "some error 2",
+						Source:      source,
+						SeenTotal:   10,
+						FirstSeenAt: twoMinutesAgo,
+						LastSeenAt:  oneMinuteAgo,
+					},
+				},
+			},
+
+			mockArgs: &mockArgs{
+				req: types.GetErrorGroupsRequest{
+					Service: service,
+					Env:     &env,
+					Source:  &source,
+					Release: &release,
+					Filter: &types.ErrorGroupsFilter{
+						Custom: filter,
+					},
+					Limit:  2,
+					Offset: 0,
+					Order:  types.OrderFrequent,
+				},
+
+				groups: []types.ErrorGroup{
+					{
+						Hash:        123,
+						Message:     "some error 1",
+						Source:      source,
+						Count:       5,
+						FirstSeenAt: twoMinutesAgo,
+						LastSeenAt:  oneMinuteAgo,
+					},
+					{
+						Hash:        456,
+						Message:     "some error 2",
+						Source:      source,
+						Count:       10,
+						FirstSeenAt: twoMinutesAgo,
+						LastSeenAt:  oneMinuteAgo,
+					},
+				},
 			},
 		},
 		{

@@ -375,9 +375,17 @@ func TestGetErrorGroups(t *testing.T) {
 						" GROUP BY _group_hash, source",
 					args: []any{uint64(123), uint64(456), service},
 
-					rows: &mockRowsCount{
-						count:        2,
-						isScanStruct: true,
+					rows: &mockRowsScanStruct{
+						scanStructFns: []func(any) error{
+							func(v any) error {
+								*v.(*errorInfo) = errorInfo{Hash: 123}
+								return nil
+							},
+							func(v any) error {
+								*v.(*errorInfo) = errorInfo{Hash: 456}
+								return nil
+							},
+						},
 					},
 				},
 			},
@@ -427,9 +435,17 @@ func TestGetErrorGroups(t *testing.T) {
 						" GROUP BY _group_hash, source",
 					args: []any{uint64(123), uint64(456), service},
 
-					rows: &mockRowsCount{
-						count:        2,
-						isScanStruct: true,
+					rows: &mockRowsScanStruct{
+						scanStructFns: []func(any) error{
+							func(v any) error {
+								*v.(*errorInfo) = errorInfo{Hash: 123}
+								return nil
+							},
+							func(v any) error {
+								*v.(*errorInfo) = errorInfo{Hash: 456}
+								return nil
+							},
+						},
 					},
 				},
 			},
@@ -490,9 +506,17 @@ func TestGetErrorGroups(t *testing.T) {
 						" GROUP BY _group_hash",
 					args: []any{uint64(123), uint64(456), service, timeDiff},
 
-					rows: &mockRowsCount{
-						count:        2,
-						isScanStruct: true,
+					rows: &mockRowsScanStruct{
+						scanStructFns: []func(any) error{
+							func(v any) error {
+								*v.(*errorCount) = errorCount{Hash: 123}
+								return nil
+							},
+							func(v any) error {
+								*v.(*errorCount) = errorCount{Hash: 456}
+								return nil
+							},
+						},
 					},
 				},
 			},
@@ -554,9 +578,17 @@ func TestGetErrorGroups(t *testing.T) {
 						" GROUP BY _group_hash",
 					args: []any{uint64(123), uint64(456), service, timeDiff, fakeNow()},
 
-					rows: &mockRowsCount{
-						count:        2,
-						isScanStruct: true,
+					rows: &mockRowsScanStruct{
+						scanStructFns: []func(any) error{
+							func(v any) error {
+								*v.(*errorCount) = errorCount{Hash: 123}
+								return nil
+							},
+							func(v any) error {
+								*v.(*errorCount) = errorCount{Hash: 456}
+								return nil
+							},
+						},
 					},
 				},
 			},
@@ -569,9 +601,15 @@ func TestGetErrorGroups(t *testing.T) {
 				Env:     &env,
 				Source:  &source,
 				Release: &release,
-				Limit:   10,
-				Offset:  20,
-				Order:   types.OrderOldest,
+				Filter: &types.ErrorGroupsFilter{
+					Custom: map[string]string{
+						"f1": "v1",
+						"f2": "v2",
+					},
+				},
+				Limit:  10,
+				Offset: 20,
+				Order:  types.OrderOldest,
 			},
 			wantGroupsCount: 2,
 
@@ -586,20 +624,20 @@ func TestGetErrorGroups(t *testing.T) {
 					query: fmt.Sprintf(
 						"SELECT _group_hash, source, any(message) as message, countMerge(seen_total) as seen_total, minMerge(first_seen_at) as first_seen_at, maxMerge(last_seen_at) as last_seen_at"+
 							" FROM error_groups"+
-							" WHERE env = ? AND filter1 = ? AND filter2 = ? AND release = ? AND service = ? AND source = ? AND _group_hash GLOBAL IN (%s)"+
+							" WHERE env = ? AND filter1 = ? AND filter2 = ? AND release = ? AND service = ? AND source = ? AND (has(attributes, ?) AND has(attributes, ?)) AND _group_hash GLOBAL IN (%s)"+
 							" GROUP BY _group_hash, source"+
 							" ORDER BY first_seen_at",
 
 						"SELECT DISTINCT _group_hash"+
 							" FROM error_groups"+
-							" WHERE env = ? AND filter1 = ? AND filter2 = ? AND release = ? AND service = ? AND source = ?"+
+							" WHERE env = ? AND filter1 = ? AND filter2 = ? AND release = ? AND service = ? AND source = ? AND (has(attributes, ?) AND has(attributes, ?))"+
 							" GROUP BY _group_hash"+
 							" ORDER BY minMerge(first_seen_at)"+
 							" LIMIT 10 OFFSET 20",
 					),
 					args: []any{
-						env, "value1", "value2", release, service, source,
-						env, "value1", "value2", release, service, source,
+						env, "value1", "value2", release, service, source, "f1=v1", "f2=v2",
+						env, "value1", "value2", release, service, source, "f1=v1", "f2=v2",
 					},
 
 					rows: &mockRowsCount{
@@ -789,6 +827,12 @@ func TestGetErrorGroupsTotal(t *testing.T) {
 				Env:     &env,
 				Source:  &source,
 				Release: &release,
+				Filter: &types.ErrorGroupsFilter{
+					Custom: map[string]string{
+						"f1": "v1",
+						"f2": "v2",
+					},
+				},
 			},
 
 			queryFilter: map[string]string{
@@ -799,8 +843,8 @@ func TestGetErrorGroupsTotal(t *testing.T) {
 			mockConn: &mockConnRow{
 				query: "SELECT uniq(_group_hash)" +
 					" FROM error_groups" +
-					" WHERE env = ? AND filter1 = ? AND filter2 = ? AND release = ? AND service = ? AND source = ?",
-				args: []any{env, "value1", "value2", release, service, source},
+					" WHERE env = ? AND filter1 = ? AND filter2 = ? AND release = ? AND service = ? AND source = ? AND (has(attributes, ?) AND has(attributes, ?))",
+				args: []any{env, "value1", "value2", release, service, source, "f1=v1", "f2=v2"},
 			},
 		},
 		{
@@ -1000,6 +1044,12 @@ func TestGetNewErrorGroups(t *testing.T) {
 				TimeRange: &types.TimeRange{
 					Duration: duration,
 				},
+				Filter: &types.ErrorGroupsFilter{
+					Custom: map[string]string{
+						"f1": "v1",
+						"f2": "v2",
+					},
+				},
 				Limit:  10,
 				Offset: 20,
 				Order:  types.OrderOldest,
@@ -1016,21 +1066,21 @@ func TestGetNewErrorGroups(t *testing.T) {
 				query: fmt.Sprintf(
 					"SELECT _group_hash, source, any(message) as message, countMerge(seen_total) as seen_total, minMerge(first_seen_at) as first_seen_at, maxMerge(last_seen_at) as last_seen_at"+
 						" FROM error_groups"+
-						" WHERE env = ? AND filter1 = ? AND filter2 = ? AND service = ? AND source = ? AND _group_hash GLOBAL IN (%s)"+
+						" WHERE env = ? AND filter1 = ? AND filter2 = ? AND service = ? AND source = ? AND (has(attributes, ?) AND has(attributes, ?)) AND _group_hash GLOBAL IN (%s)"+
 						" GROUP BY _group_hash, source"+
 						" ORDER BY first_seen_at",
 
 					"SELECT DISTINCT _group_hash"+
 						" FROM error_groups"+
-						" WHERE env = ? AND filter1 = ? AND filter2 = ? AND service = ? AND source = ?"+
+						" WHERE env = ? AND filter1 = ? AND filter2 = ? AND service = ? AND source = ? AND (has(attributes, ?) AND has(attributes, ?))"+
 						" GROUP BY _group_hash"+
 						" HAVING minMerge(first_seen_at) >= ?"+
 						" ORDER BY minMerge(first_seen_at)"+
 						" LIMIT 10 OFFSET 20",
 				),
 				args: []any{
-					env, "value1", "value2", service, source,
-					env, "value1", "value2", service, source, timeDiff,
+					env, "value1", "value2", service, source, "f1=v1", "f2=v2",
+					env, "value1", "value2", service, source, "f1=v1", "f2=v2", timeDiff,
 				},
 
 				rows: &mockRowsCount{
@@ -1196,6 +1246,12 @@ func TestGetNewErrorGroupsTotal(t *testing.T) {
 				},
 				Env:    &env,
 				Source: &source,
+				Filter: &types.ErrorGroupsFilter{
+					Custom: map[string]string{
+						"f1": "v1",
+						"f2": "v2",
+					},
+				},
 			},
 
 			queryFilter: map[string]string{
@@ -1209,11 +1265,11 @@ func TestGetNewErrorGroupsTotal(t *testing.T) {
 
 					"SELECT _group_hash"+
 						" FROM error_groups"+
-						" WHERE service = ? AND filter1 = ? AND filter2 = ? AND env = ? AND source = ?"+
+						" WHERE service = ? AND filter1 = ? AND filter2 = ? AND env = ? AND source = ? AND (has(attributes, ?) AND has(attributes, ?))"+
 						" GROUP BY _group_hash"+
 						" HAVING minMerge(first_seen_at) >= ?",
 				),
-				args: []any{service, "value1", "value2", env, source, timeDiff},
+				args: []any{service, "value1", "value2", env, source, "f1=v1", "f2=v2", timeDiff},
 			},
 		},
 		{
@@ -2168,6 +2224,12 @@ func TestGetErrorHist(t *testing.T) {
 				TimeRange: &types.TimeRange{
 					Duration: duration,
 				},
+				Filter: &types.ErrorGroupsFilter{
+					Custom: map[string]string{
+						"f1": "v1",
+						"f2": "v2",
+					},
+				},
 			},
 			wantBucketsCount: 2,
 
@@ -2180,10 +2242,10 @@ func TestGetErrorHist(t *testing.T) {
 				query: "" +
 					"SELECT start_date, countMerge(counts) as counts" +
 					" FROM agg_events_10min" +
-					" WHERE filter1 = ? AND filter2 = ? AND _group_hash = ? AND env = ? AND source = ? AND service = ? AND release = ? AND start_date >= ?" +
+					" WHERE filter1 = ? AND filter2 = ? AND _group_hash = ? AND env = ? AND source = ? AND service = ? AND release = ? AND start_date >= ? AND (has(attributes, ?) AND has(attributes, ?))" +
 					" GROUP BY start_date" +
 					" ORDER BY start_date",
-				args: []any{"value1", "value2", groupHash, env, source, service, release, timeDiff},
+				args: []any{"value1", "value2", groupHash, env, source, service, release, timeDiff, "f1=v1", "f2=v2"},
 
 				rows: &mockRowsCount{
 					count: 2,
@@ -2273,7 +2335,7 @@ func TestGetErrorDetails(t *testing.T) {
 
 			mockConn: &mockConnRow{
 				query: "" +
-					"SELECT _group_hash, source, any(message) as message, countMerge(seen_total) as seen_total, minMerge(first_seen_at) as first_seen_at, maxMerge(last_seen_at) as last_seen_at, max(log_tags) as log_tags" +
+					"SELECT _group_hash, source, anyLast(message) as message, countMerge(seen_total) as seen_total, minMerge(first_seen_at) as first_seen_at, maxMerge(last_seen_at) as last_seen_at, anyLast(log_tags) as log_tags" +
 					" FROM error_groups" +
 					" WHERE _group_hash = ?" +
 					" GROUP BY _group_hash, source",
@@ -2289,6 +2351,12 @@ func TestGetErrorDetails(t *testing.T) {
 				Source:    &source,
 				Service:   &service,
 				Release:   &release,
+				Filter: &types.ErrorGroupsFilter{
+					Custom: map[string]string{
+						"f1": "v1",
+						"f2": "v2",
+					},
+				},
 			},
 
 			queryFilter: map[string]string{
@@ -2298,11 +2366,11 @@ func TestGetErrorDetails(t *testing.T) {
 
 			mockConn: &mockConnRow{
 				query: "" +
-					"SELECT _group_hash, source, any(message) as message, countMerge(seen_total) as seen_total, minMerge(first_seen_at) as first_seen_at, maxMerge(last_seen_at) as last_seen_at, max(log_tags) as log_tags" +
+					"SELECT _group_hash, source, anyLast(message) as message, countMerge(seen_total) as seen_total, minMerge(first_seen_at) as first_seen_at, maxMerge(last_seen_at) as last_seen_at, anyLast(log_tags) as log_tags" +
 					" FROM error_groups" +
-					" WHERE _group_hash = ? AND filter1 = ? AND filter2 = ? AND env = ? AND source = ? AND service = ? AND release = ?" +
+					" WHERE _group_hash = ? AND filter1 = ? AND filter2 = ? AND env = ? AND source = ? AND service = ? AND release = ? AND (has(attributes, ?) AND has(attributes, ?))" +
 					" GROUP BY _group_hash, source",
-				args: []any{groupHash, "value1", "value2", env, source, service, release},
+				args: []any{groupHash, "value1", "value2", env, source, service, release, "f1=v1", "f2=v2"},
 			},
 		},
 		{
@@ -2361,7 +2429,7 @@ func TestGetErrorCounts(t *testing.T) {
 
 		queryFilter map[string]string
 
-		mockConn *mockConnRows
+		mockConns []*mockConnRows
 	}{
 		{
 			name: "ok",
@@ -2382,35 +2450,38 @@ func TestGetErrorCounts(t *testing.T) {
 					"service1": 30,
 				},
 				ByRelease: types.ErrorGroupCount{},
+				ByFilter:  map[string]types.ErrorGroupCount{},
 			},
 
-			mockConn: &mockConnRows{
-				query: "" +
-					"SELECT countMerge(seen_total) as count, env, source, service" +
-					" FROM error_groups" +
-					" WHERE _group_hash = ?" +
-					" GROUP BY env, source, service",
-				args: []any{groupHash},
+			mockConns: []*mockConnRows{
+				{
+					query: "" +
+						"SELECT countMerge(seen_total) as count, env, source, service" +
+						" FROM error_groups" +
+						" WHERE _group_hash = ?" +
+						" GROUP BY env, source, service",
+					args: []any{groupHash},
 
-				rows: &mockRowsScanStruct{
-					scanStructFns: []func(any) error{
-						func(ec any) error {
-							*ec.(*errDetailsCount) = errDetailsCount{
-								Count:   10,
-								Env:     "env1",
-								Source:  "source1",
-								Service: "service1",
-							}
-							return nil
-						},
-						func(ec any) error {
-							*ec.(*errDetailsCount) = errDetailsCount{
-								Count:   20,
-								Env:     "env2",
-								Source:  "source2",
-								Service: "service1",
-							}
-							return nil
+					rows: &mockRowsScanStruct{
+						scanStructFns: []func(any) error{
+							func(ec any) error {
+								*ec.(*errDetailsCount) = errDetailsCount{
+									Count:   10,
+									Env:     "env1",
+									Source:  "source1",
+									Service: "service1",
+								}
+								return nil
+							},
+							func(ec any) error {
+								*ec.(*errDetailsCount) = errDetailsCount{
+									Count:   20,
+									Env:     "env2",
+									Source:  "source2",
+									Service: "service1",
+								}
+								return nil
+							},
 						},
 					},
 				},
@@ -2425,12 +2496,22 @@ func TestGetErrorCounts(t *testing.T) {
 				Source:    &source,
 				Service:   &service,
 				Release:   &release,
+				Filter: &types.ErrorGroupsFilter{
+					Custom: map[string]string{
+						"f1": "v1",
+						"f2": "v2",
+					},
+				},
 			},
 			want: types.ErrorGroupCounts{
 				ByEnv:     types.ErrorGroupCount{env: 10},
 				BySource:  types.ErrorGroupCount{source: 10},
 				ByService: types.ErrorGroupCount{service: 10},
 				ByRelease: types.ErrorGroupCount{release: 10},
+				ByFilter: map[string]types.ErrorGroupCount{
+					"f1": {"v1": 10},
+					"f2": {"v2": 10},
+				},
 			},
 
 			queryFilter: map[string]string{
@@ -2438,25 +2519,53 @@ func TestGetErrorCounts(t *testing.T) {
 				"filter2": "value2",
 			},
 
-			mockConn: &mockConnRows{
-				query: "" +
-					"SELECT countMerge(seen_total) as count, env, source, service, release" +
-					" FROM error_groups" +
-					" WHERE _group_hash = ? AND filter1 = ? AND filter2 = ? AND env = ? AND source = ? AND service = ? AND release = ?" +
-					" GROUP BY env, source, service, release",
-				args: []any{groupHash, "value1", "value2", env, source, service, release},
+			mockConns: []*mockConnRows{
+				{
+					query: "" +
+						"SELECT key, groupUniqArrayMerge(values) as values" +
+						" FROM service_attributes" +
+						" WHERE service = ? AND filter1 = ? AND filter2 = ? AND env = ?" +
+						" GROUP BY key" +
+						" HAVING length(values) > ?" +
+						" ORDER BY key",
+					args: []any{service, "value1", "value2", env, 0},
 
-				rows: &mockRowsScanStruct{
-					scanStructFns: []func(any) error{
-						func(ec any) error {
-							*ec.(*errDetailsCount) = errDetailsCount{
-								Count:   10,
-								Env:     env,
-								Source:  source,
-								Service: service,
-								Release: release,
-							}
-							return nil
+					rows: &mockRowsScan{
+						scanFns: []func(...any) error{
+							func(args ...any) error {
+								*args[0].(*string) = "f1"
+								*args[1].(*[]string) = []string{"v1", "v10"}
+								return nil
+							},
+							func(args ...any) error {
+								*args[0].(*string) = "f2"
+								*args[1].(*[]string) = []string{"v2", "v20"}
+								return nil
+							},
+						},
+					},
+				},
+				{
+					query: "" +
+						"SELECT countMerge(seen_total) as count, env, source, service, release, attributes" +
+						" FROM error_groups" +
+						" WHERE _group_hash = ? AND filter1 = ? AND filter2 = ? AND env = ? AND source = ? AND service = ? AND release = ? AND (has(attributes, ?) AND has(attributes, ?))" +
+						" GROUP BY env, source, service, release, attributes",
+					args: []any{groupHash, "value1", "value2", env, source, service, release, "f1=v1", "f2=v2"},
+
+					rows: &mockRowsScanStruct{
+						scanStructFns: []func(any) error{
+							func(ec any) error {
+								*ec.(*errDetailsCount) = errDetailsCount{
+									Count:      10,
+									Env:        env,
+									Source:     source,
+									Service:    service,
+									Release:    release,
+									Attributes: []string{"f1=v1", "f2=v2"},
+								}
+								return nil
+							},
 						},
 					},
 				},
@@ -2471,11 +2580,14 @@ func TestGetErrorCounts(t *testing.T) {
 				BySource:  types.ErrorGroupCount{},
 				ByService: types.ErrorGroupCount{},
 				ByRelease: types.ErrorGroupCount{},
+				ByFilter:  map[string]types.ErrorGroupCount{},
 			},
 
-			mockConn: &mockConnRows{
-				rows: &mockRowsCount{
-					count: 0,
+			mockConns: []*mockConnRows{
+				{
+					rows: &mockRowsCount{
+						count: 0,
+					},
 				},
 			},
 		},
@@ -2485,8 +2597,10 @@ func TestGetErrorCounts(t *testing.T) {
 			req:     types.GetErrorGroupDetailsRequest{},
 			wantErr: true,
 
-			mockConn: &mockConnRows{
-				err: someErr,
+			mockConns: []*mockConnRows{
+				{
+					err: someErr,
+				},
 			},
 		},
 		{
@@ -2495,14 +2609,16 @@ func TestGetErrorCounts(t *testing.T) {
 			req:     types.GetErrorGroupDetailsRequest{},
 			wantErr: true,
 
-			mockConn: &mockConnRows{
-				rows: &mockRowsScanStruct{
-					scanStructFns: []func(any) error{
-						func(_ any) error {
-							return someErr
+			mockConns: []*mockConnRows{
+				{
+					rows: &mockRowsScanStruct{
+						scanStructFns: []func(any) error{
+							func(_ any) error {
+								return someErr
+							},
 						},
+						scanErr: true,
 					},
-					scanErr: true,
 				},
 			},
 		},
@@ -2512,7 +2628,7 @@ func TestGetErrorCounts(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			mockedConn := initMockConnRows(t, tt.mockConn)
+			mockedConn := initMockConnRows(t, tt.mockConns...)
 			repo := newRepo(mockedConn, true, tt.queryFilter, fakeNow)
 
 			got, err := repo.GetErrorCounts(context.Background(), tt.req)
@@ -2763,6 +2879,129 @@ func TestGetReleases(t *testing.T) {
 			got, err := repo.GetReleases(context.Background(), tt.req)
 			require.Equal(t, tt.wantErr, err != nil)
 			require.Equal(t, tt.wantReleasesCount, len(got))
+		})
+	}
+}
+
+func TestGetServiceFilters(t *testing.T) {
+	var (
+		service = "test-service"
+		env     = "test-env"
+
+		fakeNow = fakeNow(time.Now())
+
+		someErr = errors.New("some err")
+	)
+
+	tests := []struct {
+		name string
+
+		req              types.GetServiceFiltersRequest
+		wantFiltersCount int
+		wantErr          bool
+
+		queryFilter map[string]string
+
+		mockConn *mockConnRows
+	}{
+		{
+			name: "ok",
+
+			req: types.GetServiceFiltersRequest{
+				Service: service,
+			},
+			wantFiltersCount: 2,
+
+			mockConn: &mockConnRows{
+				query: "" +
+					"SELECT key, groupUniqArrayMerge(values) as values" +
+					" FROM service_attributes" +
+					" WHERE service = ?" +
+					" GROUP BY key" +
+					" HAVING length(values) > ?" +
+					" ORDER BY key",
+				args: []any{service, 0},
+
+				rows: &mockRowsCount{
+					count: 2,
+				},
+			},
+		},
+		{
+			name: "ok_full_filters",
+
+			req: types.GetServiceFiltersRequest{
+				Service: service,
+				Env:     &env,
+			},
+			wantFiltersCount: 2,
+
+			queryFilter: map[string]string{
+				"filter1": "value1",
+				"filter2": "value2",
+			},
+
+			mockConn: &mockConnRows{
+				query: "" +
+					"SELECT key, groupUniqArrayMerge(values) as values" +
+					" FROM service_attributes" +
+					" WHERE service = ? AND filter1 = ? AND filter2 = ? AND env = ?" +
+					" GROUP BY key" +
+					" HAVING length(values) > ?" +
+					" ORDER BY key",
+				args: []any{service, "value1", "value2", env, 0},
+
+				rows: &mockRowsCount{
+					count: 2,
+				},
+			},
+		},
+		{
+			name: "ok_no_rows",
+
+			req:              types.GetServiceFiltersRequest{},
+			wantFiltersCount: 0,
+
+			mockConn: &mockConnRows{
+				rows: &mockRowsCount{
+					count: 0,
+				},
+			},
+		},
+		{
+			name: "err_query",
+
+			req:     types.GetServiceFiltersRequest{},
+			wantErr: true,
+
+			mockConn: &mockConnRows{
+				err: someErr,
+			},
+		},
+		{
+			name: "err_scan",
+
+			req:     types.GetServiceFiltersRequest{},
+			wantErr: true,
+
+			mockConn: &mockConnRows{
+				rows: &mockRowsCount{
+					scanErr: someErr,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			mockedConn := initMockConnRows(t, tt.mockConn)
+			repo := newRepo(mockedConn, true, tt.queryFilter, fakeNow)
+
+			got, err := repo.GetServiceFilters(context.Background(), tt.req)
+			require.Equal(t, tt.wantErr, err != nil)
+			require.Equal(t, tt.wantFiltersCount, len(got))
 		})
 	}
 }

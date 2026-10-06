@@ -23,6 +23,7 @@ func TestGetHist(t *testing.T) {
 		env           = "test-env"
 		source        = "test-source"
 		release       = "test-release"
+		filter        = map[string]string{"f1": "v1", "f2": "v2"}
 		duration      = 2 * time.Minute
 		now           = time.Now().Truncate(0).UTC()
 		oneMinuteAgo  = now.Add(-1 * time.Minute)
@@ -156,6 +157,48 @@ func TestGetHist(t *testing.T) {
 					Env:       &env,
 					Source:    &source,
 					Release:   &release,
+				},
+
+				hist: types.ErrorHist{
+					Buckets: []types.ErrorHistBucket{
+						{Time: oneMinuteAgo, Count: 10},
+						{Time: twoMinutesAgo, Count: 20},
+					},
+					Interval: 123,
+				},
+			},
+		},
+		{
+			name: "ok_filters",
+
+			req: &errorgroups_v1.GetHistRequest{
+				GroupHash: &groupHash,
+				Service:   &service,
+				Env:       &env,
+				Source:    &source,
+				Release:   &release,
+				Filter: &errorgroups_v1.GetHistRequest_Filter{
+					Custom: filter,
+				},
+			},
+			want: &errorgroups_v1.GetHistResponse{
+				Buckets: []*errorgroups_v1.Bucket{
+					{Time: timestamppb.New(oneMinuteAgo), Count: 10},
+					{Time: timestamppb.New(twoMinutesAgo), Count: 20},
+				},
+				Interval: 123,
+			},
+
+			mockArgs: &mockArgs{
+				req: types.GetErrorHistRequest{
+					GroupHash: &groupHash,
+					Service:   &service,
+					Env:       &env,
+					Source:    &source,
+					Release:   &release,
+					Filter: &types.ErrorGroupsFilter{
+						Custom: filter,
+					},
 				},
 
 				hist: types.ErrorHist{

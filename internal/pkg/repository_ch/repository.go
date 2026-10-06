@@ -31,6 +31,8 @@ type Repository interface {
 
 	DiffByReleases(context.Context, types.DiffByReleasesRequest) ([]types.DiffGroup, error)
 	DiffByReleasesTotal(context.Context, types.DiffByReleasesRequest) (uint64, error)
+
+	GetServiceFilters(context.Context, types.GetServiceFiltersRequest) ([]types.ServiceFilter, error)
 }
 
 type repository struct {

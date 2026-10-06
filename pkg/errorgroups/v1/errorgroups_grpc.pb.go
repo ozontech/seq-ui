@@ -19,13 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion8
 
 const (
-	ErrorGroupsService_GetGroups_FullMethodName      = "/errorgroups.v1.ErrorGroupsService/GetGroups"
-	ErrorGroupsService_GetTopGroups_FullMethodName   = "/errorgroups.v1.ErrorGroupsService/GetTopGroups"
-	ErrorGroupsService_GetHist_FullMethodName        = "/errorgroups.v1.ErrorGroupsService/GetHist"
-	ErrorGroupsService_GetDetails_FullMethodName     = "/errorgroups.v1.ErrorGroupsService/GetDetails"
-	ErrorGroupsService_GetReleases_FullMethodName    = "/errorgroups.v1.ErrorGroupsService/GetReleases"
-	ErrorGroupsService_GetServices_FullMethodName    = "/errorgroups.v1.ErrorGroupsService/GetServices"
-	ErrorGroupsService_DiffByReleases_FullMethodName = "/errorgroups.v1.ErrorGroupsService/DiffByReleases"
+	ErrorGroupsService_GetGroups_FullMethodName         = "/errorgroups.v1.ErrorGroupsService/GetGroups"
+	ErrorGroupsService_GetTopGroups_FullMethodName      = "/errorgroups.v1.ErrorGroupsService/GetTopGroups"
+	ErrorGroupsService_GetHist_FullMethodName           = "/errorgroups.v1.ErrorGroupsService/GetHist"
+	ErrorGroupsService_GetDetails_FullMethodName        = "/errorgroups.v1.ErrorGroupsService/GetDetails"
+	ErrorGroupsService_GetReleases_FullMethodName       = "/errorgroups.v1.ErrorGroupsService/GetReleases"
+	ErrorGroupsService_GetServices_FullMethodName       = "/errorgroups.v1.ErrorGroupsService/GetServices"
+	ErrorGroupsService_DiffByReleases_FullMethodName    = "/errorgroups.v1.ErrorGroupsService/DiffByReleases"
+	ErrorGroupsService_GetServiceFilters_FullMethodName = "/errorgroups.v1.ErrorGroupsService/GetServiceFilters"
 )
 
 // ErrorGroupsServiceClient is the client API for ErrorGroupsService service.
@@ -39,6 +40,7 @@ type ErrorGroupsServiceClient interface {
 	GetReleases(ctx context.Context, in *GetReleasesRequest, opts ...grpc.CallOption) (*GetReleasesResponse, error)
 	GetServices(ctx context.Context, in *GetServicesRequest, opts ...grpc.CallOption) (*GetServicesResponse, error)
 	DiffByReleases(ctx context.Context, in *DiffByReleasesRequest, opts ...grpc.CallOption) (*DiffByReleasesResponse, error)
+	GetServiceFilters(ctx context.Context, in *GetServiceFiltersRequest, opts ...grpc.CallOption) (*GetServiceFiltersResponse, error)
 }
 
 type errorGroupsServiceClient struct {
@@ -119,6 +121,16 @@ func (c *errorGroupsServiceClient) DiffByReleases(ctx context.Context, in *DiffB
 	return out, nil
 }
 
+func (c *errorGroupsServiceClient) GetServiceFilters(ctx context.Context, in *GetServiceFiltersRequest, opts ...grpc.CallOption) (*GetServiceFiltersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetServiceFiltersResponse)
+	err := c.cc.Invoke(ctx, ErrorGroupsService_GetServiceFilters_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ErrorGroupsServiceServer is the server API for ErrorGroupsService service.
 // All implementations should embed UnimplementedErrorGroupsServiceServer
 // for forward compatibility
@@ -130,6 +142,7 @@ type ErrorGroupsServiceServer interface {
 	GetReleases(context.Context, *GetReleasesRequest) (*GetReleasesResponse, error)
 	GetServices(context.Context, *GetServicesRequest) (*GetServicesResponse, error)
 	DiffByReleases(context.Context, *DiffByReleasesRequest) (*DiffByReleasesResponse, error)
+	GetServiceFilters(context.Context, *GetServiceFiltersRequest) (*GetServiceFiltersResponse, error)
 }
 
 // UnimplementedErrorGroupsServiceServer should be embedded to have forward compatible implementations.
@@ -156,6 +169,9 @@ func (UnimplementedErrorGroupsServiceServer) GetServices(context.Context, *GetSe
 }
 func (UnimplementedErrorGroupsServiceServer) DiffByReleases(context.Context, *DiffByReleasesRequest) (*DiffByReleasesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DiffByReleases not implemented")
+}
+func (UnimplementedErrorGroupsServiceServer) GetServiceFilters(context.Context, *GetServiceFiltersRequest) (*GetServiceFiltersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetServiceFilters not implemented")
 }
 
 // UnsafeErrorGroupsServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -295,6 +311,24 @@ func _ErrorGroupsService_DiffByReleases_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ErrorGroupsService_GetServiceFilters_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetServiceFiltersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ErrorGroupsServiceServer).GetServiceFilters(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ErrorGroupsService_GetServiceFilters_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ErrorGroupsServiceServer).GetServiceFilters(ctx, req.(*GetServiceFiltersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ErrorGroupsService_ServiceDesc is the grpc.ServiceDesc for ErrorGroupsService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -329,6 +363,10 @@ var ErrorGroupsService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DiffByReleases",
 			Handler:    _ErrorGroupsService_DiffByReleases_Handler,
+		},
+		{
+			MethodName: "GetServiceFilters",
+			Handler:    _ErrorGroupsService_GetServiceFilters_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

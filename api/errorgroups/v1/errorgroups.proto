@@ -15,6 +15,7 @@ service ErrorGroupsService {
   rpc GetReleases(GetReleasesRequest) returns (GetReleasesResponse) {}
   rpc GetServices(GetServicesRequest) returns (GetServicesResponse) {}
   rpc DiffByReleases(DiffByReleasesRequest) returns (DiffByReleasesResponse) {}
+  rpc GetServiceFilters(GetServiceFiltersRequest) returns (GetServiceFiltersResponse) {}
 }
 
 enum Order {
@@ -32,6 +33,7 @@ message TimeRange {
 message GetGroupsRequest {
   message Filter {
     bool is_new = 1;
+    map<string, string> custom = 2;
   }
 
   string service = 1;
@@ -84,6 +86,10 @@ message GetTopGroupsResponse {
 }
 
 message GetHistRequest {
+  message Filter {
+    map<string, string> custom = 1;
+  }
+
   optional string service = 1;
   optional uint64 group_hash = 2;
   optional string env = 3;
@@ -91,6 +97,7 @@ message GetHistRequest {
   optional google.protobuf.Duration duration = 5 [deprecated = true];
   optional string source = 6;
   optional TimeRange time_range = 7;
+  optional Filter filter = 8;
 }
 
 message GetHistResponse {
@@ -104,11 +111,16 @@ message Bucket {
 }
 
 message GetDetailsRequest {
+  message Filter {
+    map<string, string> custom = 1;
+  }
+
   optional string service = 1;
   uint64 group_hash = 2;
   optional string env = 3;
   optional string release = 4;
   optional string source = 5;
+  optional Filter filter = 6;
 }
 
 message GetDetailsResponse {
@@ -117,11 +129,16 @@ message GetDetailsResponse {
     uint64 percent = 2;
   }
 
+  message DistributionArray {
+    repeated Distribution array = 1;
+  }
+
   message Distributions {
     repeated Distribution by_env = 1;
     repeated Distribution by_release = 2;
     repeated Distribution by_source = 3;
     repeated Distribution by_service = 4;
+    map<string, DistributionArray> by_filter = 5;
   }
 
   uint64 group_hash = 1;
@@ -182,4 +199,18 @@ message DiffByReleasesResponse {
 
   uint64 total = 1;
   repeated Group groups = 2;
+}
+
+message GetServiceFiltersRequest {
+  string service = 1;
+  optional string env = 2;
+}
+
+message GetServiceFiltersResponse {
+  message Filter {
+    string key = 1;
+    repeated string values = 2;
+  }
+
+  repeated Filter filters = 1;
 }
