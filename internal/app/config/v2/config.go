@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"slices"
 	"time"
 )
 
@@ -223,12 +224,12 @@ import (
 //       max_retry_backoff:
 
 type Config struct {
-	Version  int       `yaml:"version"`
-	Server   *Server   `yaml:"server"`
-	Clients  *Clients  `yaml:"clients"`
-	Handlers *Handlers `yaml:"handlers"`
-	DB       *DB       `yaml:"db"`
-	Cache    *Cache    `yaml:"cache"`
+	Version  int      `yaml:"version"`
+	Server   Server   `yaml:"server"`
+	Clients  Clients  `yaml:"clients"`
+	Handlers Handlers `yaml:"handlers"`
+	Cache    Cache    `yaml:"cache"`
+	DB       *DB      `yaml:"db"`
 }
 
 type CORS struct {
@@ -236,8 +237,8 @@ type CORS struct {
 	AllowedMethods     []string `yaml:"allowed_methods"`
 	AllowedHeaders     []string `yaml:"allowed_headers"`
 	ExposedHeaders     []string `yaml:"exposed_headers"`
-	AllowCredentials   bool     `yaml:"allow_credentials"`
 	MaxAge             int      `yaml:"max_age"`
+	AllowCredentials   bool     `yaml:"allow_credentials"`
 	OptionsPassthrough bool     `yaml:"options_passthrough"`
 }
 
@@ -316,31 +317,25 @@ type Cache struct {
 }
 
 func (c *Cache) InmemByID(id string) *InmemoryCache {
-	if c == nil {
+	i := slices.IndexFunc(c.Inmemory, func(inm InmemoryCache) bool {
+		return inm.ID == id
+	})
+	if i == -1 {
 		return nil
 	}
 
-	for i := range c.Inmemory {
-		if c.Inmemory[i].ID == id {
-			return &c.Inmemory[i]
-		}
-	}
-
-	return nil
+	return &c.Inmemory[i]
 }
 
 func (c *Cache) RedisByID(id string) *Redis {
-	if c == nil {
+	i := slices.IndexFunc(c.Redis, func(r Redis) bool {
+		return r.ID == id
+	})
+	if i == -1 {
 		return nil
 	}
 
-	for i := range c.Redis {
-		if c.Redis[i].ID == id {
-			return &c.Redis[i]
-		}
-	}
-
-	return nil
+	return &c.Redis[i]
 }
 
 type S3 struct {
@@ -415,11 +410,11 @@ type AuthOptions struct {
 }
 
 type Server struct {
-	HTTP         HTTP         `yaml:"http"`
-	GRPC         GRPC         `yaml:"grpc"`
-	Debug        Debug        `yaml:"debug"`
-	Auth         *Auth        `yaml:"auth"`
-	RateLimiters RateLimiters `yaml:"rate_limiters"`
+	HTTP         HTTP          `yaml:"http"`
+	GRPC         GRPC          `yaml:"grpc"`
+	Debug        Debug         `yaml:"debug"`
+	Auth         *Auth         `yaml:"auth"`
+	RateLimiters *RateLimiters `yaml:"rate_limiters"`
 }
 
 type RateLimiters struct {
@@ -480,17 +475,14 @@ type Clients struct {
 }
 
 func (c *Clients) ClickHouseByID(id string) *CHClient {
-	if c == nil {
+	i := slices.IndexFunc(c.ClickHouse, func(ch CHClient) bool {
+		return ch.ID == id
+	})
+	if i == -1 {
 		return nil
 	}
 
-	for i := range c.ClickHouse {
-		if c.ClickHouse[i].ID == id {
-			return &c.ClickHouse[i]
-		}
-	}
-
-	return nil
+	return &c.ClickHouse[i]
 }
 
 type Handlers struct {
@@ -512,8 +504,8 @@ type AdminEnv struct {
 }
 
 type AdminOptions struct {
-	SuperUsers []string     `yaml:"super_users"`
-	Cache      HandlerCache `yaml:"cache"`
+	SuperUsers []string      `yaml:"super_users"`
+	Cache      *HandlerCache `yaml:"cache"`
 }
 
 type Field struct {

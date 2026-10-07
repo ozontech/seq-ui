@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"maps"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -52,7 +51,7 @@ func FromFile(cfgPath string) (v2.Config, error) {
 		return v2.Config{}, fmt.Errorf("unsupported config version: %d", version)
 	}
 
-	cfgBytes, err = mergeHandlersEnvOptions(cfgBytes)
+	cfgBytes, err = mergeEnvOptions(cfgBytes)
 	if err != nil {
 		return v2.Config{}, fmt.Errorf("merge env options: %w", err)
 	}
@@ -125,59 +124,4 @@ func encode(cfg v2.Config) ([]byte, error) {
 		return nil, fmt.Errorf("close encoder: %w", err)
 	}
 	return buf.Bytes(), nil
-}
-
-func mergeHandlersEnvOptions(cfgBytes []byte) ([]byte, error) {
-	var root map[string]any
-	if err := yaml.Unmarshal(cfgBytes, &root); err != nil {
-		return nil, fmt.Errorf("parse yaml for merge: %w", err)
-	}
-
-	handlers, _ := root["handlers"].(map[string]any)
-	for _, h := range handlers {
-		handler, _ := h.(map[string]any)
-		if handler == nil {
-			continue
-		}
-
-		rootOpts := handler["options"].(map[string]any)
-		envs := handlers["envs"].(map[string]any)
-		if rootOpts == nil || len(envs) == 0 {
-			continue
-		}
-
-		for _, e := range envs {
-			env, _ := e.(map[string]any)
-			if env == nil {
-				continue
-			}
-
-			envOpts, _ := env["options"].(map[string]any)
-			env["options"] = mergeYAMLs(rootOpts, envOpts)
-		}
-	}
-
-	out, err := yaml.Marshal(root)
-	if err != nil {
-		return nil, fmt.Errorf("marshal merged yaml: %w", err)
-	}
-	return out, nil
-}
-
-func mergeYAMLs(a, b map[string]any) map[string]any {
-	merged := make(map[string]any)
-	maps.Copy(merged, a)
-
-	for k, v := range b {
-		if existingValue, exists := merged[k]; exists {
-			if existingMap, ok := existingValue.(map[string]any); ok {
-				if newMap, ok := v.(map[string]any); ok {
-					merged[k] = mergeYAMLs(existingMap, newMap)
-					continue
-				}
-			}
-		}
-		merged[k] = v
-	}
-	return merged
 }

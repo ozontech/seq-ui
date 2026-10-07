@@ -42,7 +42,9 @@ func (m *v1tov2) migrateServer(src *v1.Server) *v2.Server {
 		Debug: v2.Debug{
 			Addr: src.DebugAddr,
 		},
-		RateLimiters: m.migrateApiRateLimiters(src.RateLimiters),
+		RateLimiters: &v2.RateLimiters{
+			Options: m.migrateApiRateLimiters(src.RateLimiters),
+		},
 	}
 
 	if src.OIDC != nil {
@@ -58,14 +60,14 @@ func (m *v1tov2) migrateServer(src *v1.Server) *v2.Server {
 			oidc.CacheID = cacheID
 		}
 
-		dst.Auth = &v2.Auth{OIDC: oidc}
+		dst.Auth = &v2.Auth{Options: v2.AuthOptions{OIDC: oidc}}
 	}
 
 	if src.JWTSecretKey != "" {
 		if dst.Auth == nil {
 			dst.Auth = &v2.Auth{}
 		}
-		dst.Auth.JWT = &v2.JWT{SecretKey: src.JWTSecretKey}
+		dst.Auth.Options.JWT = &v2.JWT{SecretKey: src.JWTSecretKey}
 	}
 
 	return dst
@@ -296,15 +298,15 @@ func (m *v1tov2) migrateSeqAPI(src v1.SeqAPI, v1Cache v1.Cache) v2.SeqAPI {
 		DefaultEnv: src.DefaultEnv,
 		Options: v2.SeqAPIOptions{
 			Caches: v2.SeqAPICaches{
-				Events: v2.SeqAPICache{
+				Events: v2.HandlerCache{
 					ID:  cacheID,
 					TTL: src.EventsCacheTTL,
 				},
-				LogsLifespan: v2.SeqAPICache{
+				LogsLifespan: v2.HandlerCache{
 					ID:  redisID,
 					TTL: src.LogsLifespanCacheTTL,
 				},
-				Fields: v2.SeqAPICache{
+				Fields: v2.HandlerCache{
 					ID:  cacheID,
 					TTL: src.FieldsCacheTTL,
 				},
@@ -360,15 +362,15 @@ func (m *v1tov2) migrateSeqAPIOptions(options *v1.SeqAPIOptions, cacheID, redisI
 		PinnedFields: m.migrateFields(options.PinnedFields),
 		SystemFields: m.migrateFields(options.SystemFields),
 		Caches: v2.SeqAPICaches{
-			Events: v2.SeqAPICache{
+			Events: v2.HandlerCache{
 				ID:  cacheID,
 				TTL: options.EventsCacheTTL,
 			},
-			LogsLifespan: v2.SeqAPICache{
+			LogsLifespan: v2.HandlerCache{
 				ID:  redisID,
 				TTL: options.LogsLifespanCacheTTL,
 			},
-			Fields: v2.SeqAPICache{
+			Fields: v2.HandlerCache{
 				ID:  cacheID,
 				TTL: options.FieldsCacheTTL,
 			},
@@ -411,15 +413,15 @@ func (m *v1tov2) migrateMasks(ms []v1.Mask) []v2.Mask {
 
 	dst := make([]v2.Mask, len(ms))
 	for i := range ms {
-		m := &ms[i]
+		mask := &ms[i]
 		dst[i] = v2.Mask{
-			Re:            m.Re,
-			Groups:        m.Groups,
-			Mode:          m.Mode,
-			ReplaceWord:   m.ReplaceWord,
-			ProcessFields: m.ProcessFields,
-			IgnoreFields:  m.IgnoreFields,
-			FieldFilters:  m.migrateFieldFilters(m.FieldFilters),
+			Re:            mask.Re,
+			Groups:        mask.Groups,
+			Mode:          mask.Mode,
+			ReplaceWord:   mask.ReplaceWord,
+			ProcessFields: mask.ProcessFields,
+			IgnoreFields:  mask.IgnoreFields,
+			FieldFilters:  m.migrateFieldFilters(mask.FieldFilters),
 		}
 	}
 
@@ -434,7 +436,6 @@ func (m *v1tov2) migrateFieldFilters(src *v1.FieldFilterSet) *v2.FieldFilterSet 
 	dst := &v2.FieldFilterSet{
 		Condition: src.Condition,
 	}
-
 	if src.Filters != nil {
 		dst.Filters = make([]v2.FieldFilter, len(src.Filters))
 		for i, f := range src.Filters {
@@ -456,12 +457,14 @@ func (m *v1tov2) migrateErrorGroups(eg v1.ErrorGroups) *v2.ErrorGroups {
 
 	return &v2.ErrorGroups{
 		CHID: v2.DefaultCHClientID,
-		LogTagsMapping: v2.LogTagsMapping{
-			Env:     eg.LogTagsMapping.Env,
-			Service: eg.LogTagsMapping.Service,
-			Release: eg.LogTagsMapping.Release,
+		Options: v2.ErrorGroupsOptions{
+			LogTagsMapping: v2.LogTagsMapping{
+				Env:     eg.LogTagsMapping.Env,
+				Service: eg.LogTagsMapping.Service,
+				Release: eg.LogTagsMapping.Release,
+			},
+			QueryFilter: eg.QueryFilter,
 		},
-		QueryFilter: eg.QueryFilter,
 	}
 }
 
@@ -471,9 +474,11 @@ func (m *v1tov2) migrateAsyncSearch(a v1.AsyncSearch) *v2.AsyncSearch {
 	}
 
 	return &v2.AsyncSearch{
-		SeqDBID:              v2.DefaultSeqDBClientID,
-		AdminUsers:           a.AdminUsers,
-		ListQueryLengthLimit: a.ListQueryLengthLimit,
+		SeqDBID: v2.DefaultSeqDBClientID,
+		Options: v2.AsyncSearchOptions{
+			AdminUsers:           a.AdminUsers,
+			ListQueryLengthLimit: a.ListQueryLengthLimit,
+		},
 	}
 }
 
@@ -540,10 +545,12 @@ func (m *v1tov2) migrateAdmin(src *v1.Admin, v1Cache v1.Cache) *v2.Admin {
 
 	_, redisID := m.defaultCacheIDs(v1Cache)
 	return &v2.Admin{
-		SuperUsers: src.SuperUsers,
-		Options: v2.HandlerCache{
-			ID:  redisID,
-			TTL: src.CacheTTL,
+		Options: v2.AdminOptions{
+			Cache: &v2.HandlerCache{
+				ID:  redisID,
+				TTL: src.CacheTTL,
+			},
+			SuperUsers: src.SuperUsers,
 		},
 	}
 }

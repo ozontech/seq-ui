@@ -28,8 +28,9 @@ const (
 	FieldFilterModePrefix   = "prefix"
 	FieldFilterModeSuffix   = "suffix"
 
-	minGRPCKeepaliveTime    = 10 * time.Second
-	minGRPCKeepaliveTimeout = 1 * time.Second
+	defaultGRPCConnectionTimeout = 120 * time.Second
+	minGRPCKeepaliveTime         = 10 * time.Second
+	minGRPCKeepaliveTimeout      = 1 * time.Second
 
 	defaultAsyncSearchListQueryLengthLimit = 1000
 
@@ -57,6 +58,10 @@ const (
 )
 
 func (cfg *Config) Validate() error {
+	if cfg.Server.GRPC.ConnectionTimeout <= 0 {
+		cfg.Server.GRPC.ConnectionTimeout = defaultGRPCConnectionTimeout
+	}
+
 	if len(cfg.Clients.SeqDB) == 0 {
 		return fmt.Errorf("clients.seq_db must contain at least one client")
 	}
@@ -73,6 +78,12 @@ func (cfg *Config) Validate() error {
 
 		seqDBIDs[c.ID] = struct{}{}
 
+		if len(c.Addrs) == 0 {
+			return fmt.Errorf("clients.seq_db[%q].addrs cannot be empty", c.ID)
+		}
+		if c.Timeout <= 0 {
+			return fmt.Errorf("clients.seq_db[%q].timeout must be > 0", c.ID)
+		}
 		if c.ClientMode == "" {
 			c.ClientMode = SeqDBClientModeGRPC
 		} else if c.ClientMode != SeqDBClientModeGRPC {
@@ -292,19 +303,16 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Handlers.Admin != nil {
 		admin := cfg.Handlers.Admin
-		if admin.Options.Cache != nil {
-			if admin.Options.Cache.TTL <= 0 {
-				admin.Options.Cache.TTL = defaultAdminCacheTTL
+		if admin.Options.Cache.TTL <= 0 {
+			admin.Options.Cache.TTL = defaultAdminCacheTTL
+		}
+		if admin.Options.Cache.ID != "" {
+			redisCfg := cfg.Cache.RedisByID(admin.Options.Cache.ID)
+			if redisCfg == nil {
+				return fmt.Errorf("unknown handlers.admin.redis_id %q", admin.Options.Cache.ID)
 			}
-
-			if admin.Options.Cache.ID != "" {
-				redisCfg := cfg.Cache.RedisByID(admin.Options.Cache.ID)
-				if redisCfg == nil {
-					return fmt.Errorf("unknown handlers.admin.redis_id %q", admin.Options.Cache.ID)
-				}
-				if redisCfg.WithInmemID != "" {
-					return fmt.Errorf("handlers.admin.redis_id %q: with_inmem_id is not allowed", admin.Options.Cache.ID)
-				}
+			if redisCfg.WithInmemID != "" {
+				return fmt.Errorf("handlers.admin.redis_id %q: with_inmem_id is not allowed", admin.Options.Cache.ID)
 			}
 		}
 	}
