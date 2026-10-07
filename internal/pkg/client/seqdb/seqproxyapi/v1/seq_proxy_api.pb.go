@@ -1216,8 +1216,9 @@ type FetchAsyncSearchResultResponse struct {
 	// Search progress in range [0, 1].
 	Progress float64 `protobuf:"fixed64,7,opt,name=progress,proto3" json:"progress,omitempty"`
 	// The size of data stored on disk, in bytes.
-	DiskUsage     uint64 `protobuf:"varint,8,opt,name=disk_usage,json=diskUsage,proto3" json:"disk_usage,omitempty"`
-	Error         *Error `protobuf:"bytes,9,opt,name=error,proto3" json:"error,omitempty"`
+	DiskUsage     uint64                 `protobuf:"varint,8,opt,name=disk_usage,json=diskUsage,proto3" json:"disk_usage,omitempty"`
+	Error         *Error                 `protobuf:"bytes,9,opt,name=error,proto3" json:"error,omitempty"`
+	DoneAt        *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=done_at,json=doneAt,proto3,oneof" json:"done_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1311,6 +1312,13 @@ func (x *FetchAsyncSearchResultResponse) GetDiskUsage() uint64 {
 func (x *FetchAsyncSearchResultResponse) GetError() *Error {
 	if x != nil {
 		return x.Error
+	}
+	return nil
+}
+
+func (x *FetchAsyncSearchResultResponse) GetDoneAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.DoneAt
 	}
 	return nil
 }
@@ -1609,8 +1617,9 @@ type AsyncSearchesListItem struct {
 	// Search progress in range [0, 1].
 	Progress float64 `protobuf:"fixed64,7,opt,name=progress,proto3" json:"progress,omitempty"`
 	// The size of data stored on disk, in bytes.
-	DiskUsage     uint64  `protobuf:"varint,8,opt,name=disk_usage,json=diskUsage,proto3" json:"disk_usage,omitempty"`
-	Error         *string `protobuf:"bytes,9,opt,name=error,proto3,oneof" json:"error,omitempty"`
+	DiskUsage     uint64                 `protobuf:"varint,8,opt,name=disk_usage,json=diskUsage,proto3" json:"disk_usage,omitempty"`
+	Error         *string                `protobuf:"bytes,9,opt,name=error,proto3,oneof" json:"error,omitempty"`
+	DoneAt        *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=done_at,json=doneAt,proto3,oneof" json:"done_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1706,6 +1715,13 @@ func (x *AsyncSearchesListItem) GetError() string {
 		return *x.Error
 	}
 	return ""
+}
+
+func (x *AsyncSearchesListItem) GetDoneAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.DoneAt
+	}
+	return nil
 }
 
 type GetAggregationRequest struct {
@@ -2662,7 +2678,7 @@ const file_v1_seq_proxy_api_proto_rawDesc = "" +
 	"\tsearch_id\x18\x01 \x01(\tR\bsearchId\x12\x12\n" +
 	"\x04size\x18\x02 \x01(\x05R\x04size\x12\x16\n" +
 	"\x06offset\x18\x03 \x01(\x05R\x06offset\x12+\n" +
-	"\x05order\x18\x04 \x01(\x0e2\x15.seqproxyapi.v1.OrderR\x05order\"\x91\x04\n" +
+	"\x05order\x18\x04 \x01(\x0e2\x15.seqproxyapi.v1.OrderR\x05order\"\xd7\x04\n" +
 	"\x1eFetchAsyncSearchResultResponse\x129\n" +
 	"\x06status\x18\x01 \x01(\x0e2!.seqproxyapi.v1.AsyncSearchStatusR\x06status\x12A\n" +
 	"\arequest\x18\x02 \x01(\v2'.seqproxyapi.v1.StartAsyncSearchRequestR\arequest\x12A\n" +
@@ -2676,8 +2692,12 @@ const file_v1_seq_proxy_api_proto_rawDesc = "" +
 	"\bprogress\x18\a \x01(\x01R\bprogress\x12\x1d\n" +
 	"\n" +
 	"disk_usage\x18\b \x01(\x04R\tdiskUsage\x12+\n" +
-	"\x05error\x18\t \x01(\v2\x15.seqproxyapi.v1.ErrorR\x05errorB\x0e\n" +
-	"\f_canceled_at\"7\n" +
+	"\x05error\x18\t \x01(\v2\x15.seqproxyapi.v1.ErrorR\x05error\x128\n" +
+	"\adone_at\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampH\x01R\x06doneAt\x88\x01\x01B\x0e\n" +
+	"\f_canceled_atB\n" +
+	"\n" +
+	"\b_done_at\"7\n" +
 	"\x18CancelAsyncSearchRequest\x12\x1b\n" +
 	"\tsearch_id\x18\x01 \x01(\tR\bsearchId\"\x1b\n" +
 	"\x19CancelAsyncSearchResponse\"7\n" +
@@ -2692,7 +2712,7 @@ const file_v1_seq_proxy_api_proto_rawDesc = "" +
 	"\a_status\"\x8e\x01\n" +
 	"\x1cGetAsyncSearchesListResponse\x12A\n" +
 	"\bsearches\x18\x01 \x03(\v2%.seqproxyapi.v1.AsyncSearchesListItemR\bsearches\x12+\n" +
-	"\x05error\x18\x02 \x01(\v2\x15.seqproxyapi.v1.ErrorR\x05error\"\xda\x03\n" +
+	"\x05error\x18\x02 \x01(\v2\x15.seqproxyapi.v1.ErrorR\x05error\"\xa0\x04\n" +
 	"\x15AsyncSearchesListItem\x12\x1b\n" +
 	"\tsearch_id\x18\x01 \x01(\tR\bsearchId\x129\n" +
 	"\x06status\x18\x02 \x01(\x0e2!.seqproxyapi.v1.AsyncSearchStatusR\x06status\x12A\n" +
@@ -2706,9 +2726,13 @@ const file_v1_seq_proxy_api_proto_rawDesc = "" +
 	"\bprogress\x18\a \x01(\x01R\bprogress\x12\x1d\n" +
 	"\n" +
 	"disk_usage\x18\b \x01(\x04R\tdiskUsage\x12\x19\n" +
-	"\x05error\x18\t \x01(\tH\x01R\x05error\x88\x01\x01B\x0e\n" +
+	"\x05error\x18\t \x01(\tH\x01R\x05error\x88\x01\x01\x128\n" +
+	"\adone_at\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampH\x02R\x06doneAt\x88\x01\x01B\x0e\n" +
 	"\f_canceled_atB\b\n" +
-	"\x06_error\"x\n" +
+	"\x06_errorB\n" +
+	"\n" +
+	"\b_done_at\"x\n" +
 	"\x15GetAggregationRequest\x121\n" +
 	"\x05query\x18\x01 \x01(\v2\x1b.seqproxyapi.v1.SearchQueryR\x05query\x12,\n" +
 	"\x04aggs\x18\x02 \x03(\v2\x18.seqproxyapi.v1.AggQueryR\x04aggs\"\xbb\x01\n" +
@@ -2886,63 +2910,65 @@ var file_v1_seq_proxy_api_proto_depIdxs = []int32{
 	42, // 28: seqproxyapi.v1.FetchAsyncSearchResultResponse.expires_at:type_name -> google.protobuf.Timestamp
 	42, // 29: seqproxyapi.v1.FetchAsyncSearchResultResponse.canceled_at:type_name -> google.protobuf.Timestamp
 	4,  // 30: seqproxyapi.v1.FetchAsyncSearchResultResponse.error:type_name -> seqproxyapi.v1.Error
-	3,  // 31: seqproxyapi.v1.GetAsyncSearchesListRequest.status:type_name -> seqproxyapi.v1.AsyncSearchStatus
-	25, // 32: seqproxyapi.v1.GetAsyncSearchesListResponse.searches:type_name -> seqproxyapi.v1.AsyncSearchesListItem
-	4,  // 33: seqproxyapi.v1.GetAsyncSearchesListResponse.error:type_name -> seqproxyapi.v1.Error
-	3,  // 34: seqproxyapi.v1.AsyncSearchesListItem.status:type_name -> seqproxyapi.v1.AsyncSearchStatus
-	15, // 35: seqproxyapi.v1.AsyncSearchesListItem.request:type_name -> seqproxyapi.v1.StartAsyncSearchRequest
-	42, // 36: seqproxyapi.v1.AsyncSearchesListItem.started_at:type_name -> google.protobuf.Timestamp
-	42, // 37: seqproxyapi.v1.AsyncSearchesListItem.expires_at:type_name -> google.protobuf.Timestamp
-	42, // 38: seqproxyapi.v1.AsyncSearchesListItem.canceled_at:type_name -> google.protobuf.Timestamp
-	8,  // 39: seqproxyapi.v1.GetAggregationRequest.query:type_name -> seqproxyapi.v1.SearchQuery
-	9,  // 40: seqproxyapi.v1.GetAggregationRequest.aggs:type_name -> seqproxyapi.v1.AggQuery
-	6,  // 41: seqproxyapi.v1.GetAggregationResponse.aggs:type_name -> seqproxyapi.v1.Aggregation
-	4,  // 42: seqproxyapi.v1.GetAggregationResponse.error:type_name -> seqproxyapi.v1.Error
-	8,  // 43: seqproxyapi.v1.GetHistogramRequest.query:type_name -> seqproxyapi.v1.SearchQuery
-	10, // 44: seqproxyapi.v1.GetHistogramRequest.hist:type_name -> seqproxyapi.v1.HistQuery
-	7,  // 45: seqproxyapi.v1.GetHistogramResponse.hist:type_name -> seqproxyapi.v1.Histogram
-	4,  // 46: seqproxyapi.v1.GetHistogramResponse.error:type_name -> seqproxyapi.v1.Error
-	42, // 47: seqproxyapi.v1.StatusResponse.oldest_storage_time:type_name -> google.protobuf.Timestamp
-	35, // 48: seqproxyapi.v1.StatusResponse.stores:type_name -> seqproxyapi.v1.StoreStatus
-	36, // 49: seqproxyapi.v1.StoreStatus.values:type_name -> seqproxyapi.v1.StoreStatusValues
-	42, // 50: seqproxyapi.v1.StoreStatusValues.oldest_time:type_name -> google.protobuf.Timestamp
-	8,  // 51: seqproxyapi.v1.ExportRequest.query:type_name -> seqproxyapi.v1.SearchQuery
-	5,  // 52: seqproxyapi.v1.ExportResponse.doc:type_name -> seqproxyapi.v1.Document
-	42, // 53: seqproxyapi.v1.Aggregation.Bucket.ts:type_name -> google.protobuf.Timestamp
-	42, // 54: seqproxyapi.v1.Histogram.Bucket.ts:type_name -> google.protobuf.Timestamp
-	11, // 55: seqproxyapi.v1.SeqProxyApi.Search:input_type -> seqproxyapi.v1.SearchRequest
-	12, // 56: seqproxyapi.v1.SeqProxyApi.ComplexSearch:input_type -> seqproxyapi.v1.ComplexSearchRequest
-	26, // 57: seqproxyapi.v1.SeqProxyApi.GetAggregation:input_type -> seqproxyapi.v1.GetAggregationRequest
-	28, // 58: seqproxyapi.v1.SeqProxyApi.GetHistogram:input_type -> seqproxyapi.v1.GetHistogramRequest
-	30, // 59: seqproxyapi.v1.SeqProxyApi.Fetch:input_type -> seqproxyapi.v1.FetchRequest
-	31, // 60: seqproxyapi.v1.SeqProxyApi.Mapping:input_type -> seqproxyapi.v1.MappingRequest
-	33, // 61: seqproxyapi.v1.SeqProxyApi.Status:input_type -> seqproxyapi.v1.StatusRequest
-	37, // 62: seqproxyapi.v1.SeqProxyApi.Export:input_type -> seqproxyapi.v1.ExportRequest
-	15, // 63: seqproxyapi.v1.SeqProxyApi.StartAsyncSearch:input_type -> seqproxyapi.v1.StartAsyncSearchRequest
-	17, // 64: seqproxyapi.v1.SeqProxyApi.FetchAsyncSearchResult:input_type -> seqproxyapi.v1.FetchAsyncSearchResultRequest
-	19, // 65: seqproxyapi.v1.SeqProxyApi.CancelAsyncSearch:input_type -> seqproxyapi.v1.CancelAsyncSearchRequest
-	21, // 66: seqproxyapi.v1.SeqProxyApi.DeleteAsyncSearch:input_type -> seqproxyapi.v1.DeleteAsyncSearchRequest
-	23, // 67: seqproxyapi.v1.SeqProxyApi.GetAsyncSearchesList:input_type -> seqproxyapi.v1.GetAsyncSearchesListRequest
-	38, // 68: seqproxyapi.v1.SeqProxyApi.ExportAsyncSearch:input_type -> seqproxyapi.v1.ExportAsyncSearchRequest
-	13, // 69: seqproxyapi.v1.SeqProxyApi.Search:output_type -> seqproxyapi.v1.SearchResponse
-	14, // 70: seqproxyapi.v1.SeqProxyApi.ComplexSearch:output_type -> seqproxyapi.v1.ComplexSearchResponse
-	27, // 71: seqproxyapi.v1.SeqProxyApi.GetAggregation:output_type -> seqproxyapi.v1.GetAggregationResponse
-	29, // 72: seqproxyapi.v1.SeqProxyApi.GetHistogram:output_type -> seqproxyapi.v1.GetHistogramResponse
-	5,  // 73: seqproxyapi.v1.SeqProxyApi.Fetch:output_type -> seqproxyapi.v1.Document
-	32, // 74: seqproxyapi.v1.SeqProxyApi.Mapping:output_type -> seqproxyapi.v1.MappingResponse
-	34, // 75: seqproxyapi.v1.SeqProxyApi.Status:output_type -> seqproxyapi.v1.StatusResponse
-	39, // 76: seqproxyapi.v1.SeqProxyApi.Export:output_type -> seqproxyapi.v1.ExportResponse
-	16, // 77: seqproxyapi.v1.SeqProxyApi.StartAsyncSearch:output_type -> seqproxyapi.v1.StartAsyncSearchResponse
-	18, // 78: seqproxyapi.v1.SeqProxyApi.FetchAsyncSearchResult:output_type -> seqproxyapi.v1.FetchAsyncSearchResultResponse
-	20, // 79: seqproxyapi.v1.SeqProxyApi.CancelAsyncSearch:output_type -> seqproxyapi.v1.CancelAsyncSearchResponse
-	22, // 80: seqproxyapi.v1.SeqProxyApi.DeleteAsyncSearch:output_type -> seqproxyapi.v1.DeleteAsyncSearchResponse
-	24, // 81: seqproxyapi.v1.SeqProxyApi.GetAsyncSearchesList:output_type -> seqproxyapi.v1.GetAsyncSearchesListResponse
-	39, // 82: seqproxyapi.v1.SeqProxyApi.ExportAsyncSearch:output_type -> seqproxyapi.v1.ExportResponse
-	69, // [69:83] is the sub-list for method output_type
-	55, // [55:69] is the sub-list for method input_type
-	55, // [55:55] is the sub-list for extension type_name
-	55, // [55:55] is the sub-list for extension extendee
-	0,  // [0:55] is the sub-list for field type_name
+	42, // 31: seqproxyapi.v1.FetchAsyncSearchResultResponse.done_at:type_name -> google.protobuf.Timestamp
+	3,  // 32: seqproxyapi.v1.GetAsyncSearchesListRequest.status:type_name -> seqproxyapi.v1.AsyncSearchStatus
+	25, // 33: seqproxyapi.v1.GetAsyncSearchesListResponse.searches:type_name -> seqproxyapi.v1.AsyncSearchesListItem
+	4,  // 34: seqproxyapi.v1.GetAsyncSearchesListResponse.error:type_name -> seqproxyapi.v1.Error
+	3,  // 35: seqproxyapi.v1.AsyncSearchesListItem.status:type_name -> seqproxyapi.v1.AsyncSearchStatus
+	15, // 36: seqproxyapi.v1.AsyncSearchesListItem.request:type_name -> seqproxyapi.v1.StartAsyncSearchRequest
+	42, // 37: seqproxyapi.v1.AsyncSearchesListItem.started_at:type_name -> google.protobuf.Timestamp
+	42, // 38: seqproxyapi.v1.AsyncSearchesListItem.expires_at:type_name -> google.protobuf.Timestamp
+	42, // 39: seqproxyapi.v1.AsyncSearchesListItem.canceled_at:type_name -> google.protobuf.Timestamp
+	42, // 40: seqproxyapi.v1.AsyncSearchesListItem.done_at:type_name -> google.protobuf.Timestamp
+	8,  // 41: seqproxyapi.v1.GetAggregationRequest.query:type_name -> seqproxyapi.v1.SearchQuery
+	9,  // 42: seqproxyapi.v1.GetAggregationRequest.aggs:type_name -> seqproxyapi.v1.AggQuery
+	6,  // 43: seqproxyapi.v1.GetAggregationResponse.aggs:type_name -> seqproxyapi.v1.Aggregation
+	4,  // 44: seqproxyapi.v1.GetAggregationResponse.error:type_name -> seqproxyapi.v1.Error
+	8,  // 45: seqproxyapi.v1.GetHistogramRequest.query:type_name -> seqproxyapi.v1.SearchQuery
+	10, // 46: seqproxyapi.v1.GetHistogramRequest.hist:type_name -> seqproxyapi.v1.HistQuery
+	7,  // 47: seqproxyapi.v1.GetHistogramResponse.hist:type_name -> seqproxyapi.v1.Histogram
+	4,  // 48: seqproxyapi.v1.GetHistogramResponse.error:type_name -> seqproxyapi.v1.Error
+	42, // 49: seqproxyapi.v1.StatusResponse.oldest_storage_time:type_name -> google.protobuf.Timestamp
+	35, // 50: seqproxyapi.v1.StatusResponse.stores:type_name -> seqproxyapi.v1.StoreStatus
+	36, // 51: seqproxyapi.v1.StoreStatus.values:type_name -> seqproxyapi.v1.StoreStatusValues
+	42, // 52: seqproxyapi.v1.StoreStatusValues.oldest_time:type_name -> google.protobuf.Timestamp
+	8,  // 53: seqproxyapi.v1.ExportRequest.query:type_name -> seqproxyapi.v1.SearchQuery
+	5,  // 54: seqproxyapi.v1.ExportResponse.doc:type_name -> seqproxyapi.v1.Document
+	42, // 55: seqproxyapi.v1.Aggregation.Bucket.ts:type_name -> google.protobuf.Timestamp
+	42, // 56: seqproxyapi.v1.Histogram.Bucket.ts:type_name -> google.protobuf.Timestamp
+	11, // 57: seqproxyapi.v1.SeqProxyApi.Search:input_type -> seqproxyapi.v1.SearchRequest
+	12, // 58: seqproxyapi.v1.SeqProxyApi.ComplexSearch:input_type -> seqproxyapi.v1.ComplexSearchRequest
+	26, // 59: seqproxyapi.v1.SeqProxyApi.GetAggregation:input_type -> seqproxyapi.v1.GetAggregationRequest
+	28, // 60: seqproxyapi.v1.SeqProxyApi.GetHistogram:input_type -> seqproxyapi.v1.GetHistogramRequest
+	30, // 61: seqproxyapi.v1.SeqProxyApi.Fetch:input_type -> seqproxyapi.v1.FetchRequest
+	31, // 62: seqproxyapi.v1.SeqProxyApi.Mapping:input_type -> seqproxyapi.v1.MappingRequest
+	33, // 63: seqproxyapi.v1.SeqProxyApi.Status:input_type -> seqproxyapi.v1.StatusRequest
+	37, // 64: seqproxyapi.v1.SeqProxyApi.Export:input_type -> seqproxyapi.v1.ExportRequest
+	15, // 65: seqproxyapi.v1.SeqProxyApi.StartAsyncSearch:input_type -> seqproxyapi.v1.StartAsyncSearchRequest
+	17, // 66: seqproxyapi.v1.SeqProxyApi.FetchAsyncSearchResult:input_type -> seqproxyapi.v1.FetchAsyncSearchResultRequest
+	19, // 67: seqproxyapi.v1.SeqProxyApi.CancelAsyncSearch:input_type -> seqproxyapi.v1.CancelAsyncSearchRequest
+	21, // 68: seqproxyapi.v1.SeqProxyApi.DeleteAsyncSearch:input_type -> seqproxyapi.v1.DeleteAsyncSearchRequest
+	23, // 69: seqproxyapi.v1.SeqProxyApi.GetAsyncSearchesList:input_type -> seqproxyapi.v1.GetAsyncSearchesListRequest
+	38, // 70: seqproxyapi.v1.SeqProxyApi.ExportAsyncSearch:input_type -> seqproxyapi.v1.ExportAsyncSearchRequest
+	13, // 71: seqproxyapi.v1.SeqProxyApi.Search:output_type -> seqproxyapi.v1.SearchResponse
+	14, // 72: seqproxyapi.v1.SeqProxyApi.ComplexSearch:output_type -> seqproxyapi.v1.ComplexSearchResponse
+	27, // 73: seqproxyapi.v1.SeqProxyApi.GetAggregation:output_type -> seqproxyapi.v1.GetAggregationResponse
+	29, // 74: seqproxyapi.v1.SeqProxyApi.GetHistogram:output_type -> seqproxyapi.v1.GetHistogramResponse
+	5,  // 75: seqproxyapi.v1.SeqProxyApi.Fetch:output_type -> seqproxyapi.v1.Document
+	32, // 76: seqproxyapi.v1.SeqProxyApi.Mapping:output_type -> seqproxyapi.v1.MappingResponse
+	34, // 77: seqproxyapi.v1.SeqProxyApi.Status:output_type -> seqproxyapi.v1.StatusResponse
+	39, // 78: seqproxyapi.v1.SeqProxyApi.Export:output_type -> seqproxyapi.v1.ExportResponse
+	16, // 79: seqproxyapi.v1.SeqProxyApi.StartAsyncSearch:output_type -> seqproxyapi.v1.StartAsyncSearchResponse
+	18, // 80: seqproxyapi.v1.SeqProxyApi.FetchAsyncSearchResult:output_type -> seqproxyapi.v1.FetchAsyncSearchResultResponse
+	20, // 81: seqproxyapi.v1.SeqProxyApi.CancelAsyncSearch:output_type -> seqproxyapi.v1.CancelAsyncSearchResponse
+	22, // 82: seqproxyapi.v1.SeqProxyApi.DeleteAsyncSearch:output_type -> seqproxyapi.v1.DeleteAsyncSearchResponse
+	24, // 83: seqproxyapi.v1.SeqProxyApi.GetAsyncSearchesList:output_type -> seqproxyapi.v1.GetAsyncSearchesListResponse
+	39, // 84: seqproxyapi.v1.SeqProxyApi.ExportAsyncSearch:output_type -> seqproxyapi.v1.ExportResponse
+	71, // [71:85] is the sub-list for method output_type
+	57, // [57:71] is the sub-list for method input_type
+	57, // [57:57] is the sub-list for extension type_name
+	57, // [57:57] is the sub-list for extension extendee
+	0,  // [0:57] is the sub-list for field type_name
 }
 
 func init() { file_v1_seq_proxy_api_proto_init() }

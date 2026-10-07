@@ -2182,6 +2182,7 @@ type FetchAsyncSearchResultResponse struct {
 	DiskUsage     uint64                   `protobuf:"varint,8,opt,name=disk_usage,json=diskUsage,proto3" json:"disk_usage,omitempty"`
 	Meta          string                   `protobuf:"bytes,9,opt,name=meta,proto3" json:"meta,omitempty"`
 	Error         *Error                   `protobuf:"bytes,10,opt,name=error,proto3" json:"error,omitempty"`
+	DoneAt        *timestamppb.Timestamp   `protobuf:"bytes,12,opt,name=done_at,json=doneAt,proto3,oneof" json:"done_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2282,6 +2283,13 @@ func (x *FetchAsyncSearchResultResponse) GetMeta() string {
 func (x *FetchAsyncSearchResultResponse) GetError() *Error {
 	if x != nil {
 		return x.Error
+	}
+	return nil
+}
+
+func (x *FetchAsyncSearchResultResponse) GetDoneAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.DoneAt
 	}
 	return nil
 }
@@ -2874,6 +2882,7 @@ type GetAsyncSearchesListResponse_ListItem struct {
 	DiskUsage     uint64                   `protobuf:"varint,8,opt,name=disk_usage,json=diskUsage,proto3" json:"disk_usage,omitempty"`
 	OwnerName     string                   `protobuf:"bytes,9,opt,name=owner_name,json=ownerName,proto3" json:"owner_name,omitempty"`
 	Error         *string                  `protobuf:"bytes,10,opt,name=error,proto3,oneof" json:"error,omitempty"`
+	DoneAt        *timestamppb.Timestamp   `protobuf:"bytes,11,opt,name=done_at,json=doneAt,proto3,oneof" json:"done_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2976,6 +2985,13 @@ func (x *GetAsyncSearchesListResponse_ListItem) GetError() string {
 		return *x.Error
 	}
 	return ""
+}
+
+func (x *GetAsyncSearchesListResponse_ListItem) GetDoneAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.DoneAt
+	}
+	return nil
 }
 
 type GetEnvsResponse_Env struct {
@@ -3236,7 +3252,7 @@ const file_seqapi_v1_seq_api_proto_rawDesc = "" +
 	"\tsearch_id\x18\x01 \x01(\tR\bsearchId\x12\x14\n" +
 	"\x05limit\x18\x02 \x01(\x05R\x05limit\x12\x16\n" +
 	"\x06offset\x18\x03 \x01(\x05R\x06offset\x12&\n" +
-	"\x05order\x18\x04 \x01(\x0e2\x10.seqapi.v1.OrderR\x05order\"\x8a\x04\n" +
+	"\x05order\x18\x04 \x01(\x0e2\x10.seqapi.v1.OrderR\x05order\"\xd0\x04\n" +
 	"\x1eFetchAsyncSearchResultResponse\x124\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x1c.seqapi.v1.AsyncSearchStatusR\x06status\x12<\n" +
 	"\arequest\x18\x02 \x01(\v2\".seqapi.v1.StartAsyncSearchRequestR\arequest\x125\n" +
@@ -3252,8 +3268,11 @@ const file_seqapi_v1_seq_api_proto_rawDesc = "" +
 	"disk_usage\x18\b \x01(\x04R\tdiskUsage\x12\x12\n" +
 	"\x04meta\x18\t \x01(\tR\x04meta\x12&\n" +
 	"\x05error\x18\n" +
-	" \x01(\v2\x10.seqapi.v1.ErrorR\x05errorB\x0e\n" +
-	"\f_canceled_at\"\xc4\x01\n" +
+	" \x01(\v2\x10.seqapi.v1.ErrorR\x05error\x128\n" +
+	"\adone_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampH\x01R\x06doneAt\x88\x01\x01B\x0e\n" +
+	"\f_canceled_atB\n" +
+	"\n" +
+	"\b_done_at\"\xc4\x01\n" +
 	"\x1bGetAsyncSearchesListRequest\x129\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x1c.seqapi.v1.AsyncSearchStatusH\x00R\x06status\x88\x01\x01\x12\x14\n" +
 	"\x05limit\x18\x02 \x01(\x05R\x05limit\x12\x16\n" +
@@ -3261,10 +3280,10 @@ const file_seqapi_v1_seq_api_proto_rawDesc = "" +
 	"\n" +
 	"owner_name\x18\x04 \x01(\tH\x01R\townerName\x88\x01\x01B\t\n" +
 	"\a_statusB\r\n" +
-	"\v_owner_name\"\xf9\x04\n" +
+	"\v_owner_name\"\xbf\x05\n" +
 	"\x1cGetAsyncSearchesListResponse\x12L\n" +
 	"\bsearches\x18\x01 \x03(\v20.seqapi.v1.GetAsyncSearchesListResponse.ListItemR\bsearches\x12&\n" +
-	"\x05error\x18\x02 \x01(\v2\x10.seqapi.v1.ErrorR\x05error\x1a\xe2\x03\n" +
+	"\x05error\x18\x02 \x01(\v2\x10.seqapi.v1.ErrorR\x05error\x1a\xa8\x04\n" +
 	"\bListItem\x12\x1b\n" +
 	"\tsearch_id\x18\x01 \x01(\tR\bsearchId\x124\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x1c.seqapi.v1.AsyncSearchStatusR\x06status\x12<\n" +
@@ -3281,9 +3300,12 @@ const file_seqapi_v1_seq_api_proto_rawDesc = "" +
 	"\n" +
 	"owner_name\x18\t \x01(\tR\townerName\x12\x19\n" +
 	"\x05error\x18\n" +
-	" \x01(\tH\x01R\x05error\x88\x01\x01B\x0e\n" +
+	" \x01(\tH\x01R\x05error\x88\x01\x01\x128\n" +
+	"\adone_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampH\x02R\x06doneAt\x88\x01\x01B\x0e\n" +
 	"\f_canceled_atB\b\n" +
-	"\x06_error\"7\n" +
+	"\x06_errorB\n" +
+	"\n" +
+	"\b_done_at\"7\n" +
 	"\x18CancelAsyncSearchRequest\x12\x1b\n" +
 	"\tsearch_id\x18\x01 \x01(\tR\bsearchId\"\x1b\n" +
 	"\x19CancelAsyncSearchResponse\"7\n" +
@@ -3471,51 +3493,53 @@ var file_seqapi_v1_seq_api_proto_depIdxs = []int32{
 	51, // 49: seqapi.v1.FetchAsyncSearchResultResponse.expires_at:type_name -> google.protobuf.Timestamp
 	51, // 50: seqapi.v1.FetchAsyncSearchResultResponse.canceled_at:type_name -> google.protobuf.Timestamp
 	6,  // 51: seqapi.v1.FetchAsyncSearchResultResponse.error:type_name -> seqapi.v1.Error
-	5,  // 52: seqapi.v1.GetAsyncSearchesListRequest.status:type_name -> seqapi.v1.AsyncSearchStatus
-	49, // 53: seqapi.v1.GetAsyncSearchesListResponse.searches:type_name -> seqapi.v1.GetAsyncSearchesListResponse.ListItem
-	6,  // 54: seqapi.v1.GetAsyncSearchesListResponse.error:type_name -> seqapi.v1.Error
-	50, // 55: seqapi.v1.GetEnvsResponse.envs:type_name -> seqapi.v1.GetEnvsResponse.Env
-	51, // 56: seqapi.v1.Aggregation.Bucket.ts:type_name -> google.protobuf.Timestamp
-	5,  // 57: seqapi.v1.GetAsyncSearchesListResponse.ListItem.status:type_name -> seqapi.v1.AsyncSearchStatus
-	32, // 58: seqapi.v1.GetAsyncSearchesListResponse.ListItem.request:type_name -> seqapi.v1.StartAsyncSearchRequest
-	51, // 59: seqapi.v1.GetAsyncSearchesListResponse.ListItem.started_at:type_name -> google.protobuf.Timestamp
-	51, // 60: seqapi.v1.GetAsyncSearchesListResponse.ListItem.expires_at:type_name -> google.protobuf.Timestamp
-	51, // 61: seqapi.v1.GetAsyncSearchesListResponse.ListItem.canceled_at:type_name -> google.protobuf.Timestamp
-	11, // 62: seqapi.v1.SeqAPIService.Search:input_type -> seqapi.v1.SearchRequest
-	13, // 63: seqapi.v1.SeqAPIService.GetEvent:input_type -> seqapi.v1.GetEventRequest
-	15, // 64: seqapi.v1.SeqAPIService.GetHistogram:input_type -> seqapi.v1.GetHistogramRequest
-	17, // 65: seqapi.v1.SeqAPIService.GetAggregation:input_type -> seqapi.v1.GetAggregationRequest
-	20, // 66: seqapi.v1.SeqAPIService.GetFields:input_type -> seqapi.v1.GetFieldsRequest
-	20, // 67: seqapi.v1.SeqAPIService.GetPinnedFields:input_type -> seqapi.v1.GetFieldsRequest
-	24, // 68: seqapi.v1.SeqAPIService.GetLimits:input_type -> seqapi.v1.GetLimitsRequest
-	26, // 69: seqapi.v1.SeqAPIService.Status:input_type -> seqapi.v1.StatusRequest
-	30, // 70: seqapi.v1.SeqAPIService.GetLogsLifespan:input_type -> seqapi.v1.GetLogsLifespanRequest
-	32, // 71: seqapi.v1.SeqAPIService.StartAsyncSearch:input_type -> seqapi.v1.StartAsyncSearchRequest
-	34, // 72: seqapi.v1.SeqAPIService.FetchAsyncSearchResult:input_type -> seqapi.v1.FetchAsyncSearchResultRequest
-	36, // 73: seqapi.v1.SeqAPIService.GetAsyncSearchesList:input_type -> seqapi.v1.GetAsyncSearchesListRequest
-	38, // 74: seqapi.v1.SeqAPIService.CancelAsyncSearch:input_type -> seqapi.v1.CancelAsyncSearchRequest
-	40, // 75: seqapi.v1.SeqAPIService.DeleteAsyncSearch:input_type -> seqapi.v1.DeleteAsyncSearchRequest
-	42, // 76: seqapi.v1.SeqAPIService.GetEnvs:input_type -> seqapi.v1.GetEnvsRequest
-	12, // 77: seqapi.v1.SeqAPIService.Search:output_type -> seqapi.v1.SearchResponse
-	14, // 78: seqapi.v1.SeqAPIService.GetEvent:output_type -> seqapi.v1.GetEventResponse
-	16, // 79: seqapi.v1.SeqAPIService.GetHistogram:output_type -> seqapi.v1.GetHistogramResponse
-	18, // 80: seqapi.v1.SeqAPIService.GetAggregation:output_type -> seqapi.v1.GetAggregationResponse
-	21, // 81: seqapi.v1.SeqAPIService.GetFields:output_type -> seqapi.v1.GetFieldsResponse
-	21, // 82: seqapi.v1.SeqAPIService.GetPinnedFields:output_type -> seqapi.v1.GetFieldsResponse
-	25, // 83: seqapi.v1.SeqAPIService.GetLimits:output_type -> seqapi.v1.GetLimitsResponse
-	27, // 84: seqapi.v1.SeqAPIService.Status:output_type -> seqapi.v1.StatusResponse
-	31, // 85: seqapi.v1.SeqAPIService.GetLogsLifespan:output_type -> seqapi.v1.GetLogsLifespanResponse
-	33, // 86: seqapi.v1.SeqAPIService.StartAsyncSearch:output_type -> seqapi.v1.StartAsyncSearchResponse
-	35, // 87: seqapi.v1.SeqAPIService.FetchAsyncSearchResult:output_type -> seqapi.v1.FetchAsyncSearchResultResponse
-	37, // 88: seqapi.v1.SeqAPIService.GetAsyncSearchesList:output_type -> seqapi.v1.GetAsyncSearchesListResponse
-	39, // 89: seqapi.v1.SeqAPIService.CancelAsyncSearch:output_type -> seqapi.v1.CancelAsyncSearchResponse
-	41, // 90: seqapi.v1.SeqAPIService.DeleteAsyncSearch:output_type -> seqapi.v1.DeleteAsyncSearchResponse
-	43, // 91: seqapi.v1.SeqAPIService.GetEnvs:output_type -> seqapi.v1.GetEnvsResponse
-	77, // [77:92] is the sub-list for method output_type
-	62, // [62:77] is the sub-list for method input_type
-	62, // [62:62] is the sub-list for extension type_name
-	62, // [62:62] is the sub-list for extension extendee
-	0,  // [0:62] is the sub-list for field type_name
+	51, // 52: seqapi.v1.FetchAsyncSearchResultResponse.done_at:type_name -> google.protobuf.Timestamp
+	5,  // 53: seqapi.v1.GetAsyncSearchesListRequest.status:type_name -> seqapi.v1.AsyncSearchStatus
+	49, // 54: seqapi.v1.GetAsyncSearchesListResponse.searches:type_name -> seqapi.v1.GetAsyncSearchesListResponse.ListItem
+	6,  // 55: seqapi.v1.GetAsyncSearchesListResponse.error:type_name -> seqapi.v1.Error
+	50, // 56: seqapi.v1.GetEnvsResponse.envs:type_name -> seqapi.v1.GetEnvsResponse.Env
+	51, // 57: seqapi.v1.Aggregation.Bucket.ts:type_name -> google.protobuf.Timestamp
+	5,  // 58: seqapi.v1.GetAsyncSearchesListResponse.ListItem.status:type_name -> seqapi.v1.AsyncSearchStatus
+	32, // 59: seqapi.v1.GetAsyncSearchesListResponse.ListItem.request:type_name -> seqapi.v1.StartAsyncSearchRequest
+	51, // 60: seqapi.v1.GetAsyncSearchesListResponse.ListItem.started_at:type_name -> google.protobuf.Timestamp
+	51, // 61: seqapi.v1.GetAsyncSearchesListResponse.ListItem.expires_at:type_name -> google.protobuf.Timestamp
+	51, // 62: seqapi.v1.GetAsyncSearchesListResponse.ListItem.canceled_at:type_name -> google.protobuf.Timestamp
+	51, // 63: seqapi.v1.GetAsyncSearchesListResponse.ListItem.done_at:type_name -> google.protobuf.Timestamp
+	11, // 64: seqapi.v1.SeqAPIService.Search:input_type -> seqapi.v1.SearchRequest
+	13, // 65: seqapi.v1.SeqAPIService.GetEvent:input_type -> seqapi.v1.GetEventRequest
+	15, // 66: seqapi.v1.SeqAPIService.GetHistogram:input_type -> seqapi.v1.GetHistogramRequest
+	17, // 67: seqapi.v1.SeqAPIService.GetAggregation:input_type -> seqapi.v1.GetAggregationRequest
+	20, // 68: seqapi.v1.SeqAPIService.GetFields:input_type -> seqapi.v1.GetFieldsRequest
+	20, // 69: seqapi.v1.SeqAPIService.GetPinnedFields:input_type -> seqapi.v1.GetFieldsRequest
+	24, // 70: seqapi.v1.SeqAPIService.GetLimits:input_type -> seqapi.v1.GetLimitsRequest
+	26, // 71: seqapi.v1.SeqAPIService.Status:input_type -> seqapi.v1.StatusRequest
+	30, // 72: seqapi.v1.SeqAPIService.GetLogsLifespan:input_type -> seqapi.v1.GetLogsLifespanRequest
+	32, // 73: seqapi.v1.SeqAPIService.StartAsyncSearch:input_type -> seqapi.v1.StartAsyncSearchRequest
+	34, // 74: seqapi.v1.SeqAPIService.FetchAsyncSearchResult:input_type -> seqapi.v1.FetchAsyncSearchResultRequest
+	36, // 75: seqapi.v1.SeqAPIService.GetAsyncSearchesList:input_type -> seqapi.v1.GetAsyncSearchesListRequest
+	38, // 76: seqapi.v1.SeqAPIService.CancelAsyncSearch:input_type -> seqapi.v1.CancelAsyncSearchRequest
+	40, // 77: seqapi.v1.SeqAPIService.DeleteAsyncSearch:input_type -> seqapi.v1.DeleteAsyncSearchRequest
+	42, // 78: seqapi.v1.SeqAPIService.GetEnvs:input_type -> seqapi.v1.GetEnvsRequest
+	12, // 79: seqapi.v1.SeqAPIService.Search:output_type -> seqapi.v1.SearchResponse
+	14, // 80: seqapi.v1.SeqAPIService.GetEvent:output_type -> seqapi.v1.GetEventResponse
+	16, // 81: seqapi.v1.SeqAPIService.GetHistogram:output_type -> seqapi.v1.GetHistogramResponse
+	18, // 82: seqapi.v1.SeqAPIService.GetAggregation:output_type -> seqapi.v1.GetAggregationResponse
+	21, // 83: seqapi.v1.SeqAPIService.GetFields:output_type -> seqapi.v1.GetFieldsResponse
+	21, // 84: seqapi.v1.SeqAPIService.GetPinnedFields:output_type -> seqapi.v1.GetFieldsResponse
+	25, // 85: seqapi.v1.SeqAPIService.GetLimits:output_type -> seqapi.v1.GetLimitsResponse
+	27, // 86: seqapi.v1.SeqAPIService.Status:output_type -> seqapi.v1.StatusResponse
+	31, // 87: seqapi.v1.SeqAPIService.GetLogsLifespan:output_type -> seqapi.v1.GetLogsLifespanResponse
+	33, // 88: seqapi.v1.SeqAPIService.StartAsyncSearch:output_type -> seqapi.v1.StartAsyncSearchResponse
+	35, // 89: seqapi.v1.SeqAPIService.FetchAsyncSearchResult:output_type -> seqapi.v1.FetchAsyncSearchResultResponse
+	37, // 90: seqapi.v1.SeqAPIService.GetAsyncSearchesList:output_type -> seqapi.v1.GetAsyncSearchesListResponse
+	39, // 91: seqapi.v1.SeqAPIService.CancelAsyncSearch:output_type -> seqapi.v1.CancelAsyncSearchResponse
+	41, // 92: seqapi.v1.SeqAPIService.DeleteAsyncSearch:output_type -> seqapi.v1.DeleteAsyncSearchResponse
+	43, // 93: seqapi.v1.SeqAPIService.GetEnvs:output_type -> seqapi.v1.GetEnvsResponse
+	79, // [79:94] is the sub-list for method output_type
+	64, // [64:79] is the sub-list for method input_type
+	64, // [64:64] is the sub-list for extension type_name
+	64, // [64:64] is the sub-list for extension extendee
+	0,  // [0:64] is the sub-list for field type_name
 }
 
 func init() { file_seqapi_v1_seq_api_proto_init() }
