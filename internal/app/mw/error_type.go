@@ -11,6 +11,8 @@ const (
 	respServerError
 )
 
+const unknownError = "unknown error"
+
 // gRPCRespErrorTypeFromStatusCode returns response error type depending on gRPC status code.
 func gRPCRespErrorTypeFromStatusCode(statusCode codes.Code) respErrorType {
 	switch statusCode {
@@ -35,4 +37,11 @@ func httpRespErrorTypeFromStatusCode(statusCode int) respErrorType {
 	default:
 		return respServerError
 	}
+}
+
+func processErrorMessage(err string) string {
+	if err == "" {
+		return unknownError
+	}
+	return err
 }

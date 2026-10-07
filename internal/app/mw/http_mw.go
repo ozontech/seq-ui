@@ -77,16 +77,11 @@ func HTTPLogInterceptor(l *tracing.Logger) func(next http.Handler) http.Handler 
 			reqLogArgs.statusCode = http.StatusText(statusCodeInt)
 			reqLogArgs.took = took
 
-			if errType == respClientError { // nolint:staticcheck
-				reqLogArgs.clientError = ww.ErrorMessage
-				if reqLogArgs.clientError == "" {
-					reqLogArgs.clientError = "unknown error"
-				}
-			} else if errType == respServerError {
-				reqLogArgs.serverError = ww.ErrorMessage
-				if reqLogArgs.serverError == "" {
-					reqLogArgs.serverError = "unknown error"
-				}
+			switch errType {
+			case respClientError:
+				reqLogArgs.clientError = processErrorMessage(ww.ErrorMessage)
+			case respServerError:
+				reqLogArgs.serverError = processErrorMessage(ww.ErrorMessage)
 			}
 
 			logRequestAfterHandler(r.Context(), l, reqLogArgs)
