@@ -11,7 +11,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
@@ -77,7 +77,7 @@ func TestServeGetFields(t *testing.T) {
 					Fields: fAPI,
 				},
 			},
-			cfg: config.SeqAPIOptions{
+			cfg: config.SeqAPIGlobalOptions{
 				SystemFields: []config.Field{
 					{Name: "field1", Type: "keyword"},
 					{Name: "field2", Type: "text"},
@@ -114,7 +114,7 @@ func TestServeGetFields(t *testing.T) {
 
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					SeqAPIOptions: &tt.cfg,
+					GlobalOptions: tt.cfg,
 				},
 			}
 
@@ -172,7 +172,7 @@ func TestServeGetPinnedFields(t *testing.T) {
 
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					SeqAPIOptions: &config.SeqAPIOptions{
+					GlobalOptions: config.SeqAPIGlobalOptions{
 						PinnedFields: tt.fields,
 					},
 				},

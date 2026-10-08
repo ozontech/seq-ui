@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/metric"
@@ -17,13 +17,13 @@ import (
 )
 
 type seqProxyDownloader struct {
-	cfg    config.SeqProxyDownloader
+	cfg    config.DownloadParams
 	client seqdb.Client
 }
 
 const defaultDelay = 1 * time.Second
 
-func newSeqProxyDownloader(client seqdb.Client, cfg config.SeqProxyDownloader) *seqProxyDownloader {
+func newSeqProxyDownloader(client seqdb.Client, cfg config.DownloadParams) *seqProxyDownloader {
 	if cfg.Delay <= 0 {
 		cfg.Delay = defaultDelay
 	}

@@ -24,7 +24,8 @@ import (
 	massexport_v1 "github.com/ozontech/seq-ui/internal/api/massexport/v1"
 	seqapi_v1 "github.com/ozontech/seq-ui/internal/api/seqapi/v1"
 	userprofile_v1 "github.com/ozontech/seq-ui/internal/api/userprofile/v1"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/loader"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/server"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
@@ -76,7 +77,7 @@ func run(ctx context.Context) {
 		logger.Warn("app uses the default config file, to provide your own config use -config flag")
 	}
 
-	cfg, err := config.FromFile(*configPath)
+	cfg, err := loader.FromFile(*configPath)
 	if err != nil {
 		logger.Fatal("read config file error", zap.Error(err))
 	}
@@ -92,9 +93,20 @@ func run(ctx context.Context) {
 			zap.Float64("sampler_param", tracingCfg.SamplerParam))
 	}
 
-	registrar := initApp(ctx, cfg)
+	logger.Info("initializing caches")
+	caches, err := cache.FromConfig(ctx, cfg.Cache)
+	if err != nil {
+		logger.Fatal("failed to init caches", zap.Error(err))
+	}
 
-	serv, err := server.New(ctx, cfg.Server, registrar)
+	var oidcCache cache.Cache
+	if cfg.Server.Auth != nil && cfg.Server.Auth.OIDC != nil {
+		oidcCache = caches[cfg.Server.Auth.OIDC.CacheID]
+	}
+
+	registrar := initApp(ctx, cfg, caches)
+
+	serv, err := server.New(ctx, cfg.Server, registrar, oidcCache)
 	if err != nil {
 		logger.Fatal("app init error", zap.Error(err))
 	}
@@ -106,61 +118,45 @@ func run(ctx context.Context) {
 	}
 }
 
-func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
+func initApp(ctx context.Context, cfg config.Config, caches map[string]cache.Cache) *api.Registrar {
 	logger.Info("initializing seq-db clients")
 	seqDBClients, err := initSeqDBClients(ctx, cfg)
 	if err != nil {
-		logger.Fatal("failed to init seq-db client", zap.Error(err))
+		logger.Fatal("failed to init seq-db clients", zap.Error(err))
 	}
 
-	defaultClientID := config.DefaultSeqDBClientID
-	if len(cfg.Handlers.SeqAPI.Envs) > 0 {
-		defaultClientID = cfg.Handlers.SeqAPI.Envs[cfg.Handlers.SeqAPI.DefaultEnv].SeqDB
-	}
-
-	defaultClient, exists := seqDBClients[defaultClientID]
-	if !exists {
-		logger.Fatal("default seq-db client not found",
-			zap.String("clientID", defaultClientID),
-		)
-	}
-
-	var massExportV1 *massexport_v1.MassExport
-	if cfg.Handlers.MassExport != nil {
-		exportServer, err := initExportService(ctx, *cfg.Handlers.MassExport, defaultClient)
-		if err != nil {
-			logger.Fatal("can't init export server", zap.Error(err))
-		}
-
-		massExportV1 = massexport_v1.New(exportServer)
-	}
-
-	logger.Info("initializing inmemory with redis seqapi cache")
-	inmemWithRedisCache, err := cache.NewInmemoryWithRedisOrInmemory(ctx, cfg.Server.Cache)
+	logger.Info("initializing clickhouse clients")
+	chClients, err := initClickHouseClients(ctx, cfg)
 	if err != nil {
-		logger.Fatal("failed to init inmemory with redis seqapi cache", zap.Error(err))
-	}
-
-	logger.Info("initializing redis seqapi cache")
-	redisCache, err := cache.NewRedisOrInmemory(ctx, cfg.Server.Cache)
-	if err != nil {
-		logger.Fatal("failed to init redis seqapi cache", zap.Error(err))
+		logger.Fatal("failed to init clickhouse clients", zap.Error(err))
 	}
 
 	logger.Info("initializing db")
-	db, err := initDb(ctx, cfg.Server.DB)
+	db, err := initDb(ctx, cfg.DB)
 	if err != nil {
 		logger.Fatal("failed to init db", zap.Error(err))
 	}
 
+	var massExportV1 *massexport_v1.MassExport
+	if cfg.Handlers.MassExport != nil {
+		me := cfg.Handlers.MassExport
+		redisCfg := cfg.Cache.RedisByID(me.SessionStore.RedisID)
+
+		exportServer, err := initExportService(ctx, *me, redisCfg, seqDBClients[me.SeqDBID])
+		if err != nil {
+			logger.Fatal("can't init export server", zap.Error(err))
+		}
+		massExportV1 = massexport_v1.New(exportServer)
+	}
+
 	var (
-		adminV1              *admin_v1.Admin
-		asyncSearchesService asyncsearches.Service
-		userProfileV1        *userprofile_v1.UserProfile
-		dashboardsV1         *dashboards_v1.Dashboards
+		adminV1          *admin_v1.Admin
+		asyncSearchesSvc asyncsearches.Service
+		userProfileV1    *userprofile_v1.UserProfile
+		dashboardsV1     *dashboards_v1.Dashboards
 	)
 	if db != nil {
-		repo := repository.New(db, cfg.Server.DB.RequestTimeout)
+		repo := repository.New(db, cfg.DB.RequestTimeout)
 		userProfilesSvc := userprofile.New(repo.UserProfiles, repo.FavoriteQueries)
 		dashboardsSvc := dashboards.New(repo.Dashboards)
 		profiles.InitProfiles(repo.UserProfiles.GetOrCreate)
@@ -168,14 +164,15 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 		userProfileV1 = userprofile_v1.New(userProfilesSvc)
 		dashboardsV1 = dashboards_v1.New(dashboardsSvc)
 
-		asyncSearchesService = asyncsearches.New(ctx, repo, defaultClient, cfg.Handlers.AsyncSearch)
+		if cfg.Handlers.AsyncSearch != nil {
+			asyncSearchesSvc = asyncsearches.New(ctx, repo, seqDBClients[cfg.Handlers.AsyncSearch.SeqDBID], *cfg.Handlers.AsyncSearch)
+		}
 
 		if cfg.Handlers.Admin != nil {
 			logger.Info("initializing redis admin cache")
-			adminCache, err := cache.NewRedis(ctx, cfg.Server.Cache.Redis)
-			if err != nil {
-				logger.Warn("failed to init redis admin cache, admin will run without cache", zap.Error(err))
-			} else if adminCache == nil {
+
+			adminCache := caches[cfg.Handlers.Admin.RedisID]
+			if adminCache == nil {
 				logger.Info("redis cache config is not set, admin will run without cache")
 			}
 
@@ -184,29 +181,26 @@ func initApp(ctx context.Context, cfg config.Config) *api.Registrar {
 		}
 	}
 
-	seqApiV1 := seqapi_v1.New(cfg.Handlers.SeqAPI, seqDBClients, inmemWithRedisCache, redisCache, asyncSearchesService)
-
-	logger.Info("initializing clickhouse")
-	ch, err := initClickHouse(ctx, cfg.Server.CH)
-	if err != nil {
-		logger.Fatal("failed to init clickhouse", zap.Error(err))
-	}
+	seqApiCache := caches[cfg.Handlers.SeqAPI.CacheID]
+	seqApiRedisCache := caches[cfg.Handlers.SeqAPI.RedisID]
+	seqApiV1 := seqapi_v1.New(&cfg.Handlers.SeqAPI, seqDBClients, seqApiCache, seqApiRedisCache, asyncSearchesSvc)
 
 	var errorGroupsV1 *errorgroups_v1.ErrorGroups
-	if ch != nil {
-		repo := repositorych.New(ch, cfg.Server.CH.Sharded, cfg.Handlers.ErrorGroups.QueryFilter)
+	if cfg.Handlers.ErrorGroups != nil {
+		chCfg := cfg.Clients.ClickHouseByID(cfg.Handlers.ErrorGroups.CHID)
+		repo := repositorych.New(chClients[cfg.Handlers.ErrorGroups.CHID], chCfg.Sharded, cfg.Handlers.ErrorGroups.QueryFilter)
 		svc := errorgroups.New(repo, cfg.Handlers.ErrorGroups.LogTagsMapping)
 
-		errorGroupsV1 = errorgroups_v1.New(svc)
+		errorGroupsV1 = errorgroups_v1.New(svc, chClients)
 	}
 
 	return api.NewRegistrar(adminV1, seqApiV1, userProfileV1, dashboardsV1, massExportV1, errorGroupsV1)
 }
 
 func initSeqDBClients(ctx context.Context, cfg config.Config) (map[string]seqdb.Client, error) {
-	clients := make(map[string]seqdb.Client)
+	clients := make(map[string]seqdb.Client, len(cfg.Clients.SeqDB))
 	for _, clientCfg := range cfg.Clients.SeqDB {
-		client, err := createSeqBDClient(ctx, clientCfg, cfg.Handlers.SeqAPI)
+		client, err := createSeqBDClient(ctx, &clientCfg, &cfg.Handlers.SeqAPI)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create seq_db client %s: %w", clientCfg.ID, err)
 		}
@@ -216,8 +210,17 @@ func initSeqDBClients(ctx context.Context, cfg config.Config) (map[string]seqdb.
 	return clients, nil
 }
 
-func createSeqBDClient(ctx context.Context, cfg config.SeqDBClient, seqAPI config.SeqAPI) (seqdb.Client, error) {
-	clientMaxRecvMsgSize := cfg.AvgDocSize * 1024 * int(seqAPI.MaxSearchLimit)
+func createSeqBDClient(ctx context.Context, cfg *config.SeqDBClient, seqAPI *config.SeqAPI) (seqdb.Client, error) {
+	maxSearchLimit := int(seqAPI.Options.Limits.MaxSearchLimit)
+	for _, env := range seqAPI.Envs {
+		if env.SeqDBID != cfg.ID {
+			continue
+		}
+		if l := int(env.Options.Limits.MaxSearchLimit); l > maxSearchLimit {
+			maxSearchLimit = l
+		}
+	}
+	clientMaxRecvMsgSize := cfg.AvgDocSize * 1024 * maxSearchLimit
 	clientMaxRecvMsgSize = max(clientMaxRecvMsgSize, defaultClientMaxRecvMsgSize)
 
 	clientParams := seqdb.ClientParams{
@@ -244,12 +247,10 @@ func initDb(ctx context.Context, cfg *config.DB) (*pgxpool.Pool, error) {
 		logger.Warn("db config is nil, running without db")
 		return nil, nil
 	}
-
 	pgxCfg, err := pgxpool.ParseConfig(cfg.ConnString())
 	if err != nil {
 		return nil, fmt.Errorf("can't parse connection string: %w", err)
 	}
-
 	if !*cfg.UsePreparedStatements {
 		// By default, pgx uses the QueryExecModeCacheStatement and automatically prepares and caches prepared statements.
 		// However, this may be incompatible with proxies such as PGBouncer.
@@ -265,8 +266,8 @@ func initDb(ctx context.Context, cfg *config.DB) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-func initExportService(ctx context.Context, cfg config.MassExport, client seqdb.Client) (massexport.Service, error) {
-	sessionStore, err := sessionstore.NewRedisSessionStore(ctx, cfg.SessionStore)
+func initExportService(ctx context.Context, cfg config.MassExport, redisCfg *config.Redis, client seqdb.Client) (massexport.Service, error) {
+	sessionStore, err := sessionstore.NewRedisSessionStore(ctx, redisCfg, cfg.SessionStore.ExportLifetime)
 	if err != nil {
 		return nil, fmt.Errorf("init session store: %w", err)
 	}
@@ -281,12 +282,20 @@ func initExportService(ctx context.Context, cfg config.MassExport, client seqdb.
 	return massexport.NewService(ctx, cfg, sessionStore, fileStore, client)
 }
 
-func initClickHouse(ctx context.Context, cfg *config.CH) (driver.Conn, error) {
-	if cfg == nil {
-		logger.Warn("clickhouse config is nil, running without clickhouse")
-		return nil, nil
+func initClickHouseClients(ctx context.Context, cfg config.Config) (map[string]driver.Conn, error) {
+	clients := make(map[string]driver.Conn, len(cfg.Clients.ClickHouse))
+	for _, clientCfg := range cfg.Clients.ClickHouse {
+		client, err := createClickHouseClient(ctx, &clientCfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create clickhouse client %s: %w", clientCfg.ID, err)
+		}
+		clients[clientCfg.ID] = client
 	}
 
+	return clients, nil
+}
+
+func createClickHouseClient(ctx context.Context, cfg *config.CHClient) (driver.Conn, error) {
 	conn, err := clickhouse.Open(&clickhouse.Options{
 		Addr: cfg.Addrs,
 		Auth: clickhouse.Auth{

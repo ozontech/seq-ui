@@ -12,7 +12,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/api_error"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
@@ -62,7 +62,7 @@ func TestSearch(t *testing.T) {
 				},
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxSearchLimit:            5,
 					MaxAggregationsPerRequest: 5,
 				},
@@ -81,7 +81,7 @@ func TestSearch(t *testing.T) {
 				Limit: 10,
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxSearchLimit: 5,
 				},
 			},
@@ -98,7 +98,7 @@ func TestSearch(t *testing.T) {
 				},
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxSearchLimit:            5,
 					MaxAggregationsPerRequest: 2,
 				},
@@ -115,7 +115,7 @@ func TestSearch(t *testing.T) {
 				Offset: 11,
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxSearchLimit:       5,
 					MaxSearchOffsetLimit: 10,
 				},
@@ -145,7 +145,7 @@ func TestSearch(t *testing.T) {
 				},
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxSearchLimit:      5,
 					MaxSearchTotalLimit: int64(limit),
 				},
@@ -161,7 +161,7 @@ func TestSearch(t *testing.T) {
 				Offset: 0,
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxSearchLimit: 5,
 				},
 			}),

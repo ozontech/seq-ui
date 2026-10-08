@@ -13,7 +13,7 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	"go.uber.org/zap"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/tls"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/logger"
@@ -42,31 +42,14 @@ type oidcProvider struct {
 	allowedClients []string
 }
 
-func NewOIDCProvider(ctx context.Context, cfg *config.OIDC, cacheCfg config.Cache) (OIDCProvider, error) {
+func NewOIDCProvider(ctx context.Context, cfg *config.OIDC, oidcCache cache.Cache) (OIDCProvider, error) {
 	var (
-		err       error
-		oidcCache cache.Cache
-		oidcCtx   context.Context
+		err     error
+		oidcCtx context.Context
 	)
 
-	if cfg.CacheSecretKey != "" {
-		logger.Info("initializing oidc cache")
-		oidcCache, err = cache.NewInmemoryWithRedisOrInmemory(ctx, cacheCfg)
-		if err != nil {
-			return nil, fmt.Errorf("init oidc cache: %w", err)
-		}
-	}
-
 	if !cfg.SkipVerify {
-		oidcCtx, err = newHTTPContext(
-			context.Background(),
-			httpContextCfg{
-				rootCA:        cfg.RootCA,
-				caCert:        cfg.CACert,
-				privateKey:    cfg.PrivateKey,
-				sslSkipVerify: cfg.SSLSkipVerify,
-			},
-		)
+		oidcCtx, err = newHTTPContext(context.Background(), cfg.TLS)
 		if err != nil {
 			return nil, err
 		}
@@ -178,31 +161,24 @@ func (p *oidcProvider) checkClients(clients []string) error {
 	return fmt.Errorf("no allowed client found (clients: %v; allowed clients: %v)", clients, p.allowedClients)
 }
 
-type httpContextCfg struct {
-	rootCA        string
-	caCert        string
-	privateKey    string
-	sslSkipVerify bool
-}
-
-func newHTTPContext(ctx context.Context, conf httpContextCfg) (context.Context, error) {
+func newHTTPContext(ctx context.Context, cfg *config.TLS) (context.Context, error) {
 	hc := &http.Client{
 		Timeout: oidcClientTimeout,
 	}
-	if conf.isZero() {
+	if cfg == nil {
 		return oidc.ClientContext(ctx, hc), nil
 	}
 	b := tls.NewConfigBuilder()
-	if conf.sslSkipVerify {
-		b.SetInsecureSkipVerify(conf.sslSkipVerify)
-	} else if !conf.sslSkipVerify && (conf.rootCA != "" || conf.caCert != "" || conf.privateKey != "") {
-		if conf.rootCA != "" {
-			if err := b.AppendCARoot(conf.rootCA); err != nil {
+	if cfg.Insecure {
+		b.SetInsecureSkipVerify(cfg.Insecure)
+	} else if !cfg.Insecure && (cfg.RootCA != "" || cfg.CACert != "" || cfg.PrivateKey != "") {
+		if cfg.RootCA != "" {
+			if err := b.AppendCARoot(cfg.RootCA); err != nil {
 				return nil, fmt.Errorf("can't append CA root: %w", err)
 			}
 		}
-		if conf.caCert != "" || conf.privateKey != "" {
-			if err := b.AppendX509KeyPair(conf.caCert, conf.privateKey); err != nil {
+		if cfg.CACert != "" || cfg.PrivateKey != "" {
+			if err := b.AppendX509KeyPair(cfg.CACert, cfg.PrivateKey); err != nil {
 				return nil, fmt.Errorf("can't append key pair: %w", err)
 			}
 		}
@@ -211,10 +187,6 @@ func newHTTPContext(ctx context.Context, conf httpContextCfg) (context.Context, 
 		TLSClientConfig: b.Build(),
 	}
 	return oidc.ClientContext(ctx, hc), nil
-}
-
-func (c httpContextCfg) isZero() bool {
-	return c.rootCA == "" && c.caCert == "" && c.privateKey == "" && !c.sslSkipVerify
 }
 
 func hashToken(token, secret string) string {

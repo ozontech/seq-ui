@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
@@ -20,7 +20,7 @@ func TestGetFields(t *testing.T) {
 	tests := []struct {
 		name string
 
-		cfg       config.SeqAPIOptions
+		cfg       config.SeqAPIGlobalOptions
 		seqDBResp *seqapi.GetFieldsResponse
 		wantResp  *seqapi.GetFieldsResponse
 
@@ -55,7 +55,7 @@ func TestGetFields(t *testing.T) {
 		},
 		{
 			name: "ok_with_system_and_pinned_fields",
-			cfg: config.SeqAPIOptions{
+			cfg: config.SeqAPIGlobalOptions{
 				SystemFields: []config.Field{
 					{Name: "field1", Type: "keyword"},
 					{Name: "field2", Type: "text"},
@@ -121,7 +121,7 @@ func TestGetFields(t *testing.T) {
 					SeqDB: seqDbMock,
 				},
 				Cfg: config.SeqAPI{
-					SeqAPIOptions: &tt.cfg,
+					GlobalOptions: tt.cfg,
 				},
 			}
 
@@ -173,7 +173,7 @@ func TestGetFieldsCached(t *testing.T) {
 
 	seqData := test.APITestData{
 		Cfg: config.SeqAPI{
-			SeqAPIOptions: &config.SeqAPIOptions{
+			GlobalOptions: config.SeqAPIGlobalOptions{
 				FieldsCacheTTL: ttl,
 			},
 		},
@@ -222,7 +222,7 @@ func TestGetPinnedFields(t *testing.T) {
 
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					SeqAPIOptions: &config.SeqAPIOptions{
+					GlobalOptions: config.SeqAPIGlobalOptions{
 						PinnedFields: tt.fields,
 					},
 				},

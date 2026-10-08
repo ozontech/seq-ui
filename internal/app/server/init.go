@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/ozontech/seq-ui/internal/api"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/mw"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/tracing"
@@ -29,8 +30,17 @@ var defaultCORSAllowedMethods = []string{"HEAD", "GET", "POST", "PATCH", "DELETE
 
 func (s *Server) init(ctx context.Context, registrar *api.Registrar) error {
 	var err error
+	var jwtSecretKey string
+	var oidcCfg *config.OIDC
 
-	s.authPrvds, err = mw.NewAuthProviders(ctx, s.config.JWTSecretKey, s.config.OIDC, s.config.Cache)
+	if s.config.Auth != nil {
+		if s.config.Auth.JWT != nil {
+			jwtSecretKey = s.config.Auth.JWT.SecretKey
+		}
+		oidcCfg = s.config.Auth.OIDC
+	}
+
+	s.authPrvds, err = mw.NewAuthProviders(ctx, jwtSecretKey, oidcCfg, s.oidcCache)
 	if err != nil {
 		return err
 	}
@@ -46,7 +56,7 @@ func (s *Server) init(ctx context.Context, registrar *api.Registrar) error {
 
 	err = s.prepareDebugServer(ctx)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	return nil
@@ -54,22 +64,22 @@ func (s *Server) init(ctx context.Context, registrar *api.Registrar) error {
 
 // setupCORS applies CORS policies set in config to the provided mux.
 func (s *Server) setupCORS(mux *chi.Mux) {
-	allowedOrigins := s.config.CORS.AllowedOrigins
+	allowedOrigins := s.config.HTTP.CORS.AllowedOrigins
 	if len(allowedOrigins) == 0 {
 		allowedOrigins = append(allowedOrigins, defaultCORSAllowedOrigins)
 	}
-	allowedMethods := s.config.CORS.AllowedMethods
+	allowedMethods := s.config.HTTP.CORS.AllowedMethods
 	if len(allowedMethods) == 0 {
 		allowedMethods = append(allowedMethods, defaultCORSAllowedMethods...)
 	}
 	mux.Use(cors.Handler(cors.Options{
 		AllowedOrigins:     allowedOrigins,
 		AllowedMethods:     allowedMethods,
-		AllowedHeaders:     s.config.CORS.AllowedHeaders,
-		ExposedHeaders:     s.config.CORS.ExposedHeaders,
-		AllowCredentials:   s.config.CORS.AllowCredentials,
-		MaxAge:             s.config.CORS.MaxAge,
-		OptionsPassthrough: s.config.CORS.OptionsPassthrough,
+		AllowedHeaders:     s.config.HTTP.CORS.AllowedHeaders,
+		ExposedHeaders:     s.config.HTTP.CORS.ExposedHeaders,
+		AllowCredentials:   s.config.HTTP.CORS.AllowCredentials,
+		MaxAge:             s.config.HTTP.CORS.MaxAge,
+		OptionsPassthrough: s.config.HTTP.CORS.OptionsPassthrough,
 	}))
 }
 
@@ -130,7 +140,7 @@ func (s *Server) prepareGRPCServer(registrar *api.Registrar) {
 
 	opts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(grpc_mw.ChainUnaryServer(interceptors...)),
-		grpc.ConnectionTimeout(s.config.GRPCConnectionTimeout),
+		grpc.ConnectionTimeout(s.config.GRPC.ConnectionTimeout),
 	}
 	s.grpcServer = grpc.NewServer(opts...)
 
@@ -143,7 +153,7 @@ func (s *Server) prepareGRPCServer(registrar *api.Registrar) {
 // prepareHTTPServer prepares HTTP server with applied CORS policies and added interceptors.
 func (s *Server) prepareHTTPServer(ctx context.Context, registrar *api.Registrar) {
 	mux := chi.NewMux()
-	if s.config.CORS != nil {
+	if s.config.HTTP.CORS != nil {
 		s.setupCORS(mux)
 	}
 	interceptors := chi.Middlewares{
@@ -172,7 +182,7 @@ func (s *Server) prepareHTTPServer(ctx context.Context, registrar *api.Registrar
 // prepareHTTPMux prepares debug HTTP server mux with applied CORS policies and added interceptors.
 func (s *Server) prepareDebugServer(ctx context.Context) error {
 	mux := chi.NewMux()
-	if s.config.CORS != nil {
+	if s.config.HTTP.CORS != nil {
 		s.setupCORS(mux)
 	}
 	interceptors := chi.Middlewares{
@@ -181,7 +191,7 @@ func (s *Server) prepareDebugServer(ctx context.Context) error {
 	mux.Use(interceptors...)
 	mux.Handle("/metrics", promhttp.Handler())
 	serveHealth(mux)
-	_, port, err := net.SplitHostPort(s.config.HTTPAddr)
+	_, port, err := net.SplitHostPort(s.config.HTTP.Addr)
 	if err != nil {
 		return err
 	}
@@ -195,9 +205,9 @@ func (s *Server) prepareDebugServer(ctx context.Context) error {
 func (s *Server) makeHTTPServer(ctx context.Context, mux *chi.Mux) *http.Server {
 	return &http.Server{
 		Handler:           mux,
-		ReadHeaderTimeout: s.config.HTTPReadHeaderTimeout,
-		ReadTimeout:       s.config.HTTPReadTimeout,
-		WriteTimeout:      s.config.HTTPWriteTimeout,
+		ReadHeaderTimeout: s.config.HTTP.ReadHeaderTimeout,
+		ReadTimeout:       s.config.HTTP.ReadTimeout,
+		WriteTimeout:      s.config.HTTP.WriteTimeout,
 		MaxHeaderBytes:    maxHTTPHeaderBytes, // 4 KiB
 		BaseContext: func(_ net.Listener) context.Context {
 			return ctx

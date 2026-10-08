@@ -1,59 +1,225 @@
 package config
 
 import (
-	"bytes"
-	"fmt"
-	"os"
 	"time"
-
-	"gopkg.in/yaml.v3"
 )
 
-const (
-	DefaultSeqDBClientID = "default"
-
-	ProxyClientModeGRPC = "grpc"
-
-	MaskModeMask    = "mask"
-	MaskModeReplace = "replace"
-	MaskModeCut     = "cut"
-
-	FieldFilterConditionAnd = "and"
-	FieldFilterConditionOr  = "or"
-	FieldFilterConditionNot = "not"
-
-	FieldFilterModeEqual    = "equal"
-	FieldFilterModeContains = "contains"
-	FieldFilterModePrefix   = "prefix"
-	FieldFilterModeSuffix   = "suffix"
-
-	minGRPCKeepaliveTime    = 10 * time.Second
-	minGRPCKeepaliveTimeout = 1 * time.Second
-
-	defaultAsyncSearchListQueryLengthLimit = 1000
-
-	defaultMaxSearchTotalLimit        = 1000000
-	defaultMaxSearchOffsetLimit       = 1000000
-	defaultMaxExportLimit             = 100000
-	defaultMaxAggregationsPerRequest  = 1
-	defaultMaxBucketsPerAggregationTs = 200
-	defaultMaxParallelExportRequests  = 1
-
-	defaultInmemCacheNumCounters = 10000000
-	defaultInmemCacheMaxCost     = 1000000
-	defaultInmemCacheBufferItems = 64
-
-	defaultEventsCacheTTL = 24 * time.Hour
-
-	defaultLogsLifespanCacheKey = "logs_lifespan"
-	defaultLogsLifespanCacheTTL = 10 * time.Minute
-	defaultAdminCacheTTL        = time.Hour
-
-	defaultClickHouseDialTimeout = 5 * time.Second
-	defaultClickHouseReadTimeout = 30 * time.Second
-)
+// Configuration scheme
+// server:
+//   http_addr:
+//   grpc_addr:
+//   debug_addr:
+//   grpc_connection_timeout:
+//   http_read_timeout:
+//   http_read_header_timeout:
+//   http_write_timeout:
+//   cors:
+//     allowed_origins:
+//     allowed_methods:
+//     allowed_headers:
+//     exposed_headers:
+//     allow_credentials:
+//     max_age:
+//     options_passthrough:
+//   jwt_secret_key:
+//   oidc:
+//     skip_verify:
+//     auth_urls:
+//     root_ca:
+//     ca_cert:
+//     private_key:
+//     ssl_skip_verify:
+//     allowed_clients:
+//     cache_secret_key:
+//   rate_limiters:
+//     <api_name>:
+//       default:
+//         rate_per_sec:
+//         max_burst:
+//         store_max_keys:
+//         per_handler:
+//       spec_users:
+//         <username>:
+//           rate_per_sec:
+//           max_burst:
+//           store_max_keys:
+//           per_handler:
+//   cache:
+//     inmemory:
+//       num_counters:
+//       max_cost:
+//       buffer_items:
+//     redis:
+//       key_prefix:
+//       addr:
+//       username:
+//       password:
+//       timeout:
+//       max_retries:
+//       min_retry_backoff:
+//       max_retry_backoff:
+//   db:
+//     name:
+//     host:
+//     port:
+//     pass:
+//     user:
+//     request_timeout:
+//     connection_pool_capacity:
+//     use_prepared_statements:
+//   clickhouse:
+//     addrs:
+//     database:
+//     username:
+//     password:
+//     sharded:
+//     dial_timeout:
+//     read_timeout:
+// clients:
+//   seq_db_timeout:
+//   seq_db_avg_doc_size:
+//   seq_db_addrs:
+//   request_retries:
+//   initial_retry_backoff:
+//   max_retry_backoff:
+//   proxy_client_mode:
+//   grpc_keepalive_params:
+//     time:
+//     timeout:
+//     permit_without_stream:
+//   seq_db:
+//     - id:
+//       timeout:
+//       avg_doc_size:
+//       addrs:
+//       request_retries:
+//       initial_retry_backoff:
+//       max_retry_backoff:
+//       client_mode:
+//       grpc_keepalive_params:
+//         time:
+//         timeout:
+//         permit_without_stream:
+// handlers:
+//   seq_api:
+//     max_search_limit:
+//     max_search_total_limit:
+//     max_search_offset_limit:
+//     max_export_limit:
+//     seq_cli_max_search_limit:
+//     max_parallel_export_requests:
+//     max_aggregations_per_request:
+//     max_buckets_per_aggregation_ts:
+//     events_cache_ttl:
+//     pinned_fields:
+//       - name:
+//         type:
+//     system_fields:
+//       - name:
+//         type:
+//     logs_lifespan_cache_key:
+//     logs_lifespan_cache_ttl:
+//     fields_cache_ttl:
+//     masking:
+//       masks:
+//         - re:
+//           groups:
+//           mode:
+//           replace_word:
+//           process_fields:
+//           ignore_fields:
+//           field_filters:
+//             condition:
+//             filters:
+//               - field:
+//                 mode:
+//                 values:
+//         process_fields:
+//         ignore_fields:
+//     envs:
+//       <env_name>:
+//         seq_db_id:
+//         options:
+//           max_search_limit:
+//           max_search_total_limit:
+//           max_search_offset_limit:
+//           max_export_limit:
+//           seq_cli_max_search_limit:
+//           max_parallel_export_requests:
+//           max_aggregations_per_request:
+//           max_buckets_per_aggregation_ts:
+//           events_cache_ttl:
+//           pinned_fields:
+//             - name:
+//               type:
+//           system_fields:
+//             - name:
+//               type:
+//           logs_lifespan_cache_key:
+//           logs_lifespan_cache_ttl:
+//           fields_cache_ttl:
+//           masking:
+//             masks:
+//               - re:
+//                 groups:
+//                 mode:
+//                 replace_word:
+//                 process_fields:
+//                 ignore_fields:
+//                 field_filters:
+//                   condition:
+//                   filters:
+//                     - field:
+//                       mode:
+//                       values:
+//             process_fields:
+//             ignore_fields:
+//     default_env:
+//   error_groups:
+//     log_tags_mapping:
+//       env:
+//       service:
+//       release:
+//     query_filter:
+//       <ch_column>:
+//   mass_export:
+//     batch_size:
+//     workers_count:
+//     tasks_channel_size:
+//     part_length:
+//     url_prefix:
+//     allowed_users:
+//     file_store:
+//       s3:
+//         endpoint:
+//         access_key_id:
+//         secret_access_key:
+//         bucket_name:
+//         enable_ssl:
+//     session_store:
+//       redis:
+//         key_prefix
+//         addr:
+//         username:
+//         password:
+//         timeout:
+//         max_retries:
+//         min_retry_backoff:
+//         max_retry_backoff:
+//       export_lifetime:
+//     seq_proxy_downloader:
+//       delay:
+//       initial_retry_backoff:
+//       max_retry_backoff:
+//   async_search:
+//     admin_users:
+//     list_query_length_limit:
+//   admin:
+//     admin_users:
+//     cache_ttl:
 
 type Config struct {
+	Version  *int      `yaml:"version"`
 	Server   *Server   `yaml:"server"`
 	Clients  *Clients  `yaml:"clients"`
 	Handlers *Handlers `yaml:"handlers"`
@@ -91,10 +257,6 @@ type DB struct {
 	UsePreparedStatements  *bool         `yaml:"use_prepared_statements,omitempty"`
 }
 
-func (db *DB) ConnString() string {
-	return fmt.Sprintf("host=%s port=%d dbname=%s user=%s password=%s pool_max_conns=%d", db.Host, db.Port, db.Name, db.User, db.Pass, db.ConnectionPoolCapacity)
-}
-
 type CH struct {
 	Addrs       []string      `yaml:"addrs"`
 	Database    string        `yaml:"database"`
@@ -130,6 +292,7 @@ type InmemoryCache struct {
 }
 
 type Redis struct {
+	KeyPrefix       string        `yaml:"key_prefix"`
 	Addr            string        `yaml:"addr"`
 	Username        string        `yaml:"username"`
 	Password        string        `yaml:"password"`
@@ -137,7 +300,6 @@ type Redis struct {
 	MaxRetries      int           `yaml:"max_retries"`
 	MinRetryBackoff time.Duration `yaml:"min_retry_backoff"`
 	MaxRetryBackoff time.Duration `yaml:"max_retry_backoff"`
-	KeyPrefix       string        `yaml:"key_prefix"`
 }
 
 type Cache struct {
@@ -326,165 +488,4 @@ type AsyncSearch struct {
 type Admin struct {
 	SuperUsers []string      `yaml:"super_users"`
 	CacheTTL   time.Duration `yaml:"cache_ttl"`
-}
-
-// FromFile parse config from config path.
-func FromFile(cfgPath string) (Config, error) {
-	cfgBytes, err := os.ReadFile(cfgPath) //nolint:gosec
-	if err != nil {
-		return Config{}, fmt.Errorf("error reading file: %s", err)
-	}
-
-	cfg, err := parse(cfgBytes)
-	if err != nil {
-		return Config{}, fmt.Errorf("error parsing file: %s", err)
-	}
-
-	proxyClientMode := cfg.Clients.ProxyClientMode
-	if proxyClientMode == "" {
-		cfg.Clients.ProxyClientMode = ProxyClientModeGRPC
-	} else if proxyClientMode != ProxyClientModeGRPC {
-		return Config{}, fmt.Errorf(
-			"invalid value for clients.proxy_client_mode: %q. Allowed values are empty string (defaults to %q) or %q",
-			proxyClientMode, ProxyClientModeGRPC, ProxyClientModeGRPC,
-		)
-	}
-
-	setSeqAPIOptionsDefaults(cfg.Handlers.SeqAPI.SeqAPIOptions)
-
-	if cfg.Handlers.AsyncSearch.ListQueryLengthLimit <= 0 {
-		cfg.Handlers.AsyncSearch.ListQueryLengthLimit = defaultAsyncSearchListQueryLengthLimit
-	}
-
-	if cfg.Server.DB != nil && cfg.Server.DB.UsePreparedStatements == nil {
-		cfg.Server.DB.UsePreparedStatements = new(bool)
-		*cfg.Server.DB.UsePreparedStatements = true
-	}
-
-	if cfg.Server.CH != nil && cfg.Server.CH.DialTimeout <= 0 {
-		cfg.Server.CH.DialTimeout = defaultClickHouseDialTimeout
-	}
-
-	if cfg.Server.CH != nil && cfg.Server.CH.ReadTimeout <= 0 {
-		cfg.Server.CH.ReadTimeout = defaultClickHouseReadTimeout
-	}
-
-	if cfg.Clients.GRPCKeepaliveParams != nil {
-		if cfg.Clients.GRPCKeepaliveParams.Time < minGRPCKeepaliveTime {
-			cfg.Clients.GRPCKeepaliveParams.Time = minGRPCKeepaliveTime
-		}
-		if cfg.Clients.GRPCKeepaliveParams.Timeout < minGRPCKeepaliveTimeout {
-			cfg.Clients.GRPCKeepaliveParams.Timeout = minGRPCKeepaliveTimeout
-		}
-	}
-
-	if cfg.Server.Cache.Inmemory.NumCounters <= 0 {
-		cfg.Server.Cache.Inmemory.NumCounters = defaultInmemCacheNumCounters
-	}
-	if cfg.Server.Cache.Inmemory.MaxCost <= 0 {
-		cfg.Server.Cache.Inmemory.MaxCost = defaultInmemCacheMaxCost
-	}
-	if cfg.Server.Cache.Inmemory.BufferItems <= 0 {
-		cfg.Server.Cache.Inmemory.BufferItems = defaultInmemCacheBufferItems
-	}
-
-	if cfg.Handlers.Admin != nil {
-		if cfg.Handlers.Admin.CacheTTL <= 0 {
-			cfg.Handlers.Admin.CacheTTL = defaultAdminCacheTTL
-		}
-	}
-
-	if len(cfg.Clients.SeqDB) == 0 {
-		defaultClient := SeqDBClient{
-			ID:                  DefaultSeqDBClientID,
-			Timeout:             cfg.Clients.SeqDBTimeout,
-			AvgDocSize:          cfg.Clients.SeqDBAvgDocSize,
-			Addrs:               cfg.Clients.SeqDBAddrs,
-			RequestRetries:      cfg.Clients.RequestRetries,
-			InitialRetryBackoff: cfg.Clients.InitialRetryBackoff,
-			MaxRetryBackoff:     cfg.Clients.MaxRetryBackoff,
-			ClientMode:          cfg.Clients.ProxyClientMode,
-			GRPCKeepaliveParams: cfg.Clients.GRPCKeepaliveParams,
-		}
-		cfg.Clients.SeqDB = []SeqDBClient{defaultClient}
-	}
-
-	clientIDs := make(map[string]struct{})
-	for _, client := range cfg.Clients.SeqDB {
-		if client.ID == "" {
-			return Config{}, fmt.Errorf("seq_db client ID cannot be empty")
-		}
-		if _, ok := clientIDs[client.ID]; ok {
-			return Config{}, fmt.Errorf("duplicate seq_db client ID: %s", client.ID)
-		}
-		clientIDs[client.ID] = struct{}{}
-	}
-
-	if len(cfg.Handlers.SeqAPI.Envs) > 0 {
-		if cfg.Handlers.SeqAPI.DefaultEnv == "" {
-			return Config{}, fmt.Errorf("default_env must be specified when using envs")
-		}
-
-		if _, exists := cfg.Handlers.SeqAPI.Envs[cfg.Handlers.SeqAPI.DefaultEnv]; !exists {
-			return Config{}, fmt.Errorf("default_env '%s' not found in seq_api.envs", cfg.Handlers.SeqAPI.DefaultEnv)
-		}
-
-		for envName, envConfig := range cfg.Handlers.SeqAPI.Envs {
-			if _, ok := clientIDs[envConfig.SeqDB]; !ok {
-				return Config{}, fmt.Errorf("client '%s' for env '%s' not found", envConfig.SeqDB, envName)
-			}
-
-			if envConfig.Options == nil {
-				envConfig.Options = cfg.Handlers.SeqAPI.SeqAPIOptions
-			} else {
-				setSeqAPIOptionsDefaults(envConfig.Options)
-			}
-
-			cfg.Handlers.SeqAPI.Envs[envName] = envConfig
-		}
-	}
-
-	return cfg, nil
-}
-
-func setSeqAPIOptionsDefaults(options *SeqAPIOptions) {
-	if options.MaxAggregationsPerRequest <= 0 {
-		options.MaxAggregationsPerRequest = defaultMaxAggregationsPerRequest
-	}
-	if options.MaxBucketsPerAggregationTs <= 0 {
-		options.MaxBucketsPerAggregationTs = defaultMaxBucketsPerAggregationTs
-	}
-	if options.MaxParallelExportRequests <= 0 {
-		options.MaxParallelExportRequests = defaultMaxParallelExportRequests
-	}
-	if options.MaxSearchTotalLimit <= 0 {
-		options.MaxSearchTotalLimit = defaultMaxSearchTotalLimit
-	}
-	if options.MaxSearchOffsetLimit <= 0 {
-		options.MaxSearchOffsetLimit = defaultMaxSearchOffsetLimit
-	}
-	if options.MaxExportLimit <= 0 {
-		options.MaxExportLimit = defaultMaxExportLimit
-	}
-	if options.EventsCacheTTL <= 0 {
-		options.EventsCacheTTL = defaultEventsCacheTTL
-	}
-	if options.LogsLifespanCacheKey == "" {
-		options.LogsLifespanCacheKey = defaultLogsLifespanCacheKey
-	}
-	if options.LogsLifespanCacheTTL <= 0 {
-		options.LogsLifespanCacheTTL = defaultLogsLifespanCacheTTL
-	}
-}
-
-func parse(cfg []byte) (Config, error) {
-	result := Config{}
-
-	decoder := yaml.NewDecoder(bytes.NewReader(cfg))
-	decoder.KnownFields(true)
-	if err := decoder.Decode(&result); err != nil {
-		return result, fmt.Errorf("error parsing config: %w", err)
-	}
-
-	return result, nil
 }

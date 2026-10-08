@@ -6,7 +6,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 )
 
 func TestServeGetEnvs(t *testing.T) {
@@ -18,7 +18,7 @@ func TestServeGetEnvs(t *testing.T) {
 		{
 			name: "single_env",
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
+				Options: config.SeqAPIOptions{
 					MaxSearchLimit:            100,
 					MaxExportLimit:            200,
 					MaxParallelExportRequests: 2,
@@ -42,10 +42,9 @@ func TestServeGetEnvs(t *testing.T) {
 		{
 			name: "ok_multiple_envs",
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{},
 				Envs: map[string]config.SeqAPIEnv{
 					"cluster-220": {
-						SeqDB: "pro-seqdb",
+						SeqDBID: "pro-seqdb",
 						Options: &config.SeqAPIOptions{
 							MaxSearchLimit:            1000,
 							MaxExportLimit:            500,
@@ -55,7 +54,7 @@ func TestServeGetEnvs(t *testing.T) {
 						},
 					},
 					"cluster-10": {
-						SeqDB: "prod-seqdb",
+						SeqDBID: "prod-seqdb",
 						Options: &config.SeqAPIOptions{
 							MaxSearchLimit:            1000,
 							MaxExportLimit:            500,
@@ -65,7 +64,7 @@ func TestServeGetEnvs(t *testing.T) {
 						},
 					},
 					"cluster-102": {
-						SeqDB: "staging-seqdb",
+						SeqDBID: "staging-seqdb",
 						Options: &config.SeqAPIOptions{
 							MaxSearchLimit:            500,
 							MaxExportLimit:            250,
@@ -75,7 +74,7 @@ func TestServeGetEnvs(t *testing.T) {
 						},
 					},
 					"prod": {
-						SeqDB: "stag-seqdb",
+						SeqDBID: "stag-seqdb",
 						Options: &config.SeqAPIOptions{
 							MaxSearchLimit:            500,
 							MaxExportLimit:            250,
@@ -85,7 +84,7 @@ func TestServeGetEnvs(t *testing.T) {
 						},
 					},
 					"wyanki": {
-						SeqDB: "sta-seqdb",
+						SeqDBID: "sta-seqdb",
 						Options: &config.SeqAPIOptions{
 							MaxSearchLimit:            500,
 							MaxExportLimit:            250,
