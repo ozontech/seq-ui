@@ -1,10 +1,12 @@
 package http
 
 import (
+	"encoding/json"
 	"net/http"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
@@ -15,6 +17,21 @@ import (
 )
 
 func TestServeGetFields(t *testing.T) {
+	f := fields{
+		{Name: "test_name1", Type: "keyword"},
+		{Name: "test_name2", Type: "text"},
+	}
+	fAPI := []*seqapi.Field{
+		{Name: "test_name1", Type: seqapi.FieldType_keyword},
+		{Name: "test_name2", Type: seqapi.FieldType_text},
+	}
+
+	marshal := func(data any) []byte {
+		raw, err := json.Marshal(data)
+		require.NoError(t, err)
+		return raw
+	}
+
 	type mockArgs struct {
 		resp *seqapi.GetFieldsResponse
 		err  error
@@ -23,7 +40,8 @@ func TestServeGetFields(t *testing.T) {
 	tests := []struct {
 		name string
 
-		cfg config.SeqAPIOptions
+		cfg       config.SeqAPIOptions
+		cacheData []byte
 
 		want    getFieldsResponse
 		wantErr bool
@@ -33,33 +51,18 @@ func TestServeGetFields(t *testing.T) {
 		{
 			name: "ok",
 			want: getFieldsResponse{
-				Fields: fields{
-					{Name: "test_name1", Type: "keyword"},
-					{Name: "test_name2", Type: "text"},
-				},
+				Fields: f,
 			},
 			mockArgs: &mockArgs{
 				resp: &seqapi.GetFieldsResponse{
-					Fields: []*seqapi.Field{
-						{
-							Name: "test_name1",
-							Type: seqapi.FieldType_keyword,
-						},
-						{
-							Name: "test_name2",
-							Type: seqapi.FieldType_text,
-						},
-					},
+					Fields: fAPI,
 				},
 			},
 		},
 		{
 			name: "ok_with_system_and_pinned_fields",
 			want: getFieldsResponse{
-				Fields: fields{
-					{Name: "test_name1", Type: "keyword"},
-					{Name: "test_name2", Type: "text"},
-				},
+				Fields: f,
 				SystemFields: fields{
 					{Name: "field1", Type: "keyword"},
 					{Name: "field2", Type: "text"},
@@ -71,16 +74,7 @@ func TestServeGetFields(t *testing.T) {
 			},
 			mockArgs: &mockArgs{
 				resp: &seqapi.GetFieldsResponse{
-					Fields: []*seqapi.Field{
-						{
-							Name: "test_name1",
-							Type: seqapi.FieldType_keyword,
-						},
-						{
-							Name: "test_name2",
-							Type: seqapi.FieldType_text,
-						},
-					},
+					Fields: fAPI,
 				},
 			},
 			cfg: config.SeqAPIOptions{
@@ -92,6 +86,16 @@ func TestServeGetFields(t *testing.T) {
 					{Name: "field3", Type: "keyword"},
 					{Name: "field4", Type: "text"},
 				},
+			},
+		},
+		{
+			name: "ok_cached",
+			want: getFieldsResponse{
+				Fields: f,
+			},
+			cacheData: marshal(getFieldsResponse{Fields: f}),
+			cfg: config.SeqAPIOptions{
+				FieldsCacheTTL: time.Hour,
 			},
 		},
 		{
@@ -115,13 +119,19 @@ func TestServeGetFields(t *testing.T) {
 			}
 
 			seqDbMock := mock_seqdb.NewMockClient(ctrl)
-			seqDbMock.EXPECT().
-				GetFields(gomock.Any(), gomock.Any()).
-				Return(tt.mockArgs.resp, tt.mockArgs.err).
-				Times(1)
 			seqData.Mocks.SeqDB = seqDbMock
 
 			api := setupTestAPI(seqData)
+
+			if tt.mockArgs != nil {
+				seqDbMock.EXPECT().
+					GetFields(gomock.Any(), gomock.Any()).
+					Return(tt.mockArgs.resp, tt.mockArgs.err).
+					Times(1)
+			}
+			if tt.cacheData != nil && tt.cfg.FieldsCacheTTL > 0 {
+				api.params.fieldsCache.setFields(tt.cacheData)
+			}
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getFieldsResponse]{
 				Method:  http.MethodGet,
@@ -129,100 +139,6 @@ func TestServeGetFields(t *testing.T) {
 				Handler: api.serveGetFields,
 				Want:    tt.want,
 				WantErr: tt.wantErr,
-			})
-		})
-	}
-}
-
-func TestServeGetFieldsCached(t *testing.T) {
-	var (
-		ttl = 5 * time.Millisecond
-	)
-
-	tests := []struct {
-		name string
-
-		resp *seqapi.GetFieldsResponse
-		want getFieldsResponse
-	}{
-		{
-			name: "ok",
-			resp: &seqapi.GetFieldsResponse{
-				Fields: []*seqapi.Field{
-					{
-						Name: "n1",
-						Type: seqapi.FieldType_keyword,
-					},
-					{
-						Name: "n2",
-						Type: seqapi.FieldType_text,
-					},
-				},
-			},
-			want: getFieldsResponse{
-				Fields: fields{
-					{Name: "n1", Type: "keyword"},
-					{Name: "n2", Type: "text"},
-				},
-			},
-		},
-		{
-			name: "another_ok",
-			resp: &seqapi.GetFieldsResponse{
-				Fields: []*seqapi.Field{
-					{
-						Name: "qwe",
-						Type: seqapi.FieldType_keyword,
-					},
-				},
-			},
-			want: getFieldsResponse{
-				Fields: fields{
-					{Name: "qwe", Type: "keyword"},
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			ctrl := gomock.NewController(t)
-			seqDbMock := mock_seqdb.NewMockClient(ctrl)
-
-			seqDbMock.EXPECT().
-				GetFields(gomock.Any(), gomock.Any()).
-				Return(tt.resp, nil).
-				Times(1)
-
-			seqData := test.APITestData{
-				Cfg: config.SeqAPI{
-					SeqAPIOptions: &config.SeqAPIOptions{
-						FieldsCacheTTL: ttl,
-					},
-				},
-				Mocks: test.Mocks{
-					SeqDB: seqDbMock,
-				},
-			}
-
-			api := setupTestAPI(seqData)
-
-			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getFieldsResponse]{
-				Method:  http.MethodGet,
-				Target:  "/seqapi/v1/fields",
-				Handler: api.serveGetFields,
-				Want:    tt.want,
-			})
-
-			time.Sleep(ttl / 2)
-
-			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getFieldsResponse]{
-				Method:  http.MethodGet,
-				Target:  "/seqapi/v1/fields",
-				Handler: api.serveGetFields,
-				Want:    tt.want,
 			})
 		})
 	}
