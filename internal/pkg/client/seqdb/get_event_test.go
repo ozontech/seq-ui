@@ -21,13 +21,13 @@ func Test_GRPCClient_GetEvent(t *testing.T) {
 
 	type mockArgs struct {
 		req  *seqproxyapi.FetchRequest
-		resp *mock.MockSeqProxyApi_FetchClient
+		resp *mock.MockSeqProxyApi_FetchClient[seqproxyapi.Document]
 		err  error
 	}
 
 	prepareMockArgs := func(ctrl *gomock.Controller, req *seqapi.GetEventRequest, doc *seqproxyapi.Document, errType streamErrorType) mockArgs {
 		var proxyReq *seqproxyapi.FetchRequest
-		var proxyResp *mock.MockSeqProxyApi_FetchClient
+		var proxyResp *mock.MockSeqProxyApi_FetchClient[seqproxyapi.Document]
 
 		if req != nil {
 			proxyReq = &seqproxyapi.FetchRequest{
@@ -43,7 +43,7 @@ func Test_GRPCClient_GetEvent(t *testing.T) {
 			}
 		}
 
-		proxyResp = mock.NewMockSeqProxyApi_FetchClient(ctrl)
+		proxyResp = mock.NewMockSeqProxyApi_FetchClient[seqproxyapi.Document](ctrl)
 		if errType == streamErrRecv {
 			proxyResp.EXPECT().Recv().Return(nil, errors.New("recv error")).Times(1)
 		} else {

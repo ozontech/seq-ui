@@ -89,6 +89,7 @@
                 "parameters": [
                     {
                         "type": "integer",
+                        "format": "int32",
                         "description": "Role ID",
                         "name": "id",
                         "in": "path",
@@ -123,6 +124,7 @@
                 "parameters": [
                     {
                         "type": "integer",
+                        "format": "int32",
                         "description": "Role ID",
                         "name": "id",
                         "in": "path",
@@ -162,6 +164,7 @@
                 "parameters": [
                     {
                         "type": "integer",
+                        "format": "int32",
                         "description": "Role ID",
                         "name": "id",
                         "in": "path",
@@ -204,6 +207,7 @@
                 "parameters": [
                     {
                         "type": "integer",
+                        "format": "int32",
                         "description": "Role ID",
                         "name": "id",
                         "in": "path",
@@ -244,6 +248,7 @@
                 "parameters": [
                     {
                         "type": "integer",
+                        "format": "int32",
                         "description": "Role ID",
                         "name": "id",
                         "in": "path",
