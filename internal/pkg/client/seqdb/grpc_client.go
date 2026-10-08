@@ -200,6 +200,7 @@ func (c *GRPCClient) sendRequest(ctx context.Context, reqFn grpcReqFn) (any, err
 	tryFn := func() (any, bool, error) {
 		var err error
 		var resp any
+		//nolint:gosec
 		rand.Shuffle(len(clients), func(i, j int) {
 			clients[i], clients[j] = clients[j], clients[i]
 		})

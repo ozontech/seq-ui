@@ -273,7 +273,7 @@ func initExportService(ctx context.Context, cfg config.MassExport, redisCfg *con
 	}
 	logger.Info("session store initialized")
 
-	fileStore, err := filestore.NewS3(cfg.FileStore.S3)
+	fileStore, err := filestore.NewS3(ctx, cfg.FileStore.S3)
 	if err != nil {
 		return nil, fmt.Errorf("init file store: %w", err)
 	}

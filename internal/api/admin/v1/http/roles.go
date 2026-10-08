@@ -408,7 +408,7 @@ func parseStringsToPermissionGroups(permissions []string) []permissionGroup {
 type permissionGroup struct {
 	Group       string   `json:"group"`
 	Permissions []string `json:"permissions"`
-} // @name admin.v1.PermissionGroup
+} //	@name	admin.v1.PermissionGroup
 
 type role struct {
 	ID          int32             `json:"id"`

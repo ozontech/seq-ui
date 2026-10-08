@@ -11,6 +11,7 @@ package mock_repositorych
 
 import (
 	context "context"
+	io "io"
 	reflect "reflect"
 
 	driver "github.com/ClickHouse/clickhouse-go/v2/lib/driver"
@@ -107,6 +108,20 @@ func (mr *MockConnMockRecorder) Exec(ctx, query any, args ...any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exec", reflect.TypeOf((*MockConn)(nil).Exec), varargs...)
 }
 
+// InsertFormat mocks base method.
+func (m *MockConn) InsertFormat(ctx context.Context, format, query string, data io.Reader) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InsertFormat", ctx, format, query, data)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// InsertFormat indicates an expected call of InsertFormat.
+func (mr *MockConnMockRecorder) InsertFormat(ctx, format, query, data any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertFormat", reflect.TypeOf((*MockConn)(nil).InsertFormat), ctx, format, query, data)
+}
+
 // Ping mocks base method.
 func (m *MockConn) Ping(arg0 context.Context) error {
 	m.ctrl.T.Helper()
@@ -159,6 +174,26 @@ func (mr *MockConnMockRecorder) Query(ctx, query any, args ...any) *gomock.Call 
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx, query}, args...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*MockConn)(nil).Query), varargs...)
+}
+
+// QueryFormat mocks base method.
+func (m *MockConn) QueryFormat(ctx context.Context, format, query string, args ...any) (io.ReadCloser, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, format, query}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "QueryFormat", varargs...)
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// QueryFormat indicates an expected call of QueryFormat.
+func (mr *MockConnMockRecorder) QueryFormat(ctx, format, query any, args ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, format, query}, args...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryFormat", reflect.TypeOf((*MockConn)(nil).QueryFormat), varargs...)
 }
 
 // QueryRow mocks base method.
@@ -306,6 +341,20 @@ func (m *MockRows) Err() error {
 func (mr *MockRowsMockRecorder) Err() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Err", reflect.TypeOf((*MockRows)(nil).Err))
+}
+
+// HasData mocks base method.
+func (m *MockRows) HasData() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HasData")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// HasData indicates an expected call of HasData.
+func (mr *MockRowsMockRecorder) HasData() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasData", reflect.TypeOf((*MockRows)(nil).HasData))
 }
 
 // Next mocks base method.
