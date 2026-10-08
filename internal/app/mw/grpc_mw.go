@@ -30,12 +30,17 @@ func GRPCLogInterceptor(l *tracing.Logger) grpc.UnaryServerInterceptor {
 		if err != nil {
 			l.Error(ctx, "failed to marshal request message", zap.Error(err))
 		}
+
 		reqLogArgs := requestLogArgs{
 			component:   "gRPC",
 			header:      md,
 			fullMethod:  info.FullMethod,
 			requestBody: string(rBody),
 		}
+		if userName, err := types.GetUserKey(ctx); err == nil {
+			reqLogArgs.user = userName
+		}
+
 		logRequestBeforeHandler(ctx, l, reqLogArgs)
 
 		start := time.Now()
@@ -52,15 +57,13 @@ func GRPCLogInterceptor(l *tracing.Logger) grpc.UnaryServerInterceptor {
 
 		errType := gRPCRespErrorTypeFromStatusCode(st.Code())
 
-		if errType == respClientError {
-			reqLogArgs.clientError = st.Err().Error()
+		switch errType {
+		case respClientError:
+			reqLogArgs.clientError = processErrorMessage(st.Err().Error())
+		case respServerError:
+			reqLogArgs.serverError = processErrorMessage(st.Err().Error())
 		}
-		if errType == respServerError {
-			reqLogArgs.serverError = st.Err().Error()
-		}
-		if userName, err := types.GetUserKey(ctx); err == nil {
-			reqLogArgs.user = userName
-		}
+
 		if details := st.Details(); len(details) > 0 {
 			reqLogArgs.details = details
 		}
