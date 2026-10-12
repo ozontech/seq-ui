@@ -215,7 +215,7 @@ import (
 //     admin_users:
 //     list_query_length_limit:
 //   admin:
-//     admin_users:
+//     super_users:
 //     cache_ttl:
 
 type Config struct {

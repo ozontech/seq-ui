@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
+	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 )
@@ -31,7 +32,7 @@ func (a *API) serveGetHistogram(w http.ResponseWriter, r *http.Request) {
 
 	wr := httputil.NewWriter(w)
 
-	env := getEnvFromContext(ctx)
+	env := types.GetEnvKey(ctx)
 
 	var httpReq getHistogramRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {

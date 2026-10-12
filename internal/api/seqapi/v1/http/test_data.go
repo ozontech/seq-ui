@@ -39,7 +39,7 @@ func setupTestAPI(data test.APITestData) *API {
 		asyncSvc = data.Mocks.AsyncSearchesSvc
 	}
 
-	return New(&data.Cfg, seqDBClients, data.Mocks.Cache, data.Mocks.Cache, asyncSvc)
+	return New(&data.Cfg, seqDBClients, data.Mocks.Cache, data.Mocks.Cache, data.Mocks.Cache, asyncSvc)
 }
 
 func withQueryParamID(h http.HandlerFunc, id string) http.HandlerFunc {

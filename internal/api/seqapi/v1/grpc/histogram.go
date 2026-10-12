@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 )
@@ -15,7 +16,7 @@ func (a *API) GetHistogram(ctx context.Context, req *seqapi.GetHistogramRequest)
 	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_get_histogram")
 	defer span.End()
 
-	env := a.GetEnvFromContext(ctx)
+	env := types.GetEnvKey(ctx)
 
 	attributes := []attribute.KeyValue{
 		{

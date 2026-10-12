@@ -37,7 +37,7 @@ func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
 	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_start_async_search")
 	defer span.End()
 
-	env := getEnvFromContext(ctx)
+	env := types.GetEnvKey(ctx)
 	params, err := a.GetEnvParams(env)
 	if err != nil {
 		httputil.NewWriter(w).Error(err, http.StatusBadRequest)
@@ -61,7 +61,7 @@ func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if err := api_error.CheckAggregationTsInterval(agg.Interval, httpReq.From, httpReq.To,
-			params.options.MaxBucketsPerAggregationTs,
+			params.options.Limits.MaxBucketsPerAggregationTs,
 		); err != nil {
 			wr.Error(err, http.StatusBadRequest)
 			return

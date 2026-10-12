@@ -22,7 +22,7 @@ type s3FileStore struct {
 
 func NewS3(ctx context.Context, cfg *config.S3) (FileStore, error) {
 	scheme := "http"
-	if cfg.EnableSSl {
+	if cfg.EnableSSL {
 		scheme = "https"
 	}
 

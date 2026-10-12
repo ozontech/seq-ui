@@ -107,8 +107,10 @@ func TestServeGetAggregationTs(t *testing.T) {
 			wantStatus:   http.StatusOK,
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxAggregationsPerRequest:  3,
-					MaxBucketsPerAggregationTs: 100,
+					Limits: config.SeqAPILimits{
+						MaxAggregationsPerRequest:  3,
+						MaxBucketsPerAggregationTs: 100,
+					},
 				},
 			},
 		},
@@ -163,8 +165,10 @@ func TestServeGetAggregationTs(t *testing.T) {
 			wantStatus:   http.StatusOK,
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxAggregationsPerRequest:  3,
-					MaxBucketsPerAggregationTs: 100,
+					Limits: config.SeqAPILimits{
+						MaxAggregationsPerRequest:  3,
+						MaxBucketsPerAggregationTs: 100,
+					},
 				},
 			},
 		},
@@ -222,8 +226,10 @@ func TestServeGetAggregationTs(t *testing.T) {
 			wantStatus:   http.StatusOK,
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxAggregationsPerRequest:  3,
-					MaxBucketsPerAggregationTs: 100,
+					Limits: config.SeqAPILimits{
+						MaxAggregationsPerRequest:  3,
+						MaxBucketsPerAggregationTs: 100,
+					},
 				},
 			},
 		},
@@ -248,8 +254,10 @@ func TestServeGetAggregationTs(t *testing.T) {
 			wantStatus:   http.StatusOK,
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxAggregationsPerRequest:  3,
-					MaxBucketsPerAggregationTs: 100,
+					Limits: config.SeqAPILimits{
+						MaxAggregationsPerRequest:  3,
+						MaxBucketsPerAggregationTs: 100,
+					},
 				},
 			},
 		},
@@ -264,8 +272,10 @@ func TestServeGetAggregationTs(t *testing.T) {
 			wantStatus: http.StatusBadRequest,
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxAggregationsPerRequest:  2,
-					MaxBucketsPerAggregationTs: 100,
+					Limits: config.SeqAPILimits{
+						MaxAggregationsPerRequest:  2,
+						MaxBucketsPerAggregationTs: 100,
+					},
 				},
 			},
 		},
@@ -279,8 +289,10 @@ func TestServeGetAggregationTs(t *testing.T) {
 			wantStatus: http.StatusBadRequest,
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxAggregationsPerRequest:  3,
-					MaxBucketsPerAggregationTs: 1,
+					Limits: config.SeqAPILimits{
+						MaxAggregationsPerRequest:  3,
+						MaxBucketsPerAggregationTs: 1,
+					},
 				},
 			},
 		},
@@ -298,7 +310,9 @@ func TestServeGetAggregationTs(t *testing.T) {
 			wantStatus: http.StatusInternalServerError,
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxAggregationsPerRequest: 3,
+					Limits: config.SeqAPILimits{
+						MaxAggregationsPerRequest: 3,
+					},
 				},
 			},
 		},

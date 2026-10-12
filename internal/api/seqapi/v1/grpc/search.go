@@ -10,6 +10,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/aggregation_ts"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/api_error"
+	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 )
@@ -18,7 +19,7 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_search")
 	defer span.End()
 
-	env := a.GetEnvFromContext(ctx)
+	env := types.GetEnvKey(ctx)
 
 	spanAttributes := []attribute.KeyValue{
 		{

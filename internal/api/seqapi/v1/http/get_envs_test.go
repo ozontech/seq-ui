@@ -19,11 +19,13 @@ func TestServeGetEnvs(t *testing.T) {
 			name: "single_env",
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxSearchLimit:            100,
-					MaxExportLimit:            200,
-					MaxParallelExportRequests: 2,
-					MaxAggregationsPerRequest: 5,
-					SeqCLIMaxSearchLimit:      10000,
+					Limits: config.SeqAPILimits{
+						MaxSearchLimit:            100,
+						MaxExportLimit:            200,
+						MaxParallelExportRequests: 2,
+						MaxAggregationsPerRequest: 5,
+						SeqCLIMaxSearchLimit:      10000,
+					},
 				},
 			},
 			want: getEnvsResponse{
@@ -46,51 +48,61 @@ func TestServeGetEnvs(t *testing.T) {
 					"cluster-220": {
 						SeqDBID: "pro-seqdb",
 						Options: &config.SeqAPIOptions{
-							MaxSearchLimit:            1000,
-							MaxExportLimit:            500,
-							MaxParallelExportRequests: 10,
-							MaxAggregationsPerRequest: 5,
-							SeqCLIMaxSearchLimit:      2000,
+							Limits: config.SeqAPILimits{
+								MaxSearchLimit:            1000,
+								MaxExportLimit:            500,
+								MaxParallelExportRequests: 10,
+								MaxAggregationsPerRequest: 5,
+								SeqCLIMaxSearchLimit:      2000,
+							},
 						},
 					},
 					"cluster-10": {
 						SeqDBID: "prod-seqdb",
 						Options: &config.SeqAPIOptions{
-							MaxSearchLimit:            1000,
-							MaxExportLimit:            500,
-							MaxParallelExportRequests: 10,
-							MaxAggregationsPerRequest: 5,
-							SeqCLIMaxSearchLimit:      2000,
+							Limits: config.SeqAPILimits{
+								MaxSearchLimit:            1000,
+								MaxExportLimit:            500,
+								MaxParallelExportRequests: 10,
+								MaxAggregationsPerRequest: 5,
+								SeqCLIMaxSearchLimit:      2000,
+							},
 						},
 					},
 					"cluster-102": {
 						SeqDBID: "staging-seqdb",
 						Options: &config.SeqAPIOptions{
-							MaxSearchLimit:            500,
-							MaxExportLimit:            250,
-							MaxParallelExportRequests: 5,
-							MaxAggregationsPerRequest: 3,
-							SeqCLIMaxSearchLimit:      1000,
+							Limits: config.SeqAPILimits{
+								MaxSearchLimit:            500,
+								MaxExportLimit:            250,
+								MaxParallelExportRequests: 5,
+								MaxAggregationsPerRequest: 3,
+								SeqCLIMaxSearchLimit:      1000,
+							},
 						},
 					},
 					"prod": {
 						SeqDBID: "stag-seqdb",
 						Options: &config.SeqAPIOptions{
-							MaxSearchLimit:            500,
-							MaxExportLimit:            250,
-							MaxParallelExportRequests: 5,
-							MaxAggregationsPerRequest: 3,
-							SeqCLIMaxSearchLimit:      1000,
+							Limits: config.SeqAPILimits{
+								MaxSearchLimit:            500,
+								MaxExportLimit:            250,
+								MaxParallelExportRequests: 5,
+								MaxAggregationsPerRequest: 3,
+								SeqCLIMaxSearchLimit:      1000,
+							},
 						},
 					},
 					"wyanki": {
 						SeqDBID: "sta-seqdb",
 						Options: &config.SeqAPIOptions{
-							MaxSearchLimit:            500,
-							MaxExportLimit:            250,
-							MaxParallelExportRequests: 5,
-							MaxAggregationsPerRequest: 3,
-							SeqCLIMaxSearchLimit:      1000,
+							Limits: config.SeqAPILimits{
+								MaxSearchLimit:            500,
+								MaxExportLimit:            250,
+								MaxParallelExportRequests: 5,
+								MaxAggregationsPerRequest: 3,
+								SeqCLIMaxSearchLimit:      1000,
+							},
 						},
 					},
 				},

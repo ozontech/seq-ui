@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
+	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
@@ -33,7 +34,7 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 
 	id := chi.URLParam(r, "id")
 
-	env := getEnvFromContext(ctx)
+	env := types.GetEnvKey(ctx)
 
 	attributes := []attribute.KeyValue{
 		{
@@ -54,11 +55,12 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if cached, err := a.inmemWithRedisCache.Get(ctx, id); err == nil {
+	cacheKey := params.eventCacheKeyPrefix + id
+	if cached, err := a.inmemWithRedisCache.Get(ctx, cacheKey); err == nil {
 		e := &seqapi.Event{}
 		if err = proto.Unmarshal([]byte(cached), e); err == nil {
-			if a.globalParams.masker != nil {
-				a.globalParams.masker.Mask(e.Data)
+			if params.masker != nil {
+				params.masker.Mask(e.Data)
 			}
 			wr.WriteJson(getEventResponseFromProto(&seqapi.GetEventResponse{Event: e}))
 			return
@@ -74,12 +76,12 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if a.globalParams.masker != nil && resp.Event != nil {
-		a.globalParams.masker.Mask(resp.Event.Data)
+	if params.masker != nil && resp.Event != nil {
+		params.masker.Mask(resp.Event.Data)
 	}
 
 	if data, err := proto.Marshal(resp.Event); err == nil {
-		_ = a.inmemWithRedisCache.SetWithTTL(ctx, id, string(data), a.globalParams.eventsCacheTTL)
+		_ = a.inmemWithRedisCache.SetWithTTL(ctx, cacheKey, string(data), params.options.Caches.Events.TTL)
 	} else {
 		logger.Error("failed to marshal event proto for caching", zap.String("id", id), zap.Error(err))
 	}

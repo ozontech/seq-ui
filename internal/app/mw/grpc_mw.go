@@ -3,6 +3,7 @@ package mw
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -138,7 +139,7 @@ var noAuthGRPCMethods = map[string]map[string]struct{}{
 
 var errUnauth = status.Error(codes.Unauthenticated, types.ErrUnauthenticated.Error())
 
-func GRPCAuthInterceptor(providers *AuthProviders) grpc.UnaryServerInterceptor {
+func GRPCAuthInterceptor(providers *AuthProvidersByEnv) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context, req any, info *grpc.UnaryServerInfo,
 		h grpc.UnaryHandler,
@@ -151,6 +152,10 @@ func GRPCAuthInterceptor(providers *AuthProviders) grpc.UnaryServerInterceptor {
 		if _, noAuth := noAuthGRPCMethods[svc][method]; noAuth {
 			return h(ctx, req)
 		}
+		provider := providers.get(ctx)
+		if !provider.enabled() {
+			return h(ctx, req)
+		}
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
 			logger.Error("no metadata provided")
@@ -161,7 +166,7 @@ func GRPCAuthInterceptor(providers *AuthProviders) grpc.UnaryServerInterceptor {
 			logger.Error("no authorization metadata provided")
 			return nil, errUnauth
 		}
-		userName, err := providers.auth(ctx, authHeaderSlice[0])
+		userName, err := provider.auth(ctx, authHeaderSlice[0])
 		if err != nil {
 			logger.Error("token auth failed", zap.Error(err))
 			return nil, errUnauth
@@ -189,7 +194,7 @@ func GRPCRecoverInterceptor() grpc.UnaryServerInterceptor {
 	}
 }
 
-func GRPCRateLimitInterceptor(rateLimiters map[string]map[string]RateLimiter) grpc.UnaryServerInterceptor {
+func GRPCRateLimitInterceptor(rateLimiters RateLimitersByEnv) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context, req any, info *grpc.UnaryServerInfo,
 		h grpc.UnaryHandler,
@@ -206,7 +211,7 @@ func GRPCRateLimitInterceptor(rateLimiters map[string]map[string]RateLimiter) gr
 			return h(ctx, req)
 		}
 
-		userToRateLimiter, ok := rateLimiters[svc]
+		userToRateLimiter, ok := rateLimiters.get(ctx)[svc]
 		if !ok {
 			return h(ctx, req)
 		}
@@ -242,5 +247,39 @@ func GRPCProcessHeadersInterceptor() grpc.UnaryServerInterceptor {
 		}
 
 		return h(ctx, req)
+	}
+}
+
+func GRPCEnvInterceptor(resolver EnvResolver) grpc.UnaryServerInterceptor {
+	return func(
+		ctx context.Context, req any, info *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler,
+	) (resp any, err error) {
+		svc, method, err := parseGRPCFullMethod(info.FullMethod)
+		if err != nil {
+			msg := "failed to parse gRPC FullMethod"
+			logger.Error(msg, zap.Error(err))
+			return nil, status.Error(codes.Internal, msg)
+		}
+
+		var reqEnv string
+		if md, ok := metadata.FromIncomingContext(ctx); ok {
+			if values := md.Get("env"); len(values) > 0 {
+				reqEnv = values[0]
+			}
+		}
+
+		api := svc
+		// async search methods are part of SeqAPIService, but have own envs
+		if svc == "SeqAPIService" && strings.Contains(method, "AsyncSearch") {
+			api = "async_search"
+		}
+
+		env, err := resolver.resolve(api, reqEnv)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+
+		return handler(types.SetEnvKey(ctx, env), req)
 	}
 }

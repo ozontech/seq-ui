@@ -12,6 +12,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/api_error"
+	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 )
@@ -32,7 +33,7 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 
 	wr := httputil.NewWriter(w)
 
-	env := getEnvFromContext(ctx)
+	env := types.GetEnvKey(ctx)
 
 	var httpReq searchRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
@@ -109,11 +110,11 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 
 	span.SetAttributes(spanAttributes...)
 
-	if err := api_error.CheckSearchLimit(httpReq.Limit, params.options.MaxSearchLimit); err != nil {
+	if err := api_error.CheckSearchLimit(httpReq.Limit, params.options.Limits.MaxSearchLimit); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
-	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), params.options.MaxAggregationsPerRequest); err != nil {
+	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), params.options.Limits.MaxAggregationsPerRequest); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
@@ -121,7 +122,7 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
-	if err := api_error.CheckSearchOffsetLimit(httpReq.Offset, params.options.MaxSearchOffsetLimit); err != nil {
+	if err := api_error.CheckSearchOffsetLimit(httpReq.Offset, params.options.Limits.MaxSearchOffset); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
@@ -132,7 +133,7 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if resp.Total > params.options.MaxSearchTotalLimit {
+	if resp.Total > int64(params.options.Limits.MaxSearchTotal) {
 		resp.Error = &seqapi.Error{
 			Code:    seqapi.ErrorCode_ERROR_CODE_QUERY_TOO_HEAVY,
 			Message: api_error.ErrQueryTooHeavy.Error(),
@@ -140,9 +141,9 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	searchResp := searchResponseFromProto(resp, httpReq.WithTotal)
-	if a.globalParams.masker != nil {
+	if params.masker != nil {
 		for i := range searchResp.Events {
-			a.globalParams.masker.Mask(searchResp.Events[i].Data)
+			params.masker.Mask(searchResp.Events[i].Data)
 		}
 	}
 
@@ -169,8 +170,8 @@ type searchRequest struct {
 	Query        string             `json:"query"`
 	From         time.Time          `json:"from" format:"date-time"`
 	To           time.Time          `json:"to" format:"date-time"`
-	Limit        int32              `json:"limit" format:"int32"`
-	Offset       int32              `json:"offset" format:"int32"`
+	Limit        int                `json:"limit"`
+	Offset       int                `json:"offset"`
 	WithTotal    bool               `json:"withTotal"`
 	Aggregations aggregationQueries `json:"aggregations"`
 	Histogram    struct {
@@ -186,8 +187,8 @@ func (r searchRequest) toProto() *seqapi.SearchRequest {
 		Query:        r.Query,
 		From:         timestamppb.New(r.From),
 		To:           timestamppb.New(r.To),
-		Limit:        r.Limit,
-		Offset:       r.Offset,
+		Limit:        int32(r.Limit),
+		Offset:       int32(r.Offset),
 		OffsetId:     r.OffsetID,
 		WithTotal:    r.WithTotal,
 		Downsample:   r.Downsample,

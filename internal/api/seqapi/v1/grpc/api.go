@@ -1,14 +1,12 @@
 package grpc
 
 import (
-	"context"
 	"fmt"
 	"sort"
 	"strconv"
 	"time"
 
 	"go.uber.org/zap"
-	"google.golang.org/grpc/metadata"
 
 	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/types"
@@ -52,6 +50,7 @@ func New(
 	seqDBСlients map[string]seqdb.Client,
 	inmemWithRedisCache cache.Cache,
 	redisCache cache.Cache,
+	fieldsCache cache.Cache,
 	asyncSearches asyncsearches.Service,
 ) *API {
 	globalParams := apiGlobalParams{
@@ -156,15 +155,6 @@ func parseEnvs(cfg *config.SeqAPI) *seqapi.GetEnvsResponse {
 		envs = []*seqapi.GetEnvsResponse_Env{createEnvInfo("", &cfg.Options)}
 	}
 	return &seqapi.GetEnvsResponse{Envs: envs}
-}
-
-func (a *API) GetEnvFromContext(ctx context.Context) string {
-	md, _ := metadata.FromIncomingContext(ctx)
-	envValues := md.Get("env")
-	if len(envValues) == 0 {
-		return ""
-	}
-	return envValues[0]
 }
 
 func (a *API) GetParams(env string) (apiParams, error) {

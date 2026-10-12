@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	grpc_mw "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
@@ -21,60 +21,54 @@ import (
 	"github.com/ozontech/seq-ui/tracing"
 )
 
-const (
-	defaultCORSAllowedOrigins = "*"
-	maxHTTPHeaderBytes        = 1 << 12 // 4 KiB
-)
-
-var defaultCORSAllowedMethods = []string{"HEAD", "GET", "POST", "PATCH", "DELETE"}
-
 func (s *Server) init(ctx context.Context, registrar *api.Registrar) error {
-	var err error
-	var jwtSecretKey string
-	var oidcCfg *config.OIDC
-
-	if s.config.Auth != nil {
-		if s.config.Auth.JWT != nil {
-			jwtSecretKey = s.config.Auth.JWT.SecretKey
-		}
-		oidcCfg = s.config.Auth.OIDC
-	}
-
-	s.authPrvds, err = mw.NewAuthProviders(ctx, jwtSecretKey, oidcCfg, s.oidcCache)
-	if err != nil {
+	if err := s.prepareAuth(ctx); err != nil {
 		return err
 	}
-
-	err = s.prepareRateLimiters()
-	if err != nil {
+	if err := s.prepareRateLimiters(); err != nil {
 		return err
 	}
-
-	s.prepareGRPCServer(registrar)
-
-	s.prepareHTTPServer(ctx, registrar)
-
-	err = s.prepareDebugServer(ctx)
-	if err != nil {
+	if s.config.GRPC != nil {
+		s.prepareGRPCServer(registrar)
+	}
+	if s.config.GRPC != nil {
+		s.prepareHTTPServer(ctx, registrar)
+	}
+	if err := s.prepareDebugServer(ctx); err != nil {
 		return err
 	}
 
 	return nil
 }
 
+func (s *Server) prepareAuth(ctx context.Context) error {
+	if s.config.Auth == nil {
+		return nil
+	}
+
+	s.authPrvds = make(mw.AuthProvidersByEnv, len(s.config.Auth.Envs)+1)
+
+	provider, err := mw.NewAuthProvider(ctx, s.config.Auth.Options, s.caches)
+	if err != nil {
+		return fmt.Errorf("init auth: %w", err)
+	}
+	s.authPrvds[""] = provider
+
+	for envName, envConfig := range s.config.Auth.Envs {
+		provider, err := mw.NewAuthProvider(ctx, envConfig, s.caches)
+		if err != nil {
+			return fmt.Errorf("init auth for env %q: %w", envName, err)
+		}
+		s.authPrvds[envName] = provider
+	}
+	return nil
+}
+
 // setupCORS applies CORS policies set in config to the provided mux.
 func (s *Server) setupCORS(mux *chi.Mux) {
-	allowedOrigins := s.config.HTTP.CORS.AllowedOrigins
-	if len(allowedOrigins) == 0 {
-		allowedOrigins = append(allowedOrigins, defaultCORSAllowedOrigins)
-	}
-	allowedMethods := s.config.HTTP.CORS.AllowedMethods
-	if len(allowedMethods) == 0 {
-		allowedMethods = append(allowedMethods, defaultCORSAllowedMethods...)
-	}
 	mux.Use(cors.Handler(cors.Options{
-		AllowedOrigins:     allowedOrigins,
-		AllowedMethods:     allowedMethods,
+		AllowedOrigins:     s.config.HTTP.CORS.AllowedOrigins,
+		AllowedMethods:     s.config.HTTP.CORS.AllowedMethods,
 		AllowedHeaders:     s.config.HTTP.CORS.AllowedHeaders,
 		ExposedHeaders:     s.config.HTTP.CORS.ExposedHeaders,
 		AllowCredentials:   s.config.HTTP.CORS.AllowCredentials,
@@ -85,36 +79,24 @@ func (s *Server) setupCORS(mux *chi.Mux) {
 
 // prepareRateLimiters prepares requests rate limiters based on server config.
 func (s *Server) prepareRateLimiters() error {
-	if len(s.config.RateLimiters) == 0 {
+	if s.config.RateLimiting == nil {
 		return nil
 	}
 
-	s.rateLimiters = make(map[string]map[string]mw.RateLimiter)
+	s.rateLimiters = make(mw.RateLimitersByEnv, len(s.config.RateLimiting.Envs)+1)
 
-	for apiName, rateLimiters := range s.config.RateLimiters {
-		s.rateLimiters[apiName] = make(map[string]mw.RateLimiter)
+	limiters, err := mw.NewRateLimiters(s.config.RateLimiting.Options)
+	if err != nil {
+		return fmt.Errorf("init rate limiter: %w", err)
+	}
+	s.rateLimiters[""] = limiters
 
-		logger.Info("init default rate limiter", zap.String("api", apiName))
-		defaultLimiter, err := mw.NewRateLimiter(apiName, rateLimiters.Default)
+	for envName, envConfig := range s.config.RateLimiting.Envs {
+		limiters, err := mw.NewRateLimiters(envConfig)
 		if err != nil {
-			return fmt.Errorf("init default rate limiter: %w", err)
+			return fmt.Errorf("init rate limiter for env %q: %w", envName, err)
 		}
-
-		s.rateLimiters[apiName][mw.RateLimiterDefaultUser] = defaultLimiter
-
-		for user, rateLimiter := range rateLimiters.SpecialUsers {
-			logger.Info(
-				"init user rate limiter",
-				zap.String("api", apiName),
-				zap.String("user", user),
-			)
-			limiter, err := mw.NewRateLimiter(apiName, rateLimiter)
-			if err != nil {
-				return fmt.Errorf("init user %q rate limiter: %w", user, err)
-			}
-
-			s.rateLimiters[apiName][user] = limiter
-		}
+		s.rateLimiters[envName] = limiters
 	}
 
 	return nil
@@ -125,8 +107,9 @@ func (s *Server) prepareGRPCServer(registrar *api.Registrar) {
 	interceptors := []grpc.UnaryServerInterceptor{
 		mw.GRPCRecoverInterceptor(),
 		mw.GRPCProcessHeadersInterceptor(),
+		mw.GRPCEnvInterceptor(s.envResolver),
 	}
-	if s.authPrvds.JwtProvider != nil || s.authPrvds.OidcProvider != nil {
+	if len(s.authPrvds) > 0 {
 		interceptors = append(interceptors, mw.GRPCAuthInterceptor(&s.authPrvds))
 	}
 	interceptors = append(interceptors,
@@ -160,9 +143,10 @@ func (s *Server) prepareHTTPServer(ctx context.Context, registrar *api.Registrar
 		mw.HTTPNotFoundInterceptor(),
 		mw.HTTPRecoverInterceptor(),
 		mw.HTTPProcessHeadersInterceptor(),
+		mw.HTTPEnvInterceptor(s.envResolver),
 	}
-	if s.authPrvds.JwtProvider != nil || s.authPrvds.OidcProvider != nil {
-		interceptors = append(interceptors, mw.HTTPAuthInterceptor(&s.authPrvds))
+	if len(s.authPrvds) > 0 {
+		interceptors = append(interceptors, mw.HTTPAuthInterceptor(s.authPrvds))
 	}
 	interceptors = append(interceptors,
 		mw.HTTPMetricInterceptor(),
@@ -176,13 +160,13 @@ func (s *Server) prepareHTTPServer(ctx context.Context, registrar *api.Registrar
 
 	registrar.RegisterHTTPHandlers(mux)
 
-	s.httpServer = s.makeHTTPServer(ctx, mux)
+	s.httpServer = s.makeHTTPServer(ctx, mux, s.config.HTTP.ReadHeaderTimeout, s.config.HTTP.ReadTimeout, s.config.HTTP.WriteTimeout)
 }
 
 // prepareHTTPMux prepares debug HTTP server mux with applied CORS policies and added interceptors.
 func (s *Server) prepareDebugServer(ctx context.Context) error {
 	mux := chi.NewMux()
-	if s.config.HTTP.CORS != nil {
+	if s.config.HTTP != nil && s.config.HTTP.CORS != nil {
 		s.setupCORS(mux)
 	}
 	interceptors := chi.Middlewares{
@@ -191,24 +175,27 @@ func (s *Server) prepareDebugServer(ctx context.Context) error {
 	mux.Use(interceptors...)
 	mux.Handle("/metrics", promhttp.Handler())
 	serveHealth(mux)
-	_, port, err := net.SplitHostPort(s.config.HTTP.Addr)
-	if err != nil {
-		return err
+	// swagger describes http api, so it is served only if http server is configured
+	if s.config.HTTP != nil {
+		_, port, err := net.SplitHostPort(s.config.HTTP.Addr)
+		if err != nil {
+			return err
+		}
+		serveSwaggerUI(mux, port)
 	}
-	serveSwaggerUI(mux, port)
 	servePprof(mux)
-	s.debugServer = s.makeHTTPServer(ctx, mux)
+	s.debugServer = s.makeHTTPServer(ctx, mux, s.config.Debug.ReadHeaderTimeout, s.config.Debug.ReadTimeout, s.config.Debug.WriteTimeout)
 	return nil
 }
 
 // makeHTTPServer makes HTTP server from provided mux.
-func (s *Server) makeHTTPServer(ctx context.Context, mux *chi.Mux) *http.Server {
+func (s *Server) makeHTTPServer(ctx context.Context, mux *chi.Mux, readHeaderTimeout, readTimeout, writeTimeout time.Duration) *http.Server {
 	return &http.Server{
 		Handler:           mux,
-		ReadHeaderTimeout: s.config.HTTP.ReadHeaderTimeout,
-		ReadTimeout:       s.config.HTTP.ReadTimeout,
-		WriteTimeout:      s.config.HTTP.WriteTimeout,
-		MaxHeaderBytes:    maxHTTPHeaderBytes, // 4 KiB
+		ReadHeaderTimeout: readHeaderTimeout,
+		ReadTimeout:       readTimeout,
+		WriteTimeout:      writeTimeout,
+		MaxHeaderBytes:    config.MaxHTTPHeaderBytes, // 4 KiB
 		BaseContext: func(_ net.Listener) context.Context {
 			return ctx
 		},

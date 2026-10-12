@@ -15,7 +15,7 @@ func FromConfig(ctx context.Context, cfg *config.Cache) (map[string]Cache, error
 
 	for i := range cfg.Redis {
 		redis := &cfg.Redis[i]
-		var inmem *config.InmemoryCache
+		var inmem *config.Inmemory
 		if redis.WithInmemID != "" {
 			inmem = cfg.InmemByID(redis.WithInmemID)
 		}
@@ -45,7 +45,7 @@ func FromConfig(ctx context.Context, cfg *config.Cache) (map[string]Cache, error
 	return caches, nil
 }
 
-func New(ctx context.Context, inmemCfg *config.InmemoryCache, redisCfg *config.Redis) (Cache, error) {
+func New(ctx context.Context, inmemCfg *config.Inmemory, redisCfg *config.Redis) (Cache, error) {
 	redis, redisErr := newRedisCache(ctx, redisCfg)
 	if inmemCfg == nil {
 		if redisErr != nil {

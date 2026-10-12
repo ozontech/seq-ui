@@ -17,7 +17,7 @@ type inmemoryCache struct {
 	cache *ristretto.Cache[string, string]
 }
 
-func newInmemoryCache(cfg config.InmemoryCache) (*inmemoryCache, error) {
+func newInmemoryCache(cfg config.Inmemory) (*inmemoryCache, error) {
 	c, err := ristretto.NewCache(&ristretto.Config[string, string]{
 		NumCounters: cfg.NumCounters,
 		MaxCost:     cfg.MaxCost,

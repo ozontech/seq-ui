@@ -33,7 +33,41 @@ type RateLimiter struct {
 	perHandler bool
 }
 
-func NewRateLimiter(api string, cfg config.RateLimiter) (RateLimiter, error) {
+// RateLimitersByEnv contains rate limiters by env->api->user, empty env is root options.
+type RateLimitersByEnv map[string]map[string]map[string]RateLimiter
+
+func (ratelimiters RateLimitersByEnv) get(ctx context.Context) map[string]map[string]RateLimiter {
+	if ratelimiter, ok := ratelimiters[types.GetEnvKey(ctx)]; ok {
+		return ratelimiter
+	}
+	return ratelimiters[""]
+}
+
+func NewRateLimiters(apiToRateLimiters config.ApiToRateLimiters) (map[string]map[string]RateLimiter, error) {
+	result := make(map[string]map[string]RateLimiter, len(apiToRateLimiters))
+
+	for apiName, rateLimiters := range apiToRateLimiters {
+		result[apiName] = make(map[string]RateLimiter)
+
+		defaultLimiter, err := newRateLimiter(apiName, rateLimiters.Default)
+		if err != nil {
+			return nil, fmt.Errorf("init default rate limiter: %w", err)
+		}
+		result[apiName][RateLimiterDefaultUser] = defaultLimiter
+
+		for user, rateLimiter := range rateLimiters.SpecialUsers {
+			limiter, err := newRateLimiter(apiName, rateLimiter)
+			if err != nil {
+				return nil, fmt.Errorf("init user %q rate limiter: %w", user, err)
+			}
+			result[apiName][user] = limiter
+		}
+	}
+
+	return result, nil
+}
+
+func newRateLimiter(api string, cfg config.RateLimiter) (RateLimiter, error) {
 	if _, ok := grpcServices[api]; !ok {
 		spec := swagger.GetSpecEx()
 		if !spec.HasApi(api) {

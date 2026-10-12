@@ -170,15 +170,15 @@ func newHTTPContext(ctx context.Context, cfg *config.TLS) (context.Context, erro
 	}
 	b := tls.NewConfigBuilder()
 	if cfg.Insecure {
-		b.SetInsecureSkipVerify(cfg.Insecure)
-	} else if !cfg.Insecure && (cfg.RootCA != "" || cfg.CACert != "" || cfg.PrivateKey != "") {
-		if cfg.RootCA != "" {
-			if err := b.AppendCARoot(cfg.RootCA); err != nil {
+		b.SetInsecureSkipVerify(true)
+	} else {
+		if cfg.CACert != "" {
+			if err := b.AppendCARoot(cfg.CACert); err != nil {
 				return nil, fmt.Errorf("can't append CA root: %w", err)
 			}
 		}
-		if cfg.CACert != "" || cfg.PrivateKey != "" {
-			if err := b.AppendX509KeyPair(cfg.CACert, cfg.PrivateKey); err != nil {
+		if cfg.ClientCert != "" || cfg.ClientKey != "" {
+			if err := b.AppendX509KeyPair(cfg.ClientCert, cfg.ClientKey); err != nil {
 				return nil, fmt.Errorf("can't append key pair: %w", err)
 			}
 		}

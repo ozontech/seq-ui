@@ -22,11 +22,13 @@ func TestServeGetLimits(t *testing.T) {
 			env:  "default",
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxSearchLimit:            100,
-					MaxExportLimit:            200,
-					MaxParallelExportRequests: 2,
-					MaxAggregationsPerRequest: 5,
-					SeqCLIMaxSearchLimit:      10000,
+					Limits: config.SeqAPILimits{
+						MaxSearchLimit:            100,
+						MaxExportLimit:            200,
+						MaxParallelExportRequests: 2,
+						MaxAggregationsPerRequest: 5,
+						SeqCLIMaxSearchLimit:      10000,
+					},
 				},
 			},
 			want: getLimitsResponse{

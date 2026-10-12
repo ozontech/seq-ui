@@ -77,7 +77,7 @@ func TestServeGetFields(t *testing.T) {
 					Fields: fAPI,
 				},
 			},
-			cfg: config.SeqAPIGlobalOptions{
+			cfg: config.SeqAPIOptions{
 				SystemFields: []config.Field{
 					{Name: "field1", Type: "keyword"},
 					{Name: "field2", Type: "text"},
@@ -95,7 +95,11 @@ func TestServeGetFields(t *testing.T) {
 			},
 			cacheData: marshal(getFieldsResponse{Fields: f}),
 			cfg: config.SeqAPIOptions{
-				FieldsCacheTTL: time.Hour,
+				Caches: config.SeqAPICaches{
+					Fields: config.HandlerCache{
+						TTL: time.Hour,
+					},
+				},
 			},
 		},
 		{
@@ -114,7 +118,7 @@ func TestServeGetFields(t *testing.T) {
 
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					GlobalOptions: tt.cfg,
+					Options: tt.cfg,
 				},
 			}
 
@@ -129,8 +133,8 @@ func TestServeGetFields(t *testing.T) {
 					Return(tt.mockArgs.resp, tt.mockArgs.err).
 					Times(1)
 			}
-			if tt.cacheData != nil && tt.cfg.FieldsCacheTTL > 0 {
-				api.params.fieldsCache.setFields(tt.cacheData)
+			if tt.cacheData != nil && tt.cfg.Caches.Fields.TTL > 0 {
+				api.fieldsCache.set(tt.cacheData)
 			}
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getFieldsResponse]{
@@ -172,7 +176,7 @@ func TestServeGetPinnedFields(t *testing.T) {
 
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					GlobalOptions: config.SeqAPIGlobalOptions{
+					Options: config.SeqAPIOptions{
 						PinnedFields: tt.fields,
 					},
 				},

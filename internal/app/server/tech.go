@@ -15,6 +15,9 @@ import (
 	"github.com/ozontech/seq-ui/swagger"
 )
 
+const swaggerUIPrefix = "/docs/"
+const swaggerJSONPath = "/swagger.json"
+
 func serveHealth(mux *chi.Mux) {
 	mux.HandleFunc("/live", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("{}"))
@@ -23,9 +26,6 @@ func serveHealth(mux *chi.Mux) {
 		_, _ = w.Write([]byte("{}"))
 	})
 }
-
-const swaggerUIPrefix = "/docs/"
-const swaggerJSONPath = "/swagger.json"
 
 func defSwagger(host string) ([]byte, error) {
 	s := swagger.GetSpec()
@@ -55,6 +55,8 @@ func serveSwaggerUI(mux *chi.Mux, apiPort string) {
 		def, err := defSwagger(r.Host)
 		if err != nil {
 			logger.Error("failed to get swagger def", zap.Error(err))
+			http.Error(w, "failed to get swagger def", http.StatusInternalServerError)
+			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")

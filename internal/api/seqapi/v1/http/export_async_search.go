@@ -36,7 +36,7 @@ func (a *API) serveExportAsyncSearch(w http.ResponseWriter, r *http.Request) {
 	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_export_async_search_http")
 	defer span.End()
 
-	env := getEnvFromContext(ctx)
+	env := types.GetEnvKey(ctx)
 
 	userStr := "_"
 	if userName, err := types.GetUserKey(ctx); err == nil {
@@ -105,9 +105,9 @@ func (a *API) serveExportAsyncSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	defer params.exportLimiter.Fill(userStr)
 
-	if httpReq.Limit > params.options.MaxExportLimit {
+	if httpReq.Limit > params.options.Limits.MaxExportLimit {
 		wr.Error(fmt.Errorf("too many events are requested: count=%d, max=%d",
-			httpReq.Limit, params.options.MaxExportLimit),
+			httpReq.Limit, params.options.Limits.MaxExportLimit),
 			http.StatusBadRequest)
 		return
 	}

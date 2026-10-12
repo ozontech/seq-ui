@@ -41,8 +41,10 @@ func TestServeExport(t *testing.T) {
 			},
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxExportLimit:            100,
-					MaxParallelExportRequests: 1,
+					Limits: config.SeqAPILimits{
+						MaxExportLimit:            100,
+						MaxParallelExportRequests: 1,
+					},
 				},
 			},
 			mockArgs: &mockArgs{
@@ -68,8 +70,10 @@ func TestServeExport(t *testing.T) {
 			},
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxExportLimit:            100,
-					MaxParallelExportRequests: 1,
+					Limits: config.SeqAPILimits{
+						MaxExportLimit:            100,
+						MaxParallelExportRequests: 1,
+					},
 				},
 			},
 			mockArgs: &mockArgs{
@@ -95,7 +99,9 @@ func TestServeExport(t *testing.T) {
 			},
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxParallelExportRequests: 0,
+					Limits: config.SeqAPILimits{
+						MaxParallelExportRequests: 0,
+					},
 				},
 			},
 			wantErr: true,
@@ -111,8 +117,10 @@ func TestServeExport(t *testing.T) {
 			},
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxExportLimit:            5,
-					MaxParallelExportRequests: 1,
+					Limits: config.SeqAPILimits{
+						MaxExportLimit:            5,
+						MaxParallelExportRequests: 1,
+					},
 				},
 			},
 			wantErr: true,
@@ -129,8 +137,10 @@ func TestServeExport(t *testing.T) {
 			},
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxExportLimit:            100,
-					MaxParallelExportRequests: 1,
+					Limits: config.SeqAPILimits{
+						MaxExportLimit:            100,
+						MaxParallelExportRequests: 1,
+					},
 				},
 			},
 			wantErr: true,
@@ -146,8 +156,10 @@ func TestServeExport(t *testing.T) {
 			},
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxExportLimit:            100,
-					MaxParallelExportRequests: 1,
+					Limits: config.SeqAPILimits{
+						MaxExportLimit:            100,
+						MaxParallelExportRequests: 1,
+					},
 				},
 			},
 			wantErr: true,

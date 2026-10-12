@@ -22,26 +22,23 @@ import (
 )
 
 type apiParams struct {
-	client        seqdb.Client
-	options       *config.SeqAPIOptions
-	exportLimiter *tokenlimiter.Limiter
-}
-
-type apiGlobalParams struct {
-	fieldsCache          *fieldsCache
+	client               seqdb.Client
+	options              *config.SeqAPIOptions
 	masker               *mask.Masker
 	pinnedFields         fields
 	systemFields         fields
-	eventsCacheTTL       time.Duration
-	logsLifespanCacheTTL time.Duration
+	exportLimiter        *tokenlimiter.Limiter
+	eventCacheKeyPrefix  string
+	fieldsCacheKey       string
+	logsLifespanCacheKey string
 }
 
 type API struct {
 	config              *config.SeqAPI
-	globalParams        apiGlobalParams
 	paramsByEnv         map[string]apiParams
 	inmemWithRedisCache cache.Cache
 	redisCache          cache.Cache
+	fieldsCache         *fieldsCache
 	nowFn               func() time.Time
 	asyncSearches       asyncsearches.Service
 	envsResponse        getEnvsResponse
@@ -52,68 +49,60 @@ func New(
 	seqDBСlients map[string]seqdb.Client,
 	inmemWithRedisCache cache.Cache,
 	redisCache cache.Cache,
+	fieldsCache cache.Cache,
 	asyncSearches asyncsearches.Service,
 ) *API {
-	globalParams := apiGlobalParams{
-		pinnedFields:         parseFields(cfg.GlobalOptions.PinnedFields),
-		systemFields:         parseFields(cfg.GlobalOptions.SystemFields),
-		eventsCacheTTL:       cfg.GlobalOptions.EventsCacheTTL,
-		logsLifespanCacheTTL: cfg.GlobalOptions.LogsLifespanCacheTTL,
-	}
-
-	if cfg.GlobalOptions.FieldsCacheTTL > 0 {
-		globalParams.fieldsCache = newFieldsCache(cfg.GlobalOptions.FieldsCacheTTL)
-	}
-
-	globalMasker, err := mask.New(cfg.GlobalOptions.Masking)
-	if err != nil {
-		logger.Fatal("failed to init masking", zap.Error(err))
-	}
-
-	globalParams.masker = globalMasker
-	globalExportLimiter := tokenlimiter.New(cfg.Options.MaxParallelExportRequests)
-
 	paramsByEnv := make(map[string]apiParams, max(1, len(cfg.Envs)))
 	if len(cfg.Envs) > 0 {
 		for envName, envConfig := range cfg.Envs {
-			paramsByEnv[envName] = apiParams{
-				client:        seqDBСlients[envConfig.SeqDBID],
-				options:       envConfig.Options,
-				exportLimiter: tokenlimiter.New(envConfig.Options.MaxParallelExportRequests),
-			}
+			paramsByEnv[envName] = newAPIParams(envName, seqDBСlients[envConfig.SeqDBID], envConfig.Options)
 		}
 	} else {
-		paramsByEnv[""] = apiParams{
-			client:        seqDBСlients[cfg.SeqDBID],
-			options:       &cfg.Options,
-			exportLimiter: globalExportLimiter,
-		}
-	}
-
-	// for export
-	if globalParams.masker != nil {
-		for _, param := range paramsByEnv {
-			param.client.WithMasking(globalParams.masker)
-		}
+		paramsByEnv[""] = newAPIParams("", seqDBСlients[cfg.SeqDBID], &cfg.Options)
 	}
 
 	return &API{
 		config:              cfg,
-		globalParams:        globalParams,
 		paramsByEnv:         paramsByEnv,
 		inmemWithRedisCache: inmemWithRedisCache,
 		redisCache:          redisCache,
+		fieldsCache:         newFieldsCache(fieldsCache),
 		nowFn:               time.Now,
 		asyncSearches:       asyncSearches,
 		envsResponse:        parseEnvs(cfg),
 	}
 }
 
+func newAPIParams(env string, client seqdb.Client, options *config.SeqAPIOptions) apiParams {
+	masker, err := mask.New(options.Masking)
+	if err != nil {
+		logger.Fatal("failed to init masking", zap.Error(err))
+	}
+
+	// for export
+	if masker != nil {
+		client.WithMasking(masker)
+	}
+
+	cacheKeyPrefix := "seqapi_" + env + "_"
+
+	return apiParams{
+		client:               client,
+		options:              options,
+		masker:               masker,
+		pinnedFields:         parseFields(options.PinnedFields),
+		systemFields:         parseFields(options.SystemFields),
+		exportLimiter:        tokenlimiter.New(options.Limits.MaxParallelExportRequests),
+		eventCacheKeyPrefix:  cacheKeyPrefix + "event_",
+		fieldsCacheKey:       cacheKeyPrefix + "fields",
+		logsLifespanCacheKey: cacheKeyPrefix + "logs_lifespan",
+	}
+}
+
 func (a *API) Router() chi.Router {
 	mux := chi.NewMux()
 
-	mux.Use(a.envInterceptor)
-
+	// seqapi
 	mux.Post("/aggregation", a.serveGetAggregation)
 	mux.Post("/aggregation_ts", a.serveGetAggregationTs)
 	mux.Get("/events/{id}", a.serveGetEvent)
@@ -252,26 +241,6 @@ func apiErrorFromProto(proto *seqapi.Error) apiError {
 	}
 }
 
-type fieldsCache struct {
-	ttl time.Duration
-
-	ts        time.Time
-	rawFields []byte
-}
-
-func newFieldsCache(ttl time.Duration) *fieldsCache {
-	return &fieldsCache{ttl: ttl}
-}
-
-func (c *fieldsCache) getFields() ([]byte, bool, bool) {
-	return c.rawFields, !c.ts.IsZero(), time.Since(c.ts) < c.ttl
-}
-
-func (c *fieldsCache) setFields(rawFields []byte) {
-	c.rawFields = rawFields
-	c.ts = time.Now()
-}
-
 type asyncSearchStatus string //	@name	seqapi.v1.AsyncSearchStatus
 
 const (
@@ -331,10 +300,10 @@ func checkLimitOffset(limit, offset int32) error {
 func createEnvInfo(envName string, opts *config.SeqAPIOptions) envInfo {
 	return envInfo{
 		Env:                       envName,
-		MaxSearchLimit:            uint32(opts.MaxSearchLimit),
-		MaxExportLimit:            uint32(opts.MaxExportLimit),
-		MaxParallelExportRequests: uint32(opts.MaxParallelExportRequests),
-		MaxAggregationsPerRequest: uint32(opts.MaxAggregationsPerRequest),
-		SeqCliMaxSearchLimit:      uint32(opts.SeqCLIMaxSearchLimit),
+		MaxSearchLimit:            uint32(opts.Limits.MaxSearchLimit),
+		MaxExportLimit:            uint32(opts.Limits.MaxExportLimit),
+		MaxParallelExportRequests: uint32(opts.Limits.MaxParallelExportRequests),
+		MaxAggregationsPerRequest: uint32(opts.Limits.MaxAggregationsPerRequest),
+		SeqCliMaxSearchLimit:      uint32(opts.Limits.SeqCLIMaxSearchLimit),
 	}
 }

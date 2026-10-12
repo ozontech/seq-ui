@@ -10,6 +10,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/aggregation_ts"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/api_error"
+	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 )
@@ -19,7 +20,7 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 	defer span.End()
 
 	aggregations, _ := json.Marshal(req.Aggregations)
-	env := a.GetEnvFromContext(ctx)
+	env := types.GetEnvKey(ctx)
 
 	attributes := []attribute.KeyValue{
 		{

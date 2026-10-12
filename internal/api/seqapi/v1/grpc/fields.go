@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
@@ -16,7 +17,7 @@ func (a *API) GetFields(ctx context.Context, req *seqapi.GetFieldsRequest) (*seq
 	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_get_fields")
 	defer span.End()
 
-	env := a.GetEnvFromContext(ctx)
+	env := types.GetEnvKey(ctx)
 	params, err := a.GetParams(env)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())

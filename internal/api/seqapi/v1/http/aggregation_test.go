@@ -64,7 +64,9 @@ func TestServeGetAggregation(t *testing.T) {
 			},
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxAggregationsPerRequest: 3,
+					Limits: config.SeqAPILimits{
+						MaxAggregationsPerRequest: 3,
+					},
 				},
 			},
 		},
@@ -107,7 +109,9 @@ func TestServeGetAggregation(t *testing.T) {
 			},
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxAggregationsPerRequest: 3,
+					Limits: config.SeqAPILimits{
+						MaxAggregationsPerRequest: 3,
+					},
 				},
 			},
 		},
@@ -169,7 +173,9 @@ func TestServeGetAggregation(t *testing.T) {
 			},
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxAggregationsPerRequest: 3,
+					Limits: config.SeqAPILimits{
+						MaxAggregationsPerRequest: 3,
+					},
 				},
 			},
 		},
@@ -204,7 +210,9 @@ func TestServeGetAggregation(t *testing.T) {
 			},
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxAggregationsPerRequest: 3,
+					Limits: config.SeqAPILimits{
+						MaxAggregationsPerRequest: 3,
+					},
 				},
 			},
 		},
@@ -219,7 +227,9 @@ func TestServeGetAggregation(t *testing.T) {
 			wantErr: true,
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxAggregationsPerRequest: 2,
+					Limits: config.SeqAPILimits{
+						MaxAggregationsPerRequest: 2,
+					},
 				},
 			},
 		},
@@ -243,7 +253,9 @@ func TestServeGetAggregation(t *testing.T) {
 			wantErr: true,
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxAggregationsPerRequest: 3,
+					Limits: config.SeqAPILimits{
+						MaxAggregationsPerRequest: 3,
+					},
 				},
 			},
 		},

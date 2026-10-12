@@ -14,6 +14,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/grpcutil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/lifespan"
+	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
@@ -24,7 +25,7 @@ func (a *API) GetLogsLifespan(ctx context.Context, _ *seqapi.GetLogsLifespanRequ
 	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_get_logs_lifespan")
 	defer span.End()
 
-	env := a.GetEnvFromContext(ctx)
+	env := types.GetEnvKey(ctx)
 	params, err := a.GetParams(env)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())

@@ -52,7 +52,9 @@ func TestServeSearch(t *testing.T) {
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxSearchLimit: 5,
+					Limits: config.SeqAPILimits{
+						MaxSearchLimit: 5,
+					},
 				},
 			}),
 			mockArgs: &mockArgs{

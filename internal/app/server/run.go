@@ -17,24 +17,28 @@ func (s *Server) Run(ctx context.Context) error {
 	errWg, ctx := errgroup.WithContext(ctx)
 
 	// run gRPC server
-	errWg.Go(func() error {
-		lis, err := net.Listen("tcp", s.config.GRPC.Addr)
-		if err != nil {
-			return err
-		}
+	if s.grpcServer != nil {
+		errWg.Go(func() error {
+			lis, err := net.Listen("tcp", s.config.GRPC.Addr)
+			if err != nil {
+				return err
+			}
 
-		return s.grpcServer.Serve(lis)
-	})
+			return s.grpcServer.Serve(lis)
+		})
+	}
 
 	// run HTTP server
-	errWg.Go(func() error {
-		l, err := net.Listen("tcp", s.config.HTTP.Addr)
-		if err != nil {
-			return err
-		}
+	if s.httpServer != nil {
+		errWg.Go(func() error {
+			l, err := net.Listen("tcp", s.config.HTTP.Addr)
+			if err != nil {
+				return err
+			}
 
-		return s.httpServer.Serve(l)
-	})
+			return s.httpServer.Serve(l)
+		})
+	}
 
 	// run debug server
 	errWg.Go(func() error {
@@ -47,13 +51,18 @@ func (s *Server) Run(ctx context.Context) error {
 	})
 
 	errWg.Go(func() error {
-		swaggerAddr := s.config.Debug.Addr + swaggerUIPrefix
-		logger.Info("app started",
-			zap.String("http", s.config.HTTP.Addr),
-			zap.String("debug", s.config.Debug.Addr),
-			zap.String("swagger", swaggerAddr),
-			zap.String("grpc", s.config.GRPC.Addr),
-		)
+		fields := []zap.Field{zap.String("debug", s.config.Debug.Addr)}
+		if s.httpServer != nil {
+			fields = append(fields,
+				zap.String("http", s.config.HTTP.Addr),
+				zap.String("swagger", s.config.Debug.Addr+swaggerUIPrefix),
+			)
+		}
+		if s.grpcServer != nil {
+			fields = append(fields, zap.String("grpc", s.config.GRPC.Addr))
+		}
+
+		logger.Info("app started", fields...)
 		return nil
 	})
 
@@ -71,43 +80,42 @@ func (s *Server) Run(ctx context.Context) error {
 
 // Stop the gRPC and HTTP servers.
 func (s *Server) stop() {
-	var wg sync.WaitGroup
-
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	wg.Add(1)
-	go func() {
-		if err := s.httpServer.Shutdown(ctx); err != nil {
-			logger.Error("shutting down the http server", zap.Error(err))
-		} else {
-			logger.Warn("http server gracefully stopped")
-		}
-		wg.Done()
-	}()
+	var wg sync.WaitGroup
+	if s.httpServer != nil {
+		wg.Go(func() {
+			if err := s.httpServer.Shutdown(ctx); err != nil {
+				logger.Error("shutting down the http server", zap.Error(err))
+			} else {
+				logger.Warn("http server gracefully stopped")
+			}
+		})
+	}
 
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		if err := s.debugServer.Shutdown(ctx); err != nil {
 			logger.Error("shutting down the debug server", zap.Error(err))
 		} else {
 			logger.Warn("debug server gracefully stopped")
 		}
-		wg.Done()
-	}()
+	})
 
-	done := make(chan struct{})
-	go func() {
-		s.grpcServer.GracefulStop()
-		close(done)
-	}()
-	select {
-	case <-done:
-		logger.Warn("grpc server gracefully stopped")
-	case <-ctx.Done():
-		logger.Error("shutting down the grpc server", zap.Error(ctx.Err()))
-		logger.Warn("grpc server force stop")
-		s.grpcServer.Stop()
+	if s.grpcServer != nil {
+		done := make(chan struct{})
+		go func() {
+			s.grpcServer.GracefulStop()
+			close(done)
+		}()
+		select {
+		case <-done:
+			logger.Warn("grpc server gracefully stopped")
+		case <-ctx.Done():
+			logger.Error("shutting down the grpc server", zap.Error(ctx.Err()))
+			logger.Warn("grpc server force stop")
+			s.grpcServer.Stop()
+		}
 	}
 	wg.Wait()
 }

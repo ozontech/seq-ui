@@ -142,7 +142,7 @@ func HTTPTraceInterceptor() func(next http.Handler) http.Handler {
 	}
 }
 
-func HTTPAuthInterceptor(providers *AuthProviders) func(next http.Handler) http.Handler {
+func HTTPAuthInterceptor(providers AuthProvidersByEnv) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
@@ -157,8 +157,14 @@ func HTTPAuthInterceptor(providers *AuthProviders) func(next http.Handler) http.
 				return
 			}
 
+			provider := providers.get(ctx)
+			if !provider.enabled() {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			authHeader := r.Header.Get("Authorization")
-			username, err := providers.auth(ctx, authHeader)
+			username, err := provider.auth(ctx, authHeader)
 			if err != nil {
 				logger.Error("token auth failed", zap.Error(err))
 				http.Error(w, "Unauthenticated", http.StatusUnauthorized)
@@ -191,7 +197,7 @@ func HTTPRecoverInterceptor() func(next http.Handler) http.Handler {
 	}
 }
 
-func HTTPRateLimitInterceptor(rateLimiters map[string]map[string]RateLimiter) func(next http.Handler) http.Handler {
+func HTTPRateLimitInterceptor(rateLimiters RateLimitersByEnv) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
@@ -213,7 +219,7 @@ func HTTPRateLimitInterceptor(rateLimiters map[string]map[string]RateLimiter) fu
 				http.NotFound(w, r)
 				return
 			}
-			userToRateLimiter, ok := rateLimiters[uriApi]
+			userToRateLimiter, ok := rateLimiters.get(ctx)[uriApi]
 			if !ok {
 				next.ServeHTTP(w, r)
 				return
@@ -267,6 +273,32 @@ func HTTPProcessHeadersInterceptor() func(next http.Handler) http.Handler {
 				r = r.WithContext(context.WithValue(r.Context(), types.UseSeqQL{}, header))
 			}
 			next.ServeHTTP(w, r)
+		}
+		return http.HandlerFunc(fn)
+	}
+}
+
+func HTTPEnvInterceptor(resolver EnvResolver) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			uriApi, _, uriMethod, err := parseURI(r.RequestURI)
+			if err != nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			// async ssearch routes are part of seqapi, but have own envs
+			if uriApi == "seqapi" && uriMethod == "async_search" {
+				uriApi = "async_search"
+			}
+
+			env, err := resolver.resolve(uriApi, r.URL.Query().Get("env"))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			next.ServeHTTP(w, r.WithContext(types.SetEnvKey(r.Context(), env)))
 		}
 		return http.HandlerFunc(fn)
 	}

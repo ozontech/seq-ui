@@ -16,18 +16,23 @@ import (
 // Server contains application dependencies.
 type Server struct {
 	config      *config.Server
-	oidcCache   cache.Cache
 	debugServer *http.Server
 	grpcServer  *grpc.Server
 	httpServer  *http.Server
+	caches      map[string]cache.Cache
 
-	authPrvds    mw.AuthProviders
-	rateLimiters map[string]map[string]mw.RateLimiter // rate limiter by api and user
+	envResolver  mw.EnvResolver
+	authPrvds    mw.AuthProvidersByEnv
+	rateLimiters mw.RateLimitersByEnv
 }
 
 // New returns a new Server.
-func New(ctx context.Context, cfg *config.Server, registrar *api.Registrar, oidcCache cache.Cache) (*Server, error) {
-	s := &Server{config: cfg, oidcCache: oidcCache}
+func New(ctx context.Context, cfg *config.Config, registrar *api.Registrar, caches map[string]cache.Cache) (*Server, error) {
+	s := &Server{
+		config:      &cfg.Server,
+		caches:      caches,
+		envResolver: mw.NewEnvResolver(&cfg.Handlers),
+	}
 
 	if err := s.init(ctx, registrar); err != nil {
 		return nil, fmt.Errorf("init server: %w", err)

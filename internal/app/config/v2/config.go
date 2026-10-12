@@ -27,9 +27,12 @@ import (
 //     connection_timeout:
 //   debug:
 //     addr:
+// 	   read_timeout:
+// 	   read_header_timeout:
+//     write_timeout:
 //   auth:
-// 	   options:
-// 	     oidc:
+//     options:
+//       oidc:
 //         cache_id:
 //         cache_secret_key:
 //         skip_verify:
@@ -42,10 +45,10 @@ import (
 //         allowed_clients:
 //       jwt:
 //         secret_key:
-// 	   envs:
-// 	     <env_name>:
-// 		   options: # same as root options
-//   rate_limiters:
+//     envs:
+//       <env_name>:
+//         options: # same as root options
+//   rate_limiting:
 //     options:
 //       <api_name>:
 //         default:
@@ -69,18 +72,15 @@ import (
 //       avg_doc_size:
 //       addrs:
 //       request_retries:
-//       initial_retry_backoff:
-//       max_retry_backoff:
+//       backoff:
+// 		   initial_interval:
+// 		   max_interval
 //       client_mode:
 //       grpc_params:
-//       	keep_alive:
+//         keepalive:
 //           time:
 //           timeout:
 //           permit_without_stream:
-//       download_params:
-//         delay:
-//         initial_retry_backoff:
-//         max_retry_backoff:
 //   clickhouse:
 //     - id:
 //       addrs:
@@ -92,7 +92,6 @@ import (
 //       read_timeout:
 // handlers:
 //   seq_api:
-//     seq_db_id:
 //     options:
 //       limits:
 //         max_search_limit:
@@ -119,29 +118,28 @@ import (
 //                   values:
 //         process_fields:
 //         ignore_fields:
-//      caches:
-//        events:
-//          id:
-//          ttl:
-//        logs_lifespan:
-//          id:
-//          ttl:
-//        fields:
-//          id:
-//          ttl:
-//      pinned_fields:
-//        - name:
-//          type:
-//      system_fields:
-//        - name:
-//          type:
+//       caches:
+//         events:
+//           id:
+//           ttl:
+//         logs_lifespan:
+//           id:
+//           ttl:
+//         fields:
+//           id:
+//           ttl:
+//       pinned_fields:
+//         - name:
+//           type:
+//       system_fields:
+//         - name:
+//           type:
 //     envs:
 //       <env_name>:
 //         seq_db_id:
 //         options: # same as root options
 //     default_env:
 //   error_groups:
-//     ch_id:
 //     options:
 //       log_tags_mapping:
 //         env:
@@ -155,43 +153,48 @@ import (
 //         options: # same as root options
 //     default_env:
 //   mass_export:
-//     seq_db_id:
-//     batch_size:
-//     workers_count:
-//     tasks_channel_size:
-//     part_length:
-//     url_prefix:
-//     allowed_users:
-//     file_store:
-//       s3:
-//         endpoint:
-//         access_key_id:
-//         secret_access_key:
-//         bucket_name:
-//         enable_ssl:
-//     session_store:
-//       redis_id:
-//       export_lifetime:
-//     download_params:
-//       delay:
-//       initial_retry_backoff:
-//       max_retry_backoff:
-//   async_search:
-//     seq_db_id:
 //     options:
-//    	  admin_users:
-//        list_query_length_limit:
+//       workers_count:
+//       tasks_channel_size:
+//       part_length:
+//       url_prefix:
+//       allowed_users:
+//       file_store:
+//         s3:
+//           endpoint:
+//           access_key_id:
+//           secret_access_key:
+//           bucket_name:
+//           enable_ssl:
+//       session_store:
+//         lifetime:
+//         cache_id:
+//       download_params:
+//         batch_size:
+//         delay:
+// 		   delay_backoff:
+//           initial_interval:
+//           max_interval:
 //     envs:
 //       <env_name>:
 //         seq_db_id:
 //         options: # same as root options
 //     default_env:
-//  admin:
-//    options:
-//      super_users:
-//      cache:
-//        id:
-//        ttl:
+//   async_search:
+//     options:
+//       admin_users:
+//       list_query_length_limit:
+//     envs:
+//       <env_name>:
+//         seq_db_id:
+//         options: # same as root options
+//     default_env:
+//   admin:
+//     options:
+//       super_users:
+//       cache:
+//         id:
+//         ttl:
 //     envs:
 //       <env_name>:
 //         options: # same as root options
@@ -200,8 +203,8 @@ import (
 //   name:
 //   host:
 //   port:
-//   pass:
 //   user:
+//   pass:
 //   request_timeout:
 //   connection_pool_capacity:
 //   use_prepared_statements:
@@ -218,8 +221,8 @@ import (
 //       addr:
 //       username:
 //       password:
-//       timeout:
 //       max_retries:
+//       timeout:
 //       min_retry_backoff:
 //       max_retry_backoff:
 
@@ -254,19 +257,19 @@ type OIDC struct {
 	CacheSecretKey string   `yaml:"cache_secret_key"`
 	SkipVerify     bool     `yaml:"skip_verify"`
 	AuthURLs       []string `yaml:"auth_urls"`
-	TLS            *TLS     `yaml:"tls"`
 	AllowedClients []string `yaml:"allowed_clients"`
+	TLS            *TLS     `yaml:"tls"`
 }
 
 type DB struct {
 	Name                   string        `yaml:"name"`
 	Host                   string        `yaml:"host"`
 	Port                   int64         `yaml:"port"`
-	Pass                   string        `yaml:"pass"`
 	User                   string        `yaml:"user"`
+	Pass                   string        `yaml:"pass"`
 	RequestTimeout         time.Duration `yaml:"request_timeout"`
 	ConnectionPoolCapacity int64         `yaml:"connection_pool_capacity"`
-	UsePreparedStatements  *bool         `yaml:"use_prepared_statements,omitempty"`
+	UsePreparedStatements  *bool         `yaml:"use_prepared_statements"`
 }
 
 func (db *DB) ConnString() string {
@@ -281,17 +284,15 @@ type (
 		PerHandler   bool `yaml:"per_handler"`
 	}
 
-	UserToRateLimiter map[string]RateLimiter
-
-	ApiRateLimiters struct {
-		Default      RateLimiter       `yaml:"default"`
-		SpecialUsers UserToRateLimiter `yaml:"spec_users"`
+	RateLimiters struct {
+		Default      RateLimiter            `yaml:"default"`
+		SpecialUsers map[string]RateLimiter `yaml:"spec_users"`
 	}
 
-	ApiToRateLimiters map[string]ApiRateLimiters
+	ApiToRateLimiters map[string]RateLimiters
 )
 
-type InmemoryCache struct {
+type Inmemory struct {
 	ID          string `yaml:"id"`
 	NumCounters int64  `yaml:"num_counters"`
 	MaxCost     int64  `yaml:"max_cost"`
@@ -305,19 +306,19 @@ type Redis struct {
 	Addr            string        `yaml:"addr"`
 	Username        string        `yaml:"username"`
 	Password        string        `yaml:"password"`
-	Timeout         time.Duration `yaml:"timeout"`
 	MaxRetries      int           `yaml:"max_retries"`
+	Timeout         time.Duration `yaml:"timeout"`
 	MinRetryBackoff time.Duration `yaml:"min_retry_backoff"`
 	MaxRetryBackoff time.Duration `yaml:"max_retry_backoff"`
 }
 
 type Cache struct {
-	Inmemory []InmemoryCache `yaml:"inmemory"`
-	Redis    []Redis         `yaml:"redis"`
+	Inmemory []Inmemory `yaml:"inmemory"`
+	Redis    []Redis    `yaml:"redis"`
 }
 
-func (c *Cache) InmemByID(id string) *InmemoryCache {
-	i := slices.IndexFunc(c.Inmemory, func(inm InmemoryCache) bool {
+func (c *Cache) InmemByID(id string) *Inmemory {
+	i := slices.IndexFunc(c.Inmemory, func(inm Inmemory) bool {
 		return inm.ID == id
 	})
 	if i == -1 {
@@ -343,18 +344,18 @@ type S3 struct {
 	AccessKeyID     string `yaml:"access_key_id"`
 	SecretAccessKey string `yaml:"secret_access_key"`
 	BucketName      string `yaml:"bucket_name"`
-	EnableSSl       bool   `yaml:"enable_ssl"`
+	EnableSSL       bool   `yaml:"enable_ssl"`
 }
 
 type DownloadParams struct {
-	Delay               time.Duration `yaml:"delay"`
-	InitialRetryBackoff time.Duration `yaml:"initial_retry_backoff"`
-	MaxRetryBackoff     time.Duration `yaml:"max_retry_backoff"`
+	BatchSize    uint64        `yaml:"batch_size"`
+	Delay        time.Duration `yaml:"delay"`
+	DelayBackoff Backoff       `yaml:"delay_backoff"`
 }
 
 type SessionStore struct {
-	RedisID        string        `yaml:"redis_id"`
-	ExportLifetime time.Duration `yaml:"export_lifetime"`
+	Lifetime time.Duration `yaml:"lifetime"`
+	CacheID  string        `yaml:"cache_id"`
 }
 
 type FileStore struct {
@@ -362,16 +363,25 @@ type FileStore struct {
 }
 
 type MassExport struct {
-	SeqDBID          string          `yaml:"seq_db_id"`
-	BatchSize        uint64          `yaml:"batch_size"`
-	WorkersCount     int             `yaml:"workers_count"`
-	TasksChannelSize int             `yaml:"tasks_channel_size"`
-	PartLength       time.Duration   `yaml:"part_length"`
-	URLPrefix        string          `yaml:"url_prefix"`
-	AllowedUsers     []string        `yaml:"allowed_users"`
-	FileStore        *FileStore      `yaml:"file_store"`
-	SessionStore     *SessionStore   `yaml:"session_store"`
-	DownloadParams   *DownloadParams `yaml:"download_params"`
+	Options    MassExportOptions        `yaml:"options"`
+	Envs       map[string]MassExportEnv `yaml:"envs"`
+	DefaultEnv string                   `yaml:"default_env"`
+}
+
+type MassExportEnv struct {
+	SeqDBID string             `yaml:"seq_db_id"`
+	Options *MassExportOptions `yaml:"options"`
+}
+
+type MassExportOptions struct {
+	WorkersCount     int            `yaml:"workers_count"`
+	TasksChannelSize int            `yaml:"tasks_channel_size"`
+	PartLength       time.Duration  `yaml:"part_length"`
+	URLPrefix        string         `yaml:"url_prefix"`
+	AllowedUsers     []string       `yaml:"allowed_users"`
+	FileStore        FileStore      `yaml:"file_store"`
+	SessionStore     SessionStore   `yaml:"session_store"`
+	DownloadParams   DownloadParams `yaml:"download_params"`
 }
 
 type HTTP struct {
@@ -388,7 +398,10 @@ type GRPC struct {
 }
 
 type Debug struct {
-	Addr string `yaml:"addr"`
+	Addr              string        `yaml:"addr"`
+	ReadHeaderTimeout time.Duration `yaml:"read_header_timeout"`
+	ReadTimeout       time.Duration `yaml:"read_timeout"`
+	WriteTimeout      time.Duration `yaml:"write_timeout"`
 }
 
 type JWT struct {
@@ -396,12 +409,8 @@ type JWT struct {
 }
 
 type Auth struct {
-	Options AuthOptions        `yaml:"options"`
-	Envs    map[string]AuthEnv `yaml:"envs"`
-}
-
-type AuthEnv struct {
-	Options *AuthOptions `yaml:"options"`
+	Options AuthOptions            `yaml:"options"`
+	Envs    map[string]AuthOptions `yaml:"envs"`
 }
 
 type AuthOptions struct {
@@ -410,20 +419,16 @@ type AuthOptions struct {
 }
 
 type Server struct {
-	HTTP         HTTP          `yaml:"http"`
-	GRPC         GRPC          `yaml:"grpc"`
+	HTTP         *HTTP         `yaml:"http"`
+	GRPC         *GRPC         `yaml:"grpc"`
 	Debug        Debug         `yaml:"debug"`
 	Auth         *Auth         `yaml:"auth"`
-	RateLimiters *RateLimiters `yaml:"rate_limiters"`
+	RateLimiting *RateLimiting `yaml:"rate_limiting"`
 }
 
-type RateLimiters struct {
-	Options ApiToRateLimiters          `yaml:"options"`
-	Envs    map[string]RateLimitersEnv `yaml:"envs"`
-}
-
-type RateLimitersEnv struct {
-	Options ApiToRateLimiters `yaml:"options"`
+type RateLimiting struct {
+	Options ApiToRateLimiters            `yaml:"options"`
+	Envs    map[string]ApiToRateLimiters `yaml:"envs"`
 }
 
 type KeepaliveParams struct {
@@ -442,20 +447,23 @@ type KeepaliveParams struct {
 }
 
 type GRPCParams struct {
-	Keepalive *KeepaliveParams `yaml:"keep_alive"`
+	Keepalive *KeepaliveParams `yaml:"keepalive"`
 }
 
 type SeqDBClient struct {
-	ID                  string          `yaml:"id"`
-	Timeout             time.Duration   `yaml:"timeout"`
-	AvgDocSize          int             `yaml:"avg_doc_size"`
-	Addrs               []string        `yaml:"addrs"`
-	RequestRetries      int             `yaml:"request_retries"`
-	InitialRetryBackoff time.Duration   `yaml:"initial_retry_backoff"`
-	MaxRetryBackoff     time.Duration   `yaml:"max_retry_backoff"`
-	ClientMode          string          `yaml:"client_mode"`
-	GRPCParams          *GRPCParams     `yaml:"grpc_params"`
-	DownloadParams      *DownloadParams `yaml:"download_params"`
+	ID             string        `yaml:"id"`
+	Timeout        time.Duration `yaml:"timeout"`
+	AvgDocSize     int           `yaml:"avg_doc_size"`
+	Addrs          []string      `yaml:"addrs"`
+	RequestRetries int           `yaml:"request_retries"`
+	RetriesBackoff *Backoff      `yaml:"backoff"`
+	ClientMode     string        `yaml:"client_mode"`
+	GRPCParams     *GRPCParams   `yaml:"grpc_params"`
+}
+
+type Backoff struct {
+	InitialInterval time.Duration `yaml:"initial_interval"`
+	MaxInterval     time.Duration `yaml:"max_interval"`
 }
 
 type CHClient struct {
@@ -486,7 +494,7 @@ func (c *Clients) ClickHouseByID(id string) *CHClient {
 }
 
 type Handlers struct {
-	SeqAPI      SeqAPI       `yaml:"seq_api"`
+	SeqAPI      *SeqAPI      `yaml:"seq_api"`
 	MassExport  *MassExport  `yaml:"mass_export"`
 	AsyncSearch *AsyncSearch `yaml:"async_search"`
 	ErrorGroups *ErrorGroups `yaml:"error_groups"`
@@ -514,7 +522,7 @@ type Field struct {
 }
 
 type SeqAPI struct {
-	SeqDBID    string               `yaml:"seq_db_id"`
+	// добавить проверку на len(SEQDB) == 1 и берем [0]
 	Options    SeqAPIOptions        `yaml:"options"`
 	Envs       map[string]SeqAPIEnv `yaml:"envs"`
 	DefaultEnv string               `yaml:"default_env"`
@@ -534,14 +542,14 @@ type SeqAPIOptions struct {
 }
 
 type SeqAPILimits struct {
-	MaxSearchLimit             int32 `yaml:"max_search_limit,omitempty"`
-	MaxSearchTotal             int64 `yaml:"max_search_total,omitempty"`
-	MaxSearchOffset            int32 `yaml:"max_search_offset,omitempty"`
-	MaxExportLimit             int32 `yaml:"max_export_limit,omitempty"`
-	SeqCLIMaxSearchLimit       int   `yaml:"seq_cli_max_search_limit,omitempty"`
-	MaxParallelExportRequests  int   `yaml:"max_parallel_export_requests,omitempty"`
-	MaxAggregationsPerRequest  int   `yaml:"max_aggregations_per_request,omitempty"`
-	MaxBucketsPerAggregationTs int   `yaml:"max_buckets_per_aggregation_ts,omitempty"`
+	MaxSearchLimit             int `yaml:"max_search_limit"`
+	MaxSearchTotal             int `yaml:"max_search_total"`
+	MaxSearchOffset            int `yaml:"max_search_offset"`
+	MaxExportLimit             int `yaml:"max_export_limit"`
+	SeqCLIMaxSearchLimit       int `yaml:"seq_cli_max_search_limit"`
+	MaxParallelExportRequests  int `yaml:"max_parallel_export_requests"`
+	MaxAggregationsPerRequest  int `yaml:"max_aggregations_per_request"`
+	MaxBucketsPerAggregationTs int `yaml:"max_buckets_per_aggregation_ts"`
 }
 
 type SeqAPICaches struct {
@@ -591,7 +599,6 @@ type LogTagsMapping struct {
 }
 
 type ErrorGroups struct {
-	CHID       string                    `yaml:"ch_id"`
 	Options    ErrorGroupsOptions        `yaml:"options"`
 	Envs       map[string]ErrorGroupsEnv `yaml:"envs"`
 	DefaultEnv string                    `yaml:"default_env"`
@@ -608,7 +615,6 @@ type ErrorGroupsOptions struct {
 }
 
 type AsyncSearch struct {
-	SeqDBID    string                    `yaml:"seq_db_id"`
 	Options    AsyncSearchOptions        `yaml:"options"`
 	Envs       map[string]AsyncSearchEnv `yaml:"envs"`
 	DefaultEnv string                    `yaml:"default_env"`

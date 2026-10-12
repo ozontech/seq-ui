@@ -94,24 +94,19 @@ func run(ctx context.Context) {
 	}
 
 	logger.Info("initializing caches")
-	caches, err := cache.FromConfig(ctx, cfg.Cache)
+	caches, err := cache.FromConfig(ctx, &cfg.Cache)
 	if err != nil {
 		logger.Fatal("failed to init caches", zap.Error(err))
 	}
 
-	var oidcCache cache.Cache
-	if cfg.Server.Auth != nil && cfg.Server.Auth.OIDC != nil {
-		oidcCache = caches[cfg.Server.Auth.OIDC.CacheID]
-	}
-
 	registrar := initApp(ctx, cfg, caches)
 
-	serv, err := server.New(ctx, cfg.Server, registrar, oidcCache)
+	serv, err := server.New(ctx, &cfg, registrar, caches)
 	if err != nil {
 		logger.Fatal("app init error", zap.Error(err))
 	}
 
-	// Run launches both grpc and http servers. On successful
+	// Run launches configured grpc/http servers and debug server. On successful
 	// http.ErrServerClosed is returned because of http.Server.Serve.
 	if err = serv.Run(ctx); !errors.Is(err, http.ErrServerClosed) {
 		logger.Fatal("app run", zap.Error(err))
@@ -181,9 +176,15 @@ func initApp(ctx context.Context, cfg config.Config, caches map[string]cache.Cac
 		}
 	}
 
-	seqApiCache := caches[cfg.Handlers.SeqAPI.CacheID]
-	seqApiRedisCache := caches[cfg.Handlers.SeqAPI.RedisID]
-	seqApiV1 := seqapi_v1.New(&cfg.Handlers.SeqAPI, seqDBClients, seqApiCache, seqApiRedisCache, asyncSearchesSvc)
+	seqAPICaches := cfg.Handlers.SeqAPI.Options.Caches
+	seqApiV1 := seqapi_v1.New(
+		&cfg.Handlers.SeqAPI,
+		seqDBClients,
+		caches[seqAPICaches.Events.ID],
+		caches[seqAPICaches.LogsLifespan.ID],
+		caches[seqAPICaches.Fields.ID],
+		asyncSearchesSvc,
+	)
 
 	var errorGroupsV1 *errorgroups_v1.ErrorGroups
 	if cfg.Handlers.ErrorGroups != nil {
