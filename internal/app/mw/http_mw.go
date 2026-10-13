@@ -283,11 +283,12 @@ func HTTPEnvInterceptor(resolver EnvResolver) func(next http.Handler) http.Handl
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			uriApi, _, uriMethod, err := parseURI(r.RequestURI)
 			if err != nil {
-				next.ServeHTTP(w, r)
+				logger.Error("failed to parse URI", zap.Error(err))
+				http.NotFound(w, r)
 				return
 			}
 
-			// async ssearch routes are part of seqapi, but have own envs
+			// async search routes are part of seqapi, but have own envs
 			if uriApi == "seqapi" && uriMethod == "async_search" {
 				uriApi = "async_search"
 			}

@@ -53,6 +53,7 @@ func (m *v1tov2) migrateServer(src *v1.Server) v2.Server {
 			ReadTimeout:       src.HTTPReadTimeout,
 			ReadHeaderTimeout: src.HTTPReadHeaderTimeout,
 			WriteTimeout:      src.HTTPWriteTimeout,
+			CORS:              m.migrateCORS(src.CORS),
 		},
 		RateLimiting: m.migrateRateLimiting(src.RateLimiters),
 	}

@@ -10,7 +10,6 @@ import (
 	"github.com/ozontech/seq-ui/internal/api"
 	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/mw"
-	"github.com/ozontech/seq-ui/internal/pkg/cache"
 )
 
 // Server contains application dependencies.
@@ -19,7 +18,6 @@ type Server struct {
 	debugServer *http.Server
 	grpcServer  *grpc.Server
 	httpServer  *http.Server
-	caches      map[string]cache.Cache
 
 	envResolver  mw.EnvResolver
 	authPrvds    mw.AuthProvidersByEnv
@@ -27,10 +25,9 @@ type Server struct {
 }
 
 // New returns a new Server.
-func New(ctx context.Context, cfg *config.Config, registrar *api.Registrar, caches map[string]cache.Cache) (*Server, error) {
+func New(ctx context.Context, cfg *config.Config, registrar *api.Registrar) (*Server, error) {
 	s := &Server{
 		config:      &cfg.Server,
-		caches:      caches,
 		envResolver: mw.NewEnvResolver(&cfg.Handlers),
 	}
 

@@ -139,7 +139,7 @@ var noAuthGRPCMethods = map[string]map[string]struct{}{
 
 var errUnauth = status.Error(codes.Unauthenticated, types.ErrUnauthenticated.Error())
 
-func GRPCAuthInterceptor(providers *AuthProvidersByEnv) grpc.UnaryServerInterceptor {
+func GRPCAuthInterceptor(providers AuthProvidersByEnv) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context, req any, info *grpc.UnaryServerInfo,
 		h grpc.UnaryHandler,

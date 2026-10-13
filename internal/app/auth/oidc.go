@@ -42,11 +42,18 @@ type oidcProvider struct {
 	allowedClients []string
 }
 
-func NewOIDCProvider(ctx context.Context, cfg *config.OIDC, oidcCache cache.Cache) (OIDCProvider, error) {
+func NewOIDCProvider(ctx context.Context, cfg *config.OIDC) (OIDCProvider, error) {
 	var (
-		err     error
-		oidcCtx context.Context
+		err       error
+		oidcCtx   context.Context
+		oidcCache cache.Cache
 	)
+
+	if cfg.CacheID != "" {
+		if oidcCache = cache.ByID(cfg.CacheID); oidcCache == nil {
+			return nil, fmt.Errorf("oidc cache %q not found", cfg.CacheID)
+		}
+	}
 
 	if !cfg.SkipVerify {
 		oidcCtx, err = newHTTPContext(context.Background(), cfg.TLS)

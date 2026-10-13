@@ -21,11 +21,9 @@ type redisCache struct {
 func newRedisCache(ctx context.Context, cfg *config.Redis) (*redisCache, error) {
 	client, err := redisclient.New(ctx, cfg)
 	if err != nil {
-		metric.ServerCacheRedisMisses.Inc()
 		return nil, fmt.Errorf("create redis client: %w", err)
 	}
 
-	metric.ServerCacheRedisHits.Inc()
 	return &redisCache{client: client, prefix: cfg.KeyPrefix}, nil
 }
 
@@ -40,10 +38,12 @@ func (c *redisCache) SetWithTTL(ctx context.Context, key string, value string, t
 func (c *redisCache) Get(ctx context.Context, key string) (string, error) {
 	value, err := c.client.Get(ctx, c.withPrefix(key)).Result()
 	if err == nil {
+		metric.ServerCacheRedisMisses.Inc()
 		return value, nil
 	}
 
 	if errors.Is(err, redis.Nil) {
+		metric.ServerCacheRedisHits.Inc()
 		return "", ErrNotFound
 	}
 

@@ -13,7 +13,7 @@ func mergeEnvOptions(cfgBytes []byte) ([]byte, error) {
 		return nil, fmt.Errorf("parse yaml for merge: %w", err)
 	}
 
-	merge := func(root map[string]any) {
+	mergeHandlerOptions := func(root map[string]any) {
 		rootOpts, _ := root["options"].(map[string]any)
 		envs, _ := root["envs"].(map[string]any)
 		if rootOpts == nil || len(envs) == 0 {
@@ -31,21 +31,33 @@ func mergeEnvOptions(cfgBytes []byte) ([]byte, error) {
 		}
 	}
 
+	mergeServerOptions := func(root map[string]any) {
+		rootOpts, _ := root["options"].(map[string]any)
+		envs, _ := root["envs"].(map[string]any)
+		if rootOpts == nil || len(envs) == 0 {
+			return
+		}
+
+		for name, e := range envs {
+			envOpts, _ := e.(map[string]any)
+			envs[name] = mergeYAMLs(rootOpts, envOpts)
+		}
+	}
+
 	handlers, _ := root["handlers"].(map[string]any)
 	for _, h := range handlers {
 		if handler, _ := h.(map[string]any); handler != nil {
-			merge(handler)
+			mergeHandlerOptions(handler)
 		}
 	}
 
 	server, _ := root["server"].(map[string]any)
 	if auth, _ := server["auth"].(map[string]any); auth != nil {
-		merge(auth)
+		mergeServerOptions(auth)
 	}
-	if rl, _ := server["rate_limiters"].(map[string]any); rl != nil {
-		merge(rl)
+	if rl, _ := server["rate_limiting"].(map[string]any); rl != nil {
+		mergeServerOptions(rl)
 	}
-
 	out, err := yaml.Marshal(root)
 	if err != nil {
 		return nil, fmt.Errorf("marshal merged yaml: %w", err)

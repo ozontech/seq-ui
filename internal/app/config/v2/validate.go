@@ -213,7 +213,7 @@ func validateServer(server *Server) error {
 		return fmt.Errorf("server: at least one of http or grpc must be set")
 	}
 
-	if server.HTTP.CORS != nil {
+	if server.HTTP != nil && server.HTTP.CORS != nil {
 		if len(server.HTTP.CORS.AllowedOrigins) == 0 {
 			server.HTTP.CORS.AllowedOrigins = []string{defaultCORSAllowedOrigins}
 		}

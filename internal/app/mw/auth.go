@@ -9,7 +9,6 @@ import (
 	"github.com/ozontech/seq-ui/internal/app/auth"
 	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/types"
-	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/logger"
 )
 
@@ -44,18 +43,18 @@ func (providers AuthProvidersByEnv) get(ctx context.Context) AuthProviders {
 	return providers[""]
 }
 
-func NewAuthProvider(ctx context.Context, options config.AuthOptions, caches map[string]cache.Cache) (AuthProviders, error) {
+func NewAuthProvider(ctx context.Context, options config.AuthOptions) (AuthProviders, error) {
 	authPrvds := AuthProviders{}
 
 	if options.JWT != nil {
 		logger.Info("initializing jwt provider")
-		authPrvds.JwtProvider = auth.NewJWTProvider(options.JWT.SecretKey)
+		authPrvds.JwtProvider = auth.NewJWTProvider(options.JWT)
 	}
 
 	if options.OIDC != nil {
 		logger.Info("initializing oidc provider")
 		var err error
-		authPrvds.OidcProvider, err = auth.NewOIDCProvider(ctx, options.OIDC, caches[options.OIDC.CacheID])
+		authPrvds.OidcProvider, err = auth.NewOIDCProvider(ctx, options.OIDC)
 		if err != nil {
 			return authPrvds, fmt.Errorf("failed to init oidc provider: %w", err)
 		}

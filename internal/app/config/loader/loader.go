@@ -25,47 +25,47 @@ type configMeta struct {
 }
 
 // FromFile parse config from config path.
-func FromFile(cfgPath string) (v2.Config, error) {
+func FromFile(cfgPath string) (*v2.Config, error) {
 	cfgBytes, err := os.ReadFile(cfgPath) //nolint:gosec
 	if err != nil {
-		return v2.Config{}, fmt.Errorf("read file: %w", err)
+		return nil, fmt.Errorf("read file: %w", err)
 	}
 
 	version, err := readVersion(cfgBytes)
 	if err != nil {
-		return v2.Config{}, fmt.Errorf("read version: %w", err)
+		return nil, fmt.Errorf("read version: %w", err)
 	}
 
 	switch version {
 	case V1:
 		cfgV1, err := decode[v1.Config](cfgBytes, true)
 		if err != nil {
-			return v2.Config{}, fmt.Errorf("parse config v1: %w", err)
+			return nil, fmt.Errorf("parse config v1: %w", err)
 		}
 		cfgBytes, err = encode(migrate.V1ToV2(cfgV1))
 		if err != nil {
-			return v2.Config{}, err
+			return nil, err
 		}
 	case V2:
 	default:
-		return v2.Config{}, fmt.Errorf("unsupported config version: %d", version)
+		return nil, fmt.Errorf("unsupported config version: %d", version)
 	}
 
 	cfgBytes, err = mergeEnvOptions(cfgBytes)
 	if err != nil {
-		return v2.Config{}, fmt.Errorf("merge env options: %w", err)
+		return nil, fmt.Errorf("merge env options: %w", err)
 	}
 
 	cfg, err := decode[v2.Config](cfgBytes, true)
 	if err != nil {
-		return v2.Config{}, fmt.Errorf("parse config v2: %w", err)
+		return nil, fmt.Errorf("parse config v2: %w", err)
 	}
 
 	if err := cfg.Validate(); err != nil {
-		return v2.Config{}, fmt.Errorf("normalize config: %w", err)
+		return nil, fmt.Errorf("validate config: %w", err)
 	}
 
-	return cfg, nil
+	return &cfg, nil
 }
 
 func ToLatestVersion(cfgBytes []byte) ([]byte, error) {
@@ -113,7 +113,7 @@ func decode[T any](cfg []byte, strict bool) (T, error) {
 	return result, nil
 }
 
-func encode(cfg v2.Config) ([]byte, error) {
+func encode[T any](cfg T) ([]byte, error) {
 	var buf bytes.Buffer
 	encoder := yaml.NewEncoder(&buf)
 	encoder.SetIndent(2)

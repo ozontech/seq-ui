@@ -22,6 +22,7 @@ var grpcServices = map[string]struct{}{
 	"DashboardsService":  {},
 	"MassExportService":  {},
 	"ErrorGroupsService": {},
+	"AdminService":       {},
 }
 
 type rateLimiter interface {
@@ -37,8 +38,8 @@ type RateLimiter struct {
 type RateLimitersByEnv map[string]map[string]map[string]RateLimiter
 
 func (ratelimiters RateLimitersByEnv) get(ctx context.Context) map[string]map[string]RateLimiter {
-	if ratelimiter, ok := ratelimiters[types.GetEnvKey(ctx)]; ok {
-		return ratelimiter
+	if rl, ok := ratelimiters[types.GetEnvKey(ctx)]; ok {
+		return rl
 	}
 	return ratelimiters[""]
 }
@@ -55,8 +56,8 @@ func NewRateLimiters(apiToRateLimiters config.ApiToRateLimiters) (map[string]map
 		}
 		result[apiName][RateLimiterDefaultUser] = defaultLimiter
 
-		for user, rateLimiter := range rateLimiters.SpecialUsers {
-			limiter, err := newRateLimiter(apiName, rateLimiter)
+		for user, userRateLimiter := range rateLimiters.SpecialUsers {
+			limiter, err := newRateLimiter(apiName, userRateLimiter)
 			if err != nil {
 				return nil, fmt.Errorf("init user %q rate limiter: %w", user, err)
 			}

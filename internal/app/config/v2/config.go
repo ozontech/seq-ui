@@ -30,6 +30,14 @@ import (
 // 	   read_timeout:
 // 	   read_header_timeout:
 //     write_timeout:
+//     cors:
+//       allowed_origins:
+//       allowed_methods:
+//       allowed_headers:
+//       exposed_headers:
+//       allow_credentials:
+//       max_age:
+//       options_passthrough:
 //   auth:
 //     options:
 //       oidc:
@@ -46,8 +54,7 @@ import (
 //       jwt:
 //         secret_key:
 //     envs:
-//       <env_name>:
-//         options: # same as root options
+//       <env_name>: # same as root options
 //   rate_limiting:
 //     options:
 //       <api_name>:
@@ -63,15 +70,14 @@ import (
 //             store_max_keys:
 //             per_handler:
 //     envs:
-//       <env_name>:
-//         options: # same as root options
+//       <env_name>: # same as root options
 // clients:
 //   seq_db:
 //     - id:
 //       timeout:
 //       avg_doc_size:
 //       addrs:
-//       request_retries:
+//       request_retries_backoff:
 //       backoff:
 // 		   initial_interval:
 // 		   max_interval
@@ -402,6 +408,7 @@ type Debug struct {
 	ReadHeaderTimeout time.Duration `yaml:"read_header_timeout"`
 	ReadTimeout       time.Duration `yaml:"read_timeout"`
 	WriteTimeout      time.Duration `yaml:"write_timeout"`
+	CORS              *CORS         `yaml:"cors"`
 }
 
 type JWT struct {
@@ -451,14 +458,14 @@ type GRPCParams struct {
 }
 
 type SeqDBClient struct {
-	ID             string        `yaml:"id"`
-	Timeout        time.Duration `yaml:"timeout"`
-	AvgDocSize     int           `yaml:"avg_doc_size"`
-	Addrs          []string      `yaml:"addrs"`
-	RequestRetries int           `yaml:"request_retries"`
-	RetriesBackoff *Backoff      `yaml:"backoff"`
-	ClientMode     string        `yaml:"client_mode"`
-	GRPCParams     *GRPCParams   `yaml:"grpc_params"`
+	ID                    string        `yaml:"id"`
+	Timeout               time.Duration `yaml:"timeout"`
+	AvgDocSize            int           `yaml:"avg_doc_size"`
+	Addrs                 []string      `yaml:"addrs"`
+	RequestRetries        int           `yaml:"request_retries"`
+	RequestRetriesBackoff *Backoff      `yaml:"request_retries_backoff"`
+	ClientMode            string        `yaml:"client_mode"`
+	GRPCParams            *GRPCParams   `yaml:"grpc_params"`
 }
 
 type Backoff struct {
