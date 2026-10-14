@@ -23,23 +23,34 @@ var (
 )
 
 func setupTestAPI(data test.APITestData) *API {
-	if len(data.Cfg.Envs) == 0 && data.Cfg.SeqDBID == "" {
-		data.Cfg.SeqDBID = config.DefaultSeqDBClientID
+	seqDBClients := make(map[string]seqdb.Client, max(1, len(data.Cfg.Envs)))
+	asyncSearhes := make(map[string]asyncsearches.Service, max(1, len(data.Cfg.Envs)))
+
+	if len(data.Cfg.Envs) == 0 {
+		seqDBClients[config.DefaultSeqDBClientID] = data.Mocks.SeqDB
+		asyncSearhes[""] = data.Mocks.AsyncSearchesSvc
 	}
-
-	seqDBClients := make(map[string]seqdb.Client)
-	seqDBClients[config.DefaultSeqDBClientID] = data.Mocks.SeqDB
-
-	for _, envConfig := range data.Cfg.Envs {
+	for envName, envConfig := range data.Cfg.Envs {
 		seqDBClients[envConfig.SeqDBID] = data.Mocks.SeqDB
+		asyncSearhes[envName] = data.Mocks.AsyncSearchesSvc
 	}
 
-	var asyncSvc asyncsearches.Service
-	if data.Mocks.AsyncSearchesSvc != nil {
-		asyncSvc = data.Mocks.AsyncSearchesSvc
+	if data.Mocks.AsyncSearchesSvc == nil {
+		asyncSearhes = nil
 	}
 
-	return New(&data.Cfg, seqDBClients, data.Mocks.Cache, data.Mocks.Cache, data.Mocks.Cache, asyncSvc)
+	api := New(&data.Cfg, seqDBClients, asyncSearhes)
+
+	if data.Mocks.Cache != nil {
+		for env, params := range api.paramsByEnv {
+			params.eventsCache = data.Mocks.Cache
+			params.logsLifespanCache = data.Mocks.Cache
+			params.fieldsCache = newFieldsCache(data.Mocks.Cache)
+			api.paramsByEnv[env] = params
+		}
+	}
+
+	return api
 }
 
 func withQueryParamID(h http.HandlerFunc, id string) http.HandlerFunc {

@@ -57,7 +57,7 @@ func TestServeGetEvent(t *testing.T) {
 			id:   id1,
 			want: getEventResponse{Event: eventFromProto(event1)},
 			cacheArgs: test.CacheMockArgs{
-				Key:   id1,
+				Key:   "seqapi_event_" + id1,
 				Value: string(event1json),
 				Err:   errSomethingWrong,
 			},
@@ -75,7 +75,7 @@ func TestServeGetEvent(t *testing.T) {
 			id:   id2,
 			want: getEventResponse{Event: eventFromProto(event2)},
 			cacheArgs: test.CacheMockArgs{
-				Key:   id2,
+				Key:   "seqapi_event_" + id2,
 				Value: string(event2json),
 			},
 		},
@@ -84,7 +84,7 @@ func TestServeGetEvent(t *testing.T) {
 			id:   id3,
 			want: getEventResponse{Event: eventFromProto(event3)},
 			cacheArgs: test.CacheMockArgs{
-				Key:   id3,
+				Key:   "seqapi_event_" + id3,
 				Value: string(event3json),
 				Err:   errSomethingWrong,
 			},
@@ -102,7 +102,7 @@ func TestServeGetEvent(t *testing.T) {
 			id:      id4,
 			wantErr: true,
 			cacheArgs: test.CacheMockArgs{
-				Key: id4,
+				Key: "seqapi_event_" + id4,
 				Err: errSomethingWrong,
 			},
 			mockArgs: &mockArgs{
@@ -121,8 +121,10 @@ func TestServeGetEvent(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					GlobalOptions: config.SeqAPIGlobalOptions{
-						EventsCacheTTL: cacheTTL,
+					Options: config.SeqAPIOptions{
+						Caches: config.SeqAPICaches{
+							Events: &config.HandlerCache{TTL: cacheTTL},
+						},
 					},
 				},
 			}
@@ -381,16 +383,18 @@ func TestGetEventWithMasking(t *testing.T) {
 
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					GlobalOptions: config.SeqAPIGlobalOptions{
-						EventsCacheTTL: cacheTTL,
-						Masking:        tt.maskingCfg,
+					Options: config.SeqAPIOptions{
+						Caches: config.SeqAPICaches{
+							Events: &config.HandlerCache{TTL: cacheTTL},
+						},
+						Masking: tt.maskingCfg,
 					},
 				},
 			}
 
 			cacheMock := mock_cache.NewMockCache(ctrl)
 			cacheArgs := test.CacheMockArgs{
-				Key:   curEID,
+				Key:   "seqapi_event_" + curEID,
 				Value: string(curEData.eventJson),
 			}
 			if !tt.isCached {

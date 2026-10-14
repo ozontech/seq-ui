@@ -63,8 +63,10 @@ func TestSearch(t *testing.T) {
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxSearchLimit:            5,
-					MaxAggregationsPerRequest: 5,
+					Limits: config.SeqAPILimits{
+						MaxSearchLimit:            5,
+						MaxAggregationsPerRequest: 5,
+					},
 				},
 			}),
 		},
@@ -82,7 +84,9 @@ func TestSearch(t *testing.T) {
 			},
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxSearchLimit: 5,
+					Limits: config.SeqAPILimits{
+						MaxSearchLimit: 5,
+					},
 				},
 			},
 			apiErr: true,
@@ -99,8 +103,10 @@ func TestSearch(t *testing.T) {
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxSearchLimit:            5,
-					MaxAggregationsPerRequest: 2,
+					Limits: config.SeqAPILimits{
+						MaxSearchLimit:            5,
+						MaxAggregationsPerRequest: 2,
+					},
 				},
 			}),
 			apiErr: true,
@@ -116,8 +122,10 @@ func TestSearch(t *testing.T) {
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxSearchLimit:       5,
-					MaxSearchOffsetLimit: 10,
+					Limits: config.SeqAPILimits{
+						MaxSearchLimit:  5,
+						MaxSearchOffset: 10,
+					},
 				},
 			}),
 			apiErr: true,
@@ -146,8 +154,10 @@ func TestSearch(t *testing.T) {
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxSearchLimit:      5,
-					MaxSearchTotalLimit: int64(limit),
+					Limits: config.SeqAPILimits{
+						MaxSearchLimit: 5,
+						MaxSearchTotal: int64(limit),
+					},
 				},
 			}),
 		},
@@ -162,7 +172,9 @@ func TestSearch(t *testing.T) {
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxSearchLimit: 5,
+					Limits: config.SeqAPILimits{
+						MaxSearchLimit: 5,
+					},
 				},
 			}),
 			clientErr: errSomethingWrong,

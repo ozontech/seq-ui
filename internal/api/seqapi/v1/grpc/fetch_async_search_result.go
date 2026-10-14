@@ -15,7 +15,8 @@ import (
 )
 
 func (a *API) FetchAsyncSearchResult(ctx context.Context, req *seqapi.FetchAsyncSearchResultRequest) (*seqapi.FetchAsyncSearchResultResponse, error) {
-	if a.asyncSearches == nil {
+	asyncSearches, ok := a.asyncSearches[types.GetEnvKey(ctx)]
+	if !ok {
 		return nil, status.Error(codes.Unimplemented, types.ErrAsyncSearchesDisabled.Error())
 	}
 
@@ -46,7 +47,7 @@ func (a *API) FetchAsyncSearchResult(ctx context.Context, req *seqapi.FetchAsync
 		return nil, status.Error(codes.InvalidArgument, "invalid search_id")
 	}
 
-	resp, err := a.asyncSearches.FetchAsyncSearchResult(ctx, req)
+	resp, err := asyncSearches.FetchAsyncSearchResult(ctx, req)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}

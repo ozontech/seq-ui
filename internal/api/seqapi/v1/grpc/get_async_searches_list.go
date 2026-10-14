@@ -14,7 +14,8 @@ import (
 )
 
 func (a *API) GetAsyncSearchesList(ctx context.Context, req *seqapi.GetAsyncSearchesListRequest) (*seqapi.GetAsyncSearchesListResponse, error) {
-	if a.asyncSearches == nil {
+	asyncSearches, ok := a.asyncSearches[types.GetEnvKey(ctx)]
+	if !ok {
 		return nil, status.Error(codes.Unimplemented, types.ErrAsyncSearchesDisabled.Error())
 	}
 
@@ -50,7 +51,7 @@ func (a *API) GetAsyncSearchesList(ctx context.Context, req *seqapi.GetAsyncSear
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	resp, err := a.asyncSearches.GetAsyncSearchesList(ctx, req)
+	resp, err := asyncSearches.GetAsyncSearchesList(ctx, req)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}

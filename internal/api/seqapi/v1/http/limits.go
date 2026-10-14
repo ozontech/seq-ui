@@ -30,8 +30,8 @@ func (a *API) serveGetLimits(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.NewWriter(w).WriteJson(getLimitsResponse{
-		MaxSearchLimit:            params.options.Limits.MaxSearchLimit,
-		MaxExportLimit:            params.options.Limits.MaxExportLimit,
+		MaxSearchLimit:            int(params.options.Limits.MaxSearchLimit),
+		MaxExportLimit:            int(params.options.Limits.MaxExportLimit),
 		MaxParallelExportRequests: params.options.Limits.MaxParallelExportRequests,
 		MaxAggregationsPerRequest: params.options.Limits.MaxAggregationsPerRequest,
 		SeqCliMaxSearchLimit:      params.options.Limits.SeqCLIMaxSearchLimit,

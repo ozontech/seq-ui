@@ -133,7 +133,7 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if resp.Total > int64(params.options.Limits.MaxSearchTotal) {
+	if resp.Total > params.options.Limits.MaxSearchTotal {
 		resp.Error = &seqapi.Error{
 			Code:    seqapi.ErrorCode_ERROR_CODE_QUERY_TOO_HEAVY,
 			Message: api_error.ErrQueryTooHeavy.Error(),
@@ -170,8 +170,8 @@ type searchRequest struct {
 	Query        string             `json:"query"`
 	From         time.Time          `json:"from" format:"date-time"`
 	To           time.Time          `json:"to" format:"date-time"`
-	Limit        int                `json:"limit"`
-	Offset       int                `json:"offset"`
+	Limit        int32              `json:"limit"`
+	Offset       int32              `json:"offset"`
 	WithTotal    bool               `json:"withTotal"`
 	Aggregations aggregationQueries `json:"aggregations"`
 	Histogram    struct {

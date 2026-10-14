@@ -23,7 +23,7 @@ import (
 func TestGetLogsLifespan(t *testing.T) {
 	var (
 		resultStr = "36000" // 10(h) * 60(min/h) * 60(sec/min)
-		cacheKey  = "logs_lifespan"
+		cacheKey  = "seqapi_logs_lifespan"
 		result    = 10 * time.Hour
 		cacheTTL  = time.Minute
 	)
@@ -106,8 +106,10 @@ func TestGetLogsLifespan(t *testing.T) {
 
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					GlobalOptions: config.SeqAPIGlobalOptions{
-						LogsLifespanCacheTTL: cacheTTL,
+					Options: config.SeqAPIOptions{
+						Caches: config.SeqAPICaches{
+							LogsLifespan: &config.HandlerCache{TTL: cacheTTL},
+						},
 					},
 				},
 			}

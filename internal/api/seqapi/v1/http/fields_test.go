@@ -1,20 +1,23 @@
 package http
 
 import (
-	"encoding/json"
 	"net/http"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
 	"github.com/ozontech/seq-ui/internal/app/config/v2"
+	mock_cache "github.com/ozontech/seq-ui/internal/pkg/cache/mock"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
+	"github.com/stretchr/testify/require"
 )
+
+var fieldsCacheKey = "seqapi_fields"
 
 func TestServeGetFields(t *testing.T) {
 	f := fields{
@@ -26,11 +29,8 @@ func TestServeGetFields(t *testing.T) {
 		{Name: "test_name2", Type: seqapi.FieldType_text},
 	}
 
-	marshal := func(data any) []byte {
-		raw, err := json.Marshal(data)
-		require.NoError(t, err)
-		return raw
-	}
+	cachedFields, err := proto.Marshal(&seqapi.GetFieldsResponse{Fields: fAPI})
+	require.NoError(t, err)
 
 	type mockArgs struct {
 		resp *seqapi.GetFieldsResponse
@@ -93,10 +93,10 @@ func TestServeGetFields(t *testing.T) {
 			want: getFieldsResponse{
 				Fields: f,
 			},
-			cacheData: marshal(getFieldsResponse{Fields: f}),
+			cacheData: cachedFields,
 			cfg: config.SeqAPIOptions{
 				Caches: config.SeqAPICaches{
-					Fields: config.HandlerCache{
+					Fields: &config.HandlerCache{
 						TTL: time.Hour,
 					},
 				},
@@ -125,6 +125,15 @@ func TestServeGetFields(t *testing.T) {
 			seqDbMock := mock_seqdb.NewMockClient(ctrl)
 			seqData.Mocks.SeqDB = seqDbMock
 
+			if tt.cacheData != nil {
+				cacheMock := mock_cache.NewMockCache(ctrl)
+				cacheMock.EXPECT().
+					Get(gomock.Any(), fieldsCacheKey).
+					Return(string(tt.cacheData), nil).
+					Times(1)
+				seqData.Mocks.Cache = cacheMock
+			}
+
 			api := setupTestAPI(seqData)
 
 			if tt.mockArgs != nil {
@@ -132,9 +141,6 @@ func TestServeGetFields(t *testing.T) {
 					GetFields(gomock.Any(), gomock.Any()).
 					Return(tt.mockArgs.resp, tt.mockArgs.err).
 					Times(1)
-			}
-			if tt.cacheData != nil && tt.cfg.Caches.Fields.TTL > 0 {
-				api.fieldsCache.set(tt.cacheData)
 			}
 
 			httputil.DoTestHTTPEx(t, httputil.TestDataHTTPEx[struct{}, getFieldsResponse]{

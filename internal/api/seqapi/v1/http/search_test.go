@@ -90,7 +90,9 @@ func TestServeSearch(t *testing.T) {
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxSearchLimit: 5,
+					Limits: config.SeqAPILimits{
+						MaxSearchLimit: 5,
+					},
 				},
 			}),
 			mockArgs: &mockArgs{
@@ -127,7 +129,9 @@ func TestServeSearch(t *testing.T) {
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxSearchLimit: 5,
+					Limits: config.SeqAPILimits{
+						MaxSearchLimit: 5,
+					},
 				},
 			}),
 			mockArgs: &mockArgs{
@@ -166,7 +170,9 @@ func TestServeSearch(t *testing.T) {
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxSearchLimit: 5,
+					Limits: config.SeqAPILimits{
+						MaxSearchLimit: 5,
+					},
 				},
 			}),
 			mockArgs: &mockArgs{
@@ -214,7 +220,9 @@ func TestServeSearch(t *testing.T) {
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxSearchLimit: 5,
+					Limits: config.SeqAPILimits{
+						MaxSearchLimit: 5,
+					},
 				},
 			}),
 			mockArgs: &mockArgs{
@@ -258,7 +266,9 @@ func TestServeSearch(t *testing.T) {
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxSearchLimit: 5,
+					Limits: config.SeqAPILimits{
+						MaxSearchLimit: 5,
+					},
 				},
 			}),
 			mockArgs: &mockArgs{
@@ -292,7 +302,9 @@ func TestServeSearch(t *testing.T) {
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxSearchLimit: 5,
+					Limits: config.SeqAPILimits{
+						MaxSearchLimit: 5,
+					},
 				},
 			}),
 			mockArgs: &mockArgs{
@@ -333,7 +345,9 @@ func TestServeSearch(t *testing.T) {
 			},
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxSearchLimit: 5,
+					Limits: config.SeqAPILimits{
+						MaxSearchLimit: 5,
+					},
 				},
 			},
 			wantErr: true,
@@ -349,8 +363,10 @@ func TestServeSearch(t *testing.T) {
 			},
 			cfg: config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxSearchLimit:            5,
-					MaxAggregationsPerRequest: 2,
+					Limits: config.SeqAPILimits{
+						MaxSearchLimit:            5,
+						MaxAggregationsPerRequest: 2,
+					},
 				},
 			},
 			wantErr: true,
@@ -366,8 +382,10 @@ func TestServeSearch(t *testing.T) {
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxSearchLimit:       5,
-					MaxSearchOffsetLimit: 10,
+					Limits: config.SeqAPILimits{
+						MaxSearchLimit:  5,
+						MaxSearchOffset: 10,
+					},
 				},
 			}),
 			wantErr: true,
@@ -389,8 +407,10 @@ func TestServeSearch(t *testing.T) {
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxSearchLimit:       5,
-					MaxSearchOffsetLimit: 10,
+					Limits: config.SeqAPILimits{
+						MaxSearchLimit:  5,
+						MaxSearchOffset: 10,
+					},
 				},
 			}),
 			mockArgs: &mockArgs{
@@ -422,7 +442,9 @@ func TestServeSearch(t *testing.T) {
 			},
 			cfg: test.SetCfgDefaults(config.SeqAPI{
 				Options: config.SeqAPIOptions{
-					MaxSearchLimit: 5,
+					Limits: config.SeqAPILimits{
+						MaxSearchLimit: 5,
+					},
 				},
 			}),
 			wantErr: true,

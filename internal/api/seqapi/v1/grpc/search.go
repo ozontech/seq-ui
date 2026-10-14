@@ -87,16 +87,16 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 
 	span.SetAttributes(spanAttributes...)
 
-	if err := api_error.CheckSearchLimit(req.Limit, params.options.MaxSearchLimit); err != nil {
+	if err := api_error.CheckSearchLimit(req.Limit, params.options.Limits.MaxSearchLimit); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if err := api_error.CheckAggregationsCount(len(req.Aggregations), params.options.MaxAggregationsPerRequest); err != nil {
+	if err := api_error.CheckAggregationsCount(len(req.Aggregations), params.options.Limits.MaxAggregationsPerRequest); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if err := api_error.CheckForOffsetConflict(req.Offset, req.OffsetId); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if err := api_error.CheckSearchOffsetLimit(req.Offset, params.options.MaxSearchOffsetLimit); err != nil {
+	if err := api_error.CheckSearchOffsetLimit(req.Offset, params.options.Limits.MaxSearchOffset); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -106,7 +106,7 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 			continue
 		}
 		if err := api_error.CheckAggregationTsInterval(*agg.Interval, fromRaw, toRaw,
-			params.options.MaxBucketsPerAggregationTs,
+			params.options.Limits.MaxBucketsPerAggregationTs,
 		); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -117,16 +117,16 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 		return nil, err
 	}
 
-	if resp.Total > params.options.MaxSearchTotalLimit {
+	if resp.Total > params.options.Limits.MaxSearchTotal {
 		resp.Error = &seqapi.Error{
 			Code:    seqapi.ErrorCode_ERROR_CODE_QUERY_TOO_HEAVY,
 			Message: api_error.ErrQueryTooHeavy.Error(),
 		}
 	}
 
-	if a.globalParams.masker != nil {
+	if params.masker != nil {
 		for _, e := range resp.Events {
-			a.globalParams.masker.Mask(e.Data)
+			params.masker.Mask(e.Data)
 		}
 	}
 

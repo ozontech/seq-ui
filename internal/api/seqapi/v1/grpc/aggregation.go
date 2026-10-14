@@ -60,7 +60,7 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if err := api_error.CheckAggregationsCount(len(req.Aggregations), params.options.MaxAggregationsPerRequest); err != nil {
+	if err := api_error.CheckAggregationsCount(len(req.Aggregations), params.options.Limits.MaxAggregationsPerRequest); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -70,7 +70,7 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 			continue
 		}
 		if err := api_error.CheckAggregationTsInterval(*agg.Interval, fromRaw, toRaw,
-			params.options.MaxBucketsPerAggregationTs,
+			params.options.Limits.MaxBucketsPerAggregationTs,
 		); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -81,7 +81,7 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 		return nil, err
 	}
 
-	if a.globalParams.masker != nil {
+	if params.masker != nil {
 		buf := make([]string, 0)
 		for i, agg := range resp.Aggregations {
 			if agg == nil {
@@ -99,7 +99,7 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 				field = aggReq.GroupBy
 			}
 
-			buf = a.globalParams.masker.MaskAgg(field, buf)
+			buf = params.masker.MaskAgg(field, buf)
 
 			for j, key := range buf {
 				if agg.Buckets[j] != nil {

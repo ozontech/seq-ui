@@ -28,55 +28,49 @@ type apiParams struct {
 	pinnedFields         fields
 	systemFields         fields
 	exportLimiter        *tokenlimiter.Limiter
-	eventCacheKeyPrefix  string
+	eventsCache          cache.Cache
+	logsLifespanCache    cache.Cache
+	fieldsCache          *fieldsCache
+	eventsCacheKeyPrefix string
 	fieldsCacheKey       string
 	logsLifespanCacheKey string
 }
 
 type API struct {
-	config              *config.SeqAPI
-	paramsByEnv         map[string]apiParams
-	inmemWithRedisCache cache.Cache
-	redisCache          cache.Cache
-	fieldsCache         *fieldsCache
-	nowFn               func() time.Time
-	asyncSearches       asyncsearches.Service
-	envsResponse        getEnvsResponse
+	config        *config.SeqAPI
+	paramsByEnv   map[string]apiParams
+	nowFn         func() time.Time
+	asyncSearches map[string]asyncsearches.Service
+	envsResponse  getEnvsResponse
 }
 
-func New(
-	cfg *config.SeqAPI,
-	seqDBСlients map[string]seqdb.Client,
-	inmemWithRedisCache cache.Cache,
-	redisCache cache.Cache,
-	fieldsCache cache.Cache,
-	asyncSearches asyncsearches.Service,
-) *API {
+func New(cfg *config.SeqAPI, seqDBСlients map[string]seqdb.Client, asyncSearches map[string]asyncsearches.Service) *API {
 	paramsByEnv := make(map[string]apiParams, max(1, len(cfg.Envs)))
 	if len(cfg.Envs) > 0 {
 		for envName, envConfig := range cfg.Envs {
 			paramsByEnv[envName] = newAPIParams(envName, seqDBСlients[envConfig.SeqDBID], envConfig.Options)
 		}
 	} else {
-		paramsByEnv[""] = newAPIParams("", seqDBСlients[cfg.SeqDBID], &cfg.Options)
+		var client seqdb.Client
+		for _, c := range seqDBСlients {
+			client = c
+		}
+		paramsByEnv[""] = newAPIParams("", client, &cfg.Options)
 	}
 
 	return &API{
-		config:              cfg,
-		paramsByEnv:         paramsByEnv,
-		inmemWithRedisCache: inmemWithRedisCache,
-		redisCache:          redisCache,
-		fieldsCache:         newFieldsCache(fieldsCache),
-		nowFn:               time.Now,
-		asyncSearches:       asyncSearches,
-		envsResponse:        parseEnvs(cfg),
+		config:        cfg,
+		paramsByEnv:   paramsByEnv,
+		nowFn:         time.Now,
+		asyncSearches: asyncSearches,
+		envsResponse:  parseEnvs(cfg),
 	}
 }
 
 func newAPIParams(env string, client seqdb.Client, options *config.SeqAPIOptions) apiParams {
 	masker, err := mask.New(options.Masking)
 	if err != nil {
-		logger.Fatal("failed to init masking", zap.Error(err))
+		logger.Fatal("failed to init masking", zap.String("env", env), zap.Error(err))
 	}
 
 	// for export
@@ -84,7 +78,25 @@ func newAPIParams(env string, client seqdb.Client, options *config.SeqAPIOptions
 		client.WithMasking(masker)
 	}
 
-	cacheKeyPrefix := "seqapi_" + env + "_"
+	var eventsCache, logsLifespanCache cache.Cache
+	if options.Caches.Events != nil {
+		eventsCache, _ = cache.ByID(options.Caches.Events.ID)
+	}
+	if options.Caches.LogsLifespan != nil {
+		logsLifespanCache, _ = cache.ByID(options.Caches.LogsLifespan.ID)
+	}
+
+	var fc *fieldsCache
+	if options.Caches.Fields != nil {
+		if c, ok := cache.ByID(options.Caches.Fields.ID); ok {
+			fc = newFieldsCache(c)
+		}
+	}
+
+	cacheKeyPrefix := "seqapi_"
+	if env != "" {
+		cacheKeyPrefix += env + "_"
+	}
 
 	return apiParams{
 		client:               client,
@@ -93,7 +105,10 @@ func newAPIParams(env string, client seqdb.Client, options *config.SeqAPIOptions
 		pinnedFields:         parseFields(options.PinnedFields),
 		systemFields:         parseFields(options.SystemFields),
 		exportLimiter:        tokenlimiter.New(options.Limits.MaxParallelExportRequests),
-		eventCacheKeyPrefix:  cacheKeyPrefix + "event_",
+		eventsCache:          eventsCache,
+		logsLifespanCache:    logsLifespanCache,
+		fieldsCache:          fc,
+		eventsCacheKeyPrefix: cacheKeyPrefix + "event_",
 		fieldsCacheKey:       cacheKeyPrefix + "fields",
 		logsLifespanCacheKey: cacheKeyPrefix + "logs_lifespan",
 	}

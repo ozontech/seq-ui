@@ -73,7 +73,7 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if a.fieldsCache == nil {
+	if params.fieldsCache == nil {
 		resp, err := params.client.GetFields(ctx, &seqapi.GetFieldsRequest{})
 		if err != nil {
 			wr.Error(err, http.StatusInternalServerError)
@@ -89,7 +89,7 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if cachedFields, ok := a.fieldsCache.get(ctx, params.fieldsCacheKey); ok {
+	if cachedFields, ok := params.fieldsCache.get(ctx, params.fieldsCacheKey); ok {
 		res := getFieldsResponse{
 			Fields:       fieldsFromProto(cachedFields),
 			SystemFields: params.systemFields,
@@ -105,7 +105,7 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.fieldsCache.set(ctx, params.fieldsCacheKey, resp.GetFields(), params.options.Caches.Fields.TTL)
+	params.fieldsCache.set(ctx, params.fieldsCacheKey, resp.GetFields(), params.options.Caches.Fields.TTL)
 	res := getFieldsResponse{
 		Fields:       fieldsFromProto(resp.GetFields()),
 		SystemFields: params.systemFields,

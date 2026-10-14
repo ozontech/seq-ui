@@ -18,10 +18,10 @@ func (a *API) GetLimits(ctx context.Context, _ *seqapi.GetLimitsRequest) (*seqap
 	}
 
 	return &seqapi.GetLimitsResponse{
-		MaxSearchLimit:            params.options.MaxSearchLimit,
-		MaxExportLimit:            params.options.MaxExportLimit,
-		MaxParallelExportRequests: int32(params.options.MaxParallelExportRequests),
-		MaxAggregationsPerRequest: int32(params.options.MaxAggregationsPerRequest),
-		SeqCliMaxSearchLimit:      int32(params.options.SeqCLIMaxSearchLimit),
+		MaxSearchLimit:            params.options.Limits.MaxSearchLimit,
+		MaxExportLimit:            params.options.Limits.MaxExportLimit,
+		MaxParallelExportRequests: int32(params.options.Limits.MaxParallelExportRequests),
+		MaxAggregationsPerRequest: int32(params.options.Limits.MaxAggregationsPerRequest),
+		SeqCliMaxSearchLimit:      int32(params.options.Limits.SeqCLIMaxSearchLimit),
 	}, nil
 }

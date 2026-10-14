@@ -38,18 +38,19 @@ func (a *API) serveGetLogsLifespan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if resStr, err := a.redisCache.Get(ctx, params.logsLifespanCacheKey); err == nil {
-		res := 0
-		res, err = strconv.Atoi(resStr)
-		if err == nil {
-			logger.Debug("got logs lifespan from cache")
-			wr.WriteJson(getLogsLifespanResponse{Lifespan: res})
-			return
-		}
+	if params.logsLifespanCache != nil {
+		if resStr, err := params.logsLifespanCache.Get(ctx, params.logsLifespanCacheKey); err == nil {
+			res, err := strconv.Atoi(resStr)
+			if err == nil {
+				logger.Debug("got logs lifespan from cache")
+				wr.WriteJson(getLogsLifespanResponse{Lifespan: res})
+				return
+			}
 
-		logger.Error("can't parse logs lifespan", zap.Error(err))
-	} else if !errors.Is(err, cache.ErrNotFound) {
-		logger.Error("can't get logs lifespan from cache", zap.Error(err))
+			logger.Error("can't parse logs lifespan", zap.Error(err))
+		} else if !errors.Is(err, cache.ErrNotFound) {
+			logger.Error("can't get logs lifespan from cache", zap.Error(err))
+		}
 	}
 
 	clientStatus, err := params.client.Status(ctx, &seqapi.StatusRequest{})
@@ -65,12 +66,14 @@ func (a *API) serveGetLogsLifespan(w http.ResponseWriter, r *http.Request) {
 
 	res := int(a.nowFn().Sub(clientStatus.OldestStorageTime.AsTime()) / lifespan.MeasureUnit)
 
-	if err = a.redisCache.SetWithTTL(
-		ctx,
-		params.logsLifespanCacheKey,
-		strconv.Itoa(res),
-		params.options.Caches.LogsLifespan.TTL); err != nil {
-		logger.Error("can't set logs lifespan to cache", zap.Error(err))
+	if params.logsLifespanCache != nil {
+		if err = params.logsLifespanCache.SetWithTTL(
+			ctx,
+			params.logsLifespanCacheKey,
+			strconv.Itoa(res),
+			params.options.Caches.LogsLifespan.TTL); err != nil {
+			logger.Error("can't set logs lifespan to cache", zap.Error(err))
+		}
 	}
 
 	logger.Debug("got logs lifespan from seq-proxy")

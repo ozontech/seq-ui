@@ -32,7 +32,6 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
-
 	env := types.GetEnvKey(ctx)
 
 	userStr := "_"

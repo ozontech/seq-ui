@@ -12,6 +12,8 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
 	"github.com/ozontech/seq-ui/internal/app/config/v2"
+	"github.com/ozontech/seq-ui/internal/pkg/cache"
+	mock_cache "github.com/ozontech/seq-ui/internal/pkg/cache/mock"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
@@ -20,7 +22,7 @@ func TestGetFields(t *testing.T) {
 	tests := []struct {
 		name string
 
-		cfg       config.SeqAPIGlobalOptions
+		cfg       config.SeqAPIOptions
 		seqDBResp *seqapi.GetFieldsResponse
 		wantResp  *seqapi.GetFieldsResponse
 
@@ -55,7 +57,7 @@ func TestGetFields(t *testing.T) {
 		},
 		{
 			name: "ok_with_system_and_pinned_fields",
-			cfg: config.SeqAPIGlobalOptions{
+			cfg: config.SeqAPIOptions{
 				SystemFields: []config.Field{
 					{Name: "field1", Type: "keyword"},
 					{Name: "field2", Type: "text"},
@@ -121,7 +123,7 @@ func TestGetFields(t *testing.T) {
 					SeqDB: seqDbMock,
 				},
 				Cfg: config.SeqAPI{
-					GlobalOptions: tt.cfg,
+					Options: tt.cfg,
 				},
 			}
 
@@ -136,66 +138,70 @@ func TestGetFields(t *testing.T) {
 
 func TestGetFieldsCached(t *testing.T) {
 	var (
-		ttl = 10 * time.Millisecond
+		ttl      = 1 * time.Hour
+		cacheKey = "seqapi_fields"
 	)
-	responses := []*seqapi.GetFieldsResponse{
-		{
-			Fields: []*seqapi.Field{
-				{
-					Name: "n1",
-					Type: seqapi.FieldType_keyword,
-				},
-				{
-					Name: "n2",
-					Type: seqapi.FieldType_text,
-				},
+
+	responses := &seqapi.GetFieldsResponse{
+		Fields: []*seqapi.Field{
+			{
+				Name: "n1",
+				Type: seqapi.FieldType_keyword,
 			},
-		},
-		{
-			Fields: []*seqapi.Field{
-				{
-					Name: "qwe",
-					Type: seqapi.FieldType_text,
-				},
+			{
+				Name: "n2",
+				Type: seqapi.FieldType_text,
 			},
 		},
 	}
+
+	cached, err := proto.Marshal(responses)
+	require.NoError(t, err)
 
 	ctrl := gomock.NewController(t)
 	seqDbMock := mock_seqdb.NewMockClient(ctrl)
+	cacheMock := mock_cache.NewMockCache(ctrl)
 
-	for _, r := range responses {
-		seqDbMock.EXPECT().
-			GetFields(gomock.Any(), nil).
-			Return(proto.Clone(r), nil).
-			Times(1)
-	}
+	// first call - cache miss, requested from seqdb and set to cache
+	cacheMock.EXPECT().
+		Get(gomock.Any(), cacheKey).
+		Return("", cache.ErrNotFound).
+		Times(1)
+	seqDbMock.EXPECT().
+		GetFields(gomock.Any(), nil).
+		Return(proto.Clone(responses), nil).
+		Times(1)
+	cacheMock.EXPECT().
+		SetWithTTL(gomock.Any(), cacheKey, string(cached), ttl).
+		Return(nil).
+		Times(1)
+
+	// second call - fields from cache
+	cacheMock.EXPECT().
+		Get(gomock.Any(), cacheKey).
+		Return(string(cached), nil).
+		Times(1)
 
 	seqData := test.APITestData{
 		Cfg: config.SeqAPI{
-			GlobalOptions: config.SeqAPIGlobalOptions{
-				FieldsCacheTTL: ttl,
+			Options: config.SeqAPIOptions{
+				Caches: config.SeqAPICaches{
+					Fields: &config.HandlerCache{TTL: ttl},
+				},
 			},
 		},
 		Mocks: test.Mocks{
 			SeqDB: seqDbMock,
+			Cache: cacheMock,
 		},
 	}
 
 	api := setupTestAPI(seqData)
 
-	for _, r := range responses {
+	for range 2 {
 		resp, err := api.GetFields(context.Background(), nil)
 		require.NoError(t, err)
-		require.True(t, proto.Equal(r, resp))
-
-		time.Sleep(ttl / 2)
-
-		resp, err = api.GetFields(context.Background(), nil)
-		require.NoError(t, err)
-		require.True(t, proto.Equal(r, resp))
-
-		time.Sleep(ttl)
+		require.True(t, proto.Equal(responses, resp))
 	}
 }
 
@@ -222,7 +228,7 @@ func TestGetPinnedFields(t *testing.T) {
 
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					GlobalOptions: config.SeqAPIGlobalOptions{
+					Options: config.SeqAPIOptions{
 						PinnedFields: tt.fields,
 					},
 				},
