@@ -549,14 +549,14 @@ type SeqAPIOptions struct {
 }
 
 type SeqAPILimits struct {
-	MaxSearchLimit             int `yaml:"max_search_limit"`
-	MaxSearchTotal             int `yaml:"max_search_total"`
-	MaxSearchOffset            int `yaml:"max_search_offset"`
-	MaxExportLimit             int `yaml:"max_export_limit"`
-	SeqCLIMaxSearchLimit       int `yaml:"seq_cli_max_search_limit"`
-	MaxParallelExportRequests  int `yaml:"max_parallel_export_requests"`
-	MaxAggregationsPerRequest  int `yaml:"max_aggregations_per_request"`
-	MaxBucketsPerAggregationTs int `yaml:"max_buckets_per_aggregation_ts"`
+	MaxSearchLimit             int32 `yaml:"max_search_limit"`
+	MaxSearchTotal             int64 `yaml:"max_search_total"`
+	MaxSearchOffset            int32 `yaml:"max_search_offset"`
+	MaxExportLimit             int32 `yaml:"max_export_limit"`
+	SeqCLIMaxSearchLimit       int   `yaml:"seq_cli_max_search_limit"`
+	MaxParallelExportRequests  int   `yaml:"max_parallel_export_requests"`
+	MaxAggregationsPerRequest  int   `yaml:"max_aggregations_per_request"`
+	MaxBucketsPerAggregationTs int   `yaml:"max_buckets_per_aggregation_ts"`
 }
 
 type SeqAPICaches struct {

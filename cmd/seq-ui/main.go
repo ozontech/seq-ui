@@ -20,7 +20,6 @@ import (
 	"github.com/ozontech/seq-ui/internal/api"
 	admin_v1 "github.com/ozontech/seq-ui/internal/api/admin/v1"
 	dashboards_v1 "github.com/ozontech/seq-ui/internal/api/dashboards/v1"
-	errorgroups_v1 "github.com/ozontech/seq-ui/internal/api/errorgroups/v1"
 	seqapi_v1 "github.com/ozontech/seq-ui/internal/api/seqapi/v1"
 	userprofile_v1 "github.com/ozontech/seq-ui/internal/api/userprofile/v1"
 	"github.com/ozontech/seq-ui/internal/app/config/loader"
@@ -29,12 +28,7 @@ import (
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	"github.com/ozontech/seq-ui/internal/pkg/repository"
-	"github.com/ozontech/seq-ui/internal/pkg/service/admin"
-	asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches"
 	"github.com/ozontech/seq-ui/internal/pkg/service/dashboards"
-	"github.com/ozontech/seq-ui/internal/pkg/service/massexport"
-	"github.com/ozontech/seq-ui/internal/pkg/service/massexport/filestore"
-	"github.com/ozontech/seq-ui/internal/pkg/service/massexport/sessionstore"
 	"github.com/ozontech/seq-ui/internal/pkg/service/profiles"
 	"github.com/ozontech/seq-ui/internal/pkg/service/userprofile"
 	"github.com/ozontech/seq-ui/logger"
@@ -140,10 +134,10 @@ func initApp(ctx context.Context, cfg *config.Config) *api.Registrar {
 	// }
 
 	var (
-		adminV1          *admin_v1.Admin
-		asyncSearchesSvc asyncsearches.Service
-		userProfileV1    *userprofile_v1.UserProfile
-		dashboardsV1     *dashboards_v1.Dashboards
+		adminV1           *admin_v1.Admin
+		asyncSearchesRepo repository.AsyncSearches
+		userProfileV1     *userprofile_v1.UserProfile
+		dashboardsV1      *dashboards_v1.Dashboards
 	)
 	if db != nil {
 		repo := repository.New(db, cfg.DB.RequestTimeout)
@@ -158,31 +152,27 @@ func initApp(ctx context.Context, cfg *config.Config) *api.Registrar {
 
 		if cfg.Handlers.AsyncSearch != nil {
 			logger.Info("initializing async search")
-			asyncSearchesSvc = asyncsearches.New(ctx, repo, seqDBClients, *cfg.Handlers.AsyncSearch)
+			asyncSearchesRepo = repo.AsyncSearches
 		}
 
-		if cfg.Handlers.Admin != nil {
-			logger.Info("initializing admin")
-			adminSvc := admin.New(repo.Admin, repo.UserProfiles, adminCache, cfg.Handlers.Admin)
-			adminV1 = admin_v1.New(adminSvc)
-		}
+		// if cfg.Handlers.Admin != nil {
+		// 	logger.Info("initializing admin")
+		// 	adminSvc := admin.New(repo.Admin, repo.UserProfiles, adminCache, cfg.Handlers.Admin)
+		// 	adminV1 = admin_v1.New(adminSvc)
+		// }
 	}
 
-	logger.Info("initializing seqapi")
-	seqApiV1 := seqapi_v1.New(
-		&cfg.Handlers.SeqAPI,
-		seqDBClients,
-		caches[seqAPICaches.Events.ID],
-		caches[seqAPICaches.LogsLifespan.ID],
-		caches[seqAPICaches.Fields.ID],
-		asyncSearchesSvc,
-	)
-
-	var errorGroupsV1 *errorgroups_v1.ErrorGroups
-	if cfg.Handlers.ErrorGroups != nil {
-		logger.Info("initializing error groups")
-		errorGroupsV1 = errorgroups_v1.New(cfg.Handlers.ErrorGroups, &cfg.Clients, chClients)
+	var seqApiV1 *seqapi_v1.SeqAPI
+	if cfg.Handlers.SeqAPI != nil {
+		logger.Info("initializing seqapi")
+		seqApiV1 = seqapi_v1.New(ctx, cfg.Handlers.SeqAPI, seqDBClients, cfg.Handlers.AsyncSearch, asyncSearchesRepo)
 	}
+
+	// var errorGroupsV1 *errorgroups_v1.ErrorGroups
+	// if cfg.Handlers.ErrorGroups != nil {
+	// 	logger.Info("initializing error groups")
+	// 	errorGroupsV1 = errorgroups_v1.New(cfg.Handlers.ErrorGroups, &cfg.Clients, chClients)
+	// }
 
 	return api.NewRegistrar(adminV1, seqApiV1, userProfileV1, dashboardsV1, massExportV1, errorGroupsV1)
 }
@@ -201,7 +191,7 @@ func initSeqDBClients(ctx context.Context, cfg *config.Config) (map[string]seqdb
 }
 
 func createSeqBDClient(ctx context.Context, cfg *config.SeqDBClient, seqAPI *config.SeqAPI) (seqdb.Client, error) {
-	var maxSearchLimit int
+	var maxSearchLimit int32
 	if seqAPI != nil {
 		if len(seqAPI.Envs) == 0 {
 			maxSearchLimit = seqAPI.Options.Limits.MaxSearchLimit
@@ -215,7 +205,7 @@ func createSeqBDClient(ctx context.Context, cfg *config.SeqDBClient, seqAPI *con
 		}
 	}
 
-	clientMaxRecvMsgSize := cfg.AvgDocSize * 1024 * maxSearchLimit
+	clientMaxRecvMsgSize := cfg.AvgDocSize * 1024 * int(maxSearchLimit)
 	clientMaxRecvMsgSize = max(clientMaxRecvMsgSize, defaultClientMaxRecvMsgSize)
 
 	clientParams := seqdb.ClientParams{
@@ -263,21 +253,21 @@ func initDb(ctx context.Context, cfg *config.DB) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-func initExportService(ctx context.Context, cfg config.MassExport, redisCfg *config.Redis, client seqdb.Client) (massexport.Service, error) {
-	sessionStore, err := sessionstore.NewRedisSessionStore(ctx, redisCfg, cfg.SessionStore.ExportLifetime)
-	if err != nil {
-		return nil, fmt.Errorf("init session store: %w", err)
-	}
-	logger.Info("session store initialized")
-
-	fileStore, err := filestore.NewS3(ctx, cfg.FileStore.S3)
-	if err != nil {
-		return nil, fmt.Errorf("init file store: %w", err)
-	}
-	logger.Info("file store initialized")
-
-	return massexport.NewService(ctx, cfg, sessionStore, fileStore, client)
-}
+// func initExportService(ctx context.Context, cfg config.MassExport, redisCfg *config.Redis, client seqdb.Client) (massexport.Service, error) {
+// 	sessionStore, err := sessionstore.NewRedisSessionStore(ctx, redisCfg, cfg.SessionStore.ExportLifetime)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("init session store: %w", err)
+// 	}
+// 	logger.Info("session store initialized")
+//
+// 	fileStore, err := filestore.NewS3(ctx, cfg.FileStore.S3)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("init file store: %w", err)
+// 	}
+// 	logger.Info("file store initialized")
+//
+// 	return massexport.NewService(ctx, cfg, sessionStore, fileStore, client)
+// }
 
 func initClickHouseClients(ctx context.Context, cfg *config.Config) (map[string]driver.Conn, error) {
 	clients := make(map[string]driver.Conn, len(cfg.Clients.ClickHouse))
