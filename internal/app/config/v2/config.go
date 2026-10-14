@@ -560,9 +560,9 @@ type SeqAPILimits struct {
 }
 
 type SeqAPICaches struct {
-	Events       HandlerCache `yaml:"events"`
-	LogsLifespan HandlerCache `yaml:"logs_lifespan"`
-	Fields       HandlerCache `yaml:"fields"`
+	Events       *HandlerCache `yaml:"events"`
+	LogsLifespan *HandlerCache `yaml:"logs_lifespan"`
+	Fields       *HandlerCache `yaml:"fields"`
 }
 
 type HandlerCache struct {

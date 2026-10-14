@@ -8,11 +8,11 @@ import (
 const (
 	MaxHTTPHeaderBytes = 1 << 12 // 4 KiB
 
-	DefaultSeqDBClientID = "default_seq_db"
-	DefaultCHClientID    = "default_ch"
-	DefaultInmemCacheID  = "default_inmem_cache"
-	DefaultRedisID       = "default_redis"
-	DefaultRedis2ID      = "default_redis_2"
+	DefaultSeqDBClientID       = "default_seq_db"
+	DefaultCHClientID          = "default_ch"
+	DefaultInmemID             = "default_inmem"
+	DefaultRedisWithInmemID    = "default_redis_with_inmem"
+	DefaultRedisWithoutInmemID = "default_redis_without_inmem"
 
 	SeqDBClientModeGRPC = "grpc"
 

@@ -45,12 +45,13 @@ type oidcProvider struct {
 func NewOIDCProvider(ctx context.Context, cfg *config.OIDC) (OIDCProvider, error) {
 	var (
 		err       error
-		oidcCtx   context.Context
 		oidcCache cache.Cache
+		oidcCtx   context.Context
 	)
 
 	if cfg.CacheID != "" {
-		if oidcCache = cache.ByID(cfg.CacheID); oidcCache == nil {
+		var found bool
+		if oidcCache, found = cache.ByID(cfg.CacheID); !found {
 			return nil, fmt.Errorf("oidc cache %q not found", cfg.CacheID)
 		}
 	}

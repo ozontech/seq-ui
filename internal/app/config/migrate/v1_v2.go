@@ -1,6 +1,8 @@
 package migrate
 
 import (
+	"time"
+
 	v1 "github.com/ozontech/seq-ui/internal/app/config/v1"
 	v2 "github.com/ozontech/seq-ui/internal/app/config/v2"
 )
@@ -18,14 +20,14 @@ func (m *v1tov2) migrate() v2.Config {
 	dst := v2.Config{Version: 2}
 	dst.Server = m.migrateServer(m.src.Server)
 
-	// 	var v1Cache v1.Cache
-	// 	if m.src.Server != nil {
-	// 		v1Cache = m.src.Server.Cache
-	// 	}
-	//
-	// 	dst.Cache = m.migrateCache(v1Cache)
-	// 	dst.Clients = m.migrateClients(m.src)
-	// 	dst.DB = m.migrateDB(m.src.Server)
+	var v1Cache v1.Cache
+	if m.src.Server != nil {
+		v1Cache = m.src.Server.Cache
+	}
+
+	dst.Cache = m.migrateCache(v1Cache)
+	dst.Clients = m.migrateClients(m.src)
+	dst.DB = m.migrateDB(m.src.Server)
 	// 	dst.Handlers = m.migrateHandlers(m.src.Handlers, &dst, v1Cache)
 
 	return dst
@@ -166,114 +168,123 @@ func (m *v1tov2) migrateGRPCParams(src *v1.GRPCKeepaliveParams) *v2.GRPCParams {
 	}
 }
 
-//	func (m *v1tov2) migrateClients(src v1.Config) v2.Clients {
-//		dst := v2.Clients{}
-//
-//		if src.Clients != nil {
-//			if len(src.Clients.SeqDB) > 0 {
-//				dst.SeqDB = make([]v2.SeqDBClient, 0, len(src.Clients.SeqDB))
-//				for i := range src.Clients.SeqDB {
-//					dst.SeqDB = append(dst.SeqDB, m.migrateSeqDBClient(&src.Clients.SeqDB[i]))
-//				}
-//			} else {
-//				dst.SeqDB = []v2.SeqDBClient{{
-//					ID:                  v2.DefaultSeqDBClientID,
-//					Timeout:             src.Clients.SeqDBTimeout,
-//					AvgDocSize:          src.Clients.SeqDBAvgDocSize,
-//					Addrs:               src.Clients.SeqDBAddrs,
-//					RequestRetries:      src.Clients.RequestRetries,
-//					InitialRetryBackoff: src.Clients.InitialRetryBackoff,
-//					MaxRetryBackoff:     src.Clients.MaxRetryBackoff,
-//					ClientMode:          src.Clients.ProxyClientMode,
-//					GRPCParams:          m.migrateGRPCParams(src.Clients.GRPCKeepaliveParams),
-//				}}
-//			}
-//		}
-//
-//		if src.Server != nil && src.Server.CH != nil {
-//			ch := src.Server.CH
-//			dst.ClickHouse = []v2.CHClient{{
-//				ID:          v2.DefaultCHClientID,
-//				Addrs:       ch.Addrs,
-//				Database:    ch.Database,
-//				Username:    ch.Username,
-//				Password:    ch.Password,
-//				Sharded:     ch.Sharded,
-//				DialTimeout: ch.DialTimeout,
-//				ReadTimeout: ch.ReadTimeout,
-//			}}
-//		}
-//
-//		return dst
-//	}
-//
-//	func (m *v1tov2) migrateSeqDBClient(src *v1.SeqDBClient) v2.SeqDBClient {
-//		return v2.SeqDBClient{
-//			ID:                  src.ID,
-//			Timeout:             src.Timeout,
-//			AvgDocSize:          src.AvgDocSize,
-//			Addrs:               src.Addrs,
-//			RequestRetries:      src.RequestRetries,
-//			InitialRetryBackoff: src.InitialRetryBackoff,
-//			MaxRetryBackoff:     src.MaxRetryBackoff,
-//			ClientMode:          src.ClientMode,
-//			GRPCParams:          m.migrateGRPCParams(src.GRPCKeepaliveParams),
-//		}
-//	}
-//
-//	func (m *v1tov2) migrateDB(src *v1.Server) *v2.DB {
-//		if src == nil || src.DB == nil {
-//			return nil
-//		}
-//
-//		return &v2.DB{
-//			Name:                   src.DB.Name,
-//			Host:                   src.DB.Host,
-//			Port:                   src.DB.Port,
-//			Pass:                   src.DB.Pass,
-//			User:                   src.DB.User,
-//			RequestTimeout:         src.DB.RequestTimeout,
-//			ConnectionPoolCapacity: src.DB.ConnectionPoolCapacity,
-//			UsePreparedStatements:  src.DB.UsePreparedStatements,
-//		}
-//	}
-//
-//	func (m *v1tov2) migrateCache(src v1.Cache) v2.Cache {
-//		// in config v1 inmemory cache is always created
-//		cache := v2.Cache{
-//			Inmemory: []v2.InmemoryCache{{
-//				ID:          v2.DefaultInmemCacheID,
-//				NumCounters: src.Inmemory.NumCounters,
-//				MaxCost:     src.Inmemory.MaxCost,
-//				BufferItems: src.Inmemory.BufferItems,
-//			}},
-//		}
-//
-//		if src.Redis != nil {
-//			cache.Redis = append(cache.Redis,
-//				m.migrateRedis(src.Redis, v2.DefaultRedisID, v2.DefaultInmemCacheID),
-//				m.migrateRedis(src.Redis, v2.DefaultRedis2ID, ""),
-//			)
-//		}
-//
-//		return cache
-//	}
-//
-//	func (m *v1tov2) migrateRedis(src *v1.Redis, id, withInmemID string) v2.Redis {
-//		return v2.Redis{
-//			ID:              id,
-//			WithInmemID:     withInmemID,
-//			Addr:            src.Addr,
-//			Username:        src.Username,
-//			Password:        src.Password,
-//			Timeout:         src.Timeout,
-//			MaxRetries:      src.MaxRetries,
-//			MinRetryBackoff: src.MinRetryBackoff,
-//			MaxRetryBackoff: src.MaxRetryBackoff,
-//			KeyPrefix:       src.KeyPrefix,
-//		}
-//	}
-//
+func (m *v1tov2) migrateClients(src v1.Config) v2.Clients {
+	dst := v2.Clients{}
+
+	if src.Clients != nil {
+		if len(src.Clients.SeqDB) > 0 {
+			dst.SeqDB = make([]v2.SeqDBClient, 0, len(src.Clients.SeqDB))
+			for i := range src.Clients.SeqDB {
+				dst.SeqDB = append(dst.SeqDB, m.migrateSeqDBClient(&src.Clients.SeqDB[i]))
+			}
+		} else {
+			dst.SeqDB = []v2.SeqDBClient{{
+				ID:                    v2.DefaultSeqDBClientID,
+				Timeout:               src.Clients.SeqDBTimeout,
+				AvgDocSize:            src.Clients.SeqDBAvgDocSize,
+				Addrs:                 src.Clients.SeqDBAddrs,
+				RequestRetries:        src.Clients.RequestRetries,
+				RequestRetriesBackoff: m.migrateBackoff(src.Clients.InitialRetryBackoff, src.Clients.MaxRetryBackoff),
+				ClientMode:            src.Clients.ProxyClientMode,
+				GRPCParams:            m.migrateGRPCParams(src.Clients.GRPCKeepaliveParams),
+			}}
+		}
+	}
+
+	if src.Server != nil && src.Server.CH != nil {
+		ch := src.Server.CH
+		dst.ClickHouse = []v2.CHClient{{
+			ID:          v2.DefaultCHClientID,
+			Addrs:       ch.Addrs,
+			Database:    ch.Database,
+			Username:    ch.Username,
+			Password:    ch.Password,
+			Sharded:     ch.Sharded,
+			DialTimeout: ch.DialTimeout,
+			ReadTimeout: ch.ReadTimeout,
+		}}
+	}
+
+	return dst
+}
+
+func (m *v1tov2) migrateBackoff(initialInterval, maxInterval time.Duration) *v2.Backoff {
+	if initialInterval == 0 && maxInterval == 0 {
+		return nil
+	}
+
+	return &v2.Backoff{
+		InitialInterval: initialInterval,
+		MaxInterval:     maxInterval,
+	}
+}
+
+func (m *v1tov2) migrateSeqDBClient(src *v1.SeqDBClient) v2.SeqDBClient {
+	return v2.SeqDBClient{
+		ID:                    src.ID,
+		Timeout:               src.Timeout,
+		AvgDocSize:            src.AvgDocSize,
+		Addrs:                 src.Addrs,
+		RequestRetries:        src.RequestRetries,
+		RequestRetriesBackoff: m.migrateBackoff(src.InitialRetryBackoff, src.MaxRetryBackoff),
+		ClientMode:            src.ClientMode,
+		GRPCParams:            m.migrateGRPCParams(src.GRPCKeepaliveParams),
+	}
+}
+
+func (m *v1tov2) migrateDB(src *v1.Server) *v2.DB {
+	if src == nil || src.DB == nil {
+		return nil
+	}
+
+	return &v2.DB{
+		Name:                   src.DB.Name,
+		Host:                   src.DB.Host,
+		Port:                   src.DB.Port,
+		User:                   src.DB.User,
+		Pass:                   src.DB.Pass,
+		RequestTimeout:         src.DB.RequestTimeout,
+		ConnectionPoolCapacity: src.DB.ConnectionPoolCapacity,
+		UsePreparedStatements:  src.DB.UsePreparedStatements,
+	}
+}
+
+func (m *v1tov2) migrateCache(src v1.Cache) v2.Cache {
+	// in config v1 inmemory cache is always created
+	cache := v2.Cache{
+		Inmemory: []v2.Inmemory{{
+			ID:          v2.DefaultInmemID,
+			NumCounters: src.Inmemory.NumCounters,
+			MaxCost:     src.Inmemory.MaxCost,
+			BufferItems: src.Inmemory.BufferItems,
+		}},
+	}
+
+	if src.Redis != nil {
+		cache.Redis = append(cache.Redis,
+			m.migrateRedis(src.Redis, v2.DefaultRedisWithInmemID, v2.DefaultInmemID),
+			m.migrateRedis(src.Redis, v2.DefaultRedisWithoutInmemID, ""),
+		)
+	}
+
+	return cache
+}
+
+func (m *v1tov2) migrateRedis(src *v1.Redis, id, withInmemID string) v2.Redis {
+	return v2.Redis{
+		ID:              id,
+		WithInmemID:     withInmemID,
+		Addr:            src.Addr,
+		Username:        src.Username,
+		Password:        src.Password,
+		Timeout:         src.Timeout,
+		MaxRetries:      src.MaxRetries,
+		MinRetryBackoff: src.MinRetryBackoff,
+		MaxRetryBackoff: src.MaxRetryBackoff,
+		KeyPrefix:       src.KeyPrefix,
+	}
+}
+
 //	func (m *v1tov2) migrateHandlers(src *v1.Handlers, cfg *v2.Config, v1Cache v1.Cache) v2.Handlers {
 //		if src == nil {
 //			return v2.Handlers{}
@@ -566,9 +577,9 @@ func (m *v1tov2) migrateGRPCParams(src *v1.GRPCKeepaliveParams) *v2.GRPCParams {
 // redisOrInmemID - redis or inmemory (v1 logslifespan)
 func (m *v1tov2) defaultCacheIDs(src v1.Cache) (inmemWithRedisID, redisOrInmemID string) {
 	if src.Redis != nil {
-		return v2.DefaultRedisID, v2.DefaultRedis2ID
+		return v2.DefaultRedisWithInmemID, v2.DefaultRedisWithoutInmemID
 	}
-	return v2.DefaultInmemCacheID, v2.DefaultInmemCacheID
+	return v2.DefaultInmemID, v2.DefaultInmemID
 }
 
 //

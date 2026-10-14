@@ -106,7 +106,7 @@ func (s *Server) prepareRateLimiters() error {
 
 // prepareGRPCServer creates gRPC server and binds it to the Server instance.
 func (s *Server) prepareGRPCServer(registrar *api.Registrar) {
-	if s.config.GRPC != nil {
+	if s.config.GRPC == nil {
 		return
 	}
 
@@ -141,7 +141,7 @@ func (s *Server) prepareGRPCServer(registrar *api.Registrar) {
 
 // prepareHTTPServer prepares HTTP server with applied CORS policies and added interceptors.
 func (s *Server) prepareHTTPServer(ctx context.Context, registrar *api.Registrar) {
-	if s.config.HTTP != nil {
+	if s.config.HTTP == nil {
 		return
 	}
 

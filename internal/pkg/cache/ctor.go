@@ -11,57 +11,36 @@ var caches map[string]Cache
 
 func Init(ctx context.Context, cfg *config.Cache) error {
 	caches = make(map[string]Cache, len(cfg.Redis)+len(cfg.Inmemory))
-	withInmemIDs := make(map[string]struct{})
 
-	for _, redis := range cfg.Redis {
-		var inmem *config.Inmemory
-		if redis.WithInmemID != "" {
-			inmem = cfg.InmemByID(redis.WithInmemID)
-			withInmemIDs[redis.WithInmemID] = struct{}{}
-		}
-
-		c, err := newRedisOrInmemWithRedis(ctx, &redis, inmem)
+	for i := range cfg.Inmemory {
+		inmemCfg := &cfg.Inmemory[i]
+		inmem, err := newInmemoryCache(inmemCfg)
 		if err != nil {
-			return fmt.Errorf("init redis cache %q: %w", redis.ID, err)
+			return fmt.Errorf("init inmemory cache %q: %w", inmemCfg.ID, err)
 		}
-		caches[redis.ID] = c
+		caches[inmemCfg.ID] = inmem
 	}
 
-	for _, inmem := range cfg.Inmemory {
-		if _, ok := withInmemIDs[inmem.ID]; ok {
-			continue
+	for i := range cfg.Redis {
+		redisCfg := &cfg.Redis[i]
+
+		var inmem Cache
+		if redisCfg.WithInmemID != "" {
+			inmem = caches[redisCfg.WithInmemID]
 		}
 
-		c, err := newInmemoryCache(inmem)
+		redis, err := newRedisCache(ctx, redisCfg, inmem)
 		if err != nil {
-			return fmt.Errorf("init inmemory cache %q: %w", inmem.ID, err)
+			return fmt.Errorf("init redis cache %q: %w", redisCfg.ID, err)
 		}
-		caches[inmem.ID] = c
+		caches[redisCfg.ID] = redis
 	}
 
 	return nil
 }
 
-func ByID(id string) Cache {
-	return caches[id]
-}
-
-func newRedisOrInmemWithRedis(ctx context.Context, redisCfg *config.Redis, inmemCfg *config.Inmemory) (Cache, error) {
-	redis, err := newRedisCache(ctx, redisCfg)
-	if err != nil {
-		return nil, err
-	}
-	if inmemCfg == nil {
-		return redis, nil
-	}
-
-	inmem, err := newInmemoryCache(*inmemCfg)
-	if err != nil {
-		return nil, fmt.Errorf("init inmemory cache %q: %w", inmemCfg.ID, err)
-	}
-
-	return &inmemWithRedis{
-		inmem: inmem,
-		redis: redis,
-	}, nil
+// ByID returns cache by id and true, false if cache is not found.
+func ByID(id string) (Cache, bool) {
+	cache, ok := caches[id]
+	return cache, ok
 }
