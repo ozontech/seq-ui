@@ -58,6 +58,33 @@ func New(ctx context.Context, repo repository.AsyncSearches, seqDB seqdb.Client,
 	return s
 }
 
+// NewByEnv creates service for each env.
+func NewByEnv(
+	ctx context.Context,
+	cfg *config.AsyncSearch,
+	repo repository.AsyncSearches,
+	seqDBClients map[string]seqdb.Client,
+) map[string]Service {
+	if cfg == nil || repo == nil {
+		return nil
+	}
+
+	services := make(map[string]Service, max(1, len(cfg.Envs)))
+	if len(cfg.Envs) > 0 {
+		for envName, envCfg := range cfg.Envs {
+			services[envName] = New(ctx, repo, seqDBClients[envCfg.SeqDBID], envCfg.Options, envName)
+		}
+	} else {
+		var client seqdb.Client
+		for _, c := range seqDBClients {
+			client = c
+		}
+		services[""] = New(ctx, repo, client, &cfg.Options, "")
+	}
+
+	return services
+}
+
 func (s *service) StartAsyncSearch(ctx context.Context, req *seqapi.StartAsyncSearchRequest) (*seqapi.StartAsyncSearchResponse, error) {
 	ownerID, err := profiles.GetIDFromContext(ctx)
 	if err != nil {

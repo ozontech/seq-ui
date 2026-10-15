@@ -20,14 +20,16 @@ func (a *API) GetDetails(ctx context.Context, req *errorgroups.GetDetailsRequest
 	ctx, span := tracing.StartSpan(ctx, "errorgroups_v1_get_details")
 	defer span.End()
 
+	svc, reqEnv := a.serviceByEnv(ctx, req.Env)
+
 	attributes := []attribute.KeyValue{
 		{Key: "group_hash", Value: attribute.StringValue(strconv.FormatUint(req.GroupHash, 10))},
 	}
 	if req.Service != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "service", Value: attribute.StringValue(*req.Service)})
 	}
-	if req.Env != nil {
-		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*req.Env)})
+	if reqEnv != nil {
+		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*reqEnv)})
 	}
 	if req.Release != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "release", Value: attribute.StringValue(*req.Release)})
@@ -44,7 +46,7 @@ func (a *API) GetDetails(ctx context.Context, req *errorgroups.GetDetailsRequest
 	request := types.GetErrorGroupDetailsRequest{
 		Service:   req.Service,
 		GroupHash: req.GroupHash,
-		Env:       req.Env,
+		Env:       reqEnv,
 		Source:    req.Source,
 		Release:   req.Release,
 	}
@@ -55,7 +57,7 @@ func (a *API) GetDetails(ctx context.Context, req *errorgroups.GetDetailsRequest
 		}
 	}
 
-	details, err := a.service.GetDetails(ctx, request)
+	details, err := svc.GetDetails(ctx, request)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}

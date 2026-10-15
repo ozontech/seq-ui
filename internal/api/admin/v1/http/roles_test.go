@@ -11,6 +11,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/app/types"
+	admin_service "github.com/ozontech/seq-ui/internal/pkg/service/admin"
 	mock "github.com/ozontech/seq-ui/internal/pkg/service/admin/mock"
 )
 
@@ -32,7 +33,7 @@ func setupTestAPI(t *testing.T) (*API, *mock.MockService) {
 		}).
 		Times(1)
 
-	return New(mockedSvc), mockedSvc
+	return New(map[string]admin_service.Service{"": mockedSvc}), mockedSvc
 }
 
 func withRoleID(h http.HandlerFunc, id string) http.HandlerFunc {

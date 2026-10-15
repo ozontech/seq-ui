@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"time"
 
 	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/types"
@@ -25,18 +26,46 @@ type service struct {
 	userProfilesRepo repository.UserProfiles
 	cache            adminCache
 	superUsers       map[string]struct{}
+	env              string
 }
 
-func New(adminRepo repository.Admin, userProfilesRepo repository.UserProfiles, c cache.Cache, cfg *config.Admin) Service {
+func New(adminRepo repository.Admin, userProfilesRepo repository.UserProfiles, c cache.Cache, cfg *config.AdminOptions, env string) Service {
 	su := make(map[string]struct{}, len(cfg.SuperUsers))
 	for _, u := range cfg.SuperUsers {
 		su[u] = struct{}{}
 	}
 
+	var ttl time.Duration
+	if cfg.Cache != nil {
+		ttl = cfg.Cache.TTL
+	}
+
 	return &service{
 		adminRepo:        adminRepo,
 		userProfilesRepo: userProfilesRepo,
-		cache:            newAdminCache(c, cfg.CacheTTL),
+		cache:            newAdminCache(c, ttl, env),
 		superUsers:       su,
+		env:              env,
 	}
+}
+
+func NewByEnv(cfg *config.Admin, adminRepo repository.Admin, userProfilesRepo repository.UserProfiles) map[string]Service {
+	services := make(map[string]Service, max(1, len(cfg.Envs)))
+	if len(cfg.Envs) > 0 {
+		for envName, envCfg := range cfg.Envs {
+			var c cache.Cache
+			if envCfg.Options.Cache != nil {
+				c, _ = cache.ByID(envCfg.Options.Cache.ID)
+			}
+			services[envName] = New(adminRepo, userProfilesRepo, c, envCfg.Options, envName)
+		}
+	} else {
+		var c cache.Cache
+		if cfg.Options.Cache != nil {
+			c, _ = cache.ByID(cfg.Options.Cache.ID)
+		}
+		services[""] = New(adminRepo, userProfilesRepo, c, &cfg.Options, "")
+	}
+
+	return services
 }

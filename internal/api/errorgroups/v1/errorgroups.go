@@ -1,7 +1,6 @@
 package errorgroups_v1
 
 import (
-	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/go-chi/chi/v5"
 
 	grpc_api "github.com/ozontech/seq-ui/internal/api/errorgroups/v1/grpc"
@@ -14,10 +13,10 @@ type ErrorGroups struct {
 	httpAPI *http_api.API
 }
 
-func New(svc errorgroups.Service, chClients map[string]driver.Conn) *ErrorGroups {
+func New(services map[string]errorgroups.Service) *ErrorGroups {
 	return &ErrorGroups{
-		grpcAPI: grpc_api.New(svc),
-		httpAPI: http_api.New(svc),
+		grpcAPI: grpc_api.New(services),
+		httpAPI: http_api.New(services),
 	}
 }
 

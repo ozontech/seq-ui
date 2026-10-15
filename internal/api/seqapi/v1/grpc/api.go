@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
@@ -14,7 +16,6 @@ import (
 	asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
-	"go.uber.org/zap"
 )
 
 type apiParams struct {

@@ -16,6 +16,8 @@ func (a *API) DiffByReleases(ctx context.Context, req *errorgroups.DiffByRelease
 	ctx, span := tracing.StartSpan(ctx, "errorgroups_v1_diff_by_releases")
 	defer span.End()
 
+	svc, reqEnv := a.serviceByEnv(ctx, req.Env)
+
 	attributes := []attribute.KeyValue{
 		{Key: "service", Value: attribute.StringValue(req.Service)},
 		{Key: "releases", Value: attribute.StringSliceValue(req.Releases)},
@@ -24,18 +26,18 @@ func (a *API) DiffByReleases(ctx context.Context, req *errorgroups.DiffByRelease
 		{Key: "order", Value: attribute.StringValue(req.Order.String())},
 		{Key: "with_total", Value: attribute.BoolValue(req.WithTotal)},
 	}
-	if req.Env != nil {
-		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*req.Env)})
+	if reqEnv != nil {
+		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*reqEnv)})
 	}
 	if req.Source != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "source", Value: attribute.StringValue(*req.Source)})
 	}
 	span.SetAttributes(attributes...)
 
-	groups, total, err := a.service.DiffByReleases(ctx, types.DiffByReleasesRequest{
+	groups, total, err := svc.DiffByReleases(ctx, types.DiffByReleasesRequest{
 		Service:   req.Service,
 		Releases:  req.Releases,
-		Env:       req.Env,
+		Env:       reqEnv,
 		Source:    req.Source,
 		Limit:     req.Limit,
 		Offset:    req.Offset,

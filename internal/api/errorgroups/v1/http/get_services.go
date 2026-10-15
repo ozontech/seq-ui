@@ -17,6 +17,7 @@ import (
 //	@Router		/errorgroups/v1/services [post]
 //	@ID			errorgroups_v1_get_services
 //	@Tags		errorgroups_v1
+//	@Param		env		query		string				false	"Environment"
 //	@Param		body	body		getServicesRequest	true	"Request body"
 //	@Success	200		{object}	getServicesResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
@@ -33,21 +34,23 @@ func (a *API) serveGetServices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	svc, httpReqEnv := a.serviceByEnv(ctx, httpReq.Env)
+
 	attributes := []attribute.KeyValue{
 		{Key: "query", Value: attribute.StringValue(httpReq.Query)},
 	}
-	if httpReq.Env != nil {
-		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReq.Env)})
+	if httpReqEnv != nil {
+		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReqEnv)})
 	}
 	span.SetAttributes(attributes...)
 
 	req := types.GetServicesRequest{
 		Query:  httpReq.Query,
-		Env:    httpReq.Env,
+		Env:    httpReqEnv,
 		Limit:  httpReq.Limit,
 		Offset: httpReq.Offset,
 	}
-	services, err := a.service.GetServices(ctx, req)
+	services, err := svc.GetServices(ctx, req)
 	if err != nil {
 		httputil.ProcessError(wr, err)
 		return

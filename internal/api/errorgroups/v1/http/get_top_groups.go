@@ -18,6 +18,7 @@ import (
 //	@Router		/errorgroups/v1/top_groups [post]
 //	@ID			errorgroups_v1_get_top_groups
 //	@Tags		errorgroups_v1
+//	@Param		env		query		string					false	"Environment"
 //	@Param		body	body		getTopGroupsRequest		true	"Request body"
 //	@Success	200		{object}	getTopGroupsResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error			"An unexpected error response"
@@ -34,13 +35,15 @@ func (a *API) serveGetTopGroups(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	svc, httpReqEnv := a.serviceByEnv(ctx, httpReq.Env)
+
 	attributes := []attribute.KeyValue{
 		{Key: "limit", Value: attribute.IntValue(int(httpReq.Limit))},
 		{Key: "offset", Value: attribute.IntValue(int(httpReq.Offset))},
 		{Key: "with_total", Value: attribute.BoolValue(httpReq.WithTotal)},
 	}
-	if httpReq.Env != nil {
-		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReq.Env)})
+	if httpReqEnv != nil {
+		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReqEnv)})
 	}
 	if httpReq.Source != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "source", Value: attribute.StringValue(*httpReq.Source)})
@@ -61,7 +64,7 @@ func (a *API) serveGetTopGroups(w http.ResponseWriter, r *http.Request) {
 	}
 
 	req := types.GetTopErrorGroupsRequest{
-		Env:       httpReq.Env,
+		Env:       httpReqEnv,
 		Source:    httpReq.Source,
 		TimeRange: tr,
 		Limit:     httpReq.Limit,
@@ -69,7 +72,7 @@ func (a *API) serveGetTopGroups(w http.ResponseWriter, r *http.Request) {
 		WithTotal: httpReq.WithTotal,
 	}
 
-	groups, total, err := a.service.GetTopErrorGroups(ctx, req)
+	groups, total, err := svc.GetTopErrorGroups(ctx, req)
 	if err != nil {
 		httputil.ProcessError(wr, err)
 		return

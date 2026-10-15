@@ -20,6 +20,7 @@ import (
 	"github.com/ozontech/seq-ui/internal/api"
 	admin_v1 "github.com/ozontech/seq-ui/internal/api/admin/v1"
 	dashboards_v1 "github.com/ozontech/seq-ui/internal/api/dashboards/v1"
+	errorgroups_v1 "github.com/ozontech/seq-ui/internal/api/errorgroups/v1"
 	seqapi_v1 "github.com/ozontech/seq-ui/internal/api/seqapi/v1"
 	userprofile_v1 "github.com/ozontech/seq-ui/internal/api/userprofile/v1"
 	"github.com/ozontech/seq-ui/internal/app/config/loader"
@@ -28,7 +29,10 @@ import (
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	"github.com/ozontech/seq-ui/internal/pkg/repository"
+	"github.com/ozontech/seq-ui/internal/pkg/service/admin"
+	asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches"
 	"github.com/ozontech/seq-ui/internal/pkg/service/dashboards"
+	"github.com/ozontech/seq-ui/internal/pkg/service/errorgroups"
 	"github.com/ozontech/seq-ui/internal/pkg/service/profiles"
 	"github.com/ozontech/seq-ui/internal/pkg/service/userprofile"
 	"github.com/ozontech/seq-ui/logger"
@@ -135,9 +139,9 @@ func initApp(ctx context.Context, cfg *config.Config) *api.Registrar {
 
 	var (
 		adminV1           *admin_v1.Admin
-		asyncSearchesRepo repository.AsyncSearches
 		userProfileV1     *userprofile_v1.UserProfile
 		dashboardsV1      *dashboards_v1.Dashboards
+		asyncSearchesRepo repository.AsyncSearches
 	)
 	if db != nil {
 		repo := repository.New(db, cfg.DB.RequestTimeout)
@@ -155,24 +159,26 @@ func initApp(ctx context.Context, cfg *config.Config) *api.Registrar {
 			asyncSearchesRepo = repo.AsyncSearches
 		}
 
-		// if cfg.Handlers.Admin != nil {
-		// 	logger.Info("initializing admin")
-		// 	adminSvc := admin.New(repo.Admin, repo.UserProfiles, adminCache, cfg.Handlers.Admin)
-		// 	adminV1 = admin_v1.New(adminSvc)
-		// }
+		if cfg.Handlers.Admin != nil {
+			logger.Info("initializing admin")
+			adminSvc := admin.NewByEnv(cfg.Handlers.Admin, repo.Admin, repo.UserProfiles)
+			adminV1 = admin_v1.New(adminSvc)
+		}
 	}
 
 	var seqApiV1 *seqapi_v1.SeqAPI
 	if cfg.Handlers.SeqAPI != nil {
 		logger.Info("initializing seqapi")
-		seqApiV1 = seqapi_v1.New(ctx, cfg.Handlers.SeqAPI, seqDBClients, cfg.Handlers.AsyncSearch, asyncSearchesRepo)
+		asyncSearchesSvc := asyncsearches.NewByEnv(ctx, cfg.Handlers.AsyncSearch, asyncSearchesRepo, seqDBClients)
+		seqApiV1 = seqapi_v1.New(cfg.Handlers.SeqAPI, seqDBClients, asyncSearchesSvc)
 	}
 
-	// var errorGroupsV1 *errorgroups_v1.ErrorGroups
-	// if cfg.Handlers.ErrorGroups != nil {
-	// 	logger.Info("initializing error groups")
-	// 	errorGroupsV1 = errorgroups_v1.New(cfg.Handlers.ErrorGroups, &cfg.Clients, chClients)
-	// }
+	var errorGroupsV1 *errorgroups_v1.ErrorGroups
+	if cfg.Handlers.ErrorGroups != nil {
+		logger.Info("initializing error groups")
+		errorGroupsSvc := errorgroups.NewByEnv(cfg.Handlers.ErrorGroups, &cfg.Clients, chClients)
+		errorGroupsV1 = errorgroups_v1.New(errorGroupsSvc)
+	}
 
 	return api.NewRegistrar(adminV1, seqApiV1, userProfileV1, dashboardsV1, massExportV1, errorGroupsV1)
 }

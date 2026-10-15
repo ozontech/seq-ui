@@ -13,10 +13,10 @@ type Admin struct {
 	httpAPI *http_api.API
 }
 
-func New(svc admin.Service) *Admin {
+func New(services map[string]admin.Service) *Admin {
 	return &Admin{
-		grpcAPI: grpc_api.New(svc),
-		httpAPI: http_api.New(svc),
+		grpcAPI: grpc_api.New(services),
+		httpAPI: http_api.New(services),
 	}
 }
 

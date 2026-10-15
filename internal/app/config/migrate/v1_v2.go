@@ -28,7 +28,7 @@ func (m *v1tov2) migrate() v2.Config {
 	dst.Cache = m.migrateCache(v1Cache)
 	dst.Clients = m.migrateClients(m.src)
 	dst.DB = m.migrateDB(m.src.Server)
-	// 	dst.Handlers = m.migrateHandlers(m.src.Handlers, &dst, v1Cache)
+	dst.Handlers = m.migrateHandlers(m.src.Handlers, &dst, v1Cache)
 
 	return dst
 }
@@ -285,184 +285,160 @@ func (m *v1tov2) migrateRedis(src *v1.Redis, id, withInmemID string) v2.Redis {
 	}
 }
 
-//	func (m *v1tov2) migrateHandlers(src *v1.Handlers, cfg *v2.Config, v1Cache v1.Cache) v2.Handlers {
-//		if src == nil {
-//			return v2.Handlers{}
-//		}
-//
-//		dst := v2.Handlers{
-//			SeqAPI:      m.migrateSeqAPI(src.SeqAPI, v1Cache),
-//			ErrorGroups: m.migrateErrorGroups(src.ErrorGroups),
-//			AsyncSearch: m.migrateAsyncSearch(src.AsyncSearch),
-//			Admin:       m.migrateAdmin(src.Admin, v1Cache),
-//		}
-//
-//		if src.MassExport != nil {
-//			dst.MassExport = m.migrateMassExport(src.MassExport, cfg)
-//		}
-//
-//		return dst
-//	}
-//
-//	func (m *v1tov2) migrateSeqAPI(src v1.SeqAPI, v1Cache v1.Cache) v2.SeqAPI {
-//		cacheID, redisID := m.defaultCacheIDs(v1Cache)
-//		dst := v2.SeqAPI{
-//			Envs:       m.migrateSeqAPIEnvs(src.Envs, cacheID, redisID),
-//			DefaultEnv: src.DefaultEnv,
-//			Options: v2.SeqAPIOptions{
-//				Caches: v2.SeqAPICaches{
-//					Events: v2.HandlerCache{
-//						ID:  cacheID,
-//						TTL: src.EventsCacheTTL,
-//					},
-//					LogsLifespan: v2.HandlerCache{
-//						ID:  redisID,
-//						TTL: src.LogsLifespanCacheTTL,
-//					},
-//					Fields: v2.HandlerCache{
-//						ID:  cacheID,
-//						TTL: src.FieldsCacheTTL,
-//					},
-//				},
-//			},
-//		}
-//
-//		if len(src.Envs) == 0 {
-//			dst.SeqDBID = v2.DefaultSeqDBClientID
-//		}
-//
-//		if src.SeqAPIOptions != nil {
-//			dst.Options = m.migrateSeqAPIOptions(src.SeqAPIOptions, cacheID, redisID)
-//		}
-//
-//		return dst
-//	}
-//
-//	func (m *v1tov2) migrateSeqAPIEnvs(envs map[string]v1.SeqAPIEnv, cacheID, redisID string) map[string]v2.SeqAPIEnv {
-//		if len(envs) == 0 {
-//			return nil
-//		}
-//
-//		dst := make(map[string]v2.SeqAPIEnv, len(envs))
-//		for name, cfg := range envs {
-//			env := v2.SeqAPIEnv{
-//				SeqDBID: cfg.SeqDB,
-//			}
-//			if cfg.Options != nil {
-//				envOptions := m.migrateSeqAPIOptions(cfg.Options, cacheID, redisID)
-//				env.Options = &envOptions
-//			}
-//
-//			dst[name] = env
-//		}
-//
-//		return dst
-//	}
-//
-//	func (m *v1tov2) migrateSeqAPIOptions(options *v1.SeqAPIOptions, cacheID, redisID string) v2.SeqAPIOptions {
-//		return v2.SeqAPIOptions{
-//			Limits: v2.SeqAPILimits{
-//				MaxSearchLimit:             options.MaxSearchLimit,
-//				MaxSearchTotal:             options.MaxSearchTotalLimit,
-//				MaxSearchOffset:            options.MaxSearchOffsetLimit,
-//				MaxExportLimit:             options.MaxExportLimit,
-//				SeqCLIMaxSearchLimit:       options.SeqCLIMaxSearchLimit,
-//				MaxParallelExportRequests:  options.MaxParallelExportRequests,
-//				MaxAggregationsPerRequest:  options.MaxAggregationsPerRequest,
-//				MaxBucketsPerAggregationTs: options.MaxBucketsPerAggregationTs,
-//			},
-//			Masking:      m.migrateMasking(options.Masking),
-//			PinnedFields: m.migrateFields(options.PinnedFields),
-//			SystemFields: m.migrateFields(options.SystemFields),
-//			Caches: v2.SeqAPICaches{
-//				Events: v2.HandlerCache{
-//					ID:  cacheID,
-//					TTL: options.EventsCacheTTL,
-//				},
-//				LogsLifespan: v2.HandlerCache{
-//					ID:  redisID,
-//					TTL: options.LogsLifespanCacheTTL,
-//				},
-//				Fields: v2.HandlerCache{
-//					ID:  cacheID,
-//					TTL: options.FieldsCacheTTL,
-//				},
-//			},
-//		}
-//	}
-//
-//	func (m *v1tov2) migrateFields(fs []v1.Field) []v2.Field {
-//		if fs == nil {
-//			return nil
-//		}
-//
-//		dst := make([]v2.Field, len(fs))
-//		for i, f := range fs {
-//			dst[i] = v2.Field{
-//				Name: f.Name,
-//				Type: f.Type,
-//			}
-//		}
-//
-//		return dst
-//	}
-//
-//	func (m *v1tov2) migrateMasking(src *v1.Masking) *v2.Masking {
-//		if src == nil {
-//			return nil
-//		}
-//
-//		return &v2.Masking{
-//			Masks:         m.migrateMasks(src.Masks),
-//			ProcessFields: src.ProcessFields,
-//			IgnoreFields:  src.IgnoreFields,
-//		}
-//	}
-//
-//	func (m *v1tov2) migrateMasks(ms []v1.Mask) []v2.Mask {
-//		if ms == nil {
-//			return nil
-//		}
-//
-//		dst := make([]v2.Mask, len(ms))
-//		for i := range ms {
-//			mask := &ms[i]
-//			dst[i] = v2.Mask{
-//				Re:            mask.Re,
-//				Groups:        mask.Groups,
-//				Mode:          mask.Mode,
-//				ReplaceWord:   mask.ReplaceWord,
-//				ProcessFields: mask.ProcessFields,
-//				IgnoreFields:  mask.IgnoreFields,
-//				FieldFilters:  m.migrateFieldFilters(mask.FieldFilters),
-//			}
-//		}
-//
-//		return dst
-//	}
-//
-//	func (m *v1tov2) migrateFieldFilters(src *v1.FieldFilterSet) *v2.FieldFilterSet {
-//		if src == nil {
-//			return nil
-//		}
-//
-//		dst := &v2.FieldFilterSet{
-//			Condition: src.Condition,
-//		}
-//		if src.Filters != nil {
-//			dst.Filters = make([]v2.FieldFilter, len(src.Filters))
-//			for i, f := range src.Filters {
-//				dst.Filters[i] = v2.FieldFilter{
-//					Field:  f.Field,
-//					Mode:   f.Mode,
-//					Values: f.Values,
-//				}
-//			}
-//		}
-//
-//		return dst
-//	}
-//
+func (m *v1tov2) migrateHandlers(src *v1.Handlers, v1Cache v1.Cache) v2.Handlers {
+	if src == nil {
+		src = &v1.Handlers{}
+	}
+
+	dst := v2.Handlers{
+		SeqAPI:      m.migrateSeqAPI(&src.SeqAPI, v1Cache),
+		AsyncSearch: m.migrateAsyncSearch(&src.AsyncSearch, &src.SeqAPI),
+		// ErrorGroups: m.migrateErrorGroups(src.ErrorGroups),
+		// Admin: m.migrateAdmin(src.Admin, v1Cache),
+	}
+
+	// if src.MassExport != nil {
+	// 	dst.MassExport = m.migrateMassExport(src.MassExport, cfg)
+	// }
+
+	return dst
+}
+
+func (m *v1tov2) migrateSeqAPI(src *v1.SeqAPI, v1Cache v1.Cache) *v2.SeqAPI {
+	dst := &v2.SeqAPI{
+		Options:    m.migrateSeqAPIOptions(src.SeqAPIOptions, v1Cache),
+		DefaultEnv: src.DefaultEnv,
+	}
+
+	if len(src.Envs) > 0 {
+		dst.Envs = make(map[string]v2.SeqAPIEnv, len(src.Envs))
+		for envName, envCfg := range src.Envs {
+			dstEnv := v2.SeqAPIEnv{SeqDBID: envCfg.SeqDB}
+			if envCfg.Options != nil {
+				options := m.migrateSeqAPIOptions(envCfg.Options, v1Cache)
+				dstEnv.Options = &options
+			}
+			dst.Envs[envName] = dstEnv
+		}
+	}
+
+	return dst
+}
+
+func (m *v1tov2) migrateSeqAPIOptions(src *v1.SeqAPIOptions, v1Cache v1.Cache) v2.SeqAPIOptions {
+	if src == nil {
+		src = &v1.SeqAPIOptions{}
+	}
+
+	redisWithInmemID, redisOrInmemID := m.defaultCacheIDs(v1Cache)
+	dst := v2.SeqAPIOptions{
+		Limits: v2.SeqAPILimits{
+			MaxSearchLimit:             src.MaxSearchLimit,
+			MaxSearchTotal:             src.MaxSearchTotalLimit,
+			MaxSearchOffset:            src.MaxSearchOffsetLimit,
+			MaxExportLimit:             src.MaxExportLimit,
+			SeqCLIMaxSearchLimit:       src.SeqCLIMaxSearchLimit,
+			MaxParallelExportRequests:  src.MaxParallelExportRequests,
+			MaxAggregationsPerRequest:  src.MaxAggregationsPerRequest,
+			MaxBucketsPerAggregationTs: src.MaxBucketsPerAggregationTs,
+		},
+		Masking:      m.migrateMasking(src.Masking),
+		PinnedFields: m.migrateFields(src.PinnedFields),
+		SystemFields: m.migrateFields(src.SystemFields),
+		Caches: v2.SeqAPICaches{
+			Events: &v2.HandlerCache{
+				ID:  redisWithInmemID,
+				TTL: src.EventsCacheTTL,
+			},
+			LogsLifespan: &v2.HandlerCache{
+				ID:  redisOrInmemID,
+				TTL: src.LogsLifespanCacheTTL,
+			},
+		},
+	}
+
+	if src.FieldsCacheTTL > 0 {
+		dst.Caches.Fields = &v2.HandlerCache{
+			ID:  v2.DefaultInmemID,
+			TTL: src.FieldsCacheTTL,
+		}
+	}
+
+	return dst
+}
+
+func (m *v1tov2) migrateFields(fs []v1.Field) []v2.Field {
+	if fs == nil {
+		return nil
+	}
+
+	dst := make([]v2.Field, len(fs))
+	for i, f := range fs {
+		dst[i] = v2.Field{
+			Name: f.Name,
+			Type: f.Type,
+		}
+	}
+
+	return dst
+}
+
+func (m *v1tov2) migrateMasking(src *v1.Masking) *v2.Masking {
+	if src == nil {
+		return nil
+	}
+
+	return &v2.Masking{
+		Masks:         m.migrateMasks(src.Masks),
+		ProcessFields: src.ProcessFields,
+		IgnoreFields:  src.IgnoreFields,
+	}
+}
+
+func (m *v1tov2) migrateMasks(ms []v1.Mask) []v2.Mask {
+	if ms == nil {
+		return nil
+	}
+
+	dst := make([]v2.Mask, len(ms))
+	for i := range ms {
+		mask := &ms[i]
+		dst[i] = v2.Mask{
+			Re:            mask.Re,
+			Groups:        mask.Groups,
+			Mode:          mask.Mode,
+			ReplaceWord:   mask.ReplaceWord,
+			ProcessFields: mask.ProcessFields,
+			IgnoreFields:  mask.IgnoreFields,
+			FieldFilters:  m.migrateFieldFilters(mask.FieldFilters),
+		}
+	}
+
+	return dst
+}
+
+func (m *v1tov2) migrateFieldFilters(src *v1.FieldFilterSet) *v2.FieldFilterSet {
+	if src == nil {
+		return nil
+	}
+
+	dst := &v2.FieldFilterSet{
+		Condition: src.Condition,
+	}
+	if src.Filters != nil {
+		dst.Filters = make([]v2.FieldFilter, len(src.Filters))
+		for i, f := range src.Filters {
+			dst.Filters[i] = v2.FieldFilter{
+				Field:  f.Field,
+				Mode:   f.Mode,
+				Values: f.Values,
+			}
+		}
+	}
+
+	return dst
+}
+
 //	func (m *v1tov2) migrateErrorGroups(eg v1.ErrorGroups) *v2.ErrorGroups {
 //		if m.isEgEmpty(eg) {
 //			return nil
@@ -480,21 +456,25 @@ func (m *v1tov2) migrateRedis(src *v1.Redis, id, withInmemID string) v2.Redis {
 //			},
 //		}
 //	}
-//
-//	func (m *v1tov2) migrateAsyncSearch(a v1.AsyncSearch) *v2.AsyncSearch {
-//		if len(a.AdminUsers) == 0 && a.ListQueryLengthLimit == 0 {
-//			return nil
-//		}
-//
-//		return &v2.AsyncSearch{
-//			SeqDBID: v2.DefaultSeqDBClientID,
-//			Options: v2.AsyncSearchOptions{
-//				AdminUsers:           a.AdminUsers,
-//				ListQueryLengthLimit: a.ListQueryLengthLimit,
-//			},
-//		}
-//	}
-//
+func (m *v1tov2) migrateAsyncSearch(src *v1.AsyncSearch, seqAPI *v1.SeqAPI) *v2.AsyncSearch {
+	dst := &v2.AsyncSearch{
+		Options: v2.AsyncSearchOptions{
+			AdminUsers:           src.AdminUsers,
+			ListQueryLengthLimit: src.ListQueryLengthLimit,
+		},
+		DefaultEnv: seqAPI.DefaultEnv,
+	}
+
+	if len(seqAPI.Envs) > 0 {
+		dst.Envs = make(map[string]v2.AsyncSearchEnv, len(seqAPI.Envs))
+		for envName, envCfg := range seqAPI.Envs {
+			dst.Envs[envName] = v2.AsyncSearchEnv{SeqDBID: envCfg.SeqDB}
+		}
+	}
+
+	return dst
+}
+
 //	func (m *v1tov2) migrateMassExport(me *v1.MassExport, cfg *v2.Config) *v2.MassExport {
 //		dst := &v2.MassExport{
 //			SeqDBID: v2.DefaultSeqDBClientID,
@@ -573,7 +553,7 @@ func (m *v1tov2) migrateRedis(src *v1.Redis, id, withInmemID string) v2.Redis {
 //	}
 //
 // defaultCacheIDs returns cache ids same as in v1.
-// inmemWithRedisID - inmemory+redis or inmemory (v1 events, oidc, fields)
+// inmemWithRedisID - inmemory+redis or inmemory (v1 events, oidc)
 // redisOrInmemID - redis or inmemory (v1 logslifespan)
 func (m *v1tov2) defaultCacheIDs(src v1.Cache) (inmemWithRedisID, redisOrInmemID string) {
 	if src.Redis != nil {

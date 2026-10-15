@@ -19,6 +19,7 @@ import (
 //	@ID			seqapi_v1_cancel_async_search
 //	@Tags		seqapi_v1
 //	@Param		id		path		string			true	"search id"
+//	@Param		env		query		string			false	"Environment"
 //	@Success	200		{object}	nil				"A successful response"
 //	@Failure	default	{object}	httputil.Error	"An unexpected error response"
 //	@Security	bearer

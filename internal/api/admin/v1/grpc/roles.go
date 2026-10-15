@@ -34,7 +34,8 @@ func (a *API) CreateRole(ctx context.Context, req *admin.CreateRoleRequest) (*ad
 		Permissions: permissionGroupsToStrings(req.Permissions),
 	}
 
-	roleID, err := a.service.CreateRole(ctx, request)
+	svc := a.services[types.GetEnvKey(ctx)]
+	roleID, err := svc.CreateRole(ctx, request)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}
@@ -59,7 +60,8 @@ func (a *API) AddUsersToRole(ctx context.Context, req *admin.AddUsersToRoleReque
 		},
 	)
 
-	if err := a.service.AddUsersToRole(ctx, types.AddUsersToRoleRequest{
+	svc := a.services[types.GetEnvKey(ctx)]
+	if err := svc.AddUsersToRole(ctx, types.AddUsersToRoleRequest{
 		RoleID:    req.RoleId,
 		Usernames: req.Usernames,
 	}); err != nil {
@@ -84,7 +86,8 @@ func (a *API) DeleteUsersFromRole(ctx context.Context, req *admin.DeleteUsersFro
 		},
 	)
 
-	if err := a.service.DeleteUsersFromRole(ctx, types.DeleteUsersFromRoleRequest{
+	svc := a.services[types.GetEnvKey(ctx)]
+	if err := svc.DeleteUsersFromRole(ctx, types.DeleteUsersFromRoleRequest{
 		RoleID:    req.RoleId,
 		Usernames: req.Usernames,
 	}); err != nil {
@@ -95,7 +98,8 @@ func (a *API) DeleteUsersFromRole(ctx context.Context, req *admin.DeleteUsersFro
 }
 
 func (a *API) GetRoles(ctx context.Context, _ *admin.GetRolesRequest) (*admin.GetRolesResponse, error) {
-	resp, err := a.service.GetRoles(ctx)
+	svc := a.services[types.GetEnvKey(ctx)]
+	resp, err := svc.GetRoles(ctx)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}
@@ -117,7 +121,8 @@ func (a *API) GetRole(ctx context.Context, req *admin.GetRoleRequest) (*admin.Ge
 		},
 	)
 
-	roleInfo, err := a.service.GetRole(ctx, types.GetRoleRequest{
+	svc := a.services[types.GetEnvKey(ctx)]
+	roleInfo, err := svc.GetRole(ctx, types.GetRoleRequest{
 		RoleID: req.Id,
 	})
 	if err != nil {
@@ -151,7 +156,8 @@ func (a *API) UpdateRole(ctx context.Context, req *admin.UpdateRoleRequest) (*ad
 	}
 	span.SetAttributes(spanAttributes...)
 
-	if err := a.service.UpdateRole(ctx, types.UpdateRoleRequest{
+	svc := a.services[types.GetEnvKey(ctx)]
+	if err := svc.UpdateRole(ctx, types.UpdateRoleRequest{
 		RoleID:      req.Id,
 		Name:        req.Name,
 		Permissions: permissionGroupsToStrings(req.Permissions),
@@ -180,7 +186,8 @@ func (a *API) DeleteRole(ctx context.Context, req *admin.DeleteRoleRequest) (*ad
 	}
 	span.SetAttributes(spanAttributes...)
 
-	if err := a.service.DeleteRole(ctx, types.DeleteRoleRequest{
+	svc := a.services[types.GetEnvKey(ctx)]
+	if err := svc.DeleteRole(ctx, types.DeleteRoleRequest{
 		RoleID:            req.Id,
 		ReplacementRoleID: req.ReplacementRoleId,
 	}); err != nil {

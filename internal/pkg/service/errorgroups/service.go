@@ -7,6 +7,7 @@ import (
 	"math"
 	"slices"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/ozontech/seq-ui/internal/app/config/v2"
@@ -44,6 +45,25 @@ func New(repo repositorych.Repository, logTagsMapping config.LogTagsMapping) Ser
 		repo:           repo,
 		logTagsMapping: logTagsMapping,
 	}
+}
+
+func NewByEnv(cfg *config.ErrorGroups, clientsCfg *config.Clients, chClients map[string]driver.Conn) map[string]Service {
+	services := make(map[string]Service, max(1, len(cfg.Envs)))
+	if len(cfg.Envs) > 0 {
+		for envName, envCfg := range cfg.Envs {
+			repo := repositorych.New(chClients[envCfg.CHID], clientsCfg.ClickHouseByID(envCfg.CHID).Sharded, envCfg.Options.QueryFilter)
+			services[envName] = New(repo, envCfg.Options.LogTagsMapping)
+		}
+	} else {
+		var chID string
+		for id := range chClients {
+			chID = id
+		}
+		repo := repositorych.New(chClients[chID], clientsCfg.ClickHouseByID(chID).Sharded, cfg.Options.QueryFilter)
+		services[""] = New(repo, cfg.Options.LogTagsMapping)
+	}
+
+	return services
 }
 
 func (s *service) GetErrorGroups(
