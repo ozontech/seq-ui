@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/ozontech/seq-ui/internal/api"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/mw"
 )
 
@@ -19,13 +19,17 @@ type Server struct {
 	grpcServer  *grpc.Server
 	httpServer  *http.Server
 
-	authPrvds    mw.AuthProviders
-	rateLimiters map[string]map[string]mw.RateLimiter // rate limiter by api and user
+	envResolver  mw.EnvResolver
+	authPrvds    mw.AuthProvidersByEnv
+	rateLimiters mw.RateLimitersByEnv
 }
 
 // New returns a new Server.
-func New(ctx context.Context, cfg *config.Server, registrar *api.Registrar) (*Server, error) {
-	s := &Server{config: cfg}
+func New(ctx context.Context, cfg *config.Config, registrar *api.Registrar) (*Server, error) {
+	s := &Server{
+		config:      &cfg.Server,
+		envResolver: mw.NewEnvResolver(&cfg.Handlers),
+	}
 
 	if err := s.init(ctx, registrar); err != nil {
 		return nil, fmt.Errorf("init server: %w", err)

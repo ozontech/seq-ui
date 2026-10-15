@@ -15,7 +15,8 @@ import (
 )
 
 func (a *API) CancelAsyncSearch(ctx context.Context, req *seqapi.CancelAsyncSearchRequest) (*seqapi.CancelAsyncSearchResponse, error) {
-	if a.asyncSearches == nil {
+	asyncSearches, ok := a.asyncSearches[types.GetEnvKey(ctx)]
+	if !ok {
 		return nil, status.Error(codes.Unimplemented, types.ErrAsyncSearchesDisabled.Error())
 	}
 
@@ -33,7 +34,7 @@ func (a *API) CancelAsyncSearch(ctx context.Context, req *seqapi.CancelAsyncSear
 		},
 	)
 
-	resp, err := a.asyncSearches.CancelAsyncSearch(ctx, req)
+	resp, err := asyncSearches.CancelAsyncSearch(ctx, req)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}

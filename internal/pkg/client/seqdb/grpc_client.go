@@ -31,8 +31,8 @@ type grpcSearchResp interface {
 func processClientRequestUnaryInterceptor(
 	ctx context.Context,
 	method string,
-	req interface{},
-	reply interface{},
+	req any,
+	reply any,
 	cc *grpc.ClientConn,
 	invoker grpc.UnaryInvoker,
 	opts ...grpc.CallOption,
@@ -130,10 +130,6 @@ type GRPCClient struct {
 }
 
 func NewGRPCClient(ctx context.Context, params ClientParams) (*GRPCClient, error) {
-	if len(params.Addrs) == 0 {
-		panic("addrs is empty")
-	}
-
 	clients := make([]seqproxyapi.SeqProxyApiClient, 0, len(params.Addrs))
 	unaryInterceptors := []grpc.UnaryClientInterceptor{
 		processClientRequestUnaryInterceptor,

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
+	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/tracing"
 )
 
@@ -20,7 +21,7 @@ func (a *API) serveGetLimits(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
-	env := getEnvFromContext(ctx)
+	env := types.GetEnvKey(ctx)
 
 	params, err := a.GetEnvParams(env)
 	if err != nil {
@@ -29,18 +30,18 @@ func (a *API) serveGetLimits(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.NewWriter(w).WriteJson(getLimitsResponse{
-		MaxSearchLimit:            params.options.MaxSearchLimit,
-		MaxExportLimit:            params.options.MaxExportLimit,
-		MaxParallelExportRequests: int32(params.options.MaxParallelExportRequests),
-		MaxAggregationsPerRequest: int32(params.options.MaxAggregationsPerRequest),
-		SeqCliMaxSearchLimit:      int32(params.options.SeqCLIMaxSearchLimit),
+		MaxSearchLimit:            int(params.options.Limits.MaxSearchLimit),
+		MaxExportLimit:            int(params.options.Limits.MaxExportLimit),
+		MaxParallelExportRequests: params.options.Limits.MaxParallelExportRequests,
+		MaxAggregationsPerRequest: params.options.Limits.MaxAggregationsPerRequest,
+		SeqCliMaxSearchLimit:      params.options.Limits.SeqCLIMaxSearchLimit,
 	})
 }
 
 type getLimitsResponse struct {
-	MaxSearchLimit            int32 `json:"maxSearchLimit" format:"int32"`
-	MaxExportLimit            int32 `json:"maxExportLimit" format:"int32"`
-	MaxParallelExportRequests int32 `json:"maxParallelExportRequests" format:"int32"`
-	MaxAggregationsPerRequest int32 `json:"maxAggregationsPerRequest" format:"int32"`
-	SeqCliMaxSearchLimit      int32 `json:"seqCliMaxSearchLimit" format:"int32"`
+	MaxSearchLimit            int `json:"maxSearchLimit"`
+	MaxExportLimit            int `json:"maxExportLimit"`
+	MaxParallelExportRequests int `json:"maxParallelExportRequests"`
+	MaxAggregationsPerRequest int `json:"maxAggregationsPerRequest"`
+	SeqCliMaxSearchLimit      int `json:"seqCliMaxSearchLimit"`
 } //	@name	seqapi.v1.GetLimitsResponse

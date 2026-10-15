@@ -1,0 +1,638 @@
+package config
+
+import (
+	"fmt"
+	"slices"
+	"time"
+)
+
+// Configuration scheme
+// version:
+// server:
+//   http:
+//     addr:
+//     read_timeout:
+//     read_header_timeout:
+//     write_timeout:
+//     cors:
+//       allowed_origins:
+//       allowed_methods:
+//       allowed_headers:
+//       exposed_headers:
+//       allow_credentials:
+//       max_age:
+//       options_passthrough:
+//   grpc:
+//     addr:
+//     connection_timeout:
+//   debug:
+//     addr:
+// 	   read_timeout:
+// 	   read_header_timeout:
+//     write_timeout:
+//     cors:
+//       allowed_origins:
+//       allowed_methods:
+//       allowed_headers:
+//       exposed_headers:
+//       allow_credentials:
+//       max_age:
+//       options_passthrough:
+//   auth:
+//     options:
+//       oidc:
+//         cache_id:
+//         cache_secret_key:
+//         skip_verify:
+//         auth_urls:
+//         tls:
+//           ca_cert:
+//           client_cert:
+//           client_key:
+//           insecure:
+//         allowed_clients:
+//       jwt:
+//         secret_key:
+//     envs:
+//       <env_name>: # same as root options
+//   rate_limiting:
+//     options:
+//       <api_name>:
+//         default:
+//           rate_per_sec:
+//           max_burst:
+//           store_max_keys:
+//           per_handler:
+//         spec_users:
+//           <username>:
+//             rate_per_sec:
+//             max_burst:
+//             store_max_keys:
+//             per_handler:
+//     envs:
+//       <env_name>: # same as root options
+// clients:
+//   seq_db:
+//     - id:
+//       timeout:
+//       avg_doc_size:
+//       addrs:
+//       request_retries_backoff:
+//       backoff:
+// 		   initial_interval:
+// 		   max_interval
+//       client_mode:
+//       grpc_params:
+//         keepalive:
+//           time:
+//           timeout:
+//           permit_without_stream:
+//   clickhouse:
+//     - id:
+//       addrs:
+//       database:
+//       username:
+//       password:
+//       sharded:
+//       dial_timeout:
+//       read_timeout:
+// handlers:
+//   seq_api:
+//     options:
+//       limits:
+//         max_search_limit:
+//         max_search_total:
+//         max_search_offset:
+//         max_export_limit:
+//         seq_cli_max_search_limit:
+//         max_parallel_export_requests:
+//         max_aggregations_per_request:
+//         max_buckets_per_aggregation_ts:
+//       masking:
+//         masks:
+//           - re:
+//             groups:
+//             mode:
+//             replace_word:
+//             process_fields:
+//             ignore_fields:
+//             field_filters:
+//               condition:
+//               filters:
+//                 - field:
+//                   mode:
+//                   values:
+//         process_fields:
+//         ignore_fields:
+//       caches:
+//         events:
+//           id:
+//           ttl:
+//         logs_lifespan:
+//           id:
+//           ttl:
+//         fields:
+//           id:
+//           ttl:
+//       pinned_fields:
+//         - name:
+//           type:
+//       system_fields:
+//         - name:
+//           type:
+//     envs:
+//       <env_name>:
+//         seq_db_id:
+//         options: # same as root options
+//     default_env:
+//   error_groups:
+//     options:
+//       log_tags_mapping:
+//         env:
+//         service:
+//         release:
+//       query_filter:
+//         <ch_column>:
+//     envs:
+//       <env_name>:
+//         ch_id:
+//         options: # same as root options
+//     default_env:
+//   mass_export:
+//     options:
+//       workers_count:
+//       tasks_channel_size:
+//       part_length:
+//       url_prefix:
+//       allowed_users:
+//       file_store:
+//         s3:
+//           endpoint:
+//           access_key_id:
+//           secret_access_key:
+//           bucket_name:
+//           enable_ssl:
+//       session_store:
+//         lifetime:
+//         cache_id:
+//       download_params:
+//         batch_size:
+//         delay:
+// 		   delay_backoff:
+//           initial_interval:
+//           max_interval:
+//     envs:
+//       <env_name>:
+//         seq_db_id:
+//         options: # same as root options
+//     default_env:
+//   async_search:
+//     options:
+//       admin_users:
+//       list_query_length_limit:
+//     envs:
+//       <env_name>:
+//         seq_db_id:
+//         options: # same as root options
+//     default_env:
+//   admin:
+//     options:
+//       super_users:
+//       cache:
+//         id:
+//         ttl:
+//     envs:
+//       <env_name>:
+//         options: # same as root options
+//     default_env:
+// db:
+//   name:
+//   host:
+//   port:
+//   user:
+//   pass:
+//   request_timeout:
+//   connection_pool_capacity:
+//   use_prepared_statements:
+// cache:
+//   inmemory:
+//     - id:
+//       num_counters:
+//       max_cost:
+//       buffer_items:
+//   redis:
+//     - id:
+//       with_inmem_id:
+//       key_prefix:
+//       addr:
+//       username:
+//       password:
+//       max_retries:
+//       timeout:
+//       min_retry_backoff:
+//       max_retry_backoff:
+
+type Config struct {
+	Version  int      `yaml:"version"`
+	Server   Server   `yaml:"server"`
+	Clients  Clients  `yaml:"clients"`
+	Handlers Handlers `yaml:"handlers"`
+	Cache    Cache    `yaml:"cache"`
+	DB       *DB      `yaml:"db"`
+}
+
+type CORS struct {
+	AllowedOrigins     []string `yaml:"allowed_origins"`
+	AllowedMethods     []string `yaml:"allowed_methods"`
+	AllowedHeaders     []string `yaml:"allowed_headers"`
+	ExposedHeaders     []string `yaml:"exposed_headers"`
+	MaxAge             int      `yaml:"max_age"`
+	AllowCredentials   bool     `yaml:"allow_credentials"`
+	OptionsPassthrough bool     `yaml:"options_passthrough"`
+}
+
+type TLS struct {
+	CACert     string `yaml:"ca_cert"`
+	ClientCert string `yaml:"client_cert"`
+	ClientKey  string `yaml:"client_key"`
+	Insecure   bool   `yaml:"insecure"`
+}
+
+type OIDC struct {
+	CacheID        string   `yaml:"cache_id"`
+	CacheSecretKey string   `yaml:"cache_secret_key"`
+	SkipVerify     bool     `yaml:"skip_verify"`
+	AuthURLs       []string `yaml:"auth_urls"`
+	AllowedClients []string `yaml:"allowed_clients"`
+	TLS            *TLS     `yaml:"tls"`
+}
+
+type DB struct {
+	Name                   string        `yaml:"name"`
+	Host                   string        `yaml:"host"`
+	Port                   int64         `yaml:"port"`
+	User                   string        `yaml:"user"`
+	Pass                   string        `yaml:"pass"`
+	RequestTimeout         time.Duration `yaml:"request_timeout"`
+	ConnectionPoolCapacity int64         `yaml:"connection_pool_capacity"`
+	UsePreparedStatements  *bool         `yaml:"use_prepared_statements"`
+}
+
+func (db *DB) ConnString() string {
+	return fmt.Sprintf("host=%s port=%d dbname=%s user=%s password=%s pool_max_conns=%d", db.Host, db.Port, db.Name, db.User, db.Pass, db.ConnectionPoolCapacity)
+}
+
+type (
+	RateLimiter struct {
+		RatePerSec   int  `yaml:"rate_per_sec"`
+		MaxBurst     int  `yaml:"max_burst"`
+		StoreMaxKeys int  `yaml:"store_max_keys"`
+		PerHandler   bool `yaml:"per_handler"`
+	}
+
+	RateLimiters struct {
+		Default      RateLimiter            `yaml:"default"`
+		SpecialUsers map[string]RateLimiter `yaml:"spec_users"`
+	}
+
+	ApiToRateLimiters map[string]RateLimiters
+)
+
+type Inmemory struct {
+	ID          string `yaml:"id"`
+	NumCounters int64  `yaml:"num_counters"`
+	MaxCost     int64  `yaml:"max_cost"`
+	BufferItems int64  `yaml:"buffer_items"`
+}
+
+type Redis struct {
+	ID              string        `yaml:"id"`
+	WithInmemID     string        `yaml:"with_inmem_id"`
+	KeyPrefix       string        `yaml:"key_prefix"`
+	Addr            string        `yaml:"addr"`
+	Username        string        `yaml:"username"`
+	Password        string        `yaml:"password"`
+	MaxRetries      int           `yaml:"max_retries"`
+	Timeout         time.Duration `yaml:"timeout"`
+	MinRetryBackoff time.Duration `yaml:"min_retry_backoff"`
+	MaxRetryBackoff time.Duration `yaml:"max_retry_backoff"`
+}
+
+type Cache struct {
+	Inmemory []Inmemory `yaml:"inmemory"`
+	Redis    []Redis    `yaml:"redis"`
+}
+
+func (c *Cache) InmemByID(id string) *Inmemory {
+	i := slices.IndexFunc(c.Inmemory, func(inm Inmemory) bool {
+		return inm.ID == id
+	})
+	if i == -1 {
+		return nil
+	}
+
+	return &c.Inmemory[i]
+}
+
+func (c *Cache) RedisByID(id string) *Redis {
+	i := slices.IndexFunc(c.Redis, func(r Redis) bool {
+		return r.ID == id
+	})
+	if i == -1 {
+		return nil
+	}
+
+	return &c.Redis[i]
+}
+
+type S3 struct {
+	Endpoint        string `yaml:"endpoint"`
+	AccessKeyID     string `yaml:"access_key_id"`
+	SecretAccessKey string `yaml:"secret_access_key"`
+	BucketName      string `yaml:"bucket_name"`
+	EnableSSL       bool   `yaml:"enable_ssl"`
+}
+
+type DownloadParams struct {
+	BatchSize    uint64        `yaml:"batch_size"`
+	Delay        time.Duration `yaml:"delay"`
+	DelayBackoff Backoff       `yaml:"delay_backoff"`
+}
+
+type SessionStore struct {
+	Lifetime time.Duration `yaml:"lifetime"`
+	CacheID  string        `yaml:"cache_id"`
+}
+
+type FileStore struct {
+	S3 *S3 `yaml:"s3"`
+}
+
+type MassExport struct {
+	Options    MassExportOptions        `yaml:"options"`
+	Envs       map[string]MassExportEnv `yaml:"envs"`
+	DefaultEnv string                   `yaml:"default_env"`
+}
+
+type MassExportEnv struct {
+	SeqDBID string             `yaml:"seq_db_id"`
+	Options *MassExportOptions `yaml:"options"`
+}
+
+type MassExportOptions struct {
+	WorkersCount     int            `yaml:"workers_count"`
+	TasksChannelSize int            `yaml:"tasks_channel_size"`
+	PartLength       time.Duration  `yaml:"part_length"`
+	URLPrefix        string         `yaml:"url_prefix"`
+	AllowedUsers     []string       `yaml:"allowed_users"`
+	FileStore        FileStore      `yaml:"file_store"`
+	SessionStore     SessionStore   `yaml:"session_store"`
+	DownloadParams   DownloadParams `yaml:"download_params"`
+}
+
+type HTTP struct {
+	Addr              string        `yaml:"addr"`
+	ReadHeaderTimeout time.Duration `yaml:"read_header_timeout"`
+	ReadTimeout       time.Duration `yaml:"read_timeout"`
+	WriteTimeout      time.Duration `yaml:"write_timeout"`
+	CORS              *CORS         `yaml:"cors"`
+}
+
+type GRPC struct {
+	Addr              string        `yaml:"addr"`
+	ConnectionTimeout time.Duration `yaml:"connection_timeout"`
+}
+
+type Debug struct {
+	Addr              string        `yaml:"addr"`
+	ReadHeaderTimeout time.Duration `yaml:"read_header_timeout"`
+	ReadTimeout       time.Duration `yaml:"read_timeout"`
+	WriteTimeout      time.Duration `yaml:"write_timeout"`
+	CORS              *CORS         `yaml:"cors"`
+}
+
+type JWT struct {
+	SecretKey string `yaml:"secret_key"`
+}
+
+type Auth struct {
+	Options AuthOptions            `yaml:"options"`
+	Envs    map[string]AuthOptions `yaml:"envs"`
+}
+
+type AuthOptions struct {
+	OIDC *OIDC `yaml:"oidc"`
+	JWT  *JWT  `yaml:"jwt"`
+}
+
+type Server struct {
+	HTTP         *HTTP         `yaml:"http"`
+	GRPC         *GRPC         `yaml:"grpc"`
+	Debug        Debug         `yaml:"debug"`
+	Auth         *Auth         `yaml:"auth"`
+	RateLimiting *RateLimiting `yaml:"rate_limiting"`
+}
+
+type RateLimiting struct {
+	Options ApiToRateLimiters            `yaml:"options"`
+	Envs    map[string]ApiToRateLimiters `yaml:"envs"`
+}
+
+type KeepaliveParams struct {
+	// After a duration of this time if the client doesn't see any activity it
+	// pings the server to see if the transport is still alive.
+	// If set below 10s, a minimum value of 10s will be used instead.
+	Time time.Duration `yaml:"time"`
+	// After having pinged for keepalive check, the client waits for a duration
+	// of Timeout and if no activity is seen even after that the connection is
+	// closed. If set below 1s, a minimum value of 1s will be used instead.
+	Timeout time.Duration `yaml:"timeout"`
+	// If true, client sends keepalive pings even with no active RPCs. If false,
+	// when there are no active RPCs, Time and Timeout will be ignored and no
+	// keepalive pings will be sent. False by default.
+	PermitWithoutStream bool `yaml:"permit_without_stream"`
+}
+
+type GRPCParams struct {
+	Keepalive *KeepaliveParams `yaml:"keepalive"`
+}
+
+type SeqDBClient struct {
+	ID                    string        `yaml:"id"`
+	Timeout               time.Duration `yaml:"timeout"`
+	AvgDocSize            int           `yaml:"avg_doc_size"`
+	Addrs                 []string      `yaml:"addrs"`
+	RequestRetries        int           `yaml:"request_retries"`
+	RequestRetriesBackoff *Backoff      `yaml:"request_retries_backoff"`
+	ClientMode            string        `yaml:"client_mode"`
+	GRPCParams            *GRPCParams   `yaml:"grpc_params"`
+}
+
+type Backoff struct {
+	InitialInterval time.Duration `yaml:"initial_interval"`
+	MaxInterval     time.Duration `yaml:"max_interval"`
+}
+
+type CHClient struct {
+	ID          string        `yaml:"id"`
+	Addrs       []string      `yaml:"addrs"`
+	Database    string        `yaml:"database"`
+	Username    string        `yaml:"username"`
+	Password    string        `yaml:"password"`
+	Sharded     bool          `yaml:"sharded"`
+	DialTimeout time.Duration `yaml:"dial_timeout"`
+	ReadTimeout time.Duration `yaml:"read_timeout"`
+}
+
+type Clients struct {
+	SeqDB      []SeqDBClient `yaml:"seq_db"`
+	ClickHouse []CHClient    `yaml:"clickhouse"`
+}
+
+func (c *Clients) ClickHouseByID(id string) *CHClient {
+	i := slices.IndexFunc(c.ClickHouse, func(ch CHClient) bool {
+		return ch.ID == id
+	})
+	if i == -1 {
+		return nil
+	}
+
+	return &c.ClickHouse[i]
+}
+
+type Handlers struct {
+	SeqAPI      *SeqAPI      `yaml:"seq_api"`
+	MassExport  *MassExport  `yaml:"mass_export"`
+	AsyncSearch *AsyncSearch `yaml:"async_search"`
+	ErrorGroups *ErrorGroups `yaml:"error_groups"`
+	Admin       *Admin       `yaml:"admin"`
+}
+
+type Admin struct {
+	Options    AdminOptions        `yaml:"options"`
+	Envs       map[string]AdminEnv `yaml:"envs"`
+	DefaultEnv string              `yaml:"default_env"`
+}
+
+type AdminEnv struct {
+	Options *AdminOptions `yaml:"options"`
+}
+
+type AdminOptions struct {
+	SuperUsers []string      `yaml:"super_users"`
+	Cache      *HandlerCache `yaml:"cache"`
+}
+
+type Field struct {
+	Name string `yaml:"name"`
+	Type string `yaml:"type"`
+}
+
+type SeqAPI struct {
+	// добавить проверку на len(SEQDB) == 1 и берем [0]
+	Options    SeqAPIOptions        `yaml:"options"`
+	Envs       map[string]SeqAPIEnv `yaml:"envs"`
+	DefaultEnv string               `yaml:"default_env"`
+}
+
+type SeqAPIEnv struct {
+	SeqDBID string         `yaml:"seq_db_id"`
+	Options *SeqAPIOptions `yaml:"options"`
+}
+
+type SeqAPIOptions struct {
+	Limits       SeqAPILimits `yaml:"limits"`
+	Caches       SeqAPICaches `yaml:"caches"`
+	Masking      *Masking     `yaml:"masking"`
+	PinnedFields []Field      `yaml:"pinned_fields"`
+	SystemFields []Field      `yaml:"system_fields"`
+}
+
+type SeqAPILimits struct {
+	MaxSearchLimit             int32 `yaml:"max_search_limit"`
+	MaxSearchTotal             int64 `yaml:"max_search_total"`
+	MaxSearchOffset            int32 `yaml:"max_search_offset"`
+	MaxExportLimit             int32 `yaml:"max_export_limit"`
+	SeqCLIMaxSearchLimit       int   `yaml:"seq_cli_max_search_limit"`
+	MaxParallelExportRequests  int   `yaml:"max_parallel_export_requests"`
+	MaxAggregationsPerRequest  int   `yaml:"max_aggregations_per_request"`
+	MaxBucketsPerAggregationTs int   `yaml:"max_buckets_per_aggregation_ts"`
+}
+
+type SeqAPICaches struct {
+	Events       *HandlerCache `yaml:"events"`
+	LogsLifespan *HandlerCache `yaml:"logs_lifespan"`
+	Fields       *HandlerCache `yaml:"fields"`
+}
+
+type HandlerCache struct {
+	ID  string        `yaml:"id"`
+	TTL time.Duration `yaml:"ttl"`
+}
+
+type Masking struct {
+	Masks         []Mask   `yaml:"masks"`
+	ProcessFields []string `yaml:"process_fields"`
+	IgnoreFields  []string `yaml:"ignore_fields"`
+}
+
+type Mask struct {
+	Re          string `yaml:"re"`
+	Groups      []int  `yaml:"groups"`
+	Mode        string `yaml:"mode"`         // "mask" or "replace" or "cut"
+	ReplaceWord string `yaml:"replace_word"` // for mode:replace
+
+	ProcessFields []string `yaml:"process_fields"`
+	IgnoreFields  []string `yaml:"ignore_fields"`
+
+	FieldFilters *FieldFilterSet `yaml:"field_filters"`
+}
+
+type FieldFilter struct {
+	Field  string   `yaml:"field"`
+	Mode   string   `yaml:"mode"` // "equal" or "contains" or "prefix" or "suffix"
+	Values []string `yaml:"values"`
+}
+
+type FieldFilterSet struct {
+	Condition string        `yaml:"condition"` // "and" or "or" or "not"
+	Filters   []FieldFilter `yaml:"filters"`   // max 1 if condition:not
+}
+
+type LogTagsMapping struct {
+	Release []string `yaml:"release"`
+	Service []string `yaml:"service"`
+	Env     []string `yaml:"env"`
+}
+
+type ErrorGroups struct {
+	Options    ErrorGroupsOptions        `yaml:"options"`
+	Envs       map[string]ErrorGroupsEnv `yaml:"envs"`
+	DefaultEnv string                    `yaml:"default_env"`
+}
+
+type ErrorGroupsEnv struct {
+	CHID    string              `yaml:"ch_id"`
+	Options *ErrorGroupsOptions `yaml:"options"`
+}
+
+type ErrorGroupsOptions struct {
+	LogTagsMapping LogTagsMapping    `yaml:"log_tags_mapping"`
+	QueryFilter    map[string]string `yaml:"query_filter"`
+}
+
+type AsyncSearch struct {
+	Options    AsyncSearchOptions        `yaml:"options"`
+	Envs       map[string]AsyncSearchEnv `yaml:"envs"`
+	DefaultEnv string                    `yaml:"default_env"`
+}
+
+type AsyncSearchEnv struct {
+	SeqDBID string              `yaml:"seq_db_id"`
+	Options *AsyncSearchOptions `yaml:"options"`
+}
+
+type AsyncSearchOptions struct {
+	AdminUsers           []string `yaml:"admin_users"`
+	ListQueryLengthLimit int      `yaml:"list_query_length_limit"`
+}

@@ -17,6 +17,8 @@ func (a *API) GetGroups(ctx context.Context, req *errorgroups.GetGroupsRequest) 
 	ctx, span := tracing.StartSpan(ctx, "errorgroups_v1_get_groups")
 	defer span.End()
 
+	svc, reqEnv := a.serviceByEnv(ctx, req.Env)
+
 	attributes := []attribute.KeyValue{
 		{Key: "service", Value: attribute.StringValue(req.Service)},
 		{Key: "limit", Value: attribute.IntValue(int(req.Limit))},
@@ -24,8 +26,8 @@ func (a *API) GetGroups(ctx context.Context, req *errorgroups.GetGroupsRequest) 
 		{Key: "order", Value: attribute.StringValue(string(req.Order))},
 		{Key: "with_total", Value: attribute.BoolValue(req.WithTotal)},
 	}
-	if req.Env != nil {
-		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*req.Env)})
+	if reqEnv != nil {
+		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*reqEnv)})
 	}
 	if req.Release != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "release", Value: attribute.StringValue(*req.Release)})
@@ -48,7 +50,7 @@ func (a *API) GetGroups(ctx context.Context, req *errorgroups.GetGroupsRequest) 
 
 	request := types.GetErrorGroupsRequest{
 		Service:   req.Service,
-		Env:       req.Env,
+		Env:       reqEnv,
 		Source:    req.Source,
 		Release:   req.Release,
 		TimeRange: parseTimeRange(req),
@@ -70,9 +72,9 @@ func (a *API) GetGroups(ctx context.Context, req *errorgroups.GetGroupsRequest) 
 		err    error
 	)
 	if req.Filter != nil && req.Filter.IsNew {
-		groups, total, err = a.service.GetNewErrorGroups(ctx, request)
+		groups, total, err = svc.GetNewErrorGroups(ctx, request)
 	} else {
-		groups, total, err = a.service.GetErrorGroups(ctx, request)
+		groups, total, err = svc.GetErrorGroups(ctx, request)
 	}
 
 	if err != nil {

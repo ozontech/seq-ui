@@ -17,6 +17,7 @@ import (
 //	@Router		/errorgroups/v1/service_filters [post]
 //	@ID			errorgroups_v1_get_service_filters
 //	@Tags		errorgroups_v1
+//	@Param		env		query		string						false	"Environment"
 //	@Param		body	body		getServiceFiltersRequest	true	"Request body"
 //	@Success	200		{object}	getServiceFiltersResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error				"An unexpected error response"
@@ -33,19 +34,21 @@ func (a *API) serveGetServiceFilters(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	svc, httpReqEnv := a.serviceByEnv(ctx, httpReq.Env)
+
 	attributes := []attribute.KeyValue{
 		{Key: "service", Value: attribute.StringValue(httpReq.Service)},
 	}
-	if httpReq.Env != nil {
-		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReq.Env)})
+	if httpReqEnv != nil {
+		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReqEnv)})
 	}
 	span.SetAttributes(attributes...)
 
 	req := types.GetServiceFiltersRequest{
 		Service: httpReq.Service,
-		Env:     httpReq.Env,
+		Env:     httpReqEnv,
 	}
-	filters, err := a.service.GetServiceFilters(ctx, req)
+	filters, err := svc.GetServiceFilters(ctx, req)
 	if err != nil {
 		httputil.ProcessError(wr, err)
 		return

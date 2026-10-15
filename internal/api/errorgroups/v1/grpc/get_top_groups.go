@@ -16,13 +16,15 @@ func (a *API) GetTopGroups(ctx context.Context, req *errorgroups.GetTopGroupsReq
 	ctx, span := tracing.StartSpan(ctx, "errorgroups_v1_get_top_groups")
 	defer span.End()
 
+	svc, reqEnv := a.serviceByEnv(ctx, req.Env)
+
 	attributes := []attribute.KeyValue{
 		{Key: "limit", Value: attribute.IntValue(int(req.Limit))},
 		{Key: "offset", Value: attribute.IntValue(int(req.Offset))},
 		{Key: "with_total", Value: attribute.BoolValue(req.WithTotal)},
 	}
-	if req.Env != nil {
-		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*req.Env)})
+	if reqEnv != nil {
+		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*reqEnv)})
 	}
 	if req.Source != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "source", Value: attribute.StringValue(*req.Source)})
@@ -37,7 +39,7 @@ func (a *API) GetTopGroups(ctx context.Context, req *errorgroups.GetTopGroupsReq
 	span.SetAttributes(attributes...)
 
 	request := types.GetTopErrorGroupsRequest{
-		Env:       req.Env,
+		Env:       reqEnv,
 		Source:    req.Source,
 		TimeRange: parseTimeRange(req),
 		Limit:     req.Limit,
@@ -45,7 +47,7 @@ func (a *API) GetTopGroups(ctx context.Context, req *errorgroups.GetTopGroupsReq
 		WithTotal: req.WithTotal,
 	}
 
-	groups, total, err := a.service.GetTopErrorGroups(ctx, request)
+	groups, total, err := svc.GetTopErrorGroups(ctx, request)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}

@@ -4,6 +4,7 @@ TIME := $(shell date '+%Y-%m-%d_%H:%M:%S')
 
 MIGRATION_DSN ?= postgresql://localhost/postgres?sslmode=disable&user=postgres&password=postgres
 MIGRATION_DSN_CLICKHOUSE ?= tcp://default@localhost:9000/seq_ui_server
+SOURCE_CONFIG ?= config/config.local.yaml
 
 LOCAL_BIN := $(CURDIR)/bin
 
@@ -57,6 +58,10 @@ push-migration-image: build-migration-image
 .PHONY: run
 run: .check-config
 	go run ./cmd/seq-ui -config=config/config.local.yaml
+
+.PHONY: config-migrate
+config-migrate:
+	go run ./cmd/config-migrate -source=${SOURCE_CONFIG}
 
 .PHONY: .check-config
 .check-config:

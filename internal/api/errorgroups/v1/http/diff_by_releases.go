@@ -19,6 +19,7 @@ import (
 //	@Router		/errorgroups/v1/diff_by_releases [post]
 //	@ID			errorgroups_v1_diff_by_releases
 //	@Tags		errorgroups_v1
+//	@Param		env		query		string					false	"Environment"
 //	@Param		body	body		diffByReleasesRequest	true	"Request body"
 //	@Success	200		{object}	diffByReleasesResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error			"An unexpected error response"
@@ -35,6 +36,8 @@ func (a *API) serveDiffByReleases(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	svc, httpReqEnv := a.serviceByEnv(ctx, httpReq.Env)
+
 	attributes := []attribute.KeyValue{
 		{Key: "service", Value: attribute.StringValue(httpReq.Service)},
 		{Key: "releases", Value: attribute.StringSliceValue(httpReq.Releases)},
@@ -43,18 +46,18 @@ func (a *API) serveDiffByReleases(w http.ResponseWriter, r *http.Request) {
 		{Key: "order", Value: attribute.StringValue(string(httpReq.Order))},
 		{Key: "with_total", Value: attribute.BoolValue(httpReq.WithTotal)},
 	}
-	if httpReq.Env != nil {
-		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReq.Env)})
+	if httpReqEnv != nil {
+		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReqEnv)})
 	}
 	if httpReq.Source != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "source", Value: attribute.StringValue(*httpReq.Source)})
 	}
 	span.SetAttributes(attributes...)
 
-	groups, total, err := a.service.DiffByReleases(ctx, types.DiffByReleasesRequest{
+	groups, total, err := svc.DiffByReleases(ctx, types.DiffByReleasesRequest{
 		Service:   httpReq.Service,
 		Releases:  httpReq.Releases,
-		Env:       httpReq.Env,
+		Env:       httpReqEnv,
 		Source:    httpReq.Source,
 		Limit:     httpReq.Limit,
 		Offset:    httpReq.Offset,

@@ -15,7 +15,8 @@ import (
 )
 
 func (a *API) StartAsyncSearch(ctx context.Context, req *seqapi.StartAsyncSearchRequest) (*seqapi.StartAsyncSearchResponse, error) {
-	if a.asyncSearches == nil {
+	asyncSearches, ok := a.asyncSearches[types.GetEnvKey(ctx)]
+	if !ok {
 		return nil, status.Error(codes.Unimplemented, types.ErrAsyncSearchesDisabled.Error())
 	}
 
@@ -64,7 +65,7 @@ func (a *API) StartAsyncSearch(ctx context.Context, req *seqapi.StartAsyncSearch
 
 	span.SetAttributes(spanAttributes...)
 
-	resp, err := a.asyncSearches.StartAsyncSearch(ctx, req)
+	resp, err := asyncSearches.StartAsyncSearch(ctx, req)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}

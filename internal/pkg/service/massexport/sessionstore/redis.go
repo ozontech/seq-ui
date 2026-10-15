@@ -11,7 +11,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/internal/pkg/redisclient"
 	"github.com/ozontech/seq-ui/logger"
@@ -31,23 +31,23 @@ const (
 	maxLifetime     = 30 * day
 )
 
-func NewRedisSessionStore(ctx context.Context, cfg *config.SessionStore) (SessionStore, error) {
-	client, err := redisclient.New(ctx, &cfg.Redis)
+func NewRedisSessionStore(ctx context.Context, redisCfg *config.Redis, exportLifetimeCfg time.Duration) (SessionStore, error) {
+	client, err := redisclient.New(ctx, redisCfg)
 	if err != nil {
 		return nil, fmt.Errorf("create redis client: %w", err)
 	}
 
 	exportLifetime := defaultLifetime
-	if cfg.ExportLifetime != 0 {
+	if exportLifetimeCfg != 0 {
 		switch {
-		case cfg.ExportLifetime < minLifetime:
-			logger.Warn("export lifetime from config is too low; set min lifetime", zap.String("export_lifetime", cfg.ExportLifetime.String()))
+		case exportLifetimeCfg < minLifetime:
+			logger.Warn("export lifetime from config is too low; set min lifetime", zap.String("export_lifetime", exportLifetimeCfg.String()))
 			exportLifetime = minLifetime
-		case cfg.ExportLifetime > maxLifetime:
-			logger.Warn("export lifetime from config is too high; set max lifetime", zap.String("export_lifetime", cfg.ExportLifetime.String()))
+		case exportLifetimeCfg > maxLifetime:
+			logger.Warn("export lifetime from config is too high; set max lifetime", zap.String("export_lifetime", exportLifetimeCfg.String()))
 			exportLifetime = maxLifetime
 		default:
-			exportLifetime = cfg.ExportLifetime
+			exportLifetime = exportLifetimeCfg
 		}
 	}
 

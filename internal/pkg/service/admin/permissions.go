@@ -34,7 +34,10 @@ func (s *service) checkAccess(ctx context.Context, requiredPermission string) er
 		return nil
 	}
 
-	permissions, err := s.getUserPermissions(ctx, types.GetUserPermissionsRequest{Username: username})
+	permissions, err := s.getUserPermissions(ctx, types.GetUserPermissionsRequest{
+		Username: username,
+		Env:      s.env,
+	})
 	if err != nil {
 		return fmt.Errorf("can't get user permissions: %w", err)
 	}

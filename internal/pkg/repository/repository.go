@@ -33,9 +33,9 @@ type (
 
 	AsyncSearches interface {
 		SaveAsyncSearch(context.Context, types.SaveAsyncSearchRequest) error
-		GetAsyncSearchById(context.Context, string) (types.AsyncSearchInfo, error)
-		DeleteAsyncSearch(context.Context, string) error
-		DeleteExpiredAsyncSearches(context.Context) error
+		GetAsyncSearchById(context.Context, types.GetAsyncSearchByIdRequest) (types.AsyncSearchInfo, error)
+		DeleteAsyncSearch(context.Context, types.DeleteAsyncSearchRequest) error
+		DeleteExpiredAsyncSearches(context.Context, types.DeleteExpiredAsyncSearchesRequest) error
 		GetAsyncSearchesList(context.Context, types.GetAsyncSearchesListRequest) ([]types.AsyncSearchInfo, error)
 	}
 

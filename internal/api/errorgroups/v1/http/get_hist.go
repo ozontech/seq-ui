@@ -18,6 +18,7 @@ import (
 //	@Router		/errorgroups/v1/hist [post]
 //	@ID			errorgroups_v1_get_hist
 //	@Tags		errorgroups_v1
+//	@Param		env		query		string			false	"Environment"
 //	@Param		body	body		getHistRequest	true	"Request body"
 //	@Success	200		{object}	getHistResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error	"An unexpected error response"
@@ -34,6 +35,8 @@ func (a *API) serveGetHist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	svc, httpReqEnv := a.serviceByEnv(ctx, httpReq.Env)
+
 	attributes := []attribute.KeyValue{}
 	if httpReq.GroupHash != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "group_hash", Value: attribute.StringValue(*httpReq.GroupHash)})
@@ -41,8 +44,8 @@ func (a *API) serveGetHist(w http.ResponseWriter, r *http.Request) {
 	if httpReq.Service != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "service", Value: attribute.StringValue(*httpReq.Service)})
 	}
-	if httpReq.Env != nil {
-		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReq.Env)})
+	if httpReqEnv != nil {
+		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReqEnv)})
 	}
 	if httpReq.Release != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "release", Value: attribute.StringValue(*httpReq.Release)})
@@ -78,7 +81,7 @@ func (a *API) serveGetHist(w http.ResponseWriter, r *http.Request) {
 	req := types.GetErrorHistRequest{
 		Service:   httpReq.Service,
 		GroupHash: parsedGroupHash,
-		Env:       httpReq.Env,
+		Env:       httpReqEnv,
 		Source:    httpReq.Source,
 		Release:   httpReq.Release,
 		TimeRange: tr,
@@ -90,7 +93,7 @@ func (a *API) serveGetHist(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	hist, err := a.service.GetHist(ctx, req)
+	hist, err := svc.GetHist(ctx, req)
 	if err != nil {
 		httputil.ProcessError(wr, err)
 		return

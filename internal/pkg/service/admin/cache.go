@@ -22,12 +22,18 @@ const (
 var errCacheDisabled = errors.New("admin cache disabled")
 
 type adminCache struct {
-	cache cache.Cache
-	ttl   time.Duration
+	cache              cache.Cache
+	userPermsKeyPrefix string
+	ttl                time.Duration
 }
 
-func newAdminCache(c cache.Cache, ttl time.Duration) adminCache {
-	return adminCache{cache: c, ttl: ttl}
+func newAdminCache(c cache.Cache, ttl time.Duration, env string) adminCache {
+	userPermsKeyPrefix := cacheKeyUserPerms
+	if env != "" {
+		userPermsKeyPrefix += env + "_"
+	}
+
+	return adminCache{cache: c, ttl: ttl, userPermsKeyPrefix: userPermsKeyPrefix}
 }
 
 func (c *adminCache) getRoles(ctx context.Context) ([]types.Role, error) {
@@ -77,7 +83,7 @@ func (c *adminCache) getUserPermissions(ctx context.Context, username string) ([
 		return nil, errCacheDisabled
 	}
 
-	data, err := c.cache.Get(ctx, cacheKeyUserPerms+username)
+	data, err := c.cache.Get(ctx, c.userPermsKeyPrefix+username)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user permissions from cache: %w", err)
 	}
@@ -101,7 +107,7 @@ func (c *adminCache) setUserPermissions(ctx context.Context, username string, pe
 		return
 	}
 
-	if err := c.cache.SetWithTTL(ctx, cacheKeyUserPerms+username, string(data), c.ttl); err != nil {
+	if err := c.cache.SetWithTTL(ctx, c.userPermsKeyPrefix+username, string(data), c.ttl); err != nil {
 		logger.Error("failed to set user permissions in cache", zap.Error(err))
 	}
 }
@@ -112,6 +118,6 @@ func (c *adminCache) resetUsersPermissions(ctx context.Context, usernames ...str
 	}
 
 	for _, username := range usernames {
-		c.cache.Del(ctx, cacheKeyUserPerms+username)
+		c.cache.Del(ctx, c.userPermsKeyPrefix+username)
 	}
 }

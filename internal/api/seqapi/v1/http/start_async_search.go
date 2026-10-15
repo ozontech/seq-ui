@@ -22,20 +22,29 @@ import (
 //	@Router		/seqapi/v1/async_search/start [post]
 //	@ID			seqapi_v1_start_async_search
 //	@Tags		seqapi_v1
+//	@Param		env		query		string						false	"Environment"
 //	@Param		body	body		startAsyncSearchRequest		true	"Request body"
 //	@Success	200		{object}	startAsyncSearchResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error				"An unexpected error response"
 //	@Security	bearer
 func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
-	wr := httputil.NewWriter(w)
+	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_start_async_search")
+	defer span.End()
 
-	if a.asyncSearches == nil {
+	wr := httputil.NewWriter(w)
+	env := types.GetEnvKey(ctx)
+
+	asyncSearches, ok := a.asyncSearches[env]
+	if !ok {
 		wr.Error(types.ErrAsyncSearchesDisabled, http.StatusBadRequest)
 		return
 	}
 
-	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_start_async_search")
-	defer span.End()
+	params, err := a.GetEnvParams(env)
+	if err != nil {
+		httputil.NewWriter(w).Error(err, http.StatusBadRequest)
+		return
+	}
 
 	var httpReq startAsyncSearchRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
@@ -54,7 +63,7 @@ func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if err := api_error.CheckAggregationTsInterval(agg.Interval, httpReq.From, httpReq.To,
-			a.config.MaxBucketsPerAggregationTs,
+			params.options.Limits.MaxBucketsPerAggregationTs,
 		); err != nil {
 			wr.Error(err, http.StatusBadRequest)
 			return
@@ -100,10 +109,13 @@ func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
 			Value: attribute.StringValue(string(aggsRaw)),
 		})
 	}
+	if env != "" {
+		spanAttributes = append(spanAttributes, attribute.String("env", env))
+	}
 
 	span.SetAttributes(spanAttributes...)
 
-	resp, err := a.asyncSearches.StartAsyncSearch(ctx, httpReq.toProto(parsedRetention))
+	resp, err := asyncSearches.StartAsyncSearch(ctx, httpReq.toProto(parsedRetention))
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return

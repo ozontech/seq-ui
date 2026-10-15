@@ -20,20 +20,23 @@ import (
 //	@Router		/seqapi/v1/async_search/list [post]
 //	@ID			seqapi_v1_get_async_searches_list
 //	@Tags		seqapi_v1
+//	@Param		env		query		string							false	"Environment"
 //	@Param		body	body		getAsyncSearchesListRequest		true	"Request body"
 //	@Success	200		{object}	getAsyncSearchesListResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error					"An unexpected error response"
 //	@Security	bearer
 func (a *API) serveGetAsyncSearchesList(w http.ResponseWriter, r *http.Request) {
-	wr := httputil.NewWriter(w)
+	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_get_async_searches_list")
+	defer span.End()
 
-	if a.asyncSearches == nil {
+	wr := httputil.NewWriter(w)
+	env := types.GetEnvKey(ctx)
+
+	asyncSearches, ok := a.asyncSearches[env]
+	if !ok {
 		wr.Error(types.ErrAsyncSearchesDisabled, http.StatusBadRequest)
 		return
 	}
-
-	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_get_async_searches_list")
-	defer span.End()
 
 	var httpReq getAsyncSearchesListRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
@@ -63,6 +66,9 @@ func (a *API) serveGetAsyncSearchesList(w http.ResponseWriter, r *http.Request) 
 			Value: attribute.StringValue(*httpReq.Owner),
 		})
 	}
+	if env != "" {
+		spanAttributes = append(spanAttributes, attribute.String("env", env))
+	}
 
 	span.SetAttributes(spanAttributes...)
 
@@ -77,7 +83,7 @@ func (a *API) serveGetAsyncSearchesList(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	resp, err := a.asyncSearches.GetAsyncSearchesList(ctx, parsedReq)
+	resp, err := asyncSearches.GetAsyncSearchesList(ctx, parsedReq)
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return

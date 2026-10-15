@@ -8,7 +8,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/pkg/redisclient"
 	"github.com/ozontech/seq-ui/metric"
 )
@@ -18,15 +18,21 @@ type redisCache struct {
 	prefix string
 }
 
-func newRedisCache(ctx context.Context, cfg *config.Redis) (*redisCache, error) {
+func newRedisCache(ctx context.Context, cfg *config.Redis, inmem Cache) (Cache, error) {
 	client, err := redisclient.New(ctx, cfg)
 	if err != nil {
-		metric.ServerCacheRedisMisses.Inc()
 		return nil, fmt.Errorf("create redis client: %w", err)
 	}
 
-	metric.ServerCacheRedisHits.Inc()
-	return &redisCache{client: client, prefix: cfg.KeyPrefix}, nil
+	rc := &redisCache{client: client, prefix: cfg.KeyPrefix}
+	if inmem == nil {
+		return rc, nil
+	}
+
+	return &redisWithInmem{
+		redis: rc,
+		inmem: inmem,
+	}, nil
 }
 
 func (c *redisCache) Set(ctx context.Context, key string, value string) error {
@@ -40,10 +46,12 @@ func (c *redisCache) SetWithTTL(ctx context.Context, key string, value string, t
 func (c *redisCache) Get(ctx context.Context, key string) (string, error) {
 	value, err := c.client.Get(ctx, c.withPrefix(key)).Result()
 	if err == nil {
+		metric.ServerCacheRedisHits.Inc()
 		return value, nil
 	}
 
 	if errors.Is(err, redis.Nil) {
+		metric.ServerCacheRedisMisses.Inc()
 		return "", ErrNotFound
 	}
 

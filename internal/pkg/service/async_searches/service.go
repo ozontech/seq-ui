@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	"github.com/ozontech/seq-ui/internal/pkg/repository"
@@ -41,19 +41,48 @@ type service struct {
 	repo  repository.AsyncSearches
 	seqDB seqdb.Client
 
-	cfg config.AsyncSearch
+	cfg *config.AsyncSearchOptions
+	env string
 }
 
-func New(ctx context.Context, repo repository.AsyncSearches, seqDB seqdb.Client, cfg config.AsyncSearch) Service {
+func New(ctx context.Context, repo repository.AsyncSearches, seqDB seqdb.Client, cfg *config.AsyncSearchOptions, env string) Service {
 	s := &service{
 		repo:  repo,
 		seqDB: seqDB,
 		cfg:   cfg,
+		env:   env,
 	}
 
 	go s.deleteExpiredAsyncSearches(ctx)
 
 	return s
+}
+
+// NewByEnv creates service for each env.
+func NewByEnv(
+	ctx context.Context,
+	cfg *config.AsyncSearch,
+	repo repository.AsyncSearches,
+	seqDBClients map[string]seqdb.Client,
+) map[string]Service {
+	if cfg == nil || repo == nil {
+		return nil
+	}
+
+	services := make(map[string]Service, max(1, len(cfg.Envs)))
+	if len(cfg.Envs) > 0 {
+		for envName, envCfg := range cfg.Envs {
+			services[envName] = New(ctx, repo, seqDBClients[envCfg.SeqDBID], envCfg.Options, envName)
+		}
+	} else {
+		var client seqdb.Client
+		for _, c := range seqDBClients {
+			client = c
+		}
+		services[""] = New(ctx, repo, client, &cfg.Options, "")
+	}
+
+	return services
 }
 
 func (s *service) StartAsyncSearch(ctx context.Context, req *seqapi.StartAsyncSearchRequest) (*seqapi.StartAsyncSearchResponse, error) {
@@ -77,6 +106,7 @@ func (s *service) StartAsyncSearch(ctx context.Context, req *seqapi.StartAsyncSe
 			OwnerID:   ownerID,
 			ExpiresAt: time.Now().Add(req.Retention.AsDuration()),
 			Meta:      req.Meta,
+			Env:       s.env,
 		})
 	}, backoff.NewExponentialBackOff(
 		backoff.WithInitialInterval(backoffInitialInterval),
@@ -95,7 +125,10 @@ func (s *service) DeleteAsyncSearch(ctx context.Context, req *seqapi.DeleteAsync
 		return nil, err
 	}
 
-	searchInfo, err := s.repo.GetAsyncSearchById(ctx, req.SearchId)
+	searchInfo, err := s.repo.GetAsyncSearchById(ctx, types.GetAsyncSearchByIdRequest{
+		SearchID: req.SearchId,
+		Env:      s.env,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get async search by id: %w", err)
 	}
@@ -111,7 +144,10 @@ func (s *service) DeleteAsyncSearch(ctx context.Context, req *seqapi.DeleteAsync
 
 	// we can retry multiple times after the async search is deleted from seq-db
 	err = backoff.Retry(func() error {
-		return s.repo.DeleteAsyncSearch(ctx, req.SearchId)
+		return s.repo.DeleteAsyncSearch(ctx, types.DeleteAsyncSearchRequest{
+			SearchID: req.SearchId,
+			Env:      s.env,
+		})
 	}, backoff.NewExponentialBackOff(
 		backoff.WithInitialInterval(backoffInitialInterval),
 		backoff.WithMaxElapsedTime(maxBackoffElapsedTime),
@@ -129,7 +165,10 @@ func (s *service) CancelAsyncSearch(ctx context.Context, req *seqapi.CancelAsync
 		return nil, err
 	}
 
-	searchInfo, err := s.repo.GetAsyncSearchById(ctx, req.SearchId)
+	searchInfo, err := s.repo.GetAsyncSearchById(ctx, types.GetAsyncSearchByIdRequest{
+		SearchID: req.SearchId,
+		Env:      s.env,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get async search by id: %w", err)
 	}
@@ -147,7 +186,10 @@ func (s *service) CancelAsyncSearch(ctx context.Context, req *seqapi.CancelAsync
 }
 
 func (s *service) FetchAsyncSearchResult(ctx context.Context, req *seqapi.FetchAsyncSearchResultRequest) (*seqapi.FetchAsyncSearchResultResponse, error) {
-	searchInfo, err := s.repo.GetAsyncSearchById(ctx, req.SearchId)
+	searchInfo, err := s.repo.GetAsyncSearchById(ctx, types.GetAsyncSearchByIdRequest{
+		SearchID: req.SearchId,
+		Env:      s.env,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get async search by id: %w", err)
 	}
@@ -172,6 +214,7 @@ func (s *service) ExportAsyncSearch(ctx context.Context, req *seqapi.ExportAsync
 func (s *service) GetAsyncSearchesList(ctx context.Context, req *seqapi.GetAsyncSearchesListRequest) (*seqapi.GetAsyncSearchesListResponse, error) {
 	searches, err := s.repo.GetAsyncSearchesList(ctx, types.GetAsyncSearchesListRequest{
 		Owner: req.OwnerName,
+		Env:   s.env,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get async searches list from db: %w", err)
@@ -219,7 +262,9 @@ func (s *service) deleteExpiredAsyncSearches(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			err := s.repo.DeleteExpiredAsyncSearches(ctx)
+			err := s.repo.DeleteExpiredAsyncSearches(ctx, types.DeleteExpiredAsyncSearchesRequest{
+				Env: s.env,
+			})
 			if err != nil {
 				logger.Error("DeleteExpiredAsyncSearches error", zap.Error(err))
 			}

@@ -4,51 +4,43 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
-
-	"github.com/ozontech/seq-ui/internal/app/config"
-	"github.com/ozontech/seq-ui/logger"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 )
 
-func NewRedis(ctx context.Context, cfg *config.Redis) (Cache, error) {
-	if cfg == nil {
-		return nil, nil
+var caches map[string]Cache
+
+func Init(ctx context.Context, cfg *config.Cache) error {
+	caches = make(map[string]Cache, len(cfg.Redis)+len(cfg.Inmemory))
+
+	for i := range cfg.Inmemory {
+		inmemCfg := &cfg.Inmemory[i]
+		inmem, err := newInmemoryCache(inmemCfg)
+		if err != nil {
+			return fmt.Errorf("init inmemory cache %q: %w", inmemCfg.ID, err)
+		}
+		caches[inmemCfg.ID] = inmem
 	}
 
-	return newRedisCache(ctx, cfg)
+	for i := range cfg.Redis {
+		redisCfg := &cfg.Redis[i]
+
+		var inmem Cache
+		if redisCfg.WithInmemID != "" {
+			inmem = caches[redisCfg.WithInmemID]
+		}
+
+		redis, err := newRedisCache(ctx, redisCfg, inmem)
+		if err != nil {
+			return fmt.Errorf("init redis cache %q: %w", redisCfg.ID, err)
+		}
+		caches[redisCfg.ID] = redis
+	}
+
+	return nil
 }
 
-func NewInmemoryWithRedisOrInmemory(ctx context.Context, cfg config.Cache) (Cache, error) {
-	return newRedisBasedOrInmemory(ctx, cfg, true)
-}
-
-func NewRedisOrInmemory(ctx context.Context, cfg config.Cache) (Cache, error) {
-	return newRedisBasedOrInmemory(ctx, cfg, false)
-}
-
-func newRedisBasedOrInmemory(ctx context.Context, cfg config.Cache, withInmem bool) (Cache, error) {
-	inmem, err := newInmemoryCache(cfg.Inmemory)
-	if err != nil {
-		return nil, fmt.Errorf("init inmemory cache: %w", err)
-	}
-
-	if cfg.Redis == nil {
-		logger.Warn("redis cache config is nil; inmemory cache will be used instead")
-		return inmem, nil
-	}
-
-	redis, err := newRedisCache(ctx, cfg.Redis)
-	if err != nil {
-		logger.Warn("failed to init redis cache; inmemory cache will be used instead", zap.Error(err))
-		return inmem, nil
-	}
-
-	if withInmem {
-		return &inmemWithRedis{
-			inmem: inmem,
-			redis: redis,
-		}, nil
-	}
-
-	return redis, nil
+// ByID returns cache by id and true, false if cache is not found.
+func ByID(id string) (Cache, bool) {
+	cache, ok := caches[id]
+	return cache, ok
 }

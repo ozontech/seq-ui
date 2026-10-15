@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches"
 )
@@ -18,21 +18,32 @@ var (
 )
 
 func setupTestAPI(data test.APITestData) *API {
-	// when test cases don't explicitly provide configuration
-	if data.Cfg.SeqAPIOptions == nil {
-		data.Cfg.SeqAPIOptions = &config.SeqAPIOptions{}
-	}
-	seqDBClients := make(map[string]seqdb.Client)
-	seqDBClients[config.DefaultSeqDBClientID] = data.Mocks.SeqDB
+	seqDBClients := make(map[string]seqdb.Client, max(1, len(data.Cfg.Envs)))
+	asyncSearhes := make(map[string]asyncsearches.Service, max(1, len(data.Cfg.Envs)))
 
-	for _, envConfig := range data.Cfg.Envs {
-		seqDBClients[envConfig.SeqDB] = data.Mocks.SeqDB
+	if len(data.Cfg.Envs) == 0 {
+		seqDBClients[config.DefaultSeqDBClientID] = data.Mocks.SeqDB
+		asyncSearhes[""] = data.Mocks.AsyncSearchesSvc
 	}
-
-	var asyncSvc asyncsearches.Service
-	if data.Mocks.AsyncSearchesSvc != nil {
-		asyncSvc = data.Mocks.AsyncSearchesSvc
+	for envName, envConfig := range data.Cfg.Envs {
+		seqDBClients[envConfig.SeqDBID] = data.Mocks.SeqDB
+		asyncSearhes[envName] = data.Mocks.AsyncSearchesSvc
 	}
 
-	return New(data.Cfg, seqDBClients, data.Mocks.Cache, data.Mocks.Cache, asyncSvc)
+	if data.Mocks.AsyncSearchesSvc == nil {
+		asyncSearhes = nil
+	}
+
+	api := New(&data.Cfg, seqDBClients, asyncSearhes)
+
+	if data.Mocks.Cache != nil {
+		for env, params := range api.paramsByEnv {
+			params.eventsCache = data.Mocks.Cache
+			params.logsLifespanCache = data.Mocks.Cache
+			params.fieldsCache = newFieldsCache(data.Mocks.Cache)
+			api.paramsByEnv[env] = params
+		}
+	}
+
+	return api
 }

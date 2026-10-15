@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
+	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
@@ -30,10 +31,8 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
-
+	env := types.GetEnvKey(ctx)
 	id := chi.URLParam(r, "id")
-
-	env := getEnvFromContext(ctx)
 
 	attributes := []attribute.KeyValue{
 		{
@@ -54,21 +53,22 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if cached, err := a.inmemWithRedisCache.Get(ctx, id); err == nil {
-		e := &seqapi.Event{}
-		if err = proto.Unmarshal([]byte(cached), e); err == nil {
-			if params.masker != nil {
-				params.masker.Mask(e.Data)
+	cacheKey := params.eventsCacheKeyPrefix + id // как лучше с ним поступить не придумал
+	if params.eventsCache != nil {
+		if cached, err := params.eventsCache.Get(ctx, cacheKey); err == nil {
+			e := &seqapi.Event{}
+			if err = proto.Unmarshal([]byte(cached), e); err == nil {
+				if params.masker != nil {
+					params.masker.Mask(e.Data)
+				}
+				wr.WriteJson(getEventResponseFromProto(&seqapi.GetEventResponse{Event: e}))
+				return
 			}
-			wr.WriteJson(getEventResponseFromProto(&seqapi.GetEventResponse{Event: e}))
-			return
+			logger.Error("failed to unmarshal cached event proto", zap.String("id", id), zap.Error(err))
 		}
-		logger.Error("failed to unmarshal cached event proto", zap.String("id", id), zap.Error(err))
 	}
 
-	resp, err := params.client.GetEvent(ctx, &seqapi.GetEventRequest{
-		Id: id,
-	})
+	resp, err := params.client.GetEvent(ctx, &seqapi.GetEventRequest{Id: id})
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return
@@ -78,10 +78,12 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 		params.masker.Mask(resp.Event.Data)
 	}
 
-	if data, err := proto.Marshal(resp.Event); err == nil {
-		_ = a.inmemWithRedisCache.SetWithTTL(ctx, id, string(data), params.options.EventsCacheTTL)
-	} else {
-		logger.Error("failed to marshal event proto for caching", zap.String("id", id), zap.Error(err))
+	if params.eventsCache != nil {
+		if data, err := proto.Marshal(resp.Event); err == nil {
+			_ = params.eventsCache.SetWithTTL(ctx, cacheKey, string(data), params.options.Caches.Events.TTL)
+		} else {
+			logger.Error("failed to marshal event proto for caching", zap.String("id", id), zap.Error(err))
+		}
 	}
 
 	eventResp := getEventResponseFromProto(resp)

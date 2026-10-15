@@ -26,17 +26,17 @@ import (
 //	@Failure	default	{object}	httputil.Error				"An unexpected error response"
 //	@Security	bearer
 func (a *API) serveExportAsyncSearch(w http.ResponseWriter, r *http.Request) {
-	wr := httputil.NewWriter(w)
-
-	if a.asyncSearches == nil {
-		wr.Error(types.ErrAsyncSearchesDisabled, http.StatusBadRequest)
-		return
-	}
-
 	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_export_async_search_http")
 	defer span.End()
 
-	env := getEnvFromContext(ctx)
+	wr := httputil.NewWriter(w)
+	env := types.GetEnvKey(ctx)
+
+	asyncSearches, ok := a.asyncSearches[env]
+	if !ok {
+		wr.Error(types.ErrAsyncSearchesDisabled, http.StatusBadRequest)
+		return
+	}
 
 	userStr := "_"
 	if userName, err := types.GetUserKey(ctx); err == nil {
@@ -105,9 +105,9 @@ func (a *API) serveExportAsyncSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	defer params.exportLimiter.Fill(userStr)
 
-	if httpReq.Limit > params.options.MaxExportLimit {
+	if httpReq.Limit > params.options.Limits.MaxExportLimit {
 		wr.Error(fmt.Errorf("too many events are requested: count=%d, max=%d",
-			httpReq.Limit, params.options.MaxExportLimit),
+			httpReq.Limit, params.options.Limits.MaxExportLimit),
 			http.StatusBadRequest)
 		return
 	}
@@ -123,7 +123,7 @@ func (a *API) serveExportAsyncSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.asyncSearches.ExportAsyncSearch(ctx, httpReq.toProto(), cw); err != nil {
+	if err := asyncSearches.ExportAsyncSearch(ctx, httpReq.toProto(), cw); err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return
 	}

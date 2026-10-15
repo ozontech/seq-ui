@@ -5,12 +5,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 )
 
 func TestJWTProvider(t *testing.T) {
 	expInterval := time.Second
-	p1 := NewJWTProvider("secret-1")
-	p2 := NewJWTProvider("secret-2")
+	p1 := NewJWTProvider(&config.JWT{SecretKey: "secret-1"})
+	p2 := NewJWTProvider(&config.JWT{SecretKey: "secret-2"})
 	// test valid issue token
 	tokenName1 := "test-1"
 	testStart := time.Now()
