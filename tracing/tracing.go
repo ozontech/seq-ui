@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/caarlos0/env/v11"
-	"github.com/ozontech/seq-ui/logger"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/jaeger"
@@ -17,6 +16,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/ozontech/seq-ui/logger"
 )
 
 const (

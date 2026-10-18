@@ -81,7 +81,7 @@ func TestGetUserProfile(t *testing.T) {
 					Times(1)
 
 				if tt.mockArgs.err == nil {
-					profiles.InitProfiles(mockedSvc.GetOrCreateUserProfile)
+					profiles.Init(mockedSvc.GetOrCreateUserProfile)
 					profiles.SetID(tt.mockArgs.resp.UserName, tt.mockArgs.resp.ID)
 				}
 			}
