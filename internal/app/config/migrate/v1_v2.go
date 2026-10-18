@@ -28,7 +28,7 @@ func (m *v1tov2) migrate() v2.Config {
 	dst.Cache = m.migrateCache(v1Cache)
 	dst.Clients = m.migrateClients(m.src)
 	dst.DB = m.migrateDB(m.src.Server)
-	dst.Handlers = m.migrateHandlers(m.src.Handlers, &dst, v1Cache)
+	dst.Handlers = m.migrateHandlers(m.src.Handlers, v1Cache)
 
 	return dst
 }
@@ -293,13 +293,10 @@ func (m *v1tov2) migrateHandlers(src *v1.Handlers, v1Cache v1.Cache) v2.Handlers
 	dst := v2.Handlers{
 		SeqAPI:      m.migrateSeqAPI(&src.SeqAPI, v1Cache),
 		AsyncSearch: m.migrateAsyncSearch(&src.AsyncSearch, &src.SeqAPI),
-		// ErrorGroups: m.migrateErrorGroups(src.ErrorGroups),
-		// Admin: m.migrateAdmin(src.Admin, v1Cache),
+		ErrorGroups: m.migrateErrorGroups(&src.ErrorGroups, m.src.Server),
+		Admin:       m.migrateAdmin(src.Admin, v1Cache),
+		// MassExport:  m.migrateMassExport(src.MassExport, cfg),
 	}
-
-	// if src.MassExport != nil {
-	// 	dst.MassExport = m.migrateMassExport(src.MassExport, cfg)
-	// }
 
 	return dst
 }
@@ -439,23 +436,23 @@ func (m *v1tov2) migrateFieldFilters(src *v1.FieldFilterSet) *v2.FieldFilterSet 
 	return dst
 }
 
-//	func (m *v1tov2) migrateErrorGroups(eg v1.ErrorGroups) *v2.ErrorGroups {
-//		if m.isEgEmpty(eg) {
-//			return nil
-//		}
-//
-//		return &v2.ErrorGroups{
-//			CHID: v2.DefaultCHClientID,
-//			Options: v2.ErrorGroupsOptions{
-//				LogTagsMapping: v2.LogTagsMapping{
-//					Env:     eg.LogTagsMapping.Env,
-//					Service: eg.LogTagsMapping.Service,
-//					Release: eg.LogTagsMapping.Release,
-//				},
-//				QueryFilter: eg.QueryFilter,
-//			},
-//		}
-//	}
+func (m *v1tov2) migrateErrorGroups(eg *v1.ErrorGroups, server *v1.Server) *v2.ErrorGroups {
+	if server == nil || server.CH == nil {
+		return nil
+	}
+
+	return &v2.ErrorGroups{
+		Options: v2.ErrorGroupsOptions{
+			LogTagsMapping: v2.LogTagsMapping{
+				Env:     eg.LogTagsMapping.Env,
+				Service: eg.LogTagsMapping.Service,
+				Release: eg.LogTagsMapping.Release,
+			},
+			QueryFilter: eg.QueryFilter,
+		},
+	}
+}
+
 func (m *v1tov2) migrateAsyncSearch(src *v1.AsyncSearch, seqAPI *v1.SeqAPI) *v2.AsyncSearch {
 	dst := &v2.AsyncSearch{
 		Options: v2.AsyncSearchOptions{
@@ -475,49 +472,53 @@ func (m *v1tov2) migrateAsyncSearch(src *v1.AsyncSearch, seqAPI *v1.SeqAPI) *v2.
 	return dst
 }
 
-//	func (m *v1tov2) migrateMassExport(me *v1.MassExport, cfg *v2.Config) *v2.MassExport {
-//		dst := &v2.MassExport{
-//			SeqDBID: v2.DefaultSeqDBClientID,
-//			Options: v2.MassExportOptions{
-//				BatchSize:        me.BatchSize,
-//				WorkersCount:     me.WorkersCount,
-//				TasksChannelSize: me.TasksChannelSize,
-//				PartLength:       me.PartLength,
-//				URLPrefix:        me.URLPrefix,
-//				AllowedUsers:     me.AllowedUsers,
-//				FileStore:        m.migrateFileStore(me.FileStore),
-//				DownloadParams:   m.migrateDownloadParams(me.SeqProxyDownloader),
-//			},
-//		}
+// func (m *v1tov2) migrateMassExport(src *v1.MassExport, cfg *v2.Config) *v2.MassExport {
+// 	if src == nil {
+// 		return nil
+// 	}
 //
-//		if me.SessionStore != nil {
-//			cfg.Cache.Redis = append(cfg.Cache.Redis, m.migrateRedis(&me.SessionStore.Redis, v2.DefaultMassExportRedisID, ""))
+// 	dst := &v2.MassExport{
+// 		SeqDBID: v2.DefaultSeqDBClientID,
+// 		Options: v2.MassExportOptions{
+// 			BatchSize:        src.BatchSize,
+// 			WorkersCount:     src.WorkersCount,
+// 			TasksChannelSize: src.TasksChannelSize,
+// 			PartLength:       src.PartLength,
+// 			URLPrefix:        src.URLPrefix,
+// 			AllowedUsers:     src.AllowedUsers,
+// 			FileStore:        m.migrateFileStore(src.FileStore),
+// 			DownloadParams:   m.migrateDownloadParams(m.src.SeqProxyDownloader),
+// 		},
+// 	}
 //
-//			dst.Options.SessionStore = v2.SessionStore{
-//				RedisID:        v2.DefaultMassExportRedisID,
-//				ExportLifetime: me.SessionStore.ExportLifetime,
-//			}
-//		}
+// 	if me.SessionStore != nil {
+// 		cfg.Cache.Redis = append(cfg.Cache.Redis, m.migrateRedis(&src.SessionStore.Redis, v2.DefaultMassExportRedisID, ""))
 //
-//		return dst
-//	}
+// 		dst.Options.SessionStore = v2.SessionStore{
+// 			RedisID:        v2.DefaultMassExportRedisID,
+// 			ExportLifetime: src.SessionStore.ExportLifetime,
+// 		}
+// 	}
 //
-//	func (m *v1tov2) migrateFileStore(fs *v1.FileStore) v2.FileStore {
-//		if fs == nil || fs.S3 == nil {
-//			return v2.FileStore{}
-//		}
+// 	return dst
+// }
 //
-//		return v2.FileStore{
-//			S3: &v2.S3{
-//				Endpoint:        fs.S3.Endpoint,
-//				AccessKeyID:     fs.S3.AccessKeyID,
-//				SecretAccessKey: fs.S3.SecretAccessKey,
-//				BucketName:      fs.S3.BucketName,
-//				EnableSSL:       fs.S3.EnableSSl,
-//			},
-//		}
-//	}
+// func (m *v1tov2) migrateFileStore(fs *v1.FileStore) v2.FileStore {
+// 	if fs == nil || fs.S3 == nil {
+// 		return v2.FileStore{}
+// 	}
 //
+// 	return v2.FileStore{
+// 		S3: &v2.S3{
+// 			Endpoint:        fs.S3.Endpoint,
+// 			AccessKeyID:     fs.S3.AccessKeyID,
+// 			SecretAccessKey: fs.S3.SecretAccessKey,
+// 			BucketName:      fs.S3.BucketName,
+// 			EnableSSL:       fs.S3.EnableSSl,
+// 		},
+// 	}
+// }
+
 //	func (m *v1tov2) migrateDownloadParams(src *v1.SeqProxyDownloader) v2.DownloadParams {
 //		if src == nil {
 //			return v2.DownloadParams{}
@@ -529,29 +530,27 @@ func (m *v1tov2) migrateAsyncSearch(src *v1.AsyncSearch, seqAPI *v1.SeqAPI) *v2.
 //			MaxRetryBackoff:     src.MaxRetryBackoff,
 //		}
 //	}
-//
-//	func (m *v1tov2) migrateAdmin(src *v1.Admin, v1Cache v1.Cache) *v2.Admin {
-//		if src == nil {
-//			return nil
-//		}
-//
-//		dst := &v2.Admin{
-//			Options: v2.AdminOptions{
-//				SuperUsers: src.SuperUsers,
-//			},
-//		}
-//
-//		_, redisID := m.defaultCacheIDs(v1Cache)
-//		if redisID != "" {
-//			dst.Options.Cache = &v2.HandlerCache{
-//				ID:  redisID,
-//				TTL: src.CacheTTL,
-//			}
-//		}
-//
-//		return dst
-//	}
-//
+func (m *v1tov2) migrateAdmin(src *v1.Admin, v1Cache v1.Cache) *v2.Admin {
+	if src == nil {
+		return nil
+	}
+
+	dst := &v2.Admin{
+		Options: v2.AdminOptions{
+			SuperUsers: src.SuperUsers,
+		},
+	}
+
+	if v1Cache.Redis != nil {
+		dst.Options.Cache = &v2.HandlerCache{
+			ID:  v2.DefaultRedisWithoutInmemID,
+			TTL: src.CacheTTL,
+		}
+	}
+
+	return dst
+}
+
 // defaultCacheIDs returns cache ids same as in v1.
 // inmemWithRedisID - inmemory+redis or inmemory (v1 events, oidc)
 // redisOrInmemID - redis or inmemory (v1 logslifespan)
@@ -561,9 +560,3 @@ func (m *v1tov2) defaultCacheIDs(src v1.Cache) (inmemWithRedisID, redisOrInmemID
 	}
 	return v2.DefaultInmemID, v2.DefaultInmemID
 }
-
-//
-// func (m *v1tov2) isEgEmpty(src v1.ErrorGroups) bool {
-// 	return len(src.LogTagsMapping.Env) == 0 && len(src.LogTagsMapping.Service) == 0 &&
-// 		len(src.LogTagsMapping.Release) == 0 && len(src.QueryFilter) == 0
-// }

@@ -24,6 +24,8 @@ import (
 	"github.com/ozontech/seq-ui/metric"
 )
 
+const defaultMaxRecvMsgSize = 4 * 1024 * 1024 // 4MB
+
 type grpcSearchResp interface {
 	GetError() *seqproxyapi.Error
 }
@@ -143,7 +145,7 @@ func NewGRPCClient(ctx context.Context, params ClientParams) (*GRPCClient, error
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultCallOptions(
-			grpc.MaxCallRecvMsgSize(params.MaxRecvMsgSize),
+			grpc.MaxCallRecvMsgSize(max(params.MaxRecvMsgSize, defaultMaxRecvMsgSize)),
 		),
 		grpc.WithUnaryInterceptor(grpc_mw.ChainUnaryClient(unaryInterceptors...)),
 		grpc.WithStreamInterceptor(grpc_mw.ChainStreamClient(streamInterceptors...)),

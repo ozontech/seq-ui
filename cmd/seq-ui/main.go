@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-	"os"
 	"os/signal"
 	"syscall"
 
@@ -17,6 +16,7 @@ import (
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 
+	"github.com/ozontech/seq-ui/buildinfo"
 	"github.com/ozontech/seq-ui/internal/api"
 	admin_v1 "github.com/ozontech/seq-ui/internal/api/admin/v1"
 	dashboards_v1 "github.com/ozontech/seq-ui/internal/api/dashboards/v1"
@@ -39,75 +39,61 @@ import (
 	"github.com/ozontech/seq-ui/tracing"
 )
 
-const (
-	defaultConfig = "config/config.example.yaml"
+const defaultConfig = "config/config.example.yaml"
 
-	defaultClientMaxRecvMsgSize = 4 * 1024 * 1024 // 4MB
-)
-
-var (
-	configPath = flag.String("config", defaultConfig, "application config")
-)
-
-func init() {
+func main() {
 	// Load .env file for local development (optional).
 	// OS environment variables take precedence.
 	_ = godotenv.Load()
-}
 
-func main() {
-	ctx, cancel := signal.NotifyContext(context.Background(),
-		syscall.SIGTERM,
-		os.Interrupt,
-	)
-	defer cancel()
-
-	run(ctx)
-}
-
-func run(ctx context.Context) {
+	configPath := flag.String("config", defaultConfig, "application config")
 	flag.Parse()
 
-	if *configPath == defaultConfig {
+	logger.Info("hi, I am seq-ui",
+		zap.String("version", buildinfo.Version),
+		zap.String("build_time", buildinfo.BuildTime),
+	)
+
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
+	run(ctx, *configPath)
+}
+
+func run(ctx context.Context, configPath string) {
+	if configPath == defaultConfig {
 		logger.Warn("app uses the default config file, to provide your own config use -config flag")
 	}
 
-	cfg, err := loader.FromFile(*configPath)
+	cfg, err := loader.FromFile(configPath)
 	if err != nil {
-		logger.Fatal("read config file error", zap.Error(err))
+		logger.Fatal("failed to read config", zap.Error(err))
 	}
 
-	if tracingCfg, err := tracing.Initialize(); err != nil {
-		logger.Error("tracing initialization failed", zap.Error(err))
-	} else {
-		logger.Info(
-			"tracing initialization success",
-			zap.String("service_name", tracingCfg.ServiceName),
-			zap.String("agent_host", tracingCfg.AgentHost),
-			zap.String("agent_port", tracingCfg.AgentPort),
-			zap.Float64("sampler_param", tracingCfg.SamplerParam))
-	}
-
-	logger.Info("initializing caches")
-	if err := cache.Init(ctx, &cfg.Cache); err != nil {
-		logger.Fatal("failed to init caches", zap.Error(err))
+	if err := tracing.Init(); err != nil {
+		logger.Error("failed to init tracing", zap.Error(err))
 	}
 
 	registrar := initApp(ctx, cfg)
 
 	serv, err := server.New(ctx, cfg, registrar)
 	if err != nil {
-		logger.Fatal("app init error", zap.Error(err))
+		logger.Fatal("failed to init servers", zap.Error(err))
 	}
 
 	// Run launches configured grpc/http servers and debug server. On successful
-	// http.ErrServerClosed is returned because of http.Server.Serve.
+	// shutdown http.ErrServerClosed is returned because of http.Server.Serve.
 	if err = serv.Run(ctx); !errors.Is(err, http.ErrServerClosed) {
-		logger.Fatal("app run", zap.Error(err))
+		logger.Fatal("failed to run servers", zap.Error(err))
 	}
 }
 
 func initApp(ctx context.Context, cfg *config.Config) *api.Registrar {
+	logger.Info("initializing caches")
+	if err := cache.Init(ctx, &cfg.Cache); err != nil {
+		logger.Fatal("failed to init caches", zap.Error(err))
+	}
+
 	logger.Info("initializing seq-db clients")
 	seqDBClients, err := initSeqDBClients(ctx, cfg)
 	if err != nil {
@@ -126,7 +112,6 @@ func initApp(ctx context.Context, cfg *config.Config) *api.Registrar {
 		logger.Fatal("failed to init db", zap.Error(err))
 	}
 
-	// Это ужас пока оставим, на создание handlers не смотри пока
 	// var massExportV1 *massexport_v1.MassExport
 	// if cfg.Handlers.MassExport != nil {
 	// 	logger.Info("initializing mass export")
@@ -147,7 +132,7 @@ func initApp(ctx context.Context, cfg *config.Config) *api.Registrar {
 		repo := repository.New(db, cfg.DB.RequestTimeout)
 		userProfilesSvc := userprofile.New(repo.UserProfiles, repo.FavoriteQueries)
 		dashboardsSvc := dashboards.New(repo.Dashboards)
-		profiles.InitProfiles(repo.UserProfiles.GetOrCreate)
+		profiles.Init(repo.UserProfiles.GetOrCreate)
 
 		logger.Info("initializing user profile")
 		userProfileV1 = userprofile_v1.New(userProfilesSvc)
@@ -188,7 +173,7 @@ func initSeqDBClients(ctx context.Context, cfg *config.Config) (map[string]seqdb
 	for _, clientCfg := range cfg.Clients.SeqDB {
 		client, err := createSeqBDClient(ctx, &clientCfg, cfg.Handlers.SeqAPI)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create seq_db client %q: %w", clientCfg.ID, err)
+			return nil, fmt.Errorf("failed to create seq-db client %q: %w", clientCfg.ID, err)
 		}
 		clients[clientCfg.ID] = client
 	}
@@ -211,14 +196,11 @@ func createSeqBDClient(ctx context.Context, cfg *config.SeqDBClient, seqAPI *con
 		}
 	}
 
-	clientMaxRecvMsgSize := cfg.AvgDocSize * 1024 * int(maxSearchLimit)
-	clientMaxRecvMsgSize = max(clientMaxRecvMsgSize, defaultClientMaxRecvMsgSize)
-
 	clientParams := seqdb.ClientParams{
 		Addrs:          cfg.Addrs,
 		Timeout:        cfg.Timeout,
 		MaxRetries:     cfg.RequestRetries,
-		MaxRecvMsgSize: clientMaxRecvMsgSize,
+		MaxRecvMsgSize: cfg.AvgDocSize * 1024 * int(maxSearchLimit),
 	}
 	if cfg.RequestRetriesBackoff != nil {
 		clientParams.InitialRetryBackoff = cfg.RequestRetriesBackoff.InitialInterval
@@ -242,7 +224,7 @@ func initDb(ctx context.Context, cfg *config.DB) (*pgxpool.Pool, error) {
 	}
 	pgxCfg, err := pgxpool.ParseConfig(cfg.ConnString())
 	if err != nil {
-		return nil, fmt.Errorf("can't parse connection string: %w", err)
+		return nil, fmt.Errorf("failed to parse connection string: %w", err)
 	}
 	if !*cfg.UsePreparedStatements {
 		// By default, pgx uses the QueryExecModeCacheStatement and automatically prepares and caches prepared statements.
@@ -253,7 +235,11 @@ func initDb(ctx context.Context, cfg *config.DB) (*pgxpool.Pool, error) {
 
 	pool, err := pgxpool.NewWithConfig(ctx, pgxCfg)
 	if err != nil {
-		return nil, fmt.Errorf("can't create pgx pool: %w", err)
+		return nil, fmt.Errorf("failed to create pgx pool: %w", err)
+	}
+
+	if err := pool.Ping(ctx); err != nil {
+		return nil, fmt.Errorf("failed to ping db: %w", err)
 	}
 
 	return pool, nil

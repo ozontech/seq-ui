@@ -125,7 +125,7 @@ func (r *asyncSearchesRepository) DeleteAsyncSearch(ctx context.Context, req typ
 }
 
 func (r *asyncSearchesRepository) DeleteExpiredAsyncSearches(ctx context.Context, req types.DeleteExpiredAsyncSearchesRequest) error {
-	query, args := "DELETE FROM async_searches WHERE env = $1 expires_at < now()",
+	query, args := "DELETE FROM async_searches WHERE env = $1 AND expires_at < now()",
 		[]any{req.Env}
 
 	metricLabelsDelete := []string{"async_searches", "DELETE"}

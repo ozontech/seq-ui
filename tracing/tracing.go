@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/caarlos0/env/v11"
+	"github.com/ozontech/seq-ui/logger"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/jaeger"
@@ -14,6 +15,7 @@ import (
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -28,19 +30,19 @@ type Config struct {
 	SamplerParam float64 `env:"TRACING_SAMPLER_PARAM"`
 }
 
-func Initialize() (*Config, error) {
+func Init() error {
 	tracingCfg, err := readConfig()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read tracing config: %w", err)
+		return fmt.Errorf("failed to read tracing config: %w", err)
 	}
 
 	if err := validateTracingConfig(tracingCfg); err != nil {
-		return nil, err
+		return err
 	}
 
 	tp, err := newTracerProvider(tracingCfg)
 	if err != nil {
-		return nil, fmt.Errorf("can't create tracer provider: %w", err)
+		return fmt.Errorf("can't create tracer provider: %w", err)
 	}
 
 	// Register our TracerProvider as the global so any imported
@@ -48,7 +50,14 @@ func Initialize() (*Config, error) {
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 
-	return tracingCfg, nil
+	logger.Info("tracing initialization success",
+		zap.String("service_name", tracingCfg.ServiceName),
+		zap.String("agent_host", tracingCfg.AgentHost),
+		zap.String("agent_port", tracingCfg.AgentPort),
+		zap.Float64("sampler_param", tracingCfg.SamplerParam),
+	)
+
+	return nil
 }
 
 func StartSpan(ctx context.Context, name string) (context.Context, trace.Span) {

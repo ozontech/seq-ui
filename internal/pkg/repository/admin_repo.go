@@ -45,9 +45,9 @@ func (r *adminRepository) CreateRole(ctx context.Context, req types.CreateRoleRe
 
 func (r *adminRepository) AddUsersToRole(ctx context.Context, req types.AddUsersToRoleRequest) error {
 	metricLabels := []string{"users_roles", "INSERT"}
-	query, args := `INSERT INTO users_roles (user_id, role_id)
-		SELECT id, $1 FROM user_profiles WHERE user_name=ANY($2)
-		ON CONFLICT DO NOTHING`, []any{req.RoleID, req.Usernames}
+	query, args := `INSERT INTO users_roles (user_id, role_id, env)
+		SELECT id, $1, $2 FROM user_profiles WHERE user_name=ANY($3)
+		ON CONFLICT DO NOTHING`, []any{req.RoleID, req.Env, req.Usernames}
 
 	if _, err := r.pool.exec(ctx, metricLabels, query, args...); err != nil {
 		incErrorMetric(err, metricLabels)
@@ -59,8 +59,8 @@ func (r *adminRepository) AddUsersToRole(ctx context.Context, req types.AddUsers
 
 func (r *adminRepository) DeleteUsersFromRole(ctx context.Context, req types.DeleteUsersFromRoleRequest) error {
 	metricLabels := []string{"users_roles", "DELETE"}
-	query, args := `DELETE FROM users_roles WHERE role_id=$1 AND user_id IN (
-		SELECT id FROM user_profiles WHERE user_name=ANY($2))`, []any{req.RoleID, req.Usernames}
+	query, args := `DELETE FROM users_roles WHERE role_id=$1 AND env=$2 AND user_id IN (
+		SELECT id FROM user_profiles WHERE user_name=ANY($3))`, []any{req.RoleID, req.Env, req.Usernames}
 
 	if _, err := r.pool.exec(ctx, metricLabels, query, args...); err != nil {
 		incErrorMetric(err, metricLabels)
@@ -100,7 +100,7 @@ func (r *adminRepository) GetRoles(ctx context.Context) ([]types.Role, error) {
 func (r *adminRepository) GetRole(ctx context.Context, req types.GetRoleRequest) (types.RoleInfo, error) {
 	metricLabels := []string{"user_profiles", "SELECT"}
 	query, args := `SELECT up.user_name FROM user_profiles up JOIN users_roles ur ON up.id = ur.user_id
-		WHERE ur.role_id=$1 ORDER BY up.user_name`, []any{req.RoleID}
+		WHERE ur.role_id=$1 AND ur.env=$2 ORDER BY up.user_name`, []any{req.RoleID, req.Env}
 
 	rows, err := r.pool.query(ctx, metricLabels, query, args...)
 	if err != nil {
@@ -162,8 +162,8 @@ func (r *adminRepository) DeleteRole(ctx context.Context, req types.DeleteRoleRe
 	return r.txManager.Do(ctx, func(tx pgx.Tx) error {
 		if req.ReplacementRoleID != nil {
 			metricLabels := []string{"users_roles", "INSERT"}
-			query, args := `INSERT INTO users_roles (user_id, role_id)
-			SELECT user_id, $1 FROM users_roles WHERE role_id=$2 ON CONFLICT DO NOTHING`, []any{*req.ReplacementRoleID, req.RoleID}
+			query, args := `INSERT INTO users_roles (user_id, role_id, env)
+			SELECT user_id, $1, env FROM users_roles WHERE role_id=$2 ON CONFLICT DO NOTHING`, []any{*req.ReplacementRoleID, req.RoleID}
 
 			if _, err := r.pool.execTx(ctx, tx, metricLabels, query, args...); err != nil {
 				incErrorMetric(err, metricLabels)
@@ -209,7 +209,7 @@ func (r *adminRepository) GetUserPermissions(ctx context.Context, req types.GetU
     	JOIN users_roles ur ON up.id=ur.user_id
      	JOIN roles_permissions rp ON ur.role_id=rp.role_id
       	JOIN permissions p ON rp.permission_id=p.id
-       	WHERE up.user_name=$1 ORDER BY p.value`, []any{req.Username}
+       	WHERE ur.env=$1 up.user_name=$2 ORDER BY p.value`, []any{req.Env, req.Username}
 
 	rows, err := r.pool.query(ctx, metricLabels, query, args...)
 	if err != nil {
