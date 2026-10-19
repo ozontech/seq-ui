@@ -13,11 +13,8 @@ import (
 	"github.com/ozontech/seq-ui/logger"
 )
 
-var (
-	source = flag.String("source", "", "path to the config file to migrate in place")
-)
-
 func main() {
+	source := flag.String("source", "", "path to the config file to migrate in place")
 	flag.Parse()
 
 	run(*source)
@@ -51,11 +48,11 @@ func run(source string) {
 	if _, err := os.Stat(backupPath); err == nil {
 		logger.Fatal("backup already exists, remove it before re-running", zap.String("backup", backupPath))
 	}
-	if err := os.WriteFile(backupPath, sourceCfg, stat.Mode()); err != nil {
+	if err := os.WriteFile(backupPath, sourceCfg, stat.Mode()); err != nil { //nolint:gosec
 		logger.Fatal("write backup config", zap.String("backup", backupPath), zap.Error(err))
 	}
 
-	if err := os.WriteFile(source, migratedCfg, stat.Mode()); err != nil {
+	if err := os.WriteFile(source, migratedCfg, stat.Mode()); err != nil { //nolint:gosec
 		logger.Fatal("write migrated config", zap.Error(err))
 	}
 

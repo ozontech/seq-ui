@@ -3,6 +3,7 @@ package asyncsearches
 import (
 	"context"
 	"fmt"
+	"maps"
 	"slices"
 	"time"
 	"unicode/utf8"
@@ -45,7 +46,26 @@ type service struct {
 	env string
 }
 
-func New(ctx context.Context, repo repository.AsyncSearches, seqDB seqdb.Client, cfg *config.AsyncSearchOptions, env string) Service {
+func New(
+	ctx context.Context,
+	cfg *config.AsyncSearch,
+	repo repository.AsyncSearches,
+	seqDBClients map[string]seqdb.Client,
+) map[string]Service {
+	services := make(map[string]Service, max(1, len(cfg.Envs)))
+	if len(cfg.Envs) > 0 {
+		for envName, envCfg := range cfg.Envs {
+			services[envName] = newService(ctx, repo, seqDBClients[envCfg.SeqDBID], envCfg.Options, envName)
+		}
+	} else {
+		client := slices.Collect(maps.Values(seqDBClients))[0]
+		services[""] = newService(ctx, repo, client, &cfg.Options, "")
+	}
+
+	return services
+}
+
+func newService(ctx context.Context, repo repository.AsyncSearches, seqDB seqdb.Client, cfg *config.AsyncSearchOptions, env string) Service {
 	s := &service{
 		repo:  repo,
 		seqDB: seqDB,
@@ -56,33 +76,6 @@ func New(ctx context.Context, repo repository.AsyncSearches, seqDB seqdb.Client,
 	go s.deleteExpiredAsyncSearches(ctx)
 
 	return s
-}
-
-// NewByEnv creates service for each env.
-func NewByEnv(
-	ctx context.Context,
-	cfg *config.AsyncSearch,
-	repo repository.AsyncSearches,
-	seqDBClients map[string]seqdb.Client,
-) map[string]Service {
-	if cfg == nil || repo == nil {
-		return nil
-	}
-
-	services := make(map[string]Service, max(1, len(cfg.Envs)))
-	if len(cfg.Envs) > 0 {
-		for envName, envCfg := range cfg.Envs {
-			services[envName] = New(ctx, repo, seqDBClients[envCfg.SeqDBID], envCfg.Options, envName)
-		}
-	} else {
-		var client seqdb.Client
-		for _, c := range seqDBClients {
-			client = c
-		}
-		services[""] = New(ctx, repo, client, &cfg.Options, "")
-	}
-
-	return services
 }
 
 func (s *service) StartAsyncSearch(ctx context.Context, req *seqapi.StartAsyncSearchRequest) (*seqapi.StartAsyncSearchResponse, error) {

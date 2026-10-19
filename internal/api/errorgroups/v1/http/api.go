@@ -15,9 +15,9 @@ type API struct {
 	services map[string]errorgroups.Service
 }
 
-func New(services map[string]errorgroups.Service) *API {
+func New(serviceByEnv map[string]errorgroups.Service) *API {
 	return &API{
-		services: services,
+		services: serviceByEnv,
 	}
 }
 

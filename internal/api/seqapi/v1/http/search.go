@@ -45,7 +45,7 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 		httpReq.Order = oDESC
 	}
 
-	spanAttributes := []attribute.KeyValue{
+	attributes := []attribute.KeyValue{
 		{
 			Key:   "query",
 			Value: attribute.StringValue(httpReq.Query),
@@ -83,9 +83,8 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 			Value: attribute.IntValue(int(httpReq.Downsample)),
 		},
 	}
-
 	if env != "" {
-		spanAttributes = append(spanAttributes, attribute.String("env", env))
+		attributes = append(attributes, attribute.String("env", env))
 	}
 
 	params, err := a.GetEnvParams(env)
@@ -95,20 +94,19 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if httpReq.Histogram.Interval != "" {
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "histogram_interval",
 			Value: attribute.StringValue(httpReq.Histogram.Interval),
 		})
 	}
 	if len(httpReq.Aggregations) > 0 {
 		aggsRaw, _ := json.Marshal(httpReq.Aggregations)
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "aggregations",
 			Value: attribute.StringValue(string(aggsRaw)),
 		})
 	}
-
-	span.SetAttributes(spanAttributes...)
+	span.SetAttributes(attributes...)
 
 	if err := api_error.CheckSearchLimit(httpReq.Limit, params.options.Limits.MaxSearchLimit); err != nil {
 		wr.Error(err, http.StatusBadRequest)
@@ -187,8 +185,8 @@ func (r searchRequest) toProto() *seqapi.SearchRequest {
 		Query:        r.Query,
 		From:         timestamppb.New(r.From),
 		To:           timestamppb.New(r.To),
-		Limit:        int32(r.Limit),
-		Offset:       int32(r.Offset),
+		Limit:        r.Limit,
+		Offset:       r.Offset,
 		OffsetId:     r.OffsetID,
 		WithTotal:    r.WithTotal,
 		Downsample:   r.Downsample,

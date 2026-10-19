@@ -14,15 +14,17 @@ import (
 )
 
 func (a *API) GetAsyncSearchesList(ctx context.Context, req *seqapi.GetAsyncSearchesListRequest) (*seqapi.GetAsyncSearchesListResponse, error) {
-	asyncSearches, ok := a.asyncSearches[types.GetEnvKey(ctx)]
-	if !ok {
+	if a.asyncSearchesByEnv == nil {
 		return nil, status.Error(codes.Unimplemented, types.ErrAsyncSearchesDisabled.Error())
 	}
 
 	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_get_async_searches_list")
 	defer span.End()
 
-	spanAttributes := []attribute.KeyValue{
+	env := types.GetEnvKey(ctx)
+	svc := a.asyncSearchesByEnv[env]
+
+	attributes := []attribute.KeyValue{
 		{
 			Key:   "offset",
 			Value: attribute.IntValue(int(req.Offset)),
@@ -33,25 +35,27 @@ func (a *API) GetAsyncSearchesList(ctx context.Context, req *seqapi.GetAsyncSear
 		},
 	}
 	if req.Status != nil {
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "status",
 			Value: attribute.StringValue(string(*req.Status)),
 		})
 	}
 	if req.OwnerName != nil {
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "owner",
 			Value: attribute.StringValue(*req.OwnerName),
 		})
 	}
-
-	span.SetAttributes(spanAttributes...)
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
 	if err := checkLimitOffset(req.Limit, req.Offset); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	resp, err := asyncSearches.GetAsyncSearchesList(ctx, req)
+	resp, err := svc.GetAsyncSearchesList(ctx, req)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}

@@ -15,26 +15,32 @@ import (
 )
 
 func (a *API) DeleteAsyncSearch(ctx context.Context, req *seqapi.DeleteAsyncSearchRequest) (*seqapi.DeleteAsyncSearchResponse, error) {
-	asyncSearches, ok := a.asyncSearches[types.GetEnvKey(ctx)]
-	if !ok {
+	if a.asyncSearchesByEnv == nil {
 		return nil, status.Error(codes.Unimplemented, types.ErrAsyncSearchesDisabled.Error())
 	}
 
 	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_delete_async_search")
 	defer span.End()
 
+	env := types.GetEnvKey(ctx)
+	svc := a.asyncSearchesByEnv[env]
+
 	if _, err := uuid.FromString(req.SearchId); err != nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid search_id")
 	}
 
-	span.SetAttributes(
-		attribute.KeyValue{
+	attributes := []attribute.KeyValue{
+		{
 			Key:   "search_id",
 			Value: attribute.StringValue(req.SearchId),
 		},
-	)
+	}
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
-	resp, err := asyncSearches.DeleteAsyncSearch(ctx, req)
+	resp, err := svc.DeleteAsyncSearch(ctx, req)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}

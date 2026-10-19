@@ -19,12 +19,21 @@ func (a *API) Check(ctx context.Context, req *massexport_v1.CheckRequest) (*mass
 	ctx, span := tracing.StartSpan(ctx, "massexport_v1_check")
 	defer span.End()
 
-	span.SetAttributes(attribute.KeyValue{
-		Key:   "session_id",
-		Value: attribute.StringValue(req.GetSessionId()),
-	})
+	env := types.GetEnvKey(ctx)
+	svc := a.serviceByEnv[env]
 
-	info, err := a.exporter.CheckExport(ctx, req.GetSessionId())
+	attributes := []attribute.KeyValue{
+		{
+			Key:   "session_id",
+			Value: attribute.StringValue(req.GetSessionId()),
+		},
+	}
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
+
+	info, err := svc.CheckExport(ctx, req.GetSessionId())
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}

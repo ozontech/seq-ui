@@ -27,13 +27,6 @@ func setupTestAPI(t *testing.T) (*API, *mock.MockService) {
 	ctrl := gomock.NewController(t)
 	mockedSvc := mock.NewMockService(ctrl)
 
-	mockedSvc.EXPECT().
-		GetAvailablePermissions().
-		Return([]types.PermissionGroup{
-			{Group: "roles", Permissions: []string{"create", "read", "update", "delete"}},
-		}).
-		Times(1)
-
 	return New(map[string]admin_service.Service{"": mockedSvc}), mockedSvc
 }
 

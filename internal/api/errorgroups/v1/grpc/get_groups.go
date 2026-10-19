@@ -26,7 +26,7 @@ func (a *API) GetGroups(ctx context.Context, req *errorgroups.GetGroupsRequest) 
 		{Key: "order", Value: attribute.StringValue(string(req.Order))},
 		{Key: "with_total", Value: attribute.BoolValue(req.WithTotal)},
 	}
-	if reqEnv != nil {
+	if reqEnv != nil && *reqEnv != "" {
 		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*reqEnv)})
 	}
 	if req.Release != nil {

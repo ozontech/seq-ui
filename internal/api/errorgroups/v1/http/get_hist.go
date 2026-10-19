@@ -44,7 +44,7 @@ func (a *API) serveGetHist(w http.ResponseWriter, r *http.Request) {
 	if httpReq.Service != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "service", Value: attribute.StringValue(*httpReq.Service)})
 	}
-	if httpReqEnv != nil {
+	if httpReqEnv != nil && *httpReqEnv != "" {
 		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReqEnv)})
 	}
 	if httpReq.Release != nil {

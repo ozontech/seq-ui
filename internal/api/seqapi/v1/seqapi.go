@@ -15,10 +15,10 @@ type SeqAPI struct {
 	httpAPI *http_api.API
 }
 
-func New(cfg *config.SeqAPI, seqDBClients map[string]seqdb.Client, asyncSearches map[string]asyncsearches.Service) *SeqAPI {
+func New(cfg *config.SeqAPI, seqDBClients map[string]seqdb.Client, asyncSearchesByEnv map[string]asyncsearches.Service) *SeqAPI {
 	return &SeqAPI{
-		grpcAPI: grpc_api.New(cfg, seqDBClients, asyncSearches),
-		httpAPI: http_api.New(cfg, seqDBClients, asyncSearches),
+		grpcAPI: grpc_api.New(cfg, seqDBClients, asyncSearchesByEnv),
+		httpAPI: http_api.New(cfg, seqDBClients, asyncSearchesByEnv),
 	}
 }
 

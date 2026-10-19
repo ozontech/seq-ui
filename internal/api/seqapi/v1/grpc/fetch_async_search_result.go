@@ -15,15 +15,17 @@ import (
 )
 
 func (a *API) FetchAsyncSearchResult(ctx context.Context, req *seqapi.FetchAsyncSearchResultRequest) (*seqapi.FetchAsyncSearchResultResponse, error) {
-	asyncSearches, ok := a.asyncSearches[types.GetEnvKey(ctx)]
-	if !ok {
+	if a.asyncSearchesByEnv == nil {
 		return nil, status.Error(codes.Unimplemented, types.ErrAsyncSearchesDisabled.Error())
 	}
 
 	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_fetch_async_search_result")
 	defer span.End()
 
-	spanAttributes := []attribute.KeyValue{
+	env := types.GetEnvKey(ctx)
+	svc := a.asyncSearchesByEnv[env]
+
+	attributes := []attribute.KeyValue{
 		{
 			Key:   "search_id",
 			Value: attribute.StringValue(req.SearchId),
@@ -41,13 +43,16 @@ func (a *API) FetchAsyncSearchResult(ctx context.Context, req *seqapi.FetchAsync
 			Value: attribute.StringValue(string(req.Order)),
 		},
 	}
-	span.SetAttributes(spanAttributes...)
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
 	if _, err := uuid.FromString(req.SearchId); err != nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid search_id")
 	}
 
-	resp, err := asyncSearches.FetchAsyncSearchResult(ctx, req)
+	resp, err := svc.FetchAsyncSearchResult(ctx, req)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}

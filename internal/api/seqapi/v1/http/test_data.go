@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	handlercache "github.com/ozontech/seq-ui/internal/api/seqapi/v1/handler_cache"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
 	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
@@ -24,28 +25,35 @@ var (
 
 func setupTestAPI(data test.APITestData) *API {
 	seqDBClients := make(map[string]seqdb.Client, max(1, len(data.Cfg.Envs)))
-	asyncSearhes := make(map[string]asyncsearches.Service, max(1, len(data.Cfg.Envs)))
+	asyncSearhesByEnv := make(map[string]asyncsearches.Service, max(1, len(data.Cfg.Envs)))
 
 	if len(data.Cfg.Envs) == 0 {
 		seqDBClients[config.DefaultSeqDBClientID] = data.Mocks.SeqDB
-		asyncSearhes[""] = data.Mocks.AsyncSearchesSvc
+		asyncSearhesByEnv[""] = data.Mocks.AsyncSearchesSvc
 	}
 	for envName, envConfig := range data.Cfg.Envs {
 		seqDBClients[envConfig.SeqDBID] = data.Mocks.SeqDB
-		asyncSearhes[envName] = data.Mocks.AsyncSearchesSvc
+		asyncSearhesByEnv[envName] = data.Mocks.AsyncSearchesSvc
 	}
 
 	if data.Mocks.AsyncSearchesSvc == nil {
-		asyncSearhes = nil
+		asyncSearhesByEnv = nil
 	}
 
-	api := New(&data.Cfg, seqDBClients, asyncSearhes)
+	api := New(&data.Cfg, seqDBClients, asyncSearhesByEnv)
 
 	if data.Mocks.Cache != nil {
+		caches := data.Cfg.Options.Caches
 		for env, params := range api.paramsByEnv {
-			params.eventsCache = data.Mocks.Cache
-			params.logsLifespanCache = data.Mocks.Cache
-			params.fieldsCache = newFieldsCache(data.Mocks.Cache)
+			if caches.Events != nil {
+				params.caches.Events = &handlercache.Cache{Cache: data.Mocks.Cache, KeyPrefix: "seqapi_event_", TTL: caches.Events.TTL}
+			}
+			if caches.Fields != nil {
+				params.caches.Fields = &handlercache.Cache{Cache: data.Mocks.Cache, KeyPrefix: "seqapi_fields", TTL: caches.Fields.TTL}
+			}
+			if caches.LogsLifespan != nil {
+				params.caches.LogsLifespan = &handlercache.Cache{Cache: data.Mocks.Cache, KeyPrefix: "seqapi_logs_lifespan", TTL: caches.LogsLifespan.TTL}
+			}
 			api.paramsByEnv[env] = params
 		}
 	}

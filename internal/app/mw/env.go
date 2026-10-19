@@ -21,10 +21,9 @@ type EnvResolver map[string]handlerEnvs
 func NewEnvResolver(handlers *config.Handlers) EnvResolver {
 	r := EnvResolver{}
 
-	if h := handlers.SeqAPI; h != nil {
-		envs := handlerEnvs{DefaultEnv: h.DefaultEnv, Envs: envNames(h.Envs)}
-		r["seqapi"], r["SeqAPIService"] = envs, envs
-	}
+	seqAPIEnvs := handlerEnvs{DefaultEnv: handlers.SeqAPI.DefaultEnv, Envs: envNames(handlers.SeqAPI.Envs)}
+	r["seqapi"], r["SeqAPIService"] = seqAPIEnvs, seqAPIEnvs
+
 	if h := handlers.ErrorGroups; h != nil {
 		envs := handlerEnvs{DefaultEnv: h.DefaultEnv, Envs: envNames(h.Envs)}
 		r["errorgroups"], r["ErrorGroupsService"] = envs, envs

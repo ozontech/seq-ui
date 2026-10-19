@@ -34,6 +34,7 @@ func (a *API) serveCreateRole(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+	env := types.GetEnvKey(ctx)
 
 	var httpReq createRoleRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
@@ -41,18 +42,22 @@ func (a *API) serveCreateRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	span.SetAttributes(
-		attribute.KeyValue{
+	attributes := []attribute.KeyValue{
+		{
 			Key:   "role_name",
 			Value: attribute.StringValue(httpReq.Name),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "permissions_count",
 			Value: attribute.IntValue(len(httpReq.Permissions)),
 		},
-	)
+	}
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
-	svc := a.services[types.GetEnvKey(ctx)]
+	svc := a.serviceByEnv[env]
 	roleID, err := svc.CreateRole(ctx, types.CreateRoleRequest{
 		Name:        httpReq.Name,
 		Permissions: parsePermissionGroupsToStrings(httpReq.Permissions),
@@ -81,6 +86,7 @@ func (a *API) serveAddUsersToRole(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+	env := types.GetEnvKey(ctx)
 
 	roleID, err := getRoleID(r)
 	if err != nil {
@@ -94,18 +100,22 @@ func (a *API) serveAddUsersToRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	span.SetAttributes(
-		attribute.KeyValue{
+	attributes := []attribute.KeyValue{
+		{
 			Key:   "role_id",
 			Value: attribute.IntValue(int(roleID)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "users_count",
 			Value: attribute.IntValue(len(httpReq.Usernames)),
 		},
-	)
+	}
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
-	svc := a.services[types.GetEnvKey(ctx)]
+	svc := a.serviceByEnv[env]
 	if err := svc.AddUsersToRole(ctx, types.AddUsersToRoleRequest{
 		RoleID:    roleID,
 		Usernames: httpReq.Usernames,
@@ -133,6 +143,7 @@ func (a *API) serveDeleteUsersFromRole(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+	env := types.GetEnvKey(ctx)
 
 	roleID, err := getRoleID(r)
 	if err != nil {
@@ -146,18 +157,22 @@ func (a *API) serveDeleteUsersFromRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	span.SetAttributes(
-		attribute.KeyValue{
+	attributes := []attribute.KeyValue{
+		{
 			Key:   "role_id",
 			Value: attribute.IntValue(int(roleID)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "users_count",
 			Value: attribute.IntValue(len(httpReq.Usernames)),
 		},
-	)
+	}
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
-	svc := a.services[types.GetEnvKey(ctx)]
+	svc := a.serviceByEnv[env]
 	if err := svc.DeleteUsersFromRole(ctx, types.DeleteUsersFromRoleRequest{
 		RoleID:    roleID,
 		Usernames: httpReq.Usernames,
@@ -184,7 +199,7 @@ func (a *API) serveGetRoles(w http.ResponseWriter, r *http.Request) {
 
 	wr := httputil.NewWriter(w)
 
-	svc := a.services[types.GetEnvKey(ctx)]
+	svc := a.serviceByEnv[types.GetEnvKey(ctx)]
 	resp, err := svc.GetRoles(ctx)
 	if err != nil {
 		httputil.ProcessError(wr, err)
@@ -212,6 +227,7 @@ func (a *API) serveGetRole(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+	env := types.GetEnvKey(ctx)
 
 	roleID, err := getRoleID(r)
 	if err != nil {
@@ -219,14 +235,18 @@ func (a *API) serveGetRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	span.SetAttributes(
-		attribute.KeyValue{
+	attributes := []attribute.KeyValue{
+		{
 			Key:   "role_id",
 			Value: attribute.IntValue(int(roleID)),
 		},
-	)
+	}
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
-	svc := a.services[types.GetEnvKey(ctx)]
+	svc := a.serviceByEnv[env]
 	roleInfo, err := svc.GetRole(ctx, types.GetRoleRequest{
 		RoleID: roleID,
 	})
@@ -256,6 +276,7 @@ func (a *API) serveUpdateRole(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+	env := types.GetEnvKey(ctx)
 
 	roleID, err := getRoleID(r)
 	if err != nil {
@@ -269,7 +290,7 @@ func (a *API) serveUpdateRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	spanAttributes := []attribute.KeyValue{
+	attributes := []attribute.KeyValue{
 		{
 			Key:   "role_id",
 			Value: attribute.IntValue(int(roleID)),
@@ -280,14 +301,18 @@ func (a *API) serveUpdateRole(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	if httpReq.Name != nil {
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "role_name",
 			Value: attribute.StringValue(*httpReq.Name),
 		})
 	}
-	span.SetAttributes(spanAttributes...)
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
 
-	svc := a.services[types.GetEnvKey(ctx)]
+	span.SetAttributes(attributes...)
+
+	svc := a.serviceByEnv[env]
 	if err := svc.UpdateRole(ctx, types.UpdateRoleRequest{
 		RoleID:      roleID,
 		Name:        httpReq.Name,
@@ -316,6 +341,7 @@ func (a *API) serveDeleteRole(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+	env := types.GetEnvKey(ctx)
 
 	roleID, err := getRoleID(r)
 	if err != nil {
@@ -329,21 +355,24 @@ func (a *API) serveDeleteRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	spanAttributes := []attribute.KeyValue{
+	attributes := []attribute.KeyValue{
 		{
 			Key:   "role_id",
 			Value: attribute.IntValue(int(roleID)),
 		},
 	}
 	if httpReq.ReplacementRoleID != nil {
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "replacement_role_id",
 			Value: attribute.IntValue(int(*httpReq.ReplacementRoleID)),
 		})
 	}
-	span.SetAttributes(spanAttributes...)
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
-	svc := a.services[types.GetEnvKey(ctx)]
+	svc := a.serviceByEnv[types.GetEnvKey(ctx)]
 	if err := svc.DeleteRole(ctx, types.DeleteRoleRequest{
 		RoleID:            roleID,
 		ReplacementRoleID: httpReq.ReplacementRoleID,

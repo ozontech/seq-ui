@@ -26,7 +26,7 @@ func (a *API) DiffByReleases(ctx context.Context, req *errorgroups.DiffByRelease
 		{Key: "order", Value: attribute.StringValue(req.Order.String())},
 		{Key: "with_total", Value: attribute.BoolValue(req.WithTotal)},
 	}
-	if reqEnv != nil {
+	if reqEnv != nil && *reqEnv != "" {
 		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*reqEnv)})
 	}
 	if req.Source != nil {

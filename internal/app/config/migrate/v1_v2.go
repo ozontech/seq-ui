@@ -17,27 +17,34 @@ func V1ToV2(src v1.Config) v2.Config {
 }
 
 func (m *v1tov2) migrate() v2.Config {
-	dst := v2.Config{Version: 2}
-	dst.Server = m.migrateServer(m.src.Server)
-
-	var v1Cache v1.Cache
-	if m.src.Server != nil {
-		v1Cache = m.src.Server.Cache
+	server := m.src.Server
+	if server == nil {
+		// in v1 are always enabled
+		server = &v1.Server{}
 	}
 
-	dst.Cache = m.migrateCache(v1Cache)
-	dst.Clients = m.migrateClients(m.src)
-	dst.DB = m.migrateDB(m.src.Server)
-	dst.Handlers = m.migrateHandlers(m.src.Handlers, v1Cache)
+	handlers := m.src.Handlers
+	if handlers == nil {
+		// in v1 are always enabled
+		handlers = &v1.Handlers{}
+	}
 
-	return dst
+	var v1SessionStore *v1.SessionStore
+	if m.src.Handlers != nil && m.src.Handlers.MassExport != nil {
+		v1SessionStore = m.src.Handlers.MassExport.SessionStore
+	}
+
+	return v2.Config{
+		Version:  2,
+		Server:   m.migrateServer(server),
+		Cache:    m.migrateCache(server.Cache, v1SessionStore),
+		Clients:  m.migrateClients(m.src.Clients, server.CH),
+		DB:       m.migrateDB(server.DB),
+		Handlers: m.migrateHandlers(handlers, server),
+	}
 }
 
 func (m *v1tov2) migrateServer(src *v1.Server) v2.Server {
-	if src == nil {
-		return v2.Server{}
-	}
-
 	dst := v2.Server{
 		HTTP: &v2.HTTP{
 			Addr:              src.HTTPAddr,
@@ -71,6 +78,7 @@ func (m *v1tov2) migrateServer(src *v1.Server) v2.Server {
 		if src.OIDC.CacheSecretKey != "" {
 			cacheID, _ := m.defaultCacheIDs(src.Cache)
 			oidc.CacheID = cacheID
+			oidc.CacheSecretKey = src.OIDC.CacheSecretKey
 		}
 
 		dst.Auth = &v2.Auth{Options: v2.AuthOptions{OIDC: oidc}}
@@ -168,31 +176,30 @@ func (m *v1tov2) migrateGRPCParams(src *v1.GRPCKeepaliveParams) *v2.GRPCParams {
 	}
 }
 
-func (m *v1tov2) migrateClients(src v1.Config) v2.Clients {
+func (m *v1tov2) migrateClients(src *v1.Clients, ch *v1.CH) v2.Clients {
 	dst := v2.Clients{}
 
-	if src.Clients != nil {
-		if len(src.Clients.SeqDB) > 0 {
-			dst.SeqDB = make([]v2.SeqDBClient, 0, len(src.Clients.SeqDB))
-			for i := range src.Clients.SeqDB {
-				dst.SeqDB = append(dst.SeqDB, m.migrateSeqDBClient(&src.Clients.SeqDB[i]))
+	if src != nil {
+		if len(src.SeqDB) > 0 {
+			dst.SeqDB = make([]v2.SeqDBClient, 0, len(src.SeqDB))
+			for i := range src.SeqDB {
+				dst.SeqDB = append(dst.SeqDB, m.migrateSeqDBClient(&src.SeqDB[i]))
 			}
 		} else {
 			dst.SeqDB = []v2.SeqDBClient{{
 				ID:                    v2.DefaultSeqDBClientID,
-				Timeout:               src.Clients.SeqDBTimeout,
-				AvgDocSize:            src.Clients.SeqDBAvgDocSize,
-				Addrs:                 src.Clients.SeqDBAddrs,
-				RequestRetries:        src.Clients.RequestRetries,
-				RequestRetriesBackoff: m.migrateBackoff(src.Clients.InitialRetryBackoff, src.Clients.MaxRetryBackoff),
-				ClientMode:            src.Clients.ProxyClientMode,
-				GRPCParams:            m.migrateGRPCParams(src.Clients.GRPCKeepaliveParams),
+				Timeout:               src.SeqDBTimeout,
+				AvgDocSize:            src.SeqDBAvgDocSize,
+				Addrs:                 src.SeqDBAddrs,
+				RequestRetries:        src.RequestRetries,
+				RequestRetriesBackoff: m.migrateBackoff(src.InitialRetryBackoff, src.MaxRetryBackoff),
+				ClientMode:            src.ProxyClientMode,
+				GRPCParams:            m.migrateGRPCParams(src.GRPCKeepaliveParams),
 			}}
 		}
 	}
 
-	if src.Server != nil && src.Server.CH != nil {
-		ch := src.Server.CH
+	if ch != nil {
 		dst.ClickHouse = []v2.CHClient{{
 			ID:          v2.DefaultCHClientID,
 			Addrs:       ch.Addrs,
@@ -232,24 +239,24 @@ func (m *v1tov2) migrateSeqDBClient(src *v1.SeqDBClient) v2.SeqDBClient {
 	}
 }
 
-func (m *v1tov2) migrateDB(src *v1.Server) *v2.DB {
-	if src == nil || src.DB == nil {
+func (m *v1tov2) migrateDB(src *v1.DB) *v2.DB {
+	if src == nil {
 		return nil
 	}
 
 	return &v2.DB{
-		Name:                   src.DB.Name,
-		Host:                   src.DB.Host,
-		Port:                   src.DB.Port,
-		User:                   src.DB.User,
-		Pass:                   src.DB.Pass,
-		RequestTimeout:         src.DB.RequestTimeout,
-		ConnectionPoolCapacity: src.DB.ConnectionPoolCapacity,
-		UsePreparedStatements:  src.DB.UsePreparedStatements,
+		Name:                   src.Name,
+		Host:                   src.Host,
+		Port:                   src.Port,
+		User:                   src.User,
+		Pass:                   src.Pass,
+		RequestTimeout:         src.RequestTimeout,
+		ConnectionPoolCapacity: src.ConnectionPoolCapacity,
+		UsePreparedStatements:  src.UsePreparedStatements,
 	}
 }
 
-func (m *v1tov2) migrateCache(src v1.Cache) v2.Cache {
+func (m *v1tov2) migrateCache(src v1.Cache, sessionStore *v1.SessionStore) v2.Cache {
 	// in config v1 inmemory cache is always created
 	cache := v2.Cache{
 		Inmemory: []v2.Inmemory{{
@@ -265,6 +272,10 @@ func (m *v1tov2) migrateCache(src v1.Cache) v2.Cache {
 			m.migrateRedis(src.Redis, v2.DefaultRedisWithInmemID, v2.DefaultInmemID),
 			m.migrateRedis(src.Redis, v2.DefaultRedisWithoutInmemID, ""),
 		)
+	}
+
+	if sessionStore != nil {
+		cache.Redis = append(cache.Redis, m.migrateRedis(&sessionStore.Redis, v2.DefaultMassExportRedisID, ""))
 	}
 
 	return cache
@@ -285,24 +296,20 @@ func (m *v1tov2) migrateRedis(src *v1.Redis, id, withInmemID string) v2.Redis {
 	}
 }
 
-func (m *v1tov2) migrateHandlers(src *v1.Handlers, v1Cache v1.Cache) v2.Handlers {
-	if src == nil {
-		src = &v1.Handlers{}
-	}
-
+func (m *v1tov2) migrateHandlers(src *v1.Handlers, server *v1.Server) v2.Handlers {
 	dst := v2.Handlers{
-		SeqAPI:      m.migrateSeqAPI(&src.SeqAPI, v1Cache),
+		SeqAPI:      m.migrateSeqAPI(&src.SeqAPI, server.Cache),
 		AsyncSearch: m.migrateAsyncSearch(&src.AsyncSearch, &src.SeqAPI),
-		ErrorGroups: m.migrateErrorGroups(&src.ErrorGroups, m.src.Server),
-		Admin:       m.migrateAdmin(src.Admin, v1Cache),
-		// MassExport:  m.migrateMassExport(src.MassExport, cfg),
+		ErrorGroups: m.migrateErrorGroups(&src.ErrorGroups, server.CH),
+		Admin:       m.migrateAdmin(src.Admin, server.Cache),
+		MassExport:  m.migrateMassExport(src.MassExport, &src.SeqAPI),
 	}
 
 	return dst
 }
 
-func (m *v1tov2) migrateSeqAPI(src *v1.SeqAPI, v1Cache v1.Cache) *v2.SeqAPI {
-	dst := &v2.SeqAPI{
+func (m *v1tov2) migrateSeqAPI(src *v1.SeqAPI, v1Cache v1.Cache) v2.SeqAPI {
+	dst := v2.SeqAPI{
 		Options:    m.migrateSeqAPIOptions(src.SeqAPIOptions, v1Cache),
 		DefaultEnv: src.DefaultEnv,
 	}
@@ -311,6 +318,8 @@ func (m *v1tov2) migrateSeqAPI(src *v1.SeqAPI, v1Cache v1.Cache) *v2.SeqAPI {
 		dst.Envs = make(map[string]v2.SeqAPIEnv, len(src.Envs))
 		for envName, envCfg := range src.Envs {
 			dstEnv := v2.SeqAPIEnv{SeqDBID: envCfg.SeqDB}
+			// in v1 env without options uses root options, in v2 root
+			// options are merged into env options
 			if envCfg.Options != nil {
 				options := m.migrateSeqAPIOptions(envCfg.Options, v1Cache)
 				dstEnv.Options = &options
@@ -354,6 +363,7 @@ func (m *v1tov2) migrateSeqAPIOptions(src *v1.SeqAPIOptions, v1Cache v1.Cache) v
 		},
 	}
 
+	// in v1 fields are cached only if ttl is set
 	if src.FieldsCacheTTL > 0 {
 		dst.Caches.Fields = &v2.HandlerCache{
 			ID:  v2.DefaultInmemID,
@@ -436,19 +446,19 @@ func (m *v1tov2) migrateFieldFilters(src *v1.FieldFilterSet) *v2.FieldFilterSet 
 	return dst
 }
 
-func (m *v1tov2) migrateErrorGroups(eg *v1.ErrorGroups, server *v1.Server) *v2.ErrorGroups {
-	if server == nil || server.CH == nil {
+func (m *v1tov2) migrateErrorGroups(src *v1.ErrorGroups, ch *v1.CH) *v2.ErrorGroups {
+	if ch == nil {
 		return nil
 	}
 
 	return &v2.ErrorGroups{
 		Options: v2.ErrorGroupsOptions{
 			LogTagsMapping: v2.LogTagsMapping{
-				Env:     eg.LogTagsMapping.Env,
-				Service: eg.LogTagsMapping.Service,
-				Release: eg.LogTagsMapping.Release,
+				Env:     src.LogTagsMapping.Env,
+				Service: src.LogTagsMapping.Service,
+				Release: src.LogTagsMapping.Release,
 			},
-			QueryFilter: eg.QueryFilter,
+			QueryFilter: src.QueryFilter,
 		},
 	}
 }
@@ -472,64 +482,61 @@ func (m *v1tov2) migrateAsyncSearch(src *v1.AsyncSearch, seqAPI *v1.SeqAPI) *v2.
 	return dst
 }
 
-// func (m *v1tov2) migrateMassExport(src *v1.MassExport, cfg *v2.Config) *v2.MassExport {
-// 	if src == nil {
-// 		return nil
-// 	}
-//
-// 	dst := &v2.MassExport{
-// 		SeqDBID: v2.DefaultSeqDBClientID,
-// 		Options: v2.MassExportOptions{
-// 			BatchSize:        src.BatchSize,
-// 			WorkersCount:     src.WorkersCount,
-// 			TasksChannelSize: src.TasksChannelSize,
-// 			PartLength:       src.PartLength,
-// 			URLPrefix:        src.URLPrefix,
-// 			AllowedUsers:     src.AllowedUsers,
-// 			FileStore:        m.migrateFileStore(src.FileStore),
-// 			DownloadParams:   m.migrateDownloadParams(m.src.SeqProxyDownloader),
-// 		},
-// 	}
-//
-// 	if me.SessionStore != nil {
-// 		cfg.Cache.Redis = append(cfg.Cache.Redis, m.migrateRedis(&src.SessionStore.Redis, v2.DefaultMassExportRedisID, ""))
-//
-// 		dst.Options.SessionStore = v2.SessionStore{
-// 			RedisID:        v2.DefaultMassExportRedisID,
-// 			ExportLifetime: src.SessionStore.ExportLifetime,
-// 		}
-// 	}
-//
-// 	return dst
-// }
-//
-// func (m *v1tov2) migrateFileStore(fs *v1.FileStore) v2.FileStore {
-// 	if fs == nil || fs.S3 == nil {
-// 		return v2.FileStore{}
-// 	}
-//
-// 	return v2.FileStore{
-// 		S3: &v2.S3{
-// 			Endpoint:        fs.S3.Endpoint,
-// 			AccessKeyID:     fs.S3.AccessKeyID,
-// 			SecretAccessKey: fs.S3.SecretAccessKey,
-// 			BucketName:      fs.S3.BucketName,
-// 			EnableSSL:       fs.S3.EnableSSl,
-// 		},
-// 	}
-// }
+func (m *v1tov2) migrateMassExport(src *v1.MassExport, seqAPI *v1.SeqAPI) *v2.MassExport {
+	if src == nil {
+		return nil
+	}
 
-//	func (m *v1tov2) migrateDownloadParams(src *v1.SeqProxyDownloader) v2.DownloadParams {
-//		if src == nil {
-//			return v2.DownloadParams{}
-//		}
-//
-//		return v2.DownloadParams{
-//			Delay:               src.Delay,
-//			InitialRetryBackoff: src.InitialRetryBackoff,
-//			MaxRetryBackoff:     src.MaxRetryBackoff,
-//		}
-//	}
+	options := v2.MassExportOptions{
+		WorkersCount:     src.WorkersCount,
+		TasksChannelSize: src.TasksChannelSize,
+		PartLength:       src.PartLength,
+		URLPrefix:        src.URLPrefix,
+		AllowedUsers:     src.AllowedUsers,
+		DownloadParams: v2.DownloadParams{
+			BatchSize: src.BatchSize,
+		},
+	}
+
+	if src.FileStore != nil && src.FileStore.S3 != nil {
+		options.FileStore.S3 = &v2.S3{
+			Endpoint:        src.FileStore.S3.Endpoint,
+			AccessKeyID:     src.FileStore.S3.AccessKeyID,
+			SecretAccessKey: src.FileStore.S3.SecretAccessKey,
+			BucketName:      src.FileStore.S3.BucketName,
+			EnableSSL:       src.FileStore.S3.EnableSSl,
+		}
+	}
+
+	if src.SessionStore != nil {
+		options.SessionStore = v2.SessionStore{
+			Lifetime: src.SessionStore.ExportLifetime,
+			CacheID:  v2.DefaultMassExportRedisID,
+		}
+	}
+
+	if src.SeqProxyDownloader != nil {
+		options.DownloadParams.Delay = src.SeqProxyDownloader.Delay
+		options.DownloadParams.DelayBackoff = v2.Backoff{
+			InitialInterval: src.SeqProxyDownloader.InitialRetryBackoff,
+			MaxInterval:     src.SeqProxyDownloader.MaxRetryBackoff,
+		}
+	}
+
+	dst := &v2.MassExport{Options: options}
+
+	if len(seqAPI.Envs) > 0 {
+		dst.Envs = map[string]v2.MassExportEnv{
+			seqAPI.DefaultEnv: {
+				SeqDBID: seqAPI.Envs[seqAPI.DefaultEnv].SeqDB,
+			},
+		}
+		dst.DefaultEnv = seqAPI.DefaultEnv
+	}
+
+	return dst
+}
+
 func (m *v1tov2) migrateAdmin(src *v1.Admin, v1Cache v1.Cache) *v2.Admin {
 	if src == nil {
 		return nil

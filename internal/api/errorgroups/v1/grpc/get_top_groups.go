@@ -23,7 +23,7 @@ func (a *API) GetTopGroups(ctx context.Context, req *errorgroups.GetTopGroupsReq
 		{Key: "offset", Value: attribute.IntValue(int(req.Offset))},
 		{Key: "with_total", Value: attribute.BoolValue(req.WithTotal)},
 	}
-	if reqEnv != nil {
+	if reqEnv != nil && *reqEnv != "" {
 		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*reqEnv)})
 	}
 	if req.Source != nil {

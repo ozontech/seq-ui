@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"time"
 
@@ -50,16 +51,44 @@ const (
 	defaultPartLength       = 1 * time.Hour
 )
 
-func NewService(
-	ctx context.Context,
-	cfg config.MassExport,
-	sessionStore sessionstore.SessionStore,
-	fileStore filestore.FileStore,
-	client seqdb.Client,
-) (Service, error) {
+func New(ctx context.Context, cfg *config.MassExport, seqDBClients map[string]seqdb.Client) (map[string]Service, error) {
+	services := make(map[string]Service, max(1, len(cfg.Envs)))
+	if len(cfg.Envs) > 0 {
+		for envName, envCfg := range cfg.Envs {
+			svc, err := newService(ctx, envCfg.Options, seqDBClients[envCfg.SeqDBID])
+			if err != nil {
+				return nil, fmt.Errorf("env %q: %w", envName, err)
+			}
+			services[envName] = svc
+		}
+	} else {
+		client := slices.Collect(maps.Values(seqDBClients))[0]
+		svc, err := newService(ctx, &cfg.Options, client)
+		if err != nil {
+			return nil, err
+		}
+		services[""] = svc
+	}
+
+	return services, nil
+}
+
+func newService(ctx context.Context, cfg *config.MassExportOptions, client seqdb.Client) (Service, error) {
+	sessionStore, err := sessionstore.NewRedisSessionStore(ctx, &cfg.SessionStore)
+	if err != nil {
+		return nil, fmt.Errorf("init session store: %w", err)
+	}
+	logger.Info("session store initialized")
+
+	fileStore, err := filestore.NewS3(ctx, cfg.FileStore.S3)
+	if err != nil {
+		return nil, fmt.Errorf("init file store: %w", err)
+	}
+	logger.Info("file store initialized")
+
 	batchSize := defaultBatchSize
-	if cfg.BatchSize > 0 {
-		batchSize = cfg.BatchSize
+	if cfg.DownloadParams.BatchSize > 0 {
+		batchSize = cfg.DownloadParams.BatchSize
 	}
 
 	if cfg.WorkersCount <= 0 {
@@ -68,7 +97,7 @@ func NewService(
 
 	partLength := defaultPartLength
 	if cfg.PartLength > 0 {
-		err := checkPartLength(cfg.PartLength)
+		err = checkPartLength(cfg.PartLength)
 		if err != nil {
 			return nil, fmt.Errorf("check part length: %w", err)
 		}
@@ -93,7 +122,7 @@ func NewService(
 		tasksChannelSize = cfg.TasksChannelSize
 	}
 
-	downloader := newSeqProxyDownloader(client, *cfg.DownloadParams)
+	downloader := newSeqProxyDownloader(client, cfg.DownloadParams)
 
 	return &exportService{
 		sessionStore: sessionStore,

@@ -26,17 +26,18 @@ import (
 //	@Failure	default	{object}	httputil.Error					"An unexpected error response"
 //	@Security	bearer
 func (a *API) serveGetAsyncSearchesList(w http.ResponseWriter, r *http.Request) {
-	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_get_async_searches_list")
-	defer span.End()
-
 	wr := httputil.NewWriter(w)
-	env := types.GetEnvKey(ctx)
 
-	asyncSearches, ok := a.asyncSearches[env]
-	if !ok {
+	if a.asyncSearchesByEnv == nil {
 		wr.Error(types.ErrAsyncSearchesDisabled, http.StatusBadRequest)
 		return
 	}
+
+	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_get_async_searches_list")
+	defer span.End()
+
+	env := types.GetEnvKey(ctx)
+	svc := a.asyncSearchesByEnv[env]
 
 	var httpReq getAsyncSearchesListRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
@@ -44,7 +45,7 @@ func (a *API) serveGetAsyncSearchesList(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	spanAttributes := []attribute.KeyValue{
+	attributes := []attribute.KeyValue{
 		{
 			Key:   "offset",
 			Value: attribute.IntValue(int(httpReq.Offset)),
@@ -55,22 +56,21 @@ func (a *API) serveGetAsyncSearchesList(w http.ResponseWriter, r *http.Request) 
 		},
 	}
 	if httpReq.Status != nil {
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "status",
 			Value: attribute.StringValue(string(*httpReq.Status)),
 		})
 	}
 	if httpReq.Owner != nil {
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "owner",
 			Value: attribute.StringValue(*httpReq.Owner),
 		})
 	}
 	if env != "" {
-		spanAttributes = append(spanAttributes, attribute.String("env", env))
+		attributes = append(attributes, attribute.String("env", env))
 	}
-
-	span.SetAttributes(spanAttributes...)
+	span.SetAttributes(attributes...)
 
 	if err := checkLimitOffset(httpReq.Limit, httpReq.Offset); err != nil {
 		wr.Error(err, http.StatusBadRequest)
@@ -83,7 +83,7 @@ func (a *API) serveGetAsyncSearchesList(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	resp, err := asyncSearches.GetAsyncSearchesList(ctx, parsedReq)
+	resp, err := svc.GetAsyncSearchesList(ctx, parsedReq)
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return

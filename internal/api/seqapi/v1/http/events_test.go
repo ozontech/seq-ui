@@ -113,7 +113,6 @@ func TestServeGetEvent(t *testing.T) {
 			},
 		},
 	}
-	// убрать фатал при пинге(пинговать, но не фаталиться)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()

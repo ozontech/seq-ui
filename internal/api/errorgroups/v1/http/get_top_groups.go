@@ -42,7 +42,7 @@ func (a *API) serveGetTopGroups(w http.ResponseWriter, r *http.Request) {
 		{Key: "offset", Value: attribute.IntValue(int(httpReq.Offset))},
 		{Key: "with_total", Value: attribute.BoolValue(httpReq.WithTotal)},
 	}
-	if httpReqEnv != nil {
+	if httpReqEnv != nil && *httpReqEnv != "" {
 		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReqEnv)})
 	}
 	if httpReq.Source != nil {

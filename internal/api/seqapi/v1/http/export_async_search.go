@@ -26,17 +26,18 @@ import (
 //	@Failure	default	{object}	httputil.Error				"An unexpected error response"
 //	@Security	bearer
 func (a *API) serveExportAsyncSearch(w http.ResponseWriter, r *http.Request) {
-	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_export_async_search_http")
-	defer span.End()
-
 	wr := httputil.NewWriter(w)
-	env := types.GetEnvKey(ctx)
 
-	asyncSearches, ok := a.asyncSearches[env]
-	if !ok {
+	if a.asyncSearchesByEnv == nil {
 		wr.Error(types.ErrAsyncSearchesDisabled, http.StatusBadRequest)
 		return
 	}
+
+	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_export_async_search_http")
+	defer span.End()
+
+	env := types.GetEnvKey(ctx)
+	svc := a.asyncSearchesByEnv[env]
 
 	userStr := "_"
 	if userName, err := types.GetUserKey(ctx); err == nil {
@@ -75,11 +76,9 @@ func (a *API) serveExportAsyncSearch(w http.ResponseWriter, r *http.Request) {
 			Value: attribute.StringSliceValue(httpReq.Fields),
 		},
 	}
-
 	if env != "" {
 		attributes = append(attributes, attribute.String("env", env))
 	}
-
 	span.SetAttributes(attributes...)
 
 	if err := checkUUID(httpReq.SearchID); err != nil {
@@ -123,7 +122,7 @@ func (a *API) serveExportAsyncSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := asyncSearches.ExportAsyncSearch(ctx, httpReq.toProto(), cw); err != nil {
+	if err := svc.ExportAsyncSearch(ctx, httpReq.toProto(), cw); err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return
 	}

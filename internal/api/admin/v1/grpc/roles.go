@@ -18,23 +18,29 @@ func (a *API) CreateRole(ctx context.Context, req *admin.CreateRoleRequest) (*ad
 	ctx, span := tracing.StartSpan(ctx, "admin_v1_create_role")
 	defer span.End()
 
-	span.SetAttributes(
-		attribute.KeyValue{
+	env := types.GetEnvKey(ctx)
+
+	attributes := []attribute.KeyValue{
+		{
 			Key:   "role_name",
 			Value: attribute.StringValue(req.GetName()),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "permissions_count",
 			Value: attribute.IntValue(len(req.GetPermissions())),
 		},
-	)
+	}
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
 	request := types.CreateRoleRequest{
 		Name:        req.Name,
 		Permissions: permissionGroupsToStrings(req.Permissions),
 	}
 
-	svc := a.services[types.GetEnvKey(ctx)]
+	svc := a.serviceByEnv[env]
 	roleID, err := svc.CreateRole(ctx, request)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
@@ -49,18 +55,24 @@ func (a *API) AddUsersToRole(ctx context.Context, req *admin.AddUsersToRoleReque
 	ctx, span := tracing.StartSpan(ctx, "admin_v1_add_users_to_role")
 	defer span.End()
 
-	span.SetAttributes(
-		attribute.KeyValue{
+	env := types.GetEnvKey(ctx)
+
+	attributes := []attribute.KeyValue{
+		{
 			Key:   "role_id",
 			Value: attribute.IntValue(int(req.GetRoleId())),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "users_count",
 			Value: attribute.IntValue(len(req.GetUsernames())),
 		},
-	)
+	}
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
-	svc := a.services[types.GetEnvKey(ctx)]
+	svc := a.serviceByEnv[env]
 	if err := svc.AddUsersToRole(ctx, types.AddUsersToRoleRequest{
 		RoleID:    req.RoleId,
 		Usernames: req.Usernames,
@@ -75,18 +87,24 @@ func (a *API) DeleteUsersFromRole(ctx context.Context, req *admin.DeleteUsersFro
 	ctx, span := tracing.StartSpan(ctx, "admin_v1_delete_users_from_role")
 	defer span.End()
 
-	span.SetAttributes(
-		attribute.KeyValue{
+	env := types.GetEnvKey(ctx)
+
+	attributes := []attribute.KeyValue{
+		{
 			Key:   "role_id",
 			Value: attribute.IntValue(int(req.GetRoleId())),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "users_count",
 			Value: attribute.IntValue(len(req.GetUsernames())),
 		},
-	)
+	}
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
-	svc := a.services[types.GetEnvKey(ctx)]
+	svc := a.serviceByEnv[env]
 	if err := svc.DeleteUsersFromRole(ctx, types.DeleteUsersFromRoleRequest{
 		RoleID:    req.RoleId,
 		Usernames: req.Usernames,
@@ -98,7 +116,7 @@ func (a *API) DeleteUsersFromRole(ctx context.Context, req *admin.DeleteUsersFro
 }
 
 func (a *API) GetRoles(ctx context.Context, _ *admin.GetRolesRequest) (*admin.GetRolesResponse, error) {
-	svc := a.services[types.GetEnvKey(ctx)]
+	svc := a.serviceByEnv[types.GetEnvKey(ctx)]
 	resp, err := svc.GetRoles(ctx)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
@@ -114,14 +132,20 @@ func (a *API) GetRole(ctx context.Context, req *admin.GetRoleRequest) (*admin.Ge
 	ctx, span := tracing.StartSpan(ctx, "admin_v1_get_role")
 	defer span.End()
 
-	span.SetAttributes(
-		attribute.KeyValue{
+	env := types.GetEnvKey(ctx)
+
+	attributes := []attribute.KeyValue{
+		{
 			Key:   "role_id",
 			Value: attribute.IntValue(int(req.GetId())),
 		},
-	)
+	}
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
-	svc := a.services[types.GetEnvKey(ctx)]
+	svc := a.serviceByEnv[env]
 	roleInfo, err := svc.GetRole(ctx, types.GetRoleRequest{
 		RoleID: req.Id,
 	})
@@ -138,7 +162,9 @@ func (a *API) UpdateRole(ctx context.Context, req *admin.UpdateRoleRequest) (*ad
 	ctx, span := tracing.StartSpan(ctx, "admin_v1_update_role")
 	defer span.End()
 
-	spanAttributes := []attribute.KeyValue{
+	env := types.GetEnvKey(ctx)
+
+	attributes := []attribute.KeyValue{
 		{
 			Key:   "role_id",
 			Value: attribute.IntValue(int(req.GetId())),
@@ -149,14 +175,17 @@ func (a *API) UpdateRole(ctx context.Context, req *admin.UpdateRoleRequest) (*ad
 		},
 	}
 	if req.Name != nil {
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "role_name",
 			Value: attribute.StringValue(req.GetName()),
 		})
 	}
-	span.SetAttributes(spanAttributes...)
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
-	svc := a.services[types.GetEnvKey(ctx)]
+	svc := a.serviceByEnv[env]
 	if err := svc.UpdateRole(ctx, types.UpdateRoleRequest{
 		RoleID:      req.Id,
 		Name:        req.Name,
@@ -172,21 +201,26 @@ func (a *API) DeleteRole(ctx context.Context, req *admin.DeleteRoleRequest) (*ad
 	ctx, span := tracing.StartSpan(ctx, "admin_v1_delete_role")
 	defer span.End()
 
-	spanAttributes := []attribute.KeyValue{
+	env := types.GetEnvKey(ctx)
+
+	attributes := []attribute.KeyValue{
 		{
 			Key:   "role_id",
 			Value: attribute.IntValue(int(req.GetId())),
 		},
 	}
 	if req.ReplacementRoleId != nil {
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "replacement_role_id",
 			Value: attribute.IntValue(int(req.GetReplacementRoleId())),
 		})
 	}
-	span.SetAttributes(spanAttributes...)
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
-	svc := a.services[types.GetEnvKey(ctx)]
+	svc := a.serviceByEnv[env]
 	if err := svc.DeleteRole(ctx, types.DeleteRoleRequest{
 		RoleID:            req.Id,
 		ReplacementRoleID: req.ReplacementRoleId,

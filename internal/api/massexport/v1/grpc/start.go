@@ -17,10 +17,12 @@ func (a *API) Start(ctx context.Context, req *massexport_v1.StartRequest) (*mass
 	ctx, span := tracing.StartSpan(ctx, "massexport_v1_start")
 	defer span.End()
 
+	env := types.GetEnvKey(ctx)
+	svc := a.serviceByEnv[env]
 	from := req.GetFrom().AsTime()
 	to := req.GetTo().AsTime()
 
-	span.SetAttributes([]attribute.KeyValue{
+	attributes := []attribute.KeyValue{
 		{
 			Key:   "query",
 			Value: attribute.StringValue(req.GetQuery()),
@@ -41,7 +43,11 @@ func (a *API) Start(ctx context.Context, req *massexport_v1.StartRequest) (*mass
 			Key:   "name",
 			Value: attribute.StringValue(req.GetName()),
 		},
-	}...)
+	}
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
 	if req.GetName() == "" {
 		return nil, grpcutil.ProcessError(types.NewErrInvalidRequestField("empty export name"))
@@ -60,7 +66,7 @@ func (a *API) Start(ctx context.Context, req *massexport_v1.StartRequest) (*mass
 		return nil, grpcutil.ProcessError(types.NewErrInvalidRequestField("'window' is larger than whole interval"))
 	}
 
-	result, err := a.exporter.StartExport(ctx, types.StartExportRequest{
+	result, err := svc.StartExport(ctx, types.StartExportRequest{
 		Query:  req.GetQuery(),
 		From:   from,
 		To:     to,

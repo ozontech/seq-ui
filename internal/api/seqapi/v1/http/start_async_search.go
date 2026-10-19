@@ -28,17 +28,18 @@ import (
 //	@Failure	default	{object}	httputil.Error				"An unexpected error response"
 //	@Security	bearer
 func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
-	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_start_async_search")
-	defer span.End()
-
 	wr := httputil.NewWriter(w)
-	env := types.GetEnvKey(ctx)
 
-	asyncSearches, ok := a.asyncSearches[env]
-	if !ok {
+	if a.asyncSearchesByEnv == nil {
 		wr.Error(types.ErrAsyncSearchesDisabled, http.StatusBadRequest)
 		return
 	}
+
+	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_start_async_search")
+	defer span.End()
+
+	env := types.GetEnvKey(ctx)
+	svc := a.asyncSearchesByEnv[env]
 
 	params, err := a.GetEnvParams(env)
 	if err != nil {
@@ -70,7 +71,7 @@ func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	spanAttributes := []attribute.KeyValue{
+	attributes := []attribute.KeyValue{
 		{
 			Key:   "query",
 			Value: attribute.StringValue(httpReq.Query),
@@ -97,25 +98,24 @@ func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	if httpReq.Histogram != nil && httpReq.Histogram.Interval != "" {
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "histogram_interval",
 			Value: attribute.StringValue(httpReq.Histogram.Interval),
 		})
 	}
 	if len(httpReq.Aggregations) > 0 {
 		aggsRaw, _ := json.Marshal(httpReq.Aggregations)
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "aggregations",
 			Value: attribute.StringValue(string(aggsRaw)),
 		})
 	}
 	if env != "" {
-		spanAttributes = append(spanAttributes, attribute.String("env", env))
+		attributes = append(attributes, attribute.String("env", env))
 	}
+	span.SetAttributes(attributes...)
 
-	span.SetAttributes(spanAttributes...)
-
-	resp, err := asyncSearches.StartAsyncSearch(ctx, httpReq.toProto(parsedRetention))
+	resp, err := svc.StartAsyncSearch(ctx, httpReq.toProto(parsedRetention))
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return

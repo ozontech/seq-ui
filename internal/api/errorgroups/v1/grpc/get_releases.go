@@ -20,7 +20,7 @@ func (a *API) GetReleases(ctx context.Context, req *errorgroups.GetReleasesReque
 	attributes := []attribute.KeyValue{
 		{Key: "service", Value: attribute.StringValue(req.Service)},
 	}
-	if reqEnv != nil {
+	if reqEnv != nil && *reqEnv != "" {
 		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*reqEnv)})
 	}
 	span.SetAttributes(attributes...)

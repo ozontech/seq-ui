@@ -28,8 +28,8 @@ func newSeqProxyDownloader(client seqdb.Client, cfg config.DownloadParams) *seqP
 		cfg.Delay = defaultDelay
 	}
 
-	cfg.InitialRetryBackoff = max(cfg.InitialRetryBackoff, cfg.Delay)
-	cfg.MaxRetryBackoff = max(cfg.MaxRetryBackoff, cfg.InitialRetryBackoff)
+	cfg.DelayBackoff.InitialInterval = max(cfg.DelayBackoff.InitialInterval, cfg.Delay)
+	cfg.DelayBackoff.MaxInterval = max(cfg.DelayBackoff.MaxInterval, cfg.DelayBackoff.InitialInterval)
 
 	return &seqProxyDownloader{
 		cfg:    cfg,
@@ -41,8 +41,8 @@ func (d *seqProxyDownloader) Search(ctx context.Context, sessionID string, req *
 	bo := backoff.NewExponentialBackOff()
 	bo.MaxElapsedTime = 0
 	bo.Multiplier = 2
-	bo.InitialInterval = d.cfg.InitialRetryBackoff
-	bo.MaxInterval = d.cfg.MaxRetryBackoff
+	bo.InitialInterval = d.cfg.DelayBackoff.InitialInterval
+	bo.MaxInterval = d.cfg.DelayBackoff.MaxInterval
 	bo.Reset()
 
 	for {

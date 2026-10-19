@@ -46,7 +46,7 @@ func (a *API) serveDiffByReleases(w http.ResponseWriter, r *http.Request) {
 		{Key: "order", Value: attribute.StringValue(string(httpReq.Order))},
 		{Key: "with_total", Value: attribute.BoolValue(httpReq.WithTotal)},
 	}
-	if httpReqEnv != nil {
+	if httpReqEnv != nil && *httpReqEnv != "" {
 		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReqEnv)})
 	}
 	if httpReq.Source != nil {

@@ -15,7 +15,7 @@ var availablePermissions = []string{
 	permissionRolesDelete,
 }
 
-func (s *service) GetAvailablePermissions() []types.PermissionGroup {
+func GetAvailablePermissions() []types.PermissionGroup {
 	return []types.PermissionGroup{
 		{
 			Group:       "roles",

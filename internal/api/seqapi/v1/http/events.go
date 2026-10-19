@@ -40,11 +40,9 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 			Value: attribute.StringValue(id),
 		},
 	}
-
 	if env != "" {
 		attributes = append(attributes, attribute.String("env", env))
 	}
-
 	span.SetAttributes(attributes...)
 
 	params, err := a.GetEnvParams(env)
@@ -53,19 +51,16 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cacheKey := params.eventsCacheKeyPrefix + id // как лучше с ним поступить не придумал
-	if params.eventsCache != nil {
-		if cached, err := params.eventsCache.Get(ctx, cacheKey); err == nil {
-			e := &seqapi.Event{}
-			if err = proto.Unmarshal([]byte(cached), e); err == nil {
-				if params.masker != nil {
-					params.masker.Mask(e.Data)
-				}
-				wr.WriteJson(getEventResponseFromProto(&seqapi.GetEventResponse{Event: e}))
-				return
+	if cached, ok := params.caches.Events.Get(ctx, id); ok {
+		e := &seqapi.Event{}
+		if err = proto.Unmarshal([]byte(cached), e); err == nil {
+			if params.masker != nil {
+				params.masker.Mask(e.Data)
 			}
-			logger.Error("failed to unmarshal cached event proto", zap.String("id", id), zap.Error(err))
+			wr.WriteJson(getEventResponseFromProto(&seqapi.GetEventResponse{Event: e}))
+			return
 		}
+		logger.Error("failed to unmarshal cached event proto", zap.String("id", id), zap.Error(err))
 	}
 
 	resp, err := params.client.GetEvent(ctx, &seqapi.GetEventRequest{Id: id})
@@ -78,9 +73,9 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 		params.masker.Mask(resp.Event.Data)
 	}
 
-	if params.eventsCache != nil {
+	if params.caches.Events != nil {
 		if data, err := proto.Marshal(resp.Event); err == nil {
-			_ = params.eventsCache.SetWithTTL(ctx, cacheKey, string(data), params.options.Caches.Events.TTL)
+			params.caches.Events.Set(ctx, id, string(data))
 		} else {
 			logger.Error("failed to marshal event proto for caching", zap.String("id", id), zap.Error(err))
 		}

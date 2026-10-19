@@ -8,21 +8,14 @@ import (
 )
 
 type API struct {
-	services             map[string]adminservice.Service
+	serviceByEnv         map[string]adminservice.Service
 	availablePermissions []permissionGroup
 }
 
-func New(services map[string]adminservice.Service) *API {
-	// available permissions are the same for all envs
-	var availablePermissions []permissionGroup
-	for _, svc := range services {
-		availablePermissions = parseAvailablePermissions(svc.GetAvailablePermissions())
-		break
-	}
-
+func New(serviceByEnv map[string]adminservice.Service) *API {
 	return &API{
-		services:             services,
-		availablePermissions: availablePermissions,
+		serviceByEnv:         serviceByEnv,
+		availablePermissions: parseAvailablePermissions(adminservice.GetAvailablePermissions()),
 	}
 }
 

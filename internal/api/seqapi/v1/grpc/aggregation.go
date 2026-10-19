@@ -48,11 +48,9 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 			Value: attribute.IntValue(int(req.GetDownsample())),
 		},
 	}
-
 	if env != "" {
 		attributes = append(attributes, attribute.String("env", env))
 	}
-
 	span.SetAttributes(attributes...)
 
 	params, err := a.GetParams(env)

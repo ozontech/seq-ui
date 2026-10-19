@@ -26,17 +26,18 @@ import (
 //	@Failure	default	{object}	httputil.Error					"An unexpected error response"
 //	@Security	bearer
 func (a *API) serveFetchAsyncSearchResult(w http.ResponseWriter, r *http.Request) {
-	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_fetch_async_search_result")
-	defer span.End()
-
 	wr := httputil.NewWriter(w)
-	env := types.GetEnvKey(ctx)
 
-	asyncSearches, ok := a.asyncSearches[env]
-	if !ok {
+	if a.asyncSearchesByEnv == nil {
 		wr.Error(types.ErrAsyncSearchesDisabled, http.StatusBadRequest)
 		return
 	}
+
+	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_fetch_async_search_result")
+	defer span.End()
+
+	env := types.GetEnvKey(ctx)
+	svc := a.asyncSearchesByEnv[env]
 
 	var httpReq fetchAsyncSearchResultRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
@@ -44,7 +45,7 @@ func (a *API) serveFetchAsyncSearchResult(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	spanAttributes := []attribute.KeyValue{
+	attributes := []attribute.KeyValue{
 		{
 			Key:   "search_id",
 			Value: attribute.StringValue(httpReq.SearchID),
@@ -62,12 +63,10 @@ func (a *API) serveFetchAsyncSearchResult(w http.ResponseWriter, r *http.Request
 			Value: attribute.StringValue(string(httpReq.Order)),
 		},
 	}
-
 	if env != "" {
-		spanAttributes = append(spanAttributes, attribute.String("env", env))
+		attributes = append(attributes, attribute.String("env", env))
 	}
-
-	span.SetAttributes(spanAttributes...)
+	span.SetAttributes(attributes...)
 
 	if err := checkUUID(httpReq.SearchID); err != nil {
 		wr.Error(err, http.StatusBadRequest)
@@ -79,7 +78,7 @@ func (a *API) serveFetchAsyncSearchResult(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	resp, err := asyncSearches.FetchAsyncSearchResult(ctx, httpReq.toProto())
+	resp, err := svc.FetchAsyncSearchResult(ctx, httpReq.toProto())
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return

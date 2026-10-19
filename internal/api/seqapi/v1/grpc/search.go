@@ -21,7 +21,7 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 
 	env := types.GetEnvKey(ctx)
 
-	spanAttributes := []attribute.KeyValue{
+	attributes := []attribute.KeyValue{
 		{
 			Key:   "query",
 			Value: attribute.StringValue(req.GetQuery()),
@@ -59,12 +59,9 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 			Value: attribute.IntValue(int(req.GetDownsample())),
 		},
 	}
-
 	if env != "" {
-		spanAttributes = append(spanAttributes, attribute.String("env", env))
+		attributes = append(attributes, attribute.String("env", env))
 	}
-
-	span.SetAttributes(spanAttributes...)
 
 	params, err := a.GetParams(env)
 	if err != nil {
@@ -72,20 +69,20 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 	}
 
 	if req.Histogram != nil && req.Histogram.Interval != "" {
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "histogram_interval",
 			Value: attribute.StringValue(req.Histogram.Interval),
 		})
 	}
 	if len(req.Aggregations) > 0 {
 		aggregations, _ := json.Marshal(req.Aggregations)
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "aggregations",
 			Value: attribute.StringValue(string(aggregations)),
 		})
 	}
 
-	span.SetAttributes(spanAttributes...)
+	span.SetAttributes(attributes...)
 
 	if err := api_error.CheckSearchLimit(req.Limit, params.options.Limits.MaxSearchLimit); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())

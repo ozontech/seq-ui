@@ -40,30 +40,27 @@ type service struct {
 	logTagsMapping config.LogTagsMapping
 }
 
-func New(repo repositorych.Repository, logTagsMapping config.LogTagsMapping) Service {
-	return &service{
-		repo:           repo,
-		logTagsMapping: logTagsMapping,
-	}
-}
-
-func NewByEnv(cfg *config.ErrorGroups, clientsCfg *config.Clients, chClients map[string]driver.Conn) map[string]Service {
+func New(cfg *config.ErrorGroups, clientsCfg *config.Clients, chClients map[string]driver.Conn) map[string]Service {
 	services := make(map[string]Service, max(1, len(cfg.Envs)))
 	if len(cfg.Envs) > 0 {
 		for envName, envCfg := range cfg.Envs {
 			repo := repositorych.New(chClients[envCfg.CHID], clientsCfg.ClickHouseByID(envCfg.CHID).Sharded, envCfg.Options.QueryFilter)
-			services[envName] = New(repo, envCfg.Options.LogTagsMapping)
+			services[envName] = newService(repo, envCfg.Options.LogTagsMapping)
 		}
 	} else {
-		var chID string
-		for id := range chClients {
-			chID = id
-		}
+		chID := slices.Collect(maps.Keys(chClients))[0]
 		repo := repositorych.New(chClients[chID], clientsCfg.ClickHouseByID(chID).Sharded, cfg.Options.QueryFilter)
-		services[""] = New(repo, cfg.Options.LogTagsMapping)
+		services[""] = newService(repo, cfg.Options.LogTagsMapping)
 	}
 
 	return services
+}
+
+func newService(repo repositorych.Repository, logTagsMapping config.LogTagsMapping) Service {
+	return &service{
+		repo:           repo,
+		logTagsMapping: logTagsMapping,
+	}
 }
 
 func (s *service) GetErrorGroups(

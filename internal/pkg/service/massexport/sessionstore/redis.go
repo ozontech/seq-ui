@@ -8,63 +8,41 @@ import (
 	"strings"
 	"time"
 
-	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 
 	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/types"
-	"github.com/ozontech/seq-ui/internal/pkg/redisclient"
+	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/logger"
 )
 
-type redisSessionStore struct {
-	client         *redis.Client
-	exportLifetime time.Duration
+type sessionStore struct {
+	client   cache.Store
+	lifetime time.Duration
 }
 
 const (
 	activeSessionIDKey = "active_session_id"
-
-	day             = 24 * time.Hour
-	defaultLifetime = 7 * day
-	minLifetime     = 1 * day
-	maxLifetime     = 30 * day
+	exportsKeysPattern = "job#*#export#*"
 )
 
-func NewRedisSessionStore(ctx context.Context, redisCfg *config.Redis, exportLifetimeCfg time.Duration) (SessionStore, error) {
-	client, err := redisclient.New(ctx, redisCfg)
-	if err != nil {
-		return nil, fmt.Errorf("create redis client: %w", err)
+func NewRedisSessionStore(ctx context.Context, cfg *config.SessionStore) (SessionStore, error) {
+	client, ok := cache.StoreByID(cfg.CacheID)
+	if !ok {
+		return nil, fmt.Errorf("cache %q not found", cfg.CacheID)
 	}
 
-	exportLifetime := defaultLifetime
-	if exportLifetimeCfg != 0 {
-		switch {
-		case exportLifetimeCfg < minLifetime:
-			logger.Warn("export lifetime from config is too low; set min lifetime", zap.String("export_lifetime", exportLifetimeCfg.String()))
-			exportLifetime = minLifetime
-		case exportLifetimeCfg > maxLifetime:
-			logger.Warn("export lifetime from config is too high; set max lifetime", zap.String("export_lifetime", exportLifetimeCfg.String()))
-			exportLifetime = maxLifetime
-		default:
-			exportLifetime = exportLifetimeCfg
-		}
+	store := &sessionStore{
+		client:   client,
+		lifetime: cfg.Lifetime,
 	}
 
-	store := &redisSessionStore{
-		client:         client,
-		exportLifetime: exportLifetime,
-	}
-
-	err = store.unlock(ctx)
-	if err != nil {
-		return nil, err
-	}
+	store.unlock(ctx)
 
 	return store, nil
 }
 
-func (s *redisSessionStore) StartExport(ctx context.Context, sessionID string, info types.ExportInfo) error {
+func (s *sessionStore) StartExport(ctx context.Context, sessionID string, info types.ExportInfo) error {
 	err := s.Lock(ctx, sessionID)
 	if err != nil {
 		return err
@@ -73,121 +51,49 @@ func (s *redisSessionStore) StartExport(ctx context.Context, sessionID string, i
 	return s.set(ctx, sessionID, info)
 }
 
-func (s *redisSessionStore) CheckExport(ctx context.Context, sessionID string) (types.ExportInfo, error) {
+func (s *sessionStore) CheckExport(ctx context.Context, sessionID string) (types.ExportInfo, error) {
 	return s.get(ctx, sessionID)
 }
 
-func (s *redisSessionStore) GetCurActiveExport(ctx context.Context) (string, error) {
-	activeSessionID, err := s.client.Get(ctx, activeSessionIDKey).Result()
+func (s *sessionStore) GetCurActiveExport(ctx context.Context) (string, error) {
+	activeSessionID, err := s.client.Get(ctx, activeSessionIDKey)
 	if err == nil {
 		return activeSessionID, nil
 	}
 
-	if errors.Is(err, redis.Nil) {
+	if errors.Is(err, cache.ErrNotFound) {
 		return "", ErrNoActiveExport
 	}
 
 	return "", fmt.Errorf("get: %w", err)
 }
 
-func (s *redisSessionStore) CancelExport(ctx context.Context, sessionID string) error {
-	err := s.unlock(ctx)
-	if err != nil {
-		return err
-	}
+func (s *sessionStore) CancelExport(ctx context.Context, sessionID string) error {
+	s.unlock(ctx)
 
 	return s.setExportStatus(ctx, sessionID, types.ExportStatusCancel, "")
 }
 
-func (s *redisSessionStore) FailExport(ctx context.Context, sessionID string, errMsg string) error {
-	err := s.unlock(ctx)
-	if err != nil {
-		return err
-	}
+func (s *sessionStore) FailExport(ctx context.Context, sessionID string, errMsg string) error {
+	s.unlock(ctx)
 
 	return s.setExportStatus(ctx, sessionID, types.ExportStatusFail, errMsg)
 }
 
-func (s *redisSessionStore) FinishExport(ctx context.Context, sessionID string) error {
-	err := s.unlock(ctx)
-	if err != nil {
-		return err
-	}
+func (s *sessionStore) FinishExport(ctx context.Context, sessionID string) error {
+	s.unlock(ctx)
 
 	return s.setExportStatus(ctx, sessionID, types.ExportStatusFinish, "")
 }
 
-func (s *redisSessionStore) setExportStatus(
-	ctx context.Context,
-	sessionID string,
-	status types.ExportStatus,
-	errMsg string,
-) error {
-	result, err := s.get(ctx, sessionID)
-	if err != nil {
-		return err
-	}
-
-	switch result.Status {
-	case types.ExportStatusCancel:
-		return errors.New("export already canceled")
-	case types.ExportStatusFail:
-		return errors.New("export already failed")
-	case types.ExportStatusFinish:
-		return errors.New("export already finished")
-	default:
-		result.Status = status
-		result.Error = errMsg
-		result.FinishedAt = time.Now()
-		return s.set(ctx, sessionID, result)
-	}
-}
-
-func (s *redisSessionStore) set(ctx context.Context, sessionID string, info types.ExportInfo) error {
-	data, err := json.Marshal(globalToLocal(info))
-	if err != nil {
-		return fmt.Errorf("pack export info: %w", err)
-	}
-
-	err = s.client.Set(ctx, sessionID, string(data), s.exportLifetime).Err()
-	if err != nil {
-		return fmt.Errorf("set: %w", err)
-	}
-
-	return nil
-}
-
-func (s *redisSessionStore) get(ctx context.Context, sessionID string) (types.ExportInfo, error) {
-	str, err := s.client.Get(ctx, sessionID).Result()
-	if err != nil {
-		if errors.Is(err, redis.Nil) {
-			return types.ExportInfo{}, types.ErrNotFound
-		}
-		return types.ExportInfo{}, fmt.Errorf("get: %w", err)
-	}
-
-	var info exportInfo
-	err = json.Unmarshal([]byte(str), &info)
-	if err != nil {
-		return types.ExportInfo{}, fmt.Errorf("unpack export info: %w", err)
-	}
-
-	result, err := localToGlobal(info, sessionID)
-	if err != nil {
-		return types.ExportInfo{}, fmt.Errorf("local to global: %w", err)
-	}
-
-	return result, nil
-}
-
-func (s *redisSessionStore) Lock(ctx context.Context, sessionID string) error {
-	ok, err := s.client.SetNX(ctx, activeSessionIDKey, sessionID, s.exportLifetime).Result()
+func (s *sessionStore) Lock(ctx context.Context, sessionID string) error {
+	ok, err := s.client.SetNX(ctx, activeSessionIDKey, sessionID, s.lifetime)
 	if err != nil {
 		return fmt.Errorf("set: %w", err)
 	}
 
 	if !ok {
-		activeSessionID, err := s.client.Get(ctx, activeSessionIDKey).Result()
+		activeSessionID, err := s.client.Get(ctx, activeSessionIDKey)
 		if err != nil {
 			return fmt.Errorf("get active session id: %w", err)
 		}
@@ -198,17 +104,8 @@ func (s *redisSessionStore) Lock(ctx context.Context, sessionID string) error {
 	return nil
 }
 
-func (s *redisSessionStore) unlock(ctx context.Context) error {
-	err := s.client.Del(ctx, activeSessionIDKey).Err()
-	if err != nil {
-		return fmt.Errorf("unlock: %w", err)
-	}
-
-	return nil
-}
-
-func (s *redisSessionStore) GetAllExports(ctx context.Context) ([]types.ExportInfo, error) {
-	keys, err := s.getAllExports(ctx)
+func (s *sessionStore) GetAllExports(ctx context.Context) ([]types.ExportInfo, error) {
+	keys, err := s.client.KeysByPattern(ctx, exportsKeysPattern)
 	if err != nil {
 		return nil, fmt.Errorf("get user exports: %w", err)
 	}
@@ -218,7 +115,7 @@ func (s *redisSessionStore) GetAllExports(ctx context.Context) ([]types.ExportIn
 		return nil, nil
 	}
 
-	values, err := s.client.MGet(ctx, keys...).Result()
+	values, err := s.client.MGet(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("get values: %w", err)
 	}
@@ -250,33 +147,7 @@ func (s *redisSessionStore) GetAllExports(ctx context.Context) ([]types.ExportIn
 	return result, nil
 }
 
-const keysBatchSize = 10_000
-
-func (s *redisSessionStore) getAllExports(ctx context.Context) ([]string, error) {
-	pattern := "job#*#export#*"
-
-	var (
-		cursor          uint64
-		result, partRes []string
-		err             error
-	)
-
-	for {
-		partRes, cursor, err = s.client.Scan(ctx, cursor, pattern, keysBatchSize).Result()
-		if err != nil {
-			return nil, fmt.Errorf("redis scan: %w", err)
-		}
-
-		result = append(result, partRes...)
-		if cursor == 0 {
-			break
-		}
-	}
-
-	return result, nil
-}
-
-func (s *redisSessionStore) ConfirmPart(ctx context.Context, sessionID string, partID int, partSize types.Size) error {
+func (s *sessionStore) ConfirmPart(ctx context.Context, sessionID string, partID int, partSize types.Size) error {
 	info, err := s.get(ctx, sessionID)
 	if err != nil {
 		return fmt.Errorf("get: %w", err)
@@ -295,6 +166,72 @@ func (s *redisSessionStore) ConfirmPart(ctx context.Context, sessionID string, p
 	info.TotalSize.Packed += partSize.Packed
 
 	return s.set(ctx, sessionID, info)
+}
+
+func (s *sessionStore) setExportStatus(
+	ctx context.Context,
+	sessionID string,
+	status types.ExportStatus,
+	errMsg string,
+) error {
+	result, err := s.get(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+
+	switch result.Status {
+	case types.ExportStatusCancel:
+		return errors.New("export already canceled")
+	case types.ExportStatusFail:
+		return errors.New("export already failed")
+	case types.ExportStatusFinish:
+		return errors.New("export already finished")
+	default:
+		result.Status = status
+		result.Error = errMsg
+		result.FinishedAt = time.Now()
+		return s.set(ctx, sessionID, result)
+	}
+}
+
+func (s *sessionStore) set(ctx context.Context, sessionID string, info types.ExportInfo) error {
+	data, err := json.Marshal(globalToLocal(info))
+	if err != nil {
+		return fmt.Errorf("pack export info: %w", err)
+	}
+
+	if err := s.client.SetWithTTL(ctx, sessionID, string(data), s.lifetime); err != nil {
+		return fmt.Errorf("set: %w", err)
+	}
+
+	return nil
+}
+
+func (s *sessionStore) get(ctx context.Context, sessionID string) (types.ExportInfo, error) {
+	str, err := s.client.Get(ctx, sessionID)
+	if err != nil {
+		if errors.Is(err, cache.ErrNotFound) {
+			return types.ExportInfo{}, types.ErrNotFound
+		}
+		return types.ExportInfo{}, fmt.Errorf("get: %w", err)
+	}
+
+	var info exportInfo
+	err = json.Unmarshal([]byte(str), &info)
+	if err != nil {
+		return types.ExportInfo{}, fmt.Errorf("unpack export info: %w", err)
+	}
+
+	result, err := localToGlobal(info, sessionID)
+	if err != nil {
+		return types.ExportInfo{}, fmt.Errorf("local to global: %w", err)
+	}
+
+	return result, nil
+}
+
+func (s *sessionStore) unlock(ctx context.Context) {
+	s.client.Del(ctx, activeSessionIDKey)
 }
 
 func strToBoolArray(s string) ([]bool, error) {

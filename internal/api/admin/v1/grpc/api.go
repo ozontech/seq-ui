@@ -9,21 +9,14 @@ import (
 type API struct {
 	api.UnimplementedAdminServiceServer
 
-	services             map[string]admin.Service
+	serviceByEnv         map[string]admin.Service
 	availablePermissions []*api.PermissionGroup
 }
 
-func New(services map[string]admin.Service) *API {
-	// available permissions are the same for all envs
-	var availablePermissions []*api.PermissionGroup
-	for _, svc := range services {
-		availablePermissions = availablePermissionsToProto(svc.GetAvailablePermissions())
-		break
-	}
-
+func New(serviceByEnv map[string]admin.Service) *API {
 	return &API{
-		services:             services,
-		availablePermissions: availablePermissions,
+		serviceByEnv:         serviceByEnv,
+		availablePermissions: availablePermissionsToProto(admin.GetAvailablePermissions()),
 	}
 }
 

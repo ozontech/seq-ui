@@ -83,11 +83,9 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 			Value: attribute.IntValue(int(httpReq.Downsample)),
 		},
 	}
-
 	if env != "" {
 		attributes = append(attributes, attribute.String("env", env))
 	}
-
 	span.SetAttributes(attributes...)
 
 	params, err := a.GetEnvParams(env)

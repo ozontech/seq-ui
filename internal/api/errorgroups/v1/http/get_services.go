@@ -39,7 +39,7 @@ func (a *API) serveGetServices(w http.ResponseWriter, r *http.Request) {
 	attributes := []attribute.KeyValue{
 		{Key: "query", Value: attribute.StringValue(httpReq.Query)},
 	}
-	if httpReqEnv != nil {
+	if httpReqEnv != nil && *httpReqEnv != "" {
 		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReqEnv)})
 	}
 	span.SetAttributes(attributes...)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -12,6 +13,8 @@ import (
 	"github.com/ozontech/seq-ui/internal/pkg/redisclient"
 	"github.com/ozontech/seq-ui/metric"
 )
+
+const keysBatchSize = 10000
 
 type redisCache struct {
 	client *redis.Client
@@ -73,6 +76,44 @@ func (c *redisCache) GetTTL(ctx context.Context, key string) (time.Duration, err
 
 func (c *redisCache) Del(ctx context.Context, key string) {
 	c.client.Del(ctx, c.withPrefix(key))
+}
+
+func (c *redisCache) SetNX(ctx context.Context, key string, value string, ttl time.Duration) (bool, error) {
+	return c.client.SetNX(ctx, c.withPrefix(key), value, ttl).Result()
+}
+
+func (c *redisCache) KeysByPattern(ctx context.Context, pattern string) ([]string, error) {
+	var (
+		cursor          uint64
+		result, partRes []string
+		err             error
+	)
+
+	for {
+		partRes, cursor, err = c.client.Scan(ctx, cursor, c.withPrefix(pattern), keysBatchSize).Result()
+		if err != nil {
+			return nil, fmt.Errorf("redis scan: %w", err)
+		}
+
+		for _, key := range partRes {
+			result = append(result, strings.TrimPrefix(key, c.prefix))
+		}
+
+		if cursor == 0 {
+			break
+		}
+	}
+
+	return result, nil
+}
+
+func (c *redisCache) MGet(ctx context.Context, keys ...string) (any, error) {
+	prefixedKeys := make([]string, len(keys))
+	for i, key := range keys {
+		prefixedKeys[i] = c.withPrefix(key)
+	}
+
+	return c.client.MGet(ctx, keys...).Result()
 }
 
 func (c *redisCache) withPrefix(key string) string {

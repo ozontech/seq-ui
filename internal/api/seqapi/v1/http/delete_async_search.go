@@ -24,20 +24,20 @@ import (
 //	@Failure	default	{object}	httputil.Error	"An unexpected error response"
 //	@Security	bearer
 func (a *API) serveDeleteAsyncSearch(w http.ResponseWriter, r *http.Request) {
-	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_delete_async_search")
-	defer span.End()
-
 	wr := httputil.NewWriter(w)
-	env := types.GetEnvKey(ctx)
 
-	asyncSearches, ok := a.asyncSearches[env]
-	if !ok {
+	if a.asyncSearchesByEnv == nil {
 		wr.Error(types.ErrAsyncSearchesDisabled, http.StatusBadRequest)
 		return
 	}
 
+	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_delete_async_search")
+	defer span.End()
+
+	env := types.GetEnvKey(ctx)
+	svc := a.asyncSearchesByEnv[env]
+
 	searchID := chi.URLParam(r, "id")
-	//	в cancel_async описал, чтобы я с этой проверкой сделал
 	if err := checkUUID(searchID); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
@@ -49,14 +49,12 @@ func (a *API) serveDeleteAsyncSearch(w http.ResponseWriter, r *http.Request) {
 			Value: attribute.StringValue(searchID),
 		},
 	}
-
 	if env != "" {
 		attributes = append(attributes, attribute.String("env", env))
 	}
-
 	span.SetAttributes(attributes...)
 
-	_, err := asyncSearches.DeleteAsyncSearch(ctx, &seqapi.DeleteAsyncSearchRequest{SearchId: searchID})
+	_, err := svc.DeleteAsyncSearch(ctx, &seqapi.DeleteAsyncSearchRequest{SearchId: searchID})
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, types.ErrPermissionDenied) {

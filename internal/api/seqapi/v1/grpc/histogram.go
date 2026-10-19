@@ -40,11 +40,9 @@ func (a *API) GetHistogram(ctx context.Context, req *seqapi.GetHistogramRequest)
 			Value: attribute.IntValue(int(req.GetDownsample())),
 		},
 	}
-
 	if env != "" {
 		attributes = append(attributes, attribute.String("env", env))
 	}
-
 	span.SetAttributes(attributes...)
 
 	params, err := a.GetParams(env)

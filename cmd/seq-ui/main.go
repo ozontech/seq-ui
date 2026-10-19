@@ -21,6 +21,7 @@ import (
 	admin_v1 "github.com/ozontech/seq-ui/internal/api/admin/v1"
 	dashboards_v1 "github.com/ozontech/seq-ui/internal/api/dashboards/v1"
 	errorgroups_v1 "github.com/ozontech/seq-ui/internal/api/errorgroups/v1"
+	massexport_v1 "github.com/ozontech/seq-ui/internal/api/massexport/v1"
 	seqapi_v1 "github.com/ozontech/seq-ui/internal/api/seqapi/v1"
 	userprofile_v1 "github.com/ozontech/seq-ui/internal/api/userprofile/v1"
 	"github.com/ozontech/seq-ui/internal/app/config/loader"
@@ -33,6 +34,7 @@ import (
 	asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches"
 	"github.com/ozontech/seq-ui/internal/pkg/service/dashboards"
 	"github.com/ozontech/seq-ui/internal/pkg/service/errorgroups"
+	"github.com/ozontech/seq-ui/internal/pkg/service/massexport"
 	"github.com/ozontech/seq-ui/internal/pkg/service/profiles"
 	"github.com/ozontech/seq-ui/internal/pkg/service/userprofile"
 	"github.com/ozontech/seq-ui/logger"
@@ -112,21 +114,21 @@ func initApp(ctx context.Context, cfg *config.Config) *api.Registrar {
 		logger.Fatal("failed to init db", zap.Error(err))
 	}
 
-	// var massExportV1 *massexport_v1.MassExport
-	// if cfg.Handlers.MassExport != nil {
-	// 	logger.Info("initializing mass export")
-	// 	exportServer, err := initExportService(ctx, cfg.Handlers.MassExport, seqDBClients)
-	// 	if err != nil {
-	// 		logger.Fatal("can't init mass export server", zap.Error(err))
-	// 	}
-	// 	massExportV1 = massexport_v1.New(exportServer)
-	// }
+	var massExportV1 *massexport_v1.MassExport
+	if cfg.Handlers.MassExport != nil {
+		logger.Info("initializing mass export")
+		massExportSvc, err := massexport.New(ctx, cfg.Handlers.MassExport, seqDBClients)
+		if err != nil {
+			logger.Fatal("failed to init mass export", zap.Error(err))
+		}
+		massExportV1 = massexport_v1.New(massExportSvc)
+	}
 
 	var (
-		adminV1           *admin_v1.Admin
-		userProfileV1     *userprofile_v1.UserProfile
-		dashboardsV1      *dashboards_v1.Dashboards
-		asyncSearchesRepo repository.AsyncSearches
+		adminV1          *admin_v1.Admin
+		userProfileV1    *userprofile_v1.UserProfile
+		dashboardsV1     *dashboards_v1.Dashboards
+		asyncSearchesSvc map[string]asyncsearches.Service
 	)
 	if db != nil {
 		repo := repository.New(db, cfg.DB.RequestTimeout)
@@ -141,27 +143,23 @@ func initApp(ctx context.Context, cfg *config.Config) *api.Registrar {
 
 		if cfg.Handlers.AsyncSearch != nil {
 			logger.Info("initializing async search")
-			asyncSearchesRepo = repo.AsyncSearches
+			asyncSearchesSvc = asyncsearches.New(ctx, cfg.Handlers.AsyncSearch, repo.AsyncSearches, seqDBClients)
 		}
 
 		if cfg.Handlers.Admin != nil {
 			logger.Info("initializing admin")
-			adminSvc := admin.NewByEnv(cfg.Handlers.Admin, repo.Admin, repo.UserProfiles)
+			adminSvc := admin.New(cfg.Handlers.Admin, repo.Admin, repo.UserProfiles)
 			adminV1 = admin_v1.New(adminSvc)
 		}
 	}
 
-	var seqApiV1 *seqapi_v1.SeqAPI
-	if cfg.Handlers.SeqAPI != nil {
-		logger.Info("initializing seqapi")
-		asyncSearchesSvc := asyncsearches.NewByEnv(ctx, cfg.Handlers.AsyncSearch, asyncSearchesRepo, seqDBClients)
-		seqApiV1 = seqapi_v1.New(cfg.Handlers.SeqAPI, seqDBClients, asyncSearchesSvc)
-	}
+	logger.Info("initializing seqapi")
+	seqApiV1 := seqapi_v1.New(&cfg.Handlers.SeqAPI, seqDBClients, asyncSearchesSvc)
 
 	var errorGroupsV1 *errorgroups_v1.ErrorGroups
 	if cfg.Handlers.ErrorGroups != nil {
 		logger.Info("initializing error groups")
-		errorGroupsSvc := errorgroups.NewByEnv(cfg.Handlers.ErrorGroups, &cfg.Clients, chClients)
+		errorGroupsSvc := errorgroups.New(cfg.Handlers.ErrorGroups, &cfg.Clients, chClients)
 		errorGroupsV1 = errorgroups_v1.New(errorGroupsSvc)
 	}
 
@@ -171,7 +169,7 @@ func initApp(ctx context.Context, cfg *config.Config) *api.Registrar {
 func initSeqDBClients(ctx context.Context, cfg *config.Config) (map[string]seqdb.Client, error) {
 	clients := make(map[string]seqdb.Client, len(cfg.Clients.SeqDB))
 	for _, clientCfg := range cfg.Clients.SeqDB {
-		client, err := createSeqBDClient(ctx, &clientCfg, cfg.Handlers.SeqAPI)
+		client, err := createSeqBDClient(ctx, &clientCfg, &cfg.Handlers.SeqAPI)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create seq-db client %q: %w", clientCfg.ID, err)
 		}
@@ -183,16 +181,14 @@ func initSeqDBClients(ctx context.Context, cfg *config.Config) (map[string]seqdb
 
 func createSeqBDClient(ctx context.Context, cfg *config.SeqDBClient, seqAPI *config.SeqAPI) (seqdb.Client, error) {
 	var maxSearchLimit int32
-	if seqAPI != nil {
-		if len(seqAPI.Envs) == 0 {
-			maxSearchLimit = seqAPI.Options.Limits.MaxSearchLimit
-		}
+	if len(seqAPI.Envs) == 0 {
+		maxSearchLimit = seqAPI.Options.Limits.MaxSearchLimit
+	}
 
-		// one seqdb client can be used by several envs, so it must accept the largest one
-		for _, env := range seqAPI.Envs {
-			if env.SeqDBID == cfg.ID {
-				maxSearchLimit = max(maxSearchLimit, env.Options.Limits.MaxSearchLimit)
-			}
+	// one seqdb client can be used by several envs, so it must accept the largest one
+	for _, env := range seqAPI.Envs {
+		if env.SeqDBID == cfg.ID {
+			maxSearchLimit = max(maxSearchLimit, env.Options.Limits.MaxSearchLimit)
 		}
 	}
 
@@ -238,28 +234,8 @@ func initDb(ctx context.Context, cfg *config.DB) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("failed to create pgx pool: %w", err)
 	}
 
-	if err := pool.Ping(ctx); err != nil {
-		return nil, fmt.Errorf("failed to ping db: %w", err)
-	}
-
 	return pool, nil
 }
-
-// func initExportService(ctx context.Context, cfg config.MassExport, redisCfg *config.Redis, client seqdb.Client) (massexport.Service, error) {
-// 	sessionStore, err := sessionstore.NewRedisSessionStore(ctx, redisCfg, cfg.SessionStore.ExportLifetime)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("init session store: %w", err)
-// 	}
-// 	logger.Info("session store initialized")
-//
-// 	fileStore, err := filestore.NewS3(ctx, cfg.FileStore.S3)
-// 	if err != nil {
-// 		return nil, fmt.Errorf("init file store: %w", err)
-// 	}
-// 	logger.Info("file store initialized")
-//
-// 	return massexport.NewService(ctx, cfg, sessionStore, fileStore, client)
-// }
 
 func initClickHouseClients(ctx context.Context, cfg *config.Config) (map[string]driver.Conn, error) {
 	clients := make(map[string]driver.Conn, len(cfg.Clients.ClickHouse))

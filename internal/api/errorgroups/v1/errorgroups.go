@@ -13,10 +13,10 @@ type ErrorGroups struct {
 	httpAPI *http_api.API
 }
 
-func New(services map[string]errorgroups.Service) *ErrorGroups {
+func New(serviceByEnv map[string]errorgroups.Service) *ErrorGroups {
 	return &ErrorGroups{
-		grpcAPI: grpc_api.New(services),
-		httpAPI: http_api.New(services),
+		grpcAPI: grpc_api.New(serviceByEnv),
+		httpAPI: http_api.New(serviceByEnv),
 	}
 }
 

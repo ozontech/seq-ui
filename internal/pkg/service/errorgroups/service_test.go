@@ -283,7 +283,7 @@ func TestGetErrorGroups(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			mockedRepo := mock.NewMockRepository(ctrl)
 
-			svc := New(mockedRepo, config.LogTagsMapping{})
+			svc := newService(mockedRepo, config.LogTagsMapping{})
 
 			if ma := tt.mockArgs; ma != nil {
 				mockedRepo.EXPECT().
@@ -514,7 +514,7 @@ func TestGetNewErrorGroups(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			mockedRepo := mock.NewMockRepository(ctrl)
 
-			svc := New(mockedRepo, config.LogTagsMapping{})
+			svc := newService(mockedRepo, config.LogTagsMapping{})
 
 			if ma := tt.mockArgs; ma != nil {
 				mockedRepo.EXPECT().
@@ -701,7 +701,7 @@ func TestGetTopErrorGroups(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			mockedRepo := mock.NewMockRepository(ctrl)
 
-			svc := New(mockedRepo, config.LogTagsMapping{})
+			svc := newService(mockedRepo, config.LogTagsMapping{})
 
 			if ma := tt.mockArgs; ma != nil {
 				mockedRepo.EXPECT().
@@ -816,7 +816,7 @@ func TestGetHist(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			mockedRepo := mock.NewMockRepository(ctrl)
 
-			svc := New(mockedRepo, config.LogTagsMapping{})
+			svc := newService(mockedRepo, config.LogTagsMapping{})
 
 			if ma := tt.mockArgs; ma != nil {
 				mockedRepo.EXPECT().
@@ -1150,7 +1150,7 @@ func TestGetDetails(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			mockedRepo := mock.NewMockRepository(ctrl)
 
-			svc := New(mockedRepo, tt.logTagsMapping)
+			svc := newService(mockedRepo, tt.logTagsMapping)
 
 			if ma := tt.mockArgs; ma != nil {
 				mockedRepo.EXPECT().
@@ -1228,7 +1228,7 @@ func TestGetServices(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			mockedRepo := mock.NewMockRepository(ctrl)
 
-			svc := New(mockedRepo, config.LogTagsMapping{})
+			svc := newService(mockedRepo, config.LogTagsMapping{})
 
 			if ma := tt.mockArgs; ma != nil {
 				mockedRepo.EXPECT().
@@ -1318,7 +1318,7 @@ func TestGetReleases(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			mockedRepo := mock.NewMockRepository(ctrl)
 
-			svc := New(mockedRepo, config.LogTagsMapping{})
+			svc := newService(mockedRepo, config.LogTagsMapping{})
 
 			if ma := tt.mockArgs; ma != nil {
 				mockedRepo.EXPECT().
@@ -1510,7 +1510,7 @@ func TestDiffByReleases(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			mockedRepo := mock.NewMockRepository(ctrl)
 
-			svc := New(mockedRepo, config.LogTagsMapping{})
+			svc := newService(mockedRepo, config.LogTagsMapping{})
 
 			if ma := tt.mockArgs; ma != nil {
 				mockedRepo.EXPECT().
@@ -1617,7 +1617,7 @@ func TestGetServiceFilters(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			mockedRepo := mock.NewMockRepository(ctrl)
 
-			svc := New(mockedRepo, config.LogTagsMapping{})
+			svc := newService(mockedRepo, config.LogTagsMapping{})
 
 			if ma := tt.mockArgs; ma != nil {
 				mockedRepo.EXPECT().

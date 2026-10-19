@@ -48,7 +48,7 @@ func (a *API) serveGetDetails(w http.ResponseWriter, r *http.Request) {
 	attributes := []attribute.KeyValue{
 		{Key: "group_hash", Value: attribute.StringValue(httpReq.GroupHash)},
 	}
-	if httpReqEnv != nil {
+	if httpReqEnv != nil && *httpReqEnv != "" {
 		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReqEnv)})
 	}
 	if httpReq.Service != nil {

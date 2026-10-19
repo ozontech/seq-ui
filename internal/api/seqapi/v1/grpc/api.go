@@ -2,15 +2,17 @@ package grpc
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"sort"
 	"strconv"
 	"time"
 
 	"go.uber.org/zap"
 
+	handlercache "github.com/ozontech/seq-ui/internal/api/seqapi/v1/handler_cache"
 	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/types"
-	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	"github.com/ozontech/seq-ui/internal/pkg/mask"
 	asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches"
@@ -19,49 +21,41 @@ import (
 )
 
 type apiParams struct {
-	client               seqdb.Client
-	options              *config.SeqAPIOptions
-	masker               *mask.Masker
-	pinnedFields         []*seqapi.Field
-	systemFields         []*seqapi.Field
-	eventsCache          cache.Cache
-	logsLifespanCache    cache.Cache
-	fieldsCache          *fieldsCache
-	eventsCacheKeyPrefix string
-	fieldsCacheKey       string
-	logsLifespanCacheKey string
+	client       seqdb.Client
+	options      *config.SeqAPIOptions
+	masker       *mask.Masker
+	pinnedFields []*seqapi.Field
+	systemFields []*seqapi.Field
+	caches       handlercache.Caches
 }
 
 type API struct {
 	seqapi.UnimplementedSeqAPIServiceServer
 
-	config        *config.SeqAPI
-	paramsByEnv   map[string]apiParams
-	nowFn         func() time.Time
-	asyncSearches map[string]asyncsearches.Service
-	envsResponse  *seqapi.GetEnvsResponse
+	config             *config.SeqAPI
+	paramsByEnv        map[string]apiParams
+	nowFn              func() time.Time
+	asyncSearchesByEnv map[string]asyncsearches.Service
+	envsResponse       *seqapi.GetEnvsResponse
 }
 
-func New(cfg *config.SeqAPI, seqDBСlients map[string]seqdb.Client, asyncSearches map[string]asyncsearches.Service) *API {
+func New(cfg *config.SeqAPI, seqDBСlients map[string]seqdb.Client, asyncSearchesByEnv map[string]asyncsearches.Service) *API {
 	paramsByEnv := make(map[string]apiParams, max(1, len(cfg.Envs)))
 	if len(cfg.Envs) > 0 {
 		for envName, envConfig := range cfg.Envs {
 			paramsByEnv[envName] = newAPIParams(envName, seqDBСlients[envConfig.SeqDBID], envConfig.Options)
 		}
 	} else {
-		var client seqdb.Client
-		for _, c := range seqDBСlients {
-			client = c
-		}
+		client := slices.Collect(maps.Values(seqDBСlients))[0]
 		paramsByEnv[""] = newAPIParams("", client, &cfg.Options)
 	}
 
 	return &API{
-		config:        cfg,
-		paramsByEnv:   paramsByEnv,
-		nowFn:         time.Now,
-		asyncSearches: asyncSearches,
-		envsResponse:  parseEnvs(cfg),
+		config:             cfg,
+		paramsByEnv:        paramsByEnv,
+		nowFn:              time.Now,
+		asyncSearchesByEnv: asyncSearchesByEnv,
+		envsResponse:       parseEnvs(cfg),
 	}
 }
 
@@ -71,38 +65,13 @@ func newAPIParams(env string, client seqdb.Client, options *config.SeqAPIOptions
 		logger.Fatal("failed to init masking", zap.String("env", env), zap.Error(err))
 	}
 
-	var eventsCache, logsLifespanCache cache.Cache
-	if options.Caches.Events != nil {
-		eventsCache, _ = cache.ByID(options.Caches.Events.ID)
-	}
-	if options.Caches.LogsLifespan != nil {
-		logsLifespanCache, _ = cache.ByID(options.Caches.LogsLifespan.ID)
-	}
-
-	var fc *fieldsCache
-	if options.Caches.Fields != nil {
-		if c, ok := cache.ByID(options.Caches.Fields.ID); ok {
-			fc = newFieldsCache(c)
-		}
-	}
-
-	cacheKeyPrefix := "seqapi_"
-	if env != "" {
-		cacheKeyPrefix += env + "_"
-	}
-
 	return apiParams{
-		client:               client,
-		options:              options,
-		masker:               masker,
-		pinnedFields:         parseFields(options.PinnedFields),
-		systemFields:         parseFields(options.SystemFields),
-		eventsCache:          eventsCache,
-		logsLifespanCache:    logsLifespanCache,
-		fieldsCache:          fc,
-		eventsCacheKeyPrefix: cacheKeyPrefix + "event_",
-		fieldsCacheKey:       cacheKeyPrefix + "fields",
-		logsLifespanCacheKey: cacheKeyPrefix + "logs_lifespan",
+		client:       client,
+		options:      options,
+		masker:       masker,
+		pinnedFields: parseFields(options.PinnedFields),
+		systemFields: parseFields(options.SystemFields),
+		caches:       handlercache.New(env, options.Caches),
 	}
 }
 

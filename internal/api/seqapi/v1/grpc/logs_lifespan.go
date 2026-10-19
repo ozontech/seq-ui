@@ -15,7 +15,6 @@ import (
 	"github.com/ozontech/seq-ui/internal/api/grpcutil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/lifespan"
 	"github.com/ozontech/seq-ui/internal/app/types"
-	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
@@ -31,19 +30,14 @@ func (a *API) GetLogsLifespan(ctx context.Context, _ *seqapi.GetLogsLifespanRequ
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if params.logsLifespanCache != nil {
-		if countStr, err := params.logsLifespanCache.Get(ctx, params.logsLifespanCacheKey); err == nil {
-			count, err := strconv.Atoi(countStr)
-			if err == nil {
-				res := time.Duration(count) * lifespan.MeasureUnit
-				logger.Debug("got logs lifespan from cache")
-				return &seqapi.GetLogsLifespanResponse{Lifespan: durationpb.New(res)}, nil
-			}
-
-			logger.Error("can't parse logs lifespan", zap.Error(err))
-		} else if !errors.Is(err, cache.ErrNotFound) {
-			logger.Error("can't get logs lifespan from cache", zap.Error(err))
+	if countStr, ok := params.caches.LogsLifespan.Get(ctx, ""); ok {
+		count, err := strconv.Atoi(countStr)
+		if err == nil {
+			res := time.Duration(count) * lifespan.MeasureUnit
+			logger.Debug("got logs lifespan from cache")
+			return &seqapi.GetLogsLifespanResponse{Lifespan: durationpb.New(res)}, nil
 		}
+		logger.Error("failed to parse logs lifespan", zap.Error(err))
 	}
 
 	clientStatus, err := params.client.Status(ctx, &seqapi.StatusRequest{})
@@ -58,12 +52,7 @@ func (a *API) GetLogsLifespan(ctx context.Context, _ *seqapi.GetLogsLifespanRequ
 	count := int(a.nowFn().Sub(clientStatus.OldestStorageTime.AsTime()) / lifespan.MeasureUnit)
 	res := time.Duration(count) * lifespan.MeasureUnit
 
-	if params.logsLifespanCache != nil {
-		err = params.logsLifespanCache.SetWithTTL(ctx, params.logsLifespanCacheKey, strconv.Itoa(count), params.options.Caches.LogsLifespan.TTL)
-		if err != nil {
-			logger.Error("can't set logs lifespan to cache", zap.Error(err))
-		}
-	}
+	params.caches.LogsLifespan.Set(ctx, "", strconv.Itoa(count))
 
 	logger.Debug("got logs lifespan from seq-proxy")
 	return &seqapi.GetLogsLifespanResponse{Lifespan: durationpb.New(res)}, nil

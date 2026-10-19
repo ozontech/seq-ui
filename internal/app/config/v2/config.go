@@ -501,7 +501,7 @@ func (c *Clients) ClickHouseByID(id string) *CHClient {
 }
 
 type Handlers struct {
-	SeqAPI      *SeqAPI      `yaml:"seq_api"`
+	SeqAPI      SeqAPI       `yaml:"seq_api"`
 	MassExport  *MassExport  `yaml:"mass_export"`
 	AsyncSearch *AsyncSearch `yaml:"async_search"`
 	ErrorGroups *ErrorGroups `yaml:"error_groups"`
@@ -529,7 +529,6 @@ type Field struct {
 }
 
 type SeqAPI struct {
-	// добавить проверку на len(SEQDB) == 1 и берем [0]
 	Options    SeqAPIOptions        `yaml:"options"`
 	Envs       map[string]SeqAPIEnv `yaml:"envs"`
 	DefaultEnv string               `yaml:"default_env"`
