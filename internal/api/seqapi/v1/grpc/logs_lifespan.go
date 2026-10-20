@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/ozontech/seq-ui/internal/api/grpcutil"
@@ -24,11 +22,7 @@ func (a *API) GetLogsLifespan(ctx context.Context, _ *seqapi.GetLogsLifespanRequ
 	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_get_logs_lifespan")
 	defer span.End()
 
-	env := types.GetEnvKey(ctx)
-	params, err := a.GetParams(env)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+	params := a.paramsByEnv[types.GetEnvKey(ctx)]
 
 	if countStr, ok := params.caches.LogsLifespan.Get(ctx, ""); ok {
 		count, err := strconv.Atoi(countStr)

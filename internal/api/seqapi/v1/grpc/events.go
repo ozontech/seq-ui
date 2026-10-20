@@ -5,8 +5,6 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/ozontech/seq-ui/internal/app/types"
@@ -32,14 +30,12 @@ func (a *API) GetEvent(ctx context.Context, req *seqapi.GetEventRequest) (*seqap
 	}
 	span.SetAttributes(attributes...)
 
-	params, err := a.GetParams(env)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+	params := a.paramsByEnv[env]
 
 	if cached, ok := params.caches.Events.Get(ctx, req.Id); ok {
 		event := &seqapi.Event{}
-		if err = proto.Unmarshal([]byte(cached), event); err == nil {
+		err := proto.Unmarshal([]byte(cached), event)
+		if err == nil {
 			if params.masker != nil {
 				params.masker.Mask(event.Data)
 			}

@@ -237,34 +237,34 @@ type Config struct {
 	Server   Server   `yaml:"server"`
 	Clients  Clients  `yaml:"clients"`
 	Handlers Handlers `yaml:"handlers"`
-	Cache    Cache    `yaml:"cache"`
-	DB       *DB      `yaml:"db"`
+	Cache    Cache    `yaml:"cache,omitempty"`
+	DB       *DB      `yaml:"db,omitempty"`
 }
 
 type CORS struct {
-	AllowedOrigins     []string `yaml:"allowed_origins"`
-	AllowedMethods     []string `yaml:"allowed_methods"`
-	AllowedHeaders     []string `yaml:"allowed_headers"`
-	ExposedHeaders     []string `yaml:"exposed_headers"`
-	MaxAge             int      `yaml:"max_age"`
-	AllowCredentials   bool     `yaml:"allow_credentials"`
-	OptionsPassthrough bool     `yaml:"options_passthrough"`
+	AllowedOrigins     []string `yaml:"allowed_origins,omitempty"`
+	AllowedMethods     []string `yaml:"allowed_methods,omitempty"`
+	AllowedHeaders     []string `yaml:"allowed_headers,omitempty"`
+	ExposedHeaders     []string `yaml:"exposed_headers,omitempty"`
+	MaxAge             int      `yaml:"max_age,omitempty"`
+	AllowCredentials   bool     `yaml:"allow_credentials,omitempty"`
+	OptionsPassthrough bool     `yaml:"options_passthrough,omitempty"`
 }
 
 type TLS struct {
-	CACert     string `yaml:"ca_cert"`
-	ClientCert string `yaml:"client_cert"`
-	ClientKey  string `yaml:"client_key"`
-	Insecure   bool   `yaml:"insecure"`
+	CACert     string `yaml:"ca_cert,omitempty"`
+	ClientCert string `yaml:"client_cert,omitempty"`
+	ClientKey  string `yaml:"client_key,omitempty"`
+	Insecure   bool   `yaml:"insecure,omitempty"`
 }
 
 type OIDC struct {
-	CacheID        string   `yaml:"cache_id"`
-	CacheSecretKey string   `yaml:"cache_secret_key"`
-	SkipVerify     bool     `yaml:"skip_verify"`
+	CacheID        string   `yaml:"cache_id,omitempty"`
+	CacheSecretKey string   `yaml:"cache_secret_key,omitempty"`
+	SkipVerify     bool     `yaml:"skip_verify,omitempty"`
 	AuthURLs       []string `yaml:"auth_urls"`
-	AllowedClients []string `yaml:"allowed_clients"`
-	TLS            *TLS     `yaml:"tls"`
+	AllowedClients []string `yaml:"allowed_clients,omitempty"`
+	TLS            *TLS     `yaml:"tls,omitempty"`
 }
 
 type DB struct {
@@ -275,7 +275,7 @@ type DB struct {
 	Pass                   string        `yaml:"pass"`
 	RequestTimeout         time.Duration `yaml:"request_timeout"`
 	ConnectionPoolCapacity int64         `yaml:"connection_pool_capacity"`
-	UsePreparedStatements  *bool         `yaml:"use_prepared_statements"`
+	UsePreparedStatements  *bool         `yaml:"use_prepared_statements,omitempty"`
 }
 
 func (db *DB) ConnString() string {
@@ -285,14 +285,14 @@ func (db *DB) ConnString() string {
 type (
 	RateLimiter struct {
 		RatePerSec   int  `yaml:"rate_per_sec"`
-		MaxBurst     int  `yaml:"max_burst"`
-		StoreMaxKeys int  `yaml:"store_max_keys"`
-		PerHandler   bool `yaml:"per_handler"`
+		MaxBurst     int  `yaml:"max_burst,omitempty"`
+		StoreMaxKeys int  `yaml:"store_max_keys,omitempty"`
+		PerHandler   bool `yaml:"per_handler,omitempty"`
 	}
 
 	RateLimiters struct {
 		Default      RateLimiter            `yaml:"default"`
-		SpecialUsers map[string]RateLimiter `yaml:"spec_users"`
+		SpecialUsers map[string]RateLimiter `yaml:"spec_users,omitempty"`
 	}
 
 	ApiToRateLimiters map[string]RateLimiters
@@ -300,27 +300,27 @@ type (
 
 type Inmemory struct {
 	ID          string `yaml:"id"`
-	NumCounters int64  `yaml:"num_counters"`
-	MaxCost     int64  `yaml:"max_cost"`
-	BufferItems int64  `yaml:"buffer_items"`
+	NumCounters int64  `yaml:"num_counters,omitempty"`
+	MaxCost     int64  `yaml:"max_cost,omitempty"`
+	BufferItems int64  `yaml:"buffer_items,omitempty"`
 }
 
 type Redis struct {
 	ID              string        `yaml:"id"`
-	WithInmemID     string        `yaml:"with_inmem_id"`
-	KeyPrefix       string        `yaml:"key_prefix"`
+	WithInmemID     string        `yaml:"with_inmem_id,omitempty"`
+	KeyPrefix       string        `yaml:"key_prefix,omitempty"`
 	Addr            string        `yaml:"addr"`
-	Username        string        `yaml:"username"`
-	Password        string        `yaml:"password"`
-	MaxRetries      int           `yaml:"max_retries"`
-	Timeout         time.Duration `yaml:"timeout"`
-	MinRetryBackoff time.Duration `yaml:"min_retry_backoff"`
-	MaxRetryBackoff time.Duration `yaml:"max_retry_backoff"`
+	Username        string        `yaml:"username,omitempty"`
+	Password        string        `yaml:"password,omitempty"`
+	MaxRetries      int           `yaml:"max_retries,omitempty"`
+	Timeout         time.Duration `yaml:"timeout,omitempty"`
+	MinRetryBackoff time.Duration `yaml:"min_retry_backoff,omitempty"`
+	MaxRetryBackoff time.Duration `yaml:"max_retry_backoff,omitempty"`
 }
 
 type Cache struct {
-	Inmemory []Inmemory `yaml:"inmemory"`
-	Redis    []Redis    `yaml:"redis"`
+	Inmemory []Inmemory `yaml:"inmemory,omitempty"`
+	Redis    []Redis    `yaml:"redis,omitempty"`
 }
 
 func (c *Cache) InmemByID(id string) *Inmemory {
@@ -350,18 +350,18 @@ type S3 struct {
 	AccessKeyID     string `yaml:"access_key_id"`
 	SecretAccessKey string `yaml:"secret_access_key"`
 	BucketName      string `yaml:"bucket_name"`
-	EnableSSL       bool   `yaml:"enable_ssl"`
+	EnableSSL       bool   `yaml:"enable_ssl,omitempty"`
 }
 
 type DownloadParams struct {
-	BatchSize    uint64        `yaml:"batch_size"`
-	Delay        time.Duration `yaml:"delay"`
-	DelayBackoff Backoff       `yaml:"delay_backoff"`
+	BatchSize    uint64        `yaml:"batch_size,omitempty"`
+	Delay        time.Duration `yaml:"delay,omitempty"`
+	DelayBackoff Backoff       `yaml:"delay_backoff,omitempty"`
 }
 
 type SessionStore struct {
-	Lifetime time.Duration `yaml:"lifetime"`
 	CacheID  string        `yaml:"cache_id"`
+	Lifetime time.Duration `yaml:"lifetime,omitempty"`
 }
 
 type FileStore struct {
@@ -370,45 +370,45 @@ type FileStore struct {
 
 type MassExport struct {
 	Options    MassExportOptions        `yaml:"options"`
-	Envs       map[string]MassExportEnv `yaml:"envs"`
-	DefaultEnv string                   `yaml:"default_env"`
+	Envs       map[string]MassExportEnv `yaml:"envs,omitempty"`
+	DefaultEnv string                   `yaml:"default_env,omitempty"`
 }
 
 type MassExportEnv struct {
 	SeqDBID string             `yaml:"seq_db_id"`
-	Options *MassExportOptions `yaml:"options"`
+	Options *MassExportOptions `yaml:"options,omitempty"`
 }
 
 type MassExportOptions struct {
 	WorkersCount     int            `yaml:"workers_count"`
-	TasksChannelSize int            `yaml:"tasks_channel_size"`
-	PartLength       time.Duration  `yaml:"part_length"`
+	TasksChannelSize int            `yaml:"tasks_channel_size,omitempty"`
+	PartLength       time.Duration  `yaml:"part_length,omitempty"`
 	URLPrefix        string         `yaml:"url_prefix"`
-	AllowedUsers     []string       `yaml:"allowed_users"`
+	AllowedUsers     []string       `yaml:"allowed_users,omitempty"`
 	FileStore        FileStore      `yaml:"file_store"`
 	SessionStore     SessionStore   `yaml:"session_store"`
-	DownloadParams   DownloadParams `yaml:"download_params"`
+	DownloadParams   DownloadParams `yaml:"download_params,omitempty"`
 }
 
 type HTTP struct {
 	Addr              string        `yaml:"addr"`
-	ReadHeaderTimeout time.Duration `yaml:"read_header_timeout"`
-	ReadTimeout       time.Duration `yaml:"read_timeout"`
-	WriteTimeout      time.Duration `yaml:"write_timeout"`
-	CORS              *CORS         `yaml:"cors"`
+	ReadHeaderTimeout time.Duration `yaml:"read_header_timeout,omitempty"`
+	ReadTimeout       time.Duration `yaml:"read_timeout,omitempty"`
+	WriteTimeout      time.Duration `yaml:"write_timeout,omitempty"`
+	CORS              *CORS         `yaml:"cors,omitempty"`
 }
 
 type GRPC struct {
 	Addr              string        `yaml:"addr"`
-	ConnectionTimeout time.Duration `yaml:"connection_timeout"`
+	ConnectionTimeout time.Duration `yaml:"connection_timeout,omitempty"`
 }
 
 type Debug struct {
 	Addr              string        `yaml:"addr"`
-	ReadHeaderTimeout time.Duration `yaml:"read_header_timeout"`
-	ReadTimeout       time.Duration `yaml:"read_timeout"`
-	WriteTimeout      time.Duration `yaml:"write_timeout"`
-	CORS              *CORS         `yaml:"cors"`
+	ReadHeaderTimeout time.Duration `yaml:"read_header_timeout,omitempty"`
+	ReadTimeout       time.Duration `yaml:"read_timeout,omitempty"`
+	WriteTimeout      time.Duration `yaml:"write_timeout,omitempty"`
+	CORS              *CORS         `yaml:"cors,omitempty"`
 }
 
 type JWT struct {
@@ -417,76 +417,77 @@ type JWT struct {
 
 type Auth struct {
 	Options AuthOptions            `yaml:"options"`
-	Envs    map[string]AuthOptions `yaml:"envs"`
+	Envs    map[string]AuthOptions `yaml:"envs,omitempty"`
 }
 
 type AuthOptions struct {
-	OIDC *OIDC `yaml:"oidc"`
-	JWT  *JWT  `yaml:"jwt"`
+	OIDC *OIDC `yaml:"oidc,omitempty"`
+	JWT  *JWT  `yaml:"jwt,omitempty"`
 }
 
 type Server struct {
-	HTTP         *HTTP         `yaml:"http"`
-	GRPC         *GRPC         `yaml:"grpc"`
+	HTTP         *HTTP         `yaml:"http,omitempty"`
+	GRPC         *GRPC         `yaml:"grpc,omitempty"`
 	Debug        Debug         `yaml:"debug"`
-	Auth         *Auth         `yaml:"auth"`
-	RateLimiting *RateLimiting `yaml:"rate_limiting"`
+	Auth         *Auth         `yaml:"auth,omitempty"`
+	RateLimiting *RateLimiting `yaml:"rate_limiting,omitempty"`
 }
 
 type RateLimiting struct {
-	Options ApiToRateLimiters            `yaml:"options"`
-	Envs    map[string]ApiToRateLimiters `yaml:"envs"`
+	// rl options are optional, without them requests not covered by envs are not limited.
+	Options ApiToRateLimiters            `yaml:"options,omitempty"`
+	Envs    map[string]ApiToRateLimiters `yaml:"envs,omitempty"`
 }
 
 type KeepaliveParams struct {
 	// After a duration of this time if the client doesn't see any activity it
 	// pings the server to see if the transport is still alive.
 	// If set below 10s, a minimum value of 10s will be used instead.
-	Time time.Duration `yaml:"time"`
+	Time time.Duration `yaml:"time,omitempty"`
 	// After having pinged for keepalive check, the client waits for a duration
 	// of Timeout and if no activity is seen even after that the connection is
 	// closed. If set below 1s, a minimum value of 1s will be used instead.
-	Timeout time.Duration `yaml:"timeout"`
+	Timeout time.Duration `yaml:"timeout,omitempty"`
 	// If true, client sends keepalive pings even with no active RPCs. If false,
 	// when there are no active RPCs, Time and Timeout will be ignored and no
 	// keepalive pings will be sent. False by default.
-	PermitWithoutStream bool `yaml:"permit_without_stream"`
+	PermitWithoutStream bool `yaml:"permit_without_stream,omitempty"`
 }
 
 type GRPCParams struct {
-	Keepalive *KeepaliveParams `yaml:"keepalive"`
+	Keepalive *KeepaliveParams `yaml:"keepalive,omitempty"`
 }
 
 type SeqDBClient struct {
 	ID                    string        `yaml:"id"`
 	Timeout               time.Duration `yaml:"timeout"`
-	AvgDocSize            int           `yaml:"avg_doc_size"`
+	AvgDocSize            int           `yaml:"avg_doc_size,omitempty"`
 	Addrs                 []string      `yaml:"addrs"`
-	RequestRetries        int           `yaml:"request_retries"`
-	RequestRetriesBackoff *Backoff      `yaml:"request_retries_backoff"`
-	ClientMode            string        `yaml:"client_mode"`
-	GRPCParams            *GRPCParams   `yaml:"grpc_params"`
+	RequestRetries        int           `yaml:"request_retries,omitempty"`
+	RequestRetriesBackoff *Backoff      `yaml:"request_retries_backoff,omitempty"`
+	ClientMode            string        `yaml:"client_mode,omitempty"`
+	GRPCParams            *GRPCParams   `yaml:"grpc_params,omitempty"`
 }
 
 type Backoff struct {
-	InitialInterval time.Duration `yaml:"initial_interval"`
-	MaxInterval     time.Duration `yaml:"max_interval"`
+	InitialInterval time.Duration `yaml:"initial_interval,omitempty"`
+	MaxInterval     time.Duration `yaml:"max_interval,omitempty"`
 }
 
 type CHClient struct {
 	ID          string        `yaml:"id"`
 	Addrs       []string      `yaml:"addrs"`
-	Database    string        `yaml:"database"`
-	Username    string        `yaml:"username"`
-	Password    string        `yaml:"password"`
-	Sharded     bool          `yaml:"sharded"`
-	DialTimeout time.Duration `yaml:"dial_timeout"`
-	ReadTimeout time.Duration `yaml:"read_timeout"`
+	Database    string        `yaml:"database,omitempty"`
+	Username    string        `yaml:"username,omitempty"`
+	Password    string        `yaml:"password,omitempty"`
+	Sharded     bool          `yaml:"sharded,omitempty"`
+	DialTimeout time.Duration `yaml:"dial_timeout,omitempty"`
+	ReadTimeout time.Duration `yaml:"read_timeout,omitempty"`
 }
 
 type Clients struct {
 	SeqDB      []SeqDBClient `yaml:"seq_db"`
-	ClickHouse []CHClient    `yaml:"clickhouse"`
+	ClickHouse []CHClient    `yaml:"clickhouse,omitempty"`
 }
 
 func (c *Clients) ClickHouseByID(id string) *CHClient {
@@ -502,25 +503,25 @@ func (c *Clients) ClickHouseByID(id string) *CHClient {
 
 type Handlers struct {
 	SeqAPI      SeqAPI       `yaml:"seq_api"`
-	MassExport  *MassExport  `yaml:"mass_export"`
-	AsyncSearch *AsyncSearch `yaml:"async_search"`
-	ErrorGroups *ErrorGroups `yaml:"error_groups"`
-	Admin       *Admin       `yaml:"admin"`
+	MassExport  *MassExport  `yaml:"mass_export,omitempty"`
+	AsyncSearch *AsyncSearch `yaml:"async_search,omitempty"`
+	ErrorGroups *ErrorGroups `yaml:"error_groups,omitempty"`
+	Admin       *Admin       `yaml:"admin,omitempty"`
 }
 
 type Admin struct {
 	Options    AdminOptions        `yaml:"options"`
-	Envs       map[string]AdminEnv `yaml:"envs"`
-	DefaultEnv string              `yaml:"default_env"`
+	Envs       map[string]AdminEnv `yaml:"envs,omitempty"`
+	DefaultEnv string              `yaml:"default_env,omitempty"`
 }
 
 type AdminEnv struct {
-	Options *AdminOptions `yaml:"options"`
+	Options *AdminOptions `yaml:"options,omitempty"`
 }
 
 type AdminOptions struct {
-	SuperUsers []string      `yaml:"super_users"`
-	Cache      *HandlerCache `yaml:"cache"`
+	SuperUsers []string      `yaml:"super_users,omitempty"`
+	Cache      *HandlerCache `yaml:"cache,omitempty"`
 }
 
 type Field struct {
@@ -530,61 +531,61 @@ type Field struct {
 
 type SeqAPI struct {
 	Options    SeqAPIOptions        `yaml:"options"`
-	Envs       map[string]SeqAPIEnv `yaml:"envs"`
-	DefaultEnv string               `yaml:"default_env"`
+	Envs       map[string]SeqAPIEnv `yaml:"envs,omitempty"`
+	DefaultEnv string               `yaml:"default_env,omitempty"`
 }
 
 type SeqAPIEnv struct {
 	SeqDBID string         `yaml:"seq_db_id"`
-	Options *SeqAPIOptions `yaml:"options"`
+	Options *SeqAPIOptions `yaml:"options,omitempty"`
 }
 
 type SeqAPIOptions struct {
-	Limits       SeqAPILimits `yaml:"limits"`
-	Caches       SeqAPICaches `yaml:"caches"`
-	Masking      *Masking     `yaml:"masking"`
-	PinnedFields []Field      `yaml:"pinned_fields"`
-	SystemFields []Field      `yaml:"system_fields"`
+	Limits       SeqAPILimits `yaml:"limits,omitempty"`
+	Caches       SeqAPICaches `yaml:"caches,omitempty"`
+	Masking      *Masking     `yaml:"masking,omitempty"`
+	PinnedFields []Field      `yaml:"pinned_fields,omitempty"`
+	SystemFields []Field      `yaml:"system_fields,omitempty"`
 }
 
 type SeqAPILimits struct {
-	MaxSearchLimit             int32 `yaml:"max_search_limit"`
-	MaxSearchTotal             int64 `yaml:"max_search_total"`
-	MaxSearchOffset            int32 `yaml:"max_search_offset"`
-	MaxExportLimit             int32 `yaml:"max_export_limit"`
-	SeqCLIMaxSearchLimit       int   `yaml:"seq_cli_max_search_limit"`
-	MaxParallelExportRequests  int   `yaml:"max_parallel_export_requests"`
-	MaxAggregationsPerRequest  int   `yaml:"max_aggregations_per_request"`
-	MaxBucketsPerAggregationTs int   `yaml:"max_buckets_per_aggregation_ts"`
+	MaxSearchLimit             int32 `yaml:"max_search_limit,omitempty"`
+	MaxSearchTotal             int64 `yaml:"max_search_total,omitempty"`
+	MaxSearchOffset            int32 `yaml:"max_search_offset,omitempty"`
+	MaxExportLimit             int32 `yaml:"max_export_limit,omitempty"`
+	SeqCLIMaxSearchLimit       int   `yaml:"seq_cli_max_search_limit,omitempty"`
+	MaxParallelExportRequests  int   `yaml:"max_parallel_export_requests,omitempty"`
+	MaxAggregationsPerRequest  int   `yaml:"max_aggregations_per_request,omitempty"`
+	MaxBucketsPerAggregationTs int   `yaml:"max_buckets_per_aggregation_ts,omitempty"`
 }
 
 type SeqAPICaches struct {
-	Events       *HandlerCache `yaml:"events"`
-	LogsLifespan *HandlerCache `yaml:"logs_lifespan"`
-	Fields       *HandlerCache `yaml:"fields"`
+	Events       *HandlerCache `yaml:"events,omitempty"`
+	LogsLifespan *HandlerCache `yaml:"logs_lifespan,omitempty"`
+	Fields       *HandlerCache `yaml:"fields,omitempty"`
 }
 
 type HandlerCache struct {
-	ID  string        `yaml:"id"`
-	TTL time.Duration `yaml:"ttl"`
+	ID  string         `yaml:"id"`
+	TTL *time.Duration `yaml:"ttl,omitempty"`
 }
 
 type Masking struct {
 	Masks         []Mask   `yaml:"masks"`
-	ProcessFields []string `yaml:"process_fields"`
-	IgnoreFields  []string `yaml:"ignore_fields"`
+	ProcessFields []string `yaml:"process_fields,omitempty"`
+	IgnoreFields  []string `yaml:"ignore_fields,omitempty"`
 }
 
 type Mask struct {
 	Re          string `yaml:"re"`
-	Groups      []int  `yaml:"groups"`
-	Mode        string `yaml:"mode"`         // "mask" or "replace" or "cut"
-	ReplaceWord string `yaml:"replace_word"` // for mode:replace
+	Groups      []int  `yaml:"groups,omitempty"`
+	Mode        string `yaml:"mode"`                   // "mask" or "replace" or "cut"
+	ReplaceWord string `yaml:"replace_word,omitempty"` // for mode:replace
 
-	ProcessFields []string `yaml:"process_fields"`
-	IgnoreFields  []string `yaml:"ignore_fields"`
+	ProcessFields []string `yaml:"process_fields,omitempty"`
+	IgnoreFields  []string `yaml:"ignore_fields,omitempty"`
 
-	FieldFilters *FieldFilterSet `yaml:"field_filters"`
+	FieldFilters *FieldFilterSet `yaml:"field_filters,omitempty"`
 }
 
 type FieldFilter struct {
@@ -599,39 +600,39 @@ type FieldFilterSet struct {
 }
 
 type LogTagsMapping struct {
-	Release []string `yaml:"release"`
-	Service []string `yaml:"service"`
-	Env     []string `yaml:"env"`
+	Release []string `yaml:"release,omitempty"`
+	Service []string `yaml:"service,omitempty"`
+	Env     []string `yaml:"env,omitempty"`
 }
 
 type ErrorGroups struct {
 	Options    ErrorGroupsOptions        `yaml:"options"`
-	Envs       map[string]ErrorGroupsEnv `yaml:"envs"`
-	DefaultEnv string                    `yaml:"default_env"`
+	Envs       map[string]ErrorGroupsEnv `yaml:"envs,omitempty"`
+	DefaultEnv string                    `yaml:"default_env,omitempty"`
 }
 
 type ErrorGroupsEnv struct {
 	CHID    string              `yaml:"ch_id"`
-	Options *ErrorGroupsOptions `yaml:"options"`
+	Options *ErrorGroupsOptions `yaml:"options,omitempty"`
 }
 
 type ErrorGroupsOptions struct {
 	LogTagsMapping LogTagsMapping    `yaml:"log_tags_mapping"`
-	QueryFilter    map[string]string `yaml:"query_filter"`
+	QueryFilter    map[string]string `yaml:"query_filter,omitempty"`
 }
 
 type AsyncSearch struct {
 	Options    AsyncSearchOptions        `yaml:"options"`
-	Envs       map[string]AsyncSearchEnv `yaml:"envs"`
-	DefaultEnv string                    `yaml:"default_env"`
+	Envs       map[string]AsyncSearchEnv `yaml:"envs,omitempty"`
+	DefaultEnv string                    `yaml:"default_env,omitempty"`
 }
 
 type AsyncSearchEnv struct {
 	SeqDBID string              `yaml:"seq_db_id"`
-	Options *AsyncSearchOptions `yaml:"options"`
+	Options *AsyncSearchOptions `yaml:"options,omitempty"`
 }
 
 type AsyncSearchOptions struct {
-	AdminUsers           []string `yaml:"admin_users"`
-	ListQueryLengthLimit int      `yaml:"list_query_length_limit"`
+	AdminUsers           []string `yaml:"admin_users,omitempty"`
+	ListQueryLengthLimit int      `yaml:"list_query_length_limit,omitempty"`
 }

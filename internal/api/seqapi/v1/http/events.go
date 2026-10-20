@@ -45,15 +45,12 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	span.SetAttributes(attributes...)
 
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		wr.Error(err, http.StatusBadRequest)
-		return
-	}
+	params := a.paramsByEnv[env]
 
 	if cached, ok := params.caches.Events.Get(ctx, id); ok {
 		e := &seqapi.Event{}
-		if err = proto.Unmarshal([]byte(cached), e); err == nil {
+		err := proto.Unmarshal([]byte(cached), e)
+		if err == nil {
 			if params.masker != nil {
 				params.masker.Mask(e.Data)
 			}
@@ -81,9 +78,7 @@ func (a *API) serveGetEvent(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	eventResp := getEventResponseFromProto(resp)
-
-	wr.WriteJson(eventResp)
+	wr.WriteJson(getEventResponseFromProto(resp))
 }
 
 type event struct {

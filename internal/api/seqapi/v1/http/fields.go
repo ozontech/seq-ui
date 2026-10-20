@@ -27,17 +27,12 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
-
-	env := types.GetEnvKey(ctx)
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		wr.Error(err, http.StatusBadRequest)
-		return
-	}
+	params := a.paramsByEnv[types.GetEnvKey(ctx)]
 
 	if cached, ok := params.caches.Fields.Get(ctx, ""); ok {
 		var resp seqapi.GetFieldsResponse
-		if err = proto.Unmarshal([]byte(cached), &resp); err == nil {
+		err := proto.Unmarshal([]byte(cached), &resp)
+		if err == nil {
 			wr.WriteJson(getFieldsResponse{
 				Fields:       fieldsFromProto(resp.GetFields()),
 				SystemFields: params.systemFields,
@@ -82,15 +77,9 @@ func (a *API) serveGetPinnedFields(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+	params := a.paramsByEnv[types.GetEnvKey(ctx)]
 
-	env := types.GetEnvKey(ctx)
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		wr.Error(err, http.StatusBadRequest)
-		return
-	}
-
-	httputil.NewWriter(w).WriteJson(getFieldsResponse{
+	wr.WriteJson(getFieldsResponse{
 		Fields: params.pinnedFields,
 	})
 }

@@ -169,7 +169,7 @@ func initApp(ctx context.Context, cfg *config.Config) *api.Registrar {
 func initSeqDBClients(ctx context.Context, cfg *config.Config) (map[string]seqdb.Client, error) {
 	clients := make(map[string]seqdb.Client, len(cfg.Clients.SeqDB))
 	for _, clientCfg := range cfg.Clients.SeqDB {
-		client, err := createSeqBDClient(ctx, &clientCfg, &cfg.Handlers.SeqAPI)
+		client, err := createSeqDBClient(ctx, &clientCfg, &cfg.Handlers.SeqAPI)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create seq-db client %q: %w", clientCfg.ID, err)
 		}
@@ -179,7 +179,7 @@ func initSeqDBClients(ctx context.Context, cfg *config.Config) (map[string]seqdb
 	return clients, nil
 }
 
-func createSeqBDClient(ctx context.Context, cfg *config.SeqDBClient, seqAPI *config.SeqAPI) (seqdb.Client, error) {
+func createSeqDBClient(ctx context.Context, cfg *config.SeqDBClient, seqAPI *config.SeqAPI) (seqdb.Client, error) {
 	var maxSearchLimit int32
 	if len(seqAPI.Envs) == 0 {
 		maxSearchLimit = seqAPI.Options.Limits.MaxSearchLimit

@@ -97,7 +97,7 @@ func TestServeGetFields(t *testing.T) {
 			cfg: config.SeqAPIOptions{
 				Caches: config.SeqAPICaches{
 					Fields: &config.HandlerCache{
-						TTL: time.Hour,
+						TTL: new(time.Hour),
 					},
 				},
 			},

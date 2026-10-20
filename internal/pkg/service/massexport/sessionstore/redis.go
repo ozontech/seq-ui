@@ -16,9 +16,10 @@ import (
 	"github.com/ozontech/seq-ui/logger"
 )
 
-type sessionStore struct {
-	client   cache.Store
-	lifetime time.Duration
+type cacheSessionStore struct {
+	cache     cache.Store
+	lifetime  time.Duration
+	keyPrefix string
 }
 
 const (
@@ -26,15 +27,21 @@ const (
 	exportsKeysPattern = "job#*#export#*"
 )
 
-func NewRedisSessionStore(ctx context.Context, cfg *config.SessionStore) (SessionStore, error) {
-	client, ok := cache.StoreByID(cfg.CacheID)
+func NewCacheSessionStore(ctx context.Context, cfg *config.SessionStore, env string) (SessionStore, error) {
+	c, ok := cache.StoreByID(cfg.CacheID)
 	if !ok {
 		return nil, fmt.Errorf("cache %q not found", cfg.CacheID)
 	}
 
-	store := &sessionStore{
-		client:   client,
-		lifetime: cfg.Lifetime,
+	var keyPrefix string
+	if env != "" {
+		keyPrefix = env + "_"
+	}
+
+	store := &cacheSessionStore{
+		cache:     c,
+		keyPrefix: keyPrefix,
+		lifetime:  cfg.Lifetime,
 	}
 
 	store.unlock(ctx)
@@ -42,7 +49,7 @@ func NewRedisSessionStore(ctx context.Context, cfg *config.SessionStore) (Sessio
 	return store, nil
 }
 
-func (s *sessionStore) StartExport(ctx context.Context, sessionID string, info types.ExportInfo) error {
+func (s *cacheSessionStore) StartExport(ctx context.Context, sessionID string, info types.ExportInfo) error {
 	err := s.Lock(ctx, sessionID)
 	if err != nil {
 		return err
@@ -51,12 +58,12 @@ func (s *sessionStore) StartExport(ctx context.Context, sessionID string, info t
 	return s.set(ctx, sessionID, info)
 }
 
-func (s *sessionStore) CheckExport(ctx context.Context, sessionID string) (types.ExportInfo, error) {
+func (s *cacheSessionStore) CheckExport(ctx context.Context, sessionID string) (types.ExportInfo, error) {
 	return s.get(ctx, sessionID)
 }
 
-func (s *sessionStore) GetCurActiveExport(ctx context.Context) (string, error) {
-	activeSessionID, err := s.client.Get(ctx, activeSessionIDKey)
+func (s *cacheSessionStore) GetCurActiveExport(ctx context.Context) (string, error) {
+	activeSessionID, err := s.cache.Get(ctx, s.keyPrefix+activeSessionIDKey)
 	if err == nil {
 		return activeSessionID, nil
 	}
@@ -68,32 +75,32 @@ func (s *sessionStore) GetCurActiveExport(ctx context.Context) (string, error) {
 	return "", fmt.Errorf("get: %w", err)
 }
 
-func (s *sessionStore) CancelExport(ctx context.Context, sessionID string) error {
+func (s *cacheSessionStore) CancelExport(ctx context.Context, sessionID string) error {
 	s.unlock(ctx)
 
 	return s.setExportStatus(ctx, sessionID, types.ExportStatusCancel, "")
 }
 
-func (s *sessionStore) FailExport(ctx context.Context, sessionID string, errMsg string) error {
+func (s *cacheSessionStore) FailExport(ctx context.Context, sessionID string, errMsg string) error {
 	s.unlock(ctx)
 
 	return s.setExportStatus(ctx, sessionID, types.ExportStatusFail, errMsg)
 }
 
-func (s *sessionStore) FinishExport(ctx context.Context, sessionID string) error {
+func (s *cacheSessionStore) FinishExport(ctx context.Context, sessionID string) error {
 	s.unlock(ctx)
 
 	return s.setExportStatus(ctx, sessionID, types.ExportStatusFinish, "")
 }
 
-func (s *sessionStore) Lock(ctx context.Context, sessionID string) error {
-	ok, err := s.client.SetNX(ctx, activeSessionIDKey, sessionID, s.lifetime)
+func (s *cacheSessionStore) Lock(ctx context.Context, sessionID string) error {
+	ok, err := s.cache.SetNX(ctx, s.keyPrefix+activeSessionIDKey, sessionID, s.lifetime)
 	if err != nil {
 		return fmt.Errorf("set: %w", err)
 	}
 
 	if !ok {
-		activeSessionID, err := s.client.Get(ctx, activeSessionIDKey)
+		activeSessionID, err := s.cache.Get(ctx, s.keyPrefix+activeSessionIDKey)
 		if err != nil {
 			return fmt.Errorf("get active session id: %w", err)
 		}
@@ -104,8 +111,8 @@ func (s *sessionStore) Lock(ctx context.Context, sessionID string) error {
 	return nil
 }
 
-func (s *sessionStore) GetAllExports(ctx context.Context) ([]types.ExportInfo, error) {
-	keys, err := s.client.KeysByPattern(ctx, exportsKeysPattern)
+func (s *cacheSessionStore) GetAllExports(ctx context.Context) ([]types.ExportInfo, error) {
+	keys, err := s.cache.KeysByPattern(ctx, s.keyPrefix+exportsKeysPattern)
 	if err != nil {
 		return nil, fmt.Errorf("get user exports: %w", err)
 	}
@@ -115,7 +122,7 @@ func (s *sessionStore) GetAllExports(ctx context.Context) ([]types.ExportInfo, e
 		return nil, nil
 	}
 
-	values, err := s.client.MGet(ctx, keys...)
+	values, err := s.cache.MGet(ctx, keys...)
 	if err != nil {
 		return nil, fmt.Errorf("get values: %w", err)
 	}
@@ -135,7 +142,7 @@ func (s *sessionStore) GetAllExports(ctx context.Context) ([]types.ExportInfo, e
 		}
 
 		var globalInfo types.ExportInfo
-		globalInfo, err = localToGlobal(localInfo, keys[i])
+		globalInfo, err = localToGlobal(localInfo, strings.TrimPrefix(keys[i], s.keyPrefix))
 		if err != nil {
 			logger.Error("can't convert export info", zap.Error(err))
 			continue
@@ -147,7 +154,7 @@ func (s *sessionStore) GetAllExports(ctx context.Context) ([]types.ExportInfo, e
 	return result, nil
 }
 
-func (s *sessionStore) ConfirmPart(ctx context.Context, sessionID string, partID int, partSize types.Size) error {
+func (s *cacheSessionStore) ConfirmPart(ctx context.Context, sessionID string, partID int, partSize types.Size) error {
 	info, err := s.get(ctx, sessionID)
 	if err != nil {
 		return fmt.Errorf("get: %w", err)
@@ -168,7 +175,7 @@ func (s *sessionStore) ConfirmPart(ctx context.Context, sessionID string, partID
 	return s.set(ctx, sessionID, info)
 }
 
-func (s *sessionStore) setExportStatus(
+func (s *cacheSessionStore) setExportStatus(
 	ctx context.Context,
 	sessionID string,
 	status types.ExportStatus,
@@ -194,21 +201,21 @@ func (s *sessionStore) setExportStatus(
 	}
 }
 
-func (s *sessionStore) set(ctx context.Context, sessionID string, info types.ExportInfo) error {
+func (s *cacheSessionStore) set(ctx context.Context, sessionID string, info types.ExportInfo) error {
 	data, err := json.Marshal(globalToLocal(info))
 	if err != nil {
 		return fmt.Errorf("pack export info: %w", err)
 	}
 
-	if err := s.client.SetWithTTL(ctx, sessionID, string(data), s.lifetime); err != nil {
+	if err := s.cache.SetWithTTL(ctx, s.keyPrefix+sessionID, string(data), s.lifetime); err != nil {
 		return fmt.Errorf("set: %w", err)
 	}
 
 	return nil
 }
 
-func (s *sessionStore) get(ctx context.Context, sessionID string) (types.ExportInfo, error) {
-	str, err := s.client.Get(ctx, sessionID)
+func (s *cacheSessionStore) get(ctx context.Context, sessionID string) (types.ExportInfo, error) {
+	str, err := s.cache.Get(ctx, s.keyPrefix+sessionID)
 	if err != nil {
 		if errors.Is(err, cache.ErrNotFound) {
 			return types.ExportInfo{}, types.ErrNotFound
@@ -230,8 +237,8 @@ func (s *sessionStore) get(ctx context.Context, sessionID string) (types.ExportI
 	return result, nil
 }
 
-func (s *sessionStore) unlock(ctx context.Context) {
-	s.client.Del(ctx, activeSessionIDKey)
+func (s *cacheSessionStore) unlock(ctx context.Context) {
+	s.cache.Del(ctx, s.keyPrefix+activeSessionIDKey)
 }
 
 func strToBoolArray(s string) ([]bool, error) {

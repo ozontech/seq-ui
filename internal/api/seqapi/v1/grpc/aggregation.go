@@ -53,10 +53,7 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 	}
 	span.SetAttributes(attributes...)
 
-	params, err := a.GetParams(env)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+	params := a.paramsByEnv[env]
 
 	if err := api_error.CheckAggregationsCount(len(req.Aggregations), params.options.Limits.MaxAggregationsPerRequest); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())

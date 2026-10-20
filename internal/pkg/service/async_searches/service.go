@@ -52,17 +52,17 @@ func New(
 	repo repository.AsyncSearches,
 	seqDBClients map[string]seqdb.Client,
 ) map[string]Service {
-	services := make(map[string]Service, max(1, len(cfg.Envs)))
+	serviceByEnv := make(map[string]Service, max(1, len(cfg.Envs)))
 	if len(cfg.Envs) > 0 {
 		for envName, envCfg := range cfg.Envs {
-			services[envName] = newService(ctx, repo, seqDBClients[envCfg.SeqDBID], envCfg.Options, envName)
+			serviceByEnv[envName] = newService(ctx, repo, seqDBClients[envCfg.SeqDBID], envCfg.Options, envName)
 		}
 	} else {
 		client := slices.Collect(maps.Values(seqDBClients))[0]
-		services[""] = newService(ctx, repo, client, &cfg.Options, "")
+		serviceByEnv[""] = newService(ctx, repo, client, &cfg.Options, "")
 	}
 
-	return services
+	return serviceByEnv
 }
 
 func newService(ctx context.Context, repo repository.AsyncSearches, seqDB seqdb.Client, cfg *config.AsyncSearchOptions, env string) Service {

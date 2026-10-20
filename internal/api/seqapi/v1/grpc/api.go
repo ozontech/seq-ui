@@ -1,7 +1,6 @@
 package grpc
 
 import (
-	"fmt"
 	"maps"
 	"slices"
 	"sort"
@@ -133,23 +132,6 @@ func parseEnvs(cfg *config.SeqAPI) *seqapi.GetEnvsResponse {
 		envs = []*seqapi.GetEnvsResponse_Env{createEnvInfo("", &cfg.Options)}
 	}
 	return &seqapi.GetEnvsResponse{Envs: envs}
-}
-
-func (a *API) GetParams(env string) (apiParams, error) {
-	if len(a.config.Envs) == 0 {
-		return a.paramsByEnv[""], nil
-	}
-
-	if env == "" {
-		env = a.config.DefaultEnv
-	}
-
-	params, exists := a.paramsByEnv[env]
-	if !exists {
-		return apiParams{}, fmt.Errorf("env '%s' not found", env)
-	}
-
-	return params, nil
 }
 
 func checkLimitOffset(limit, offset int32) error {

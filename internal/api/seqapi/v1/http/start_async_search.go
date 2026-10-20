@@ -40,12 +40,7 @@ func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
 
 	env := types.GetEnvKey(ctx)
 	svc := a.asyncSearchesByEnv[env]
-
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		httputil.NewWriter(w).Error(err, http.StatusBadRequest)
-		return
-	}
+	params := a.paramsByEnv[env]
 
 	var httpReq startAsyncSearchRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {

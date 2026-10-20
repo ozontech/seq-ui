@@ -43,7 +43,7 @@ func (providers AuthProvidersByEnv) get(ctx context.Context) AuthProviders {
 	return providers[""]
 }
 
-func NewAuthProvider(ctx context.Context, options config.AuthOptions) (AuthProviders, error) {
+func NewAuthProvider(ctx context.Context, options config.AuthOptions, env string) (AuthProviders, error) {
 	authPrvds := AuthProviders{}
 
 	if options.JWT != nil {
@@ -54,7 +54,7 @@ func NewAuthProvider(ctx context.Context, options config.AuthOptions) (AuthProvi
 	if options.OIDC != nil {
 		logger.Info("initializing oidc provider")
 		var err error
-		authPrvds.OidcProvider, err = auth.NewOIDCProvider(ctx, options.OIDC)
+		authPrvds.OidcProvider, err = auth.NewOIDCProvider(ctx, options.OIDC, env)
 		if err != nil {
 			return authPrvds, fmt.Errorf("failed to init oidc provider: %w", err)
 		}

@@ -17,7 +17,7 @@ type handlerEnvs struct {
 // always use root options (empty env), env from the request is ignored for them.
 type EnvResolver map[string]handlerEnvs
 
-// newEnvResolver collects envs of handlers that support envs.
+// NewEnvResolver collects envs of handlers that support envs.
 func NewEnvResolver(handlers *config.Handlers) EnvResolver {
 	r := EnvResolver{}
 

@@ -186,7 +186,7 @@ func TestGetFieldsCached(t *testing.T) {
 		Cfg: config.SeqAPI{
 			Options: config.SeqAPIOptions{
 				Caches: config.SeqAPICaches{
-					Fields: &config.HandlerCache{TTL: ttl},
+					Fields: &config.HandlerCache{TTL: new(ttl)},
 				},
 			},
 		},

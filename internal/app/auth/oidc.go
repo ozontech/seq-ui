@@ -38,11 +38,12 @@ type oidcProvider struct {
 
 	cache          cache.Cache
 	cacheSecretKey string
+	cacheKeyPrefix string
 
 	allowedClients []string
 }
 
-func NewOIDCProvider(ctx context.Context, cfg *config.OIDC) (OIDCProvider, error) {
+func NewOIDCProvider(ctx context.Context, cfg *config.OIDC, env string) (OIDCProvider, error) {
 	var (
 		err       error
 		oidcCache cache.Cache
@@ -88,10 +89,16 @@ func NewOIDCProvider(ctx context.Context, cfg *config.OIDC) (OIDCProvider, error
 		return nil, fmt.Errorf("no valid OIDC auth urls")
 	}
 
+	cacheKeyPrefix := oidcCacheKeyPrefix
+	if env != "" {
+		cacheKeyPrefix += "_" + env
+	}
+
 	return &oidcProvider{
 		verifiers:      verifiers,
 		cache:          oidcCache,
 		cacheSecretKey: cfg.CacheSecretKey,
+		cacheKeyPrefix: cacheKeyPrefix,
 		allowedClients: cfg.AllowedClients,
 	}, nil
 }
@@ -108,7 +115,7 @@ func (p *oidcProvider) Verify(ctx context.Context, token string) (OIDCToken, err
 	)
 
 	if p.cacheSecretKey != "" {
-		cacheKey = fmt.Sprintf("%s_%s", oidcCacheKeyPrefix, hashToken(token, p.cacheSecretKey))
+		cacheKey = fmt.Sprintf("%s_%s", p.cacheKeyPrefix, hashToken(token, p.cacheSecretKey))
 		if userName, err := p.cache.Get(ctx, cacheKey); err == nil {
 			return OIDCToken{UserName: userName}, nil
 		}

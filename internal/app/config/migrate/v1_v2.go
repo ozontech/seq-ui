@@ -275,7 +275,10 @@ func (m *v1tov2) migrateCache(src v1.Cache, sessionStore *v1.SessionStore) v2.Ca
 	}
 
 	if sessionStore != nil {
-		cache.Redis = append(cache.Redis, m.migrateRedis(&sessionStore.Redis, v2.DefaultMassExportRedisID, ""))
+		// in v1 session store ignored key_prefix
+		redis := m.migrateRedis(&sessionStore.Redis, v2.DefaultMassExportRedisID, "")
+		redis.KeyPrefix = ""
+		cache.Redis = append(cache.Redis, redis)
 	}
 
 	return cache
@@ -354,11 +357,11 @@ func (m *v1tov2) migrateSeqAPIOptions(src *v1.SeqAPIOptions, v1Cache v1.Cache) v
 		Caches: v2.SeqAPICaches{
 			Events: &v2.HandlerCache{
 				ID:  redisWithInmemID,
-				TTL: src.EventsCacheTTL,
+				TTL: m.migrateTTL(src.EventsCacheTTL),
 			},
 			LogsLifespan: &v2.HandlerCache{
 				ID:  redisOrInmemID,
-				TTL: src.LogsLifespanCacheTTL,
+				TTL: m.migrateTTL(src.LogsLifespanCacheTTL),
 			},
 		},
 	}
@@ -367,7 +370,7 @@ func (m *v1tov2) migrateSeqAPIOptions(src *v1.SeqAPIOptions, v1Cache v1.Cache) v
 	if src.FieldsCacheTTL > 0 {
 		dst.Caches.Fields = &v2.HandlerCache{
 			ID:  v2.DefaultInmemID,
-			TTL: src.FieldsCacheTTL,
+			TTL: m.migrateTTL(src.FieldsCacheTTL),
 		}
 	}
 
@@ -551,11 +554,18 @@ func (m *v1tov2) migrateAdmin(src *v1.Admin, v1Cache v1.Cache) *v2.Admin {
 	if v1Cache.Redis != nil {
 		dst.Options.Cache = &v2.HandlerCache{
 			ID:  v2.DefaultRedisWithoutInmemID,
-			TTL: src.CacheTTL,
+			TTL: m.migrateTTL(src.CacheTTL),
 		}
 	}
 
 	return dst
+}
+
+func (m *v1tov2) migrateTTL(ttl time.Duration) *time.Duration {
+	if ttl <= 0 {
+		return nil
+	}
+	return &ttl
 }
 
 // defaultCacheIDs returns cache ids same as in v1.

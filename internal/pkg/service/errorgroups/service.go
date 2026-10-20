@@ -41,19 +41,19 @@ type service struct {
 }
 
 func New(cfg *config.ErrorGroups, clientsCfg *config.Clients, chClients map[string]driver.Conn) map[string]Service {
-	services := make(map[string]Service, max(1, len(cfg.Envs)))
+	serviceByEnv := make(map[string]Service, max(1, len(cfg.Envs)))
 	if len(cfg.Envs) > 0 {
 		for envName, envCfg := range cfg.Envs {
 			repo := repositorych.New(chClients[envCfg.CHID], clientsCfg.ClickHouseByID(envCfg.CHID).Sharded, envCfg.Options.QueryFilter)
-			services[envName] = newService(repo, envCfg.Options.LogTagsMapping)
+			serviceByEnv[envName] = newService(repo, envCfg.Options.LogTagsMapping)
 		}
 	} else {
 		chID := slices.Collect(maps.Keys(chClients))[0]
 		repo := repositorych.New(chClients[chID], clientsCfg.ClickHouseByID(chID).Sharded, cfg.Options.QueryFilter)
-		services[""] = newService(repo, cfg.Options.LogTagsMapping)
+		serviceByEnv[""] = newService(repo, cfg.Options.LogTagsMapping)
 	}
 
-	return services
+	return serviceByEnv
 }
 
 func newService(repo repositorych.Repository, logTagsMapping config.LogTagsMapping) Service {

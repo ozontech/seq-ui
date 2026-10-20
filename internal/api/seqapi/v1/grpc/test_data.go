@@ -41,13 +41,13 @@ func setupTestAPI(data test.APITestData) *API {
 		caches := data.Cfg.Options.Caches
 		for env, params := range api.paramsByEnv {
 			if caches.Events != nil {
-				params.caches.Events = &handlercache.Cache{Cache: data.Mocks.Cache, KeyPrefix: "seqapi_event_", TTL: caches.Events.TTL}
+				params.caches.Events = &handlercache.Cache{Cache: data.Mocks.Cache, KeyPrefix: "seqapi_event_", TTL: *caches.Events.TTL}
 			}
 			if caches.Fields != nil {
-				params.caches.Fields = &handlercache.Cache{Cache: data.Mocks.Cache, KeyPrefix: "seqapi_fields", TTL: caches.Fields.TTL}
+				params.caches.Fields = &handlercache.Cache{Cache: data.Mocks.Cache, KeyPrefix: "seqapi_fields", TTL: *caches.Fields.TTL}
 			}
 			if caches.LogsLifespan != nil {
-				params.caches.LogsLifespan = &handlercache.Cache{Cache: data.Mocks.Cache, KeyPrefix: "seqapi_logs_lifespan", TTL: caches.LogsLifespan.TTL}
+				params.caches.LogsLifespan = &handlercache.Cache{Cache: data.Mocks.Cache, KeyPrefix: "seqapi_logs_lifespan", TTL: *caches.LogsLifespan.TTL}
 			}
 			api.paramsByEnv[env] = params
 		}

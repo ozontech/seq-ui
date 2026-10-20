@@ -21,15 +21,9 @@ func (a *API) serveGetLimits(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
-	env := types.GetEnvKey(ctx)
+	params := a.paramsByEnv[types.GetEnvKey(ctx)]
 
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		wr.Error(err, http.StatusBadRequest)
-		return
-	}
-
-	httputil.NewWriter(w).WriteJson(getLimitsResponse{
+	wr.WriteJson(getLimitsResponse{
 		MaxSearchLimit:            int(params.options.Limits.MaxSearchLimit),
 		MaxExportLimit:            int(params.options.Limits.MaxExportLimit),
 		MaxParallelExportRequests: params.options.Limits.MaxParallelExportRequests,

@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"maps"
 	"slices"
 	"sort"
@@ -180,23 +179,6 @@ const (
 	aecQueryTooHeavy       apiErrorCode = "ERROR_CODE_QUERY_TOO_HEAVY"
 	aecTooManyFractionsHit apiErrorCode = "ERROR_CODE_TOO_MANY_FRACTIONS_HIT"
 )
-
-func (a *API) GetEnvParams(env string) (apiParams, error) {
-	if len(a.config.Envs) == 0 {
-		return a.paramsByEnv[""], nil
-	}
-
-	if env == "" {
-		env = a.config.DefaultEnv
-	}
-
-	params, exists := a.paramsByEnv[env]
-	if !exists {
-		return apiParams{}, fmt.Errorf("env '%s' not found", env)
-	}
-
-	return params, nil
-}
 
 func apiErrorCodeFromProto(proto seqapi.ErrorCode) apiErrorCode {
 	switch proto {

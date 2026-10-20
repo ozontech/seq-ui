@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"go.uber.org/zap"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/ozontech/seq-ui/internal/app/types"
@@ -18,15 +16,12 @@ func (a *API) GetFields(ctx context.Context, req *seqapi.GetFieldsRequest) (*seq
 	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_get_fields")
 	defer span.End()
 
-	env := types.GetEnvKey(ctx)
-	params, err := a.GetParams(env)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+	params := a.paramsByEnv[types.GetEnvKey(ctx)]
 
 	if cached, ok := params.caches.Fields.Get(ctx, ""); ok {
 		var resp seqapi.GetFieldsResponse
-		if err = proto.Unmarshal([]byte(cached), &resp); err == nil {
+		err := proto.Unmarshal([]byte(cached), &resp)
+		if err == nil {
 			return &seqapi.GetFieldsResponse{
 				Fields:       resp.GetFields(),
 				SystemFields: params.systemFields,
@@ -55,11 +50,8 @@ func (a *API) GetFields(ctx context.Context, req *seqapi.GetFieldsRequest) (*seq
 }
 
 func (a *API) GetPinnedFields(ctx context.Context, _ *seqapi.GetFieldsRequest) (*seqapi.GetFieldsResponse, error) {
-	env := types.GetEnvKey(ctx)
-	params, err := a.GetParams(env)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+	params := a.paramsByEnv[types.GetEnvKey(ctx)]
+
 	return &seqapi.GetFieldsResponse{
 		Fields: params.pinnedFields,
 	}, nil

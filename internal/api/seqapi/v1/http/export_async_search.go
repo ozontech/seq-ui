@@ -91,11 +91,7 @@ func (a *API) serveExportAsyncSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		wr.Error(err, http.StatusBadRequest)
-		return
-	}
+	params := a.paramsByEnv[env]
 
 	if params.exportLimiter.Limited(userStr) {
 		metric.ServerExportRequestLimits.Inc()

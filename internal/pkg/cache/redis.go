@@ -107,7 +107,7 @@ func (c *redisCache) KeysByPattern(ctx context.Context, pattern string) ([]strin
 	return result, nil
 }
 
-func (c *redisCache) MGet(ctx context.Context, keys ...string) (any, error) {
+func (c *redisCache) MGet(ctx context.Context, keys ...string) ([]any, error) {
 	prefixedKeys := make([]string, len(keys))
 	for i, key := range keys {
 		prefixedKeys[i] = c.withPrefix(key)

@@ -46,14 +46,14 @@ func (s *Server) prepareAuth(ctx context.Context) error {
 
 	s.authPrvds = make(mw.AuthProvidersByEnv, len(s.config.Auth.Envs)+1)
 
-	provider, err := mw.NewAuthProvider(ctx, s.config.Auth.Options)
+	provider, err := mw.NewAuthProvider(ctx, s.config.Auth.Options, "")
 	if err != nil {
 		return fmt.Errorf("init auth: %w", err)
 	}
 	s.authPrvds[""] = provider
 
 	for envName, envConfig := range s.config.Auth.Envs {
-		provider, err := mw.NewAuthProvider(ctx, envConfig)
+		provider, err := mw.NewAuthProvider(ctx, envConfig, envName)
 		if err != nil {
 			return fmt.Errorf("init auth for env %q: %w", envName, err)
 		}

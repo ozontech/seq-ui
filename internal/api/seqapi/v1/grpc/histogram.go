@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/otel/attribute"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
@@ -45,14 +43,7 @@ func (a *API) GetHistogram(ctx context.Context, req *seqapi.GetHistogramRequest)
 	}
 	span.SetAttributes(attributes...)
 
-	params, err := a.GetParams(env)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+	params := a.paramsByEnv[env]
 
-	resp, err := params.client.GetHistogram(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return params.client.GetHistogram(ctx, req)
 }

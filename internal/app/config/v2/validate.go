@@ -100,7 +100,7 @@ func (cfg *Config) Validate() error {
 	if err := validateErrorGroups(cfg.Handlers.ErrorGroups, chIDs); err != nil {
 		return err
 	}
-	if err := validateAdmin(cfg.Handlers.Admin, &cfg.Cache); err != nil {
+	if err := validateAdmin(cfg.Handlers.Admin, cacheIDs); err != nil {
 		return err
 	}
 
@@ -309,14 +309,14 @@ func validateSeqAPI(seqAPI *SeqAPI, seqDBIDs, cacheIDs map[string]struct{}) erro
 	return nil
 }
 
-func validateAdmin(admin *Admin, cache *Cache) error {
+func validateAdmin(admin *Admin, cacheIDs map[string]struct{}) error {
 	if admin == nil {
 		return nil
 	}
 	if err := validateEnvs("handlers.admin", admin.Envs, admin.DefaultEnv); err != nil {
 		return err
 	}
-	if err := validateAdminOptions("handlers.admin.options", &admin.Options, cache); err != nil {
+	if err := validateHandlerCache("handlers.admin.options.cache", admin.Options.Cache, cacheIDs, defaultAdminCacheTTL); err != nil {
 		return err
 	}
 
@@ -325,25 +325,10 @@ func validateAdmin(admin *Admin, cache *Cache) error {
 			envConfig.Options = &AdminOptions{}
 			admin.Envs[envName] = envConfig
 		}
-		if err := validateAdminOptions(fmt.Sprintf("handlers.admin.envs[%q].options", envName), envConfig.Options, cache); err != nil {
+
+		if err := validateHandlerCache(fmt.Sprintf("handlers.admin.envs[%q].options.cache", envName), envConfig.Options.Cache, cacheIDs, defaultAdminCacheTTL); err != nil {
 			return err
 		}
-	}
-
-	return nil
-}
-
-func validateAdminOptions(path string, options *AdminOptions, cache *Cache) error {
-	if options.Cache == nil {
-		return nil
-	}
-
-	redis := cache.RedisByID(options.Cache.ID)
-	if redis == nil || redis.WithInmemID != "" {
-		return fmt.Errorf("%s.cache_id %q must be cache.redis without with_inmem_id", path, options.Cache.ID)
-	}
-	if options.Cache.TTL <= 0 {
-		options.Cache.TTL = defaultAdminCacheTTL
 	}
 
 	return nil
@@ -437,8 +422,10 @@ func validateHandlerCache(path string, hc *HandlerCache, cacheIDs map[string]str
 	if _, ok := cacheIDs[hc.ID]; !ok {
 		return fmt.Errorf("%s.id %q not found in cache", path, hc.ID)
 	}
-	if hc.TTL <= 0 {
-		hc.TTL = defaultTTL
+	if hc.TTL == nil {
+		hc.TTL = new(defaultTTL)
+	} else if *hc.TTL < 0 {
+		return fmt.Errorf("%s.ttl must be >= 0", path)
 	}
 
 	return nil
@@ -448,11 +435,12 @@ func validateErrorGroups(errorGroups *ErrorGroups, chIDs map[string]struct{}) er
 	if errorGroups == nil {
 		return nil
 	}
-
 	if err := validateEnvs("handlers.error_groups", errorGroups.Envs, errorGroups.DefaultEnv); err != nil {
 		return err
 	}
-
+	if len(errorGroups.Envs) == 0 && len(chIDs) != 1 {
+		return fmt.Errorf("handlers.error_groups: clients must contain one client when envs are not used")
+	}
 	for envName, envConfig := range errorGroups.Envs {
 		if envConfig.CHID == "" {
 			return fmt.Errorf("handlers.error_groups.envs[%q].ch_id cannot be empty", envName)

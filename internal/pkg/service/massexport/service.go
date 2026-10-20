@@ -52,29 +52,29 @@ const (
 )
 
 func New(ctx context.Context, cfg *config.MassExport, seqDBClients map[string]seqdb.Client) (map[string]Service, error) {
-	services := make(map[string]Service, max(1, len(cfg.Envs)))
+	serviceByEnv := make(map[string]Service, max(1, len(cfg.Envs)))
 	if len(cfg.Envs) > 0 {
 		for envName, envCfg := range cfg.Envs {
-			svc, err := newService(ctx, envCfg.Options, seqDBClients[envCfg.SeqDBID])
+			svc, err := newService(ctx, envCfg.Options, seqDBClients[envCfg.SeqDBID], envName)
 			if err != nil {
 				return nil, fmt.Errorf("env %q: %w", envName, err)
 			}
-			services[envName] = svc
+			serviceByEnv[envName] = svc
 		}
 	} else {
 		client := slices.Collect(maps.Values(seqDBClients))[0]
-		svc, err := newService(ctx, &cfg.Options, client)
+		svc, err := newService(ctx, &cfg.Options, client, "")
 		if err != nil {
 			return nil, err
 		}
-		services[""] = svc
+		serviceByEnv[""] = svc
 	}
 
-	return services, nil
+	return serviceByEnv, nil
 }
 
-func newService(ctx context.Context, cfg *config.MassExportOptions, client seqdb.Client) (Service, error) {
-	sessionStore, err := sessionstore.NewRedisSessionStore(ctx, &cfg.SessionStore)
+func newService(ctx context.Context, cfg *config.MassExportOptions, client seqdb.Client, env string) (Service, error) {
+	sessionStore, err := sessionstore.NewCacheSessionStore(ctx, &cfg.SessionStore, env)
 	if err != nil {
 		return nil, fmt.Errorf("init session store: %w", err)
 	}

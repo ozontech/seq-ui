@@ -53,7 +53,7 @@ func newService(adminRepo repository.Admin, userProfilesRepo repository.UserProf
 	)
 	if cfg.Cache != nil {
 		c, _ = cache.ByID(cfg.Cache.ID)
-		ttl = cfg.Cache.TTL
+		ttl = *cfg.Cache.TTL
 	}
 
 	return &service{

@@ -62,12 +62,6 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 	if env != "" {
 		attributes = append(attributes, attribute.String("env", env))
 	}
-
-	params, err := a.GetParams(env)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	if req.Histogram != nil && req.Histogram.Interval != "" {
 		attributes = append(attributes, attribute.KeyValue{
 			Key:   "histogram_interval",
@@ -81,8 +75,9 @@ func (a *API) Search(ctx context.Context, req *seqapi.SearchRequest) (*seqapi.Se
 			Value: attribute.StringValue(string(aggregations)),
 		})
 	}
-
 	span.SetAttributes(attributes...)
+
+	params := a.paramsByEnv[env]
 
 	if err := api_error.CheckSearchLimit(req.Limit, params.options.Limits.MaxSearchLimit); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())

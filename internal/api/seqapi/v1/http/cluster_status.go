@@ -25,13 +25,7 @@ func (a *API) serveStatus(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
-
-	env := types.GetEnvKey(ctx)
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		wr.Error(err, http.StatusBadRequest)
-		return
-	}
+	params := a.paramsByEnv[types.GetEnvKey(ctx)]
 
 	resp, err := params.client.Status(ctx, &seqapi.StatusRequest{})
 	if err != nil {

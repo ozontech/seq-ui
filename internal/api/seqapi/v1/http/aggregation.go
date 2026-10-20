@@ -74,11 +74,7 @@ func (a *API) serveGetAggregation(w http.ResponseWriter, r *http.Request) {
 	}
 	span.SetAttributes(attributes...)
 
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		wr.Error(err, http.StatusBadRequest)
-		return
-	}
+	params := a.paramsByEnv[env]
 
 	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), params.options.Limits.MaxAggregationsPerRequest); err != nil {
 		wr.Error(err, http.StatusBadRequest)

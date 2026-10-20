@@ -86,13 +86,6 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 	if env != "" {
 		attributes = append(attributes, attribute.String("env", env))
 	}
-
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		wr.Error(err, http.StatusBadRequest)
-		return
-	}
-
 	if httpReq.Histogram.Interval != "" {
 		attributes = append(attributes, attribute.KeyValue{
 			Key:   "histogram_interval",
@@ -107,6 +100,8 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	span.SetAttributes(attributes...)
+
+	params := a.paramsByEnv[env]
 
 	if err := api_error.CheckSearchLimit(httpReq.Limit, params.options.Limits.MaxSearchLimit); err != nil {
 		wr.Error(err, http.StatusBadRequest)
@@ -168,8 +163,8 @@ type searchRequest struct {
 	Query        string             `json:"query"`
 	From         time.Time          `json:"from" format:"date-time"`
 	To           time.Time          `json:"to" format:"date-time"`
-	Limit        int32              `json:"limit"`
-	Offset       int32              `json:"offset"`
+	Limit        int32              `json:"limit" format:"int32"`
+	Offset       int32              `json:"offset" format:"int32"`
 	WithTotal    bool               `json:"withTotal"`
 	Aggregations aggregationQueries `json:"aggregations"`
 	Histogram    struct {

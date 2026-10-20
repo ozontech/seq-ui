@@ -88,11 +88,7 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 	}
 	span.SetAttributes(attributes...)
 
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		wr.Error(err, http.StatusBadRequest)
-		return
-	}
+	params := a.paramsByEnv[env]
 
 	if params.exportLimiter.Limited(userStr) {
 		metric.ServerExportRequestLimits.Inc()
