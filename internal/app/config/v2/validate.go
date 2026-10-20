@@ -492,9 +492,9 @@ func validateMassExportOptions(path string, options *MassExportOptions, cache *C
 		return fmt.Errorf("%s.file_store.s3 cannot be empty", path)
 	}
 
-	redis := cache.RedisByID(options.SessionStore.CacheID)
+	redis := cache.RedisByID(options.SessionStore.RedisCacheID)
 	if redis == nil || redis.WithInmemID != "" {
-		return fmt.Errorf("%s.session_store.cache_id %q must be cache.redis without with_inmem_id", path, options.SessionStore.CacheID)
+		return fmt.Errorf("%s.session_store.cache_id %q must be cache.redis without with_inmem_id", path, options.SessionStore.RedisCacheID)
 	}
 
 	setSessionStoreDefaults(&options.SessionStore, env)

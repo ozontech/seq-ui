@@ -52,7 +52,6 @@ type UpdateRoleRequest struct {
 type DeleteRoleRequest struct {
 	RoleID            int32
 	ReplacementRoleID *int32
-	Env               string
 }
 
 type GetUserPermissionsRequest struct {

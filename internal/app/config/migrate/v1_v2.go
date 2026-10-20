@@ -30,8 +30,8 @@ func (m *v1tov2) migrate() v2.Config {
 	}
 
 	var v1SessionStore *v1.SessionStore
-	if m.src.Handlers != nil && m.src.Handlers.MassExport != nil {
-		v1SessionStore = m.src.Handlers.MassExport.SessionStore
+	if handlers.MassExport != nil {
+		v1SessionStore = handlers.MassExport.SessionStore
 	}
 
 	return v2.Config{
@@ -300,15 +300,13 @@ func (m *v1tov2) migrateRedis(src *v1.Redis, id, withInmemID string) v2.Redis {
 }
 
 func (m *v1tov2) migrateHandlers(src *v1.Handlers, server *v1.Server) v2.Handlers {
-	dst := v2.Handlers{
+	return v2.Handlers{
 		SeqAPI:      m.migrateSeqAPI(&src.SeqAPI, server.Cache),
 		AsyncSearch: m.migrateAsyncSearch(&src.AsyncSearch, &src.SeqAPI),
 		ErrorGroups: m.migrateErrorGroups(&src.ErrorGroups, server.CH),
 		Admin:       m.migrateAdmin(src.Admin, server.Cache),
 		MassExport:  m.migrateMassExport(src.MassExport, &src.SeqAPI),
 	}
-
-	return dst
 }
 
 func (m *v1tov2) migrateSeqAPI(src *v1.SeqAPI, v1Cache v1.Cache) v2.SeqAPI {
@@ -513,8 +511,8 @@ func (m *v1tov2) migrateMassExport(src *v1.MassExport, seqAPI *v1.SeqAPI) *v2.Ma
 
 	if src.SessionStore != nil {
 		options.SessionStore = v2.SessionStore{
-			Lifetime: src.SessionStore.ExportLifetime,
-			CacheID:  v2.DefaultMassExportRedisID,
+			Lifetime:     src.SessionStore.ExportLifetime,
+			RedisCacheID: v2.DefaultMassExportRedisID,
 		}
 	}
 

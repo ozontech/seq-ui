@@ -113,7 +113,7 @@ func (c *redisCache) MGet(ctx context.Context, keys ...string) ([]any, error) {
 		prefixedKeys[i] = c.withPrefix(key)
 	}
 
-	return c.client.MGet(ctx, keys...).Result()
+	return c.client.MGet(ctx, prefixedKeys...).Result()
 }
 
 func (c *redisCache) withPrefix(key string) string {

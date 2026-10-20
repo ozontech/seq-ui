@@ -81,7 +81,7 @@ func TestCheckAccess(t *testing.T) {
 					Return(tt.mockArgs.perms, tt.mockArgs.err).
 					Times(1)
 				cache.EXPECT().
-					SetWithTTL(gomock.Any(), cacheKeyUserPerms+tt.mockArgs.req.Username, gomock.Any(), adminCfg.Cache.TTL).
+					SetWithTTL(gomock.Any(), cacheKeyUserPerms+tt.mockArgs.req.Username, gomock.Any(), *adminCfg.Cache.TTL).
 					Return(nil).
 					Times(1)
 			}
@@ -169,7 +169,7 @@ func TestGetUserPermissions(t *testing.T) {
 
 				if tt.mockArgs.err == nil {
 					cache.EXPECT().
-						SetWithTTL(gomock.Any(), cacheKeyUserPerms+tt.mockArgs.req.Username, gomock.Any(), adminCfg.Cache.TTL).
+						SetWithTTL(gomock.Any(), cacheKeyUserPerms+tt.mockArgs.req.Username, gomock.Any(), *adminCfg.Cache.TTL).
 						Return(nil).
 						Times(1)
 				}

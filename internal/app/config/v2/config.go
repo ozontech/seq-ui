@@ -360,8 +360,8 @@ type DownloadParams struct {
 }
 
 type SessionStore struct {
-	CacheID  string        `yaml:"cache_id"`
-	Lifetime time.Duration `yaml:"lifetime,omitempty"`
+	RedisCacheID string        `yaml:"redis_cache_id"`
+	Lifetime     time.Duration `yaml:"lifetime,omitempty"`
 }
 
 type FileStore struct {

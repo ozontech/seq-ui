@@ -209,7 +209,7 @@ func (r *adminRepository) GetUserPermissions(ctx context.Context, req types.GetU
     	JOIN users_roles ur ON up.id=ur.user_id
      	JOIN roles_permissions rp ON ur.role_id=rp.role_id
       	JOIN permissions p ON rp.permission_id=p.id
-       	WHERE ur.env=$1 up.user_name=$2 ORDER BY p.value`, []any{req.Env, req.Username}
+       	WHERE ur.env=$1 AND up.user_name=$2 ORDER BY p.value`, []any{req.Env, req.Username}
 
 	rows, err := r.pool.query(ctx, metricLabels, query, args...)
 	if err != nil {

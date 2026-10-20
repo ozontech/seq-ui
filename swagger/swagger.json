@@ -3706,10 +3706,12 @@
                     }
                 },
                 "limit": {
-                    "type": "integer"
+                    "type": "integer",
+                    "format": "int32"
                 },
                 "offset": {
-                    "type": "integer"
+                    "type": "integer",
+                    "format": "int32"
                 },
                 "offset_id": {
                     "type": "string"

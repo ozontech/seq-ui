@@ -28,9 +28,9 @@ const (
 )
 
 func NewCacheSessionStore(ctx context.Context, cfg *config.SessionStore, env string) (SessionStore, error) {
-	c, ok := cache.StoreByID(cfg.CacheID)
+	c, ok := cache.StoreByID(cfg.RedisCacheID)
 	if !ok {
-		return nil, fmt.Errorf("cache %q not found", cfg.CacheID)
+		return nil, fmt.Errorf("cache %q not found", cfg.RedisCacheID)
 	}
 
 	var keyPrefix string
