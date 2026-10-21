@@ -106,7 +106,7 @@ func TestServeGetLogsLifespan(t *testing.T) {
 					Options: config.SeqAPIOptions{
 						Caches: config.SeqAPICaches{
 							LogsLifespan: &config.HandlerCache{
-								TTL: new(cacheTTL),
+								TTL: cacheTTL,
 							},
 						},
 					},

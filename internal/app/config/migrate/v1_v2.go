@@ -7,6 +7,12 @@ import (
 	v2 "github.com/ozontech/seq-ui/internal/app/config/v2"
 )
 
+const (
+	v1DefaultEventsCacheTTL       = 24 * time.Hour
+	v1DefaultLogsLifespanCacheTTL = 10 * time.Minute
+	v1DefaultAdminCacheTTL        = time.Hour
+)
+
 type v1tov2 struct {
 	src v1.Config
 }
@@ -355,11 +361,11 @@ func (m *v1tov2) migrateSeqAPIOptions(src *v1.SeqAPIOptions, v1Cache v1.Cache) v
 		Caches: v2.SeqAPICaches{
 			Events: &v2.HandlerCache{
 				ID:  redisWithInmemID,
-				TTL: m.migrateTTL(src.EventsCacheTTL),
+				TTL: m.migrateTTL(src.EventsCacheTTL, v1DefaultEventsCacheTTL),
 			},
 			LogsLifespan: &v2.HandlerCache{
 				ID:  redisOrInmemID,
-				TTL: m.migrateTTL(src.LogsLifespanCacheTTL),
+				TTL: m.migrateTTL(src.LogsLifespanCacheTTL, v1DefaultLogsLifespanCacheTTL),
 			},
 		},
 	}
@@ -368,7 +374,7 @@ func (m *v1tov2) migrateSeqAPIOptions(src *v1.SeqAPIOptions, v1Cache v1.Cache) v
 	if src.FieldsCacheTTL > 0 {
 		dst.Caches.Fields = &v2.HandlerCache{
 			ID:  v2.DefaultInmemID,
-			TTL: m.migrateTTL(src.FieldsCacheTTL),
+			TTL: src.FieldsCacheTTL,
 		}
 	}
 
@@ -552,18 +558,18 @@ func (m *v1tov2) migrateAdmin(src *v1.Admin, v1Cache v1.Cache) *v2.Admin {
 	if v1Cache.Redis != nil {
 		dst.Options.Cache = &v2.HandlerCache{
 			ID:  v2.DefaultRedisWithoutInmemID,
-			TTL: m.migrateTTL(src.CacheTTL),
+			TTL: m.migrateTTL(src.CacheTTL, v1DefaultAdminCacheTTL),
 		}
 	}
 
 	return dst
 }
 
-func (m *v1tov2) migrateTTL(ttl time.Duration) *time.Duration {
+func (m *v1tov2) migrateTTL(ttl time.Duration, defaultTTL time.Duration) time.Duration {
 	if ttl <= 0 {
-		return nil
+		return defaultTTL
 	}
-	return &ttl
+	return ttl
 }
 
 // defaultCacheIDs returns cache ids same as in v1.

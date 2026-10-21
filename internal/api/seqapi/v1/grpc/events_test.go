@@ -106,7 +106,7 @@ func TestGetEvent(t *testing.T) {
 				Cfg: config.SeqAPI{
 					Options: config.SeqAPIOptions{
 						Caches: config.SeqAPICaches{
-							Events: &config.HandlerCache{TTL: new(cacheTTL)},
+							Events: &config.HandlerCache{TTL: cacheTTL},
 						},
 					},
 				},
@@ -373,7 +373,7 @@ func TestGetEventWithMasking(t *testing.T) {
 				Cfg: config.SeqAPI{
 					Options: config.SeqAPIOptions{
 						Caches: config.SeqAPICaches{
-							Events: &config.HandlerCache{TTL: new(cacheTTL)},
+							Events: &config.HandlerCache{TTL: cacheTTL},
 						},
 						Masking: tt.maskingCfg,
 					},

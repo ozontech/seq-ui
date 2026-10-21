@@ -566,8 +566,8 @@ type SeqAPICaches struct {
 }
 
 type HandlerCache struct {
-	ID  string         `yaml:"id"`
-	TTL *time.Duration `yaml:"ttl,omitempty"`
+	ID  string        `yaml:"id"`
+	TTL time.Duration `yaml:"ttl,omitempty"`
 }
 
 type Masking struct {

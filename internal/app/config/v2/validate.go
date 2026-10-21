@@ -54,12 +54,6 @@ const (
 	defaultInmemCacheMaxCost     = 1000000
 	defaultInmemCacheBufferItems = 64
 
-	defaultEventsCacheTTL = 24 * time.Hour
-
-	defaultLogsLifespanCacheTTL = 10 * time.Minute
-
-	defaultAdminCacheTTL = time.Hour
-
 	defaultClickHouseDialTimeout = 5 * time.Second
 	defaultClickHouseReadTimeout = 30 * time.Second
 
@@ -316,7 +310,7 @@ func validateAdmin(admin *Admin, cacheIDs map[string]struct{}) error {
 	if err := validateEnvs("handlers.admin", admin.Envs, admin.DefaultEnv); err != nil {
 		return err
 	}
-	if err := validateHandlerCache("handlers.admin.options.cache", admin.Options.Cache, cacheIDs, defaultAdminCacheTTL); err != nil {
+	if err := validateHandlerCache("handlers.admin.options.cache", admin.Options.Cache, cacheIDs); err != nil {
 		return err
 	}
 
@@ -326,7 +320,7 @@ func validateAdmin(admin *Admin, cacheIDs map[string]struct{}) error {
 			admin.Envs[envName] = envConfig
 		}
 
-		if err := validateHandlerCache(fmt.Sprintf("handlers.admin.envs[%q].options.cache", envName), envConfig.Options.Cache, cacheIDs, defaultAdminCacheTTL); err != nil {
+		if err := validateHandlerCache(fmt.Sprintf("handlers.admin.envs[%q].options.cache", envName), envConfig.Options.Cache, cacheIDs); err != nil {
 			return err
 		}
 	}
@@ -405,26 +399,24 @@ func validateSeqAPIOptions(path string, options *SeqAPIOptions, cacheIDs map[str
 	}
 
 	caches := &options.Caches
-	if err := validateHandlerCache(path+".caches.events", caches.Events, cacheIDs, defaultEventsCacheTTL); err != nil {
+	if err := validateHandlerCache(path+".caches.events", caches.Events, cacheIDs); err != nil {
 		return err
 	}
-	if err := validateHandlerCache(path+".caches.logs_lifespan", caches.LogsLifespan, cacheIDs, defaultLogsLifespanCacheTTL); err != nil {
+	if err := validateHandlerCache(path+".caches.logs_lifespan", caches.LogsLifespan, cacheIDs); err != nil {
 		return err
 	}
 
-	return validateHandlerCache(path+".caches.fields", caches.Fields, cacheIDs, 0)
+	return validateHandlerCache(path+".caches.fields", caches.Fields, cacheIDs)
 }
 
-func validateHandlerCache(path string, hc *HandlerCache, cacheIDs map[string]struct{}, defaultTTL time.Duration) error {
+func validateHandlerCache(path string, hc *HandlerCache, cacheIDs map[string]struct{}) error {
 	if hc == nil {
 		return nil
 	}
 	if _, ok := cacheIDs[hc.ID]; !ok {
 		return fmt.Errorf("%s.id %q not found in cache", path, hc.ID)
 	}
-	if hc.TTL == nil {
-		hc.TTL = new(defaultTTL)
-	} else if *hc.TTL < 0 {
+	if hc.TTL < 0 {
 		return fmt.Errorf("%s.ttl must be >= 0", path)
 	}
 

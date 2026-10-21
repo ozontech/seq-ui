@@ -47,7 +47,7 @@ func newCache(cfg *config.HandlerCache, keyPrefix string) *Cache {
 		return nil
 	}
 
-	return &Cache{Cache: c, KeyPrefix: keyPrefix, TTL: *cfg.TTL}
+	return &Cache{Cache: c, KeyPrefix: keyPrefix, TTL: cfg.TTL}
 }
 
 func (c *Cache) Get(ctx context.Context, key string) (string, bool) {
