@@ -12,6 +12,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/api_error"
+	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 )
@@ -32,7 +33,7 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 
 	wr := httputil.NewWriter(w)
 
-	env := getEnvFromContext(ctx)
+	env := types.GetEnvKey(ctx)
 
 	var httpReq searchRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
@@ -44,7 +45,7 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 		httpReq.Order = oDESC
 	}
 
-	spanAttributes := []attribute.KeyValue{
+	attributes := []attribute.KeyValue{
 		{
 			Key:   "query",
 			Value: attribute.StringValue(httpReq.Query),
@@ -82,38 +83,31 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 			Value: attribute.IntValue(int(httpReq.Downsample)),
 		},
 	}
-
 	if env != "" {
-		spanAttributes = append(spanAttributes, attribute.String("env", env))
+		attributes = append(attributes, attribute.String("env", env))
 	}
-
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		wr.Error(err, http.StatusBadRequest)
-		return
-	}
-
 	if httpReq.Histogram.Interval != "" {
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "histogram_interval",
 			Value: attribute.StringValue(httpReq.Histogram.Interval),
 		})
 	}
 	if len(httpReq.Aggregations) > 0 {
 		aggsRaw, _ := json.Marshal(httpReq.Aggregations)
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "aggregations",
 			Value: attribute.StringValue(string(aggsRaw)),
 		})
 	}
+	span.SetAttributes(attributes...)
 
-	span.SetAttributes(spanAttributes...)
+	params := a.paramsByEnv[env]
 
-	if err := api_error.CheckSearchLimit(httpReq.Limit, params.options.MaxSearchLimit); err != nil {
+	if err := api_error.CheckSearchLimit(httpReq.Limit, params.options.Limits.MaxSearchLimit); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
-	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), params.options.MaxAggregationsPerRequest); err != nil {
+	if err := api_error.CheckAggregationsCount(len(httpReq.Aggregations), params.options.Limits.MaxAggregationsPerRequest); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
@@ -121,7 +115,7 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
-	if err := api_error.CheckSearchOffsetLimit(httpReq.Offset, params.options.MaxSearchOffsetLimit); err != nil {
+	if err := api_error.CheckSearchOffsetLimit(httpReq.Offset, params.options.Limits.MaxSearchOffset); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
@@ -132,7 +126,7 @@ func (a *API) serveSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if resp.Total > params.options.MaxSearchTotalLimit {
+	if resp.Total > params.options.Limits.MaxSearchTotal {
 		resp.Error = &seqapi.Error{
 			Code:    seqapi.ErrorCode_ERROR_CODE_QUERY_TOO_HEAVY,
 			Message: api_error.ErrQueryTooHeavy.Error(),

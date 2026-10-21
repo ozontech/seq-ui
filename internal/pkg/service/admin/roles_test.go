@@ -9,15 +9,20 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	mock_cache "github.com/ozontech/seq-ui/internal/pkg/cache/mock"
 	mock "github.com/ozontech/seq-ui/internal/pkg/repository/mock"
 )
 
 var (
-	defaultSuperUser  = "superuser"
-	adminCfg          = &config.Admin{SuperUsers: []string{defaultSuperUser}, CacheTTL: 5 * time.Minute}
+	defaultSuperUser = "superuser"
+	adminCfg         = &config.AdminOptions{
+		SuperUsers: []string{defaultSuperUser},
+		Cache: &config.HandlerCache{
+			TTL: 5 * time.Minute,
+		},
+	}
 	errSomethingWrong = errors.New("something happened wrong")
 )
 
@@ -46,7 +51,7 @@ func setupAccessMock(ctx context.Context, repo *mock.MockAdmin, cache *mock_cach
 			Times(1)
 
 		cache.EXPECT().
-			SetWithTTL(gomock.Any(), cacheKeyUserPerms+access.username, gomock.Any(), adminCfg.CacheTTL).
+			SetWithTTL(gomock.Any(), cacheKeyUserPerms+access.username, gomock.Any(), adminCfg.Cache.TTL).
 			Return(nil).
 			Times(1)
 	}
@@ -193,7 +198,8 @@ func TestCreateRole(t *testing.T) {
 			adminRepo := mock.NewMockAdmin(ctrl)
 			upRepo := mock.NewMockUserProfiles(ctrl)
 			cache := mock_cache.NewMockCache(ctrl)
-			svc := New(adminRepo, upRepo, cache, adminCfg)
+			svc := newService(adminRepo, upRepo, adminCfg, "").(*service)
+			svc.cache = newAdminCache(cache, adminCfg.Cache.TTL, "")
 
 			ctx := setupAccessMock(context.Background(), adminRepo, cache, tt.accessMock)
 
@@ -340,7 +346,8 @@ func TestAddUsersToRole(t *testing.T) {
 			adminRepo := mock.NewMockAdmin(ctrl)
 			upRepo := mock.NewMockUserProfiles(ctrl)
 			cache := mock_cache.NewMockCache(ctrl)
-			svc := New(adminRepo, upRepo, cache, adminCfg)
+			svc := newService(adminRepo, upRepo, adminCfg, "").(*service)
+			svc.cache = newAdminCache(cache, adminCfg.Cache.TTL, "")
 
 			ctx := setupAccessMock(context.Background(), adminRepo, cache, tt.accessMock)
 
@@ -458,7 +465,8 @@ func TestGetRoles(t *testing.T) {
 			adminRepo := mock.NewMockAdmin(ctrl)
 			upRepo := mock.NewMockUserProfiles(ctrl)
 			cache := mock_cache.NewMockCache(ctrl)
-			svc := New(adminRepo, upRepo, cache, adminCfg)
+			svc := newService(adminRepo, upRepo, adminCfg, "").(*service)
+			svc.cache = newAdminCache(cache, adminCfg.Cache.TTL, "")
 
 			ctx := setupAccessMock(context.Background(), adminRepo, cache, tt.accessMock)
 
@@ -475,7 +483,7 @@ func TestGetRoles(t *testing.T) {
 
 				if tt.mockArgs.err == nil {
 					cache.EXPECT().
-						SetWithTTL(gomock.Any(), cacheKeyRoles, gomock.Any(), adminCfg.CacheTTL).
+						SetWithTTL(gomock.Any(), cacheKeyRoles, gomock.Any(), adminCfg.Cache.TTL).
 						Return(nil).
 						Times(1)
 				}
@@ -570,7 +578,8 @@ func TestGetRole(t *testing.T) {
 			adminRepo := mock.NewMockAdmin(ctrl)
 			upRepo := mock.NewMockUserProfiles(ctrl)
 			cache := mock_cache.NewMockCache(ctrl)
-			svc := New(adminRepo, upRepo, cache, adminCfg)
+			svc := newService(adminRepo, upRepo, adminCfg, "").(*service)
+			svc.cache = newAdminCache(cache, adminCfg.Cache.TTL, "")
 
 			ctx := setupAccessMock(context.Background(), adminRepo, cache, tt.accessMock)
 
@@ -781,7 +790,8 @@ func TestUpdateRole(t *testing.T) {
 			adminRepo := mock.NewMockAdmin(ctrl)
 			upRepo := mock.NewMockUserProfiles(ctrl)
 			cache := mock_cache.NewMockCache(ctrl)
-			svc := New(adminRepo, upRepo, cache, adminCfg)
+			svc := newService(adminRepo, upRepo, adminCfg, "").(*service)
+			svc.cache = newAdminCache(cache, adminCfg.Cache.TTL, "")
 
 			ctx := setupAccessMock(context.Background(), adminRepo, cache, tt.accessMock)
 
@@ -939,7 +949,8 @@ func TestDeleteRole(t *testing.T) {
 			adminRepo := mock.NewMockAdmin(ctrl)
 			upRepo := mock.NewMockUserProfiles(ctrl)
 			cache := mock_cache.NewMockCache(ctrl)
-			svc := New(adminRepo, upRepo, cache, adminCfg)
+			svc := newService(adminRepo, upRepo, adminCfg, "").(*service)
+			svc.cache = newAdminCache(cache, adminCfg.Cache.TTL, "")
 
 			ctx := setupAccessMock(context.Background(), adminRepo, cache, tt.accessMock)
 
@@ -1095,7 +1106,8 @@ func TestDeleteUsersFromRole(t *testing.T) {
 			adminRepo := mock.NewMockAdmin(ctrl)
 			upRepo := mock.NewMockUserProfiles(ctrl)
 			cache := mock_cache.NewMockCache(ctrl)
-			svc := New(adminRepo, upRepo, cache, adminCfg)
+			svc := newService(adminRepo, upRepo, adminCfg, "").(*service)
+			svc.cache = newAdminCache(cache, adminCfg.Cache.TTL, "")
 
 			ctx := setupAccessMock(context.Background(), adminRepo, cache, tt.accessMock)
 

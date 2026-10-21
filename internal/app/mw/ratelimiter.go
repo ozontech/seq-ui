@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/ratelimiter"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/metric"
@@ -22,6 +22,7 @@ var grpcServices = map[string]struct{}{
 	"DashboardsService":  {},
 	"MassExportService":  {},
 	"ErrorGroupsService": {},
+	"AdminService":       {},
 }
 
 type rateLimiter interface {
@@ -33,7 +34,41 @@ type RateLimiter struct {
 	perHandler bool
 }
 
-func NewRateLimiter(api string, cfg config.RateLimiter) (RateLimiter, error) {
+// RateLimitersByEnv contains rate limiters by env->api->user, empty env is root options.
+type RateLimitersByEnv map[string]map[string]map[string]RateLimiter
+
+func (ratelimiters RateLimitersByEnv) get(ctx context.Context) map[string]map[string]RateLimiter {
+	if rl, ok := ratelimiters[types.GetEnvKey(ctx)]; ok {
+		return rl
+	}
+	return ratelimiters[""]
+}
+
+func NewRateLimiters(apiToRateLimiters config.ApiToRateLimiters) (map[string]map[string]RateLimiter, error) {
+	result := make(map[string]map[string]RateLimiter, len(apiToRateLimiters))
+
+	for apiName, rateLimiters := range apiToRateLimiters {
+		result[apiName] = make(map[string]RateLimiter)
+
+		defaultLimiter, err := newRateLimiter(apiName, rateLimiters.Default)
+		if err != nil {
+			return nil, fmt.Errorf("init default rate limiter: %w", err)
+		}
+		result[apiName][RateLimiterDefaultUser] = defaultLimiter
+
+		for user, userRateLimiter := range rateLimiters.SpecialUsers {
+			limiter, err := newRateLimiter(apiName, userRateLimiter)
+			if err != nil {
+				return nil, fmt.Errorf("init user %q rate limiter: %w", user, err)
+			}
+			result[apiName][user] = limiter
+		}
+	}
+
+	return result, nil
+}
+
+func newRateLimiter(api string, cfg config.RateLimiter) (RateLimiter, error) {
 	if _, ok := grpcServices[api]; !ok {
 		spec := swagger.GetSpecEx()
 		if !spec.HasApi(api) {

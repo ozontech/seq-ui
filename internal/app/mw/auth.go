@@ -7,7 +7,8 @@ import (
 	"strings"
 
 	"github.com/ozontech/seq-ui/internal/app/auth"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
+	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/logger"
 )
 
@@ -28,26 +29,32 @@ type AuthProviders struct {
 	OidcProvider auth.OIDCProvider
 }
 
-func NewAuthProviders(
-	ctx context.Context,
-	jwtSecretKey string, oidcCfg *config.OIDC,
-	cacheCfg config.Cache,
-) (AuthProviders, error) {
+func (p *AuthProviders) enabled() bool {
+	return p.JwtProvider != nil || p.OidcProvider != nil
+}
+
+// AuthProvidersByEnv contains auth providers by env, empty env is root options.
+type AuthProvidersByEnv map[string]AuthProviders
+
+func (providers AuthProvidersByEnv) get(ctx context.Context) AuthProviders {
+	if provider, ok := providers[types.GetEnvKey(ctx)]; ok {
+		return provider
+	}
+	return providers[""]
+}
+
+func NewAuthProvider(ctx context.Context, options config.AuthOptions, env string) (AuthProviders, error) {
 	authPrvds := AuthProviders{}
 
-	if jwtSecretKey == "" && oidcCfg == nil {
-		return authPrvds, nil
-	}
-
-	if jwtSecretKey != "" {
+	if options.JWT != nil {
 		logger.Info("initializing jwt provider")
-		authPrvds.JwtProvider = auth.NewJWTProvider(jwtSecretKey)
+		authPrvds.JwtProvider = auth.NewJWTProvider(options.JWT)
 	}
 
-	if oidcCfg != nil {
+	if options.OIDC != nil {
 		logger.Info("initializing oidc provider")
 		var err error
-		authPrvds.OidcProvider, err = auth.NewOIDCProvider(ctx, oidcCfg, cacheCfg)
+		authPrvds.OidcProvider, err = auth.NewOIDCProvider(ctx, options.OIDC, env)
 		if err != nil {
 			return authPrvds, fmt.Errorf("failed to init oidc provider: %w", err)
 		}

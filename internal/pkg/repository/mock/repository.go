@@ -290,7 +290,7 @@ func (m *MockAsyncSearches) EXPECT() *MockAsyncSearchesMockRecorder {
 }
 
 // DeleteAsyncSearch mocks base method.
-func (m *MockAsyncSearches) DeleteAsyncSearch(arg0 context.Context, arg1 string) error {
+func (m *MockAsyncSearches) DeleteAsyncSearch(arg0 context.Context, arg1 types.DeleteAsyncSearchRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteAsyncSearch", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -304,21 +304,21 @@ func (mr *MockAsyncSearchesMockRecorder) DeleteAsyncSearch(arg0, arg1 any) *gomo
 }
 
 // DeleteExpiredAsyncSearches mocks base method.
-func (m *MockAsyncSearches) DeleteExpiredAsyncSearches(arg0 context.Context) error {
+func (m *MockAsyncSearches) DeleteExpiredAsyncSearches(arg0 context.Context, arg1 types.DeleteExpiredAsyncSearchesRequest) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteExpiredAsyncSearches", arg0)
+	ret := m.ctrl.Call(m, "DeleteExpiredAsyncSearches", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteExpiredAsyncSearches indicates an expected call of DeleteExpiredAsyncSearches.
-func (mr *MockAsyncSearchesMockRecorder) DeleteExpiredAsyncSearches(arg0 any) *gomock.Call {
+func (mr *MockAsyncSearchesMockRecorder) DeleteExpiredAsyncSearches(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteExpiredAsyncSearches", reflect.TypeOf((*MockAsyncSearches)(nil).DeleteExpiredAsyncSearches), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteExpiredAsyncSearches", reflect.TypeOf((*MockAsyncSearches)(nil).DeleteExpiredAsyncSearches), arg0, arg1)
 }
 
 // GetAsyncSearchById mocks base method.
-func (m *MockAsyncSearches) GetAsyncSearchById(arg0 context.Context, arg1 string) (types.AsyncSearchInfo, error) {
+func (m *MockAsyncSearches) GetAsyncSearchById(arg0 context.Context, arg1 types.GetAsyncSearchByIdRequest) (types.AsyncSearchInfo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAsyncSearchById", arg0, arg1)
 	ret0, _ := ret[0].(types.AsyncSearchInfo)

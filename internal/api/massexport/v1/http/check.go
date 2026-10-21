@@ -27,6 +27,8 @@ func (a *API) serveCheck(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+	env := types.GetEnvKey(ctx)
+	svc := a.serviceByEnv[env]
 
 	var httpReq checkRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
@@ -34,12 +36,18 @@ func (a *API) serveCheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	span.SetAttributes(attribute.KeyValue{
-		Key:   "session_id",
-		Value: attribute.StringValue(httpReq.SessionID),
-	})
+	attributes := []attribute.KeyValue{
+		{
+			Key:   "session_id",
+			Value: attribute.StringValue(httpReq.SessionID),
+		},
+	}
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
-	info, err := a.exporter.CheckExport(ctx, httpReq.SessionID)
+	info, err := svc.CheckExport(ctx, httpReq.SessionID)
 	if err != nil {
 		httputil.ProcessError(wr, err)
 		return

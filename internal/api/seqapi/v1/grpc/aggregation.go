@@ -10,6 +10,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/aggregation_ts"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/api_error"
+	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 )
@@ -19,7 +20,7 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 	defer span.End()
 
 	aggregations, _ := json.Marshal(req.Aggregations)
-	env := a.GetEnvFromContext(ctx)
+	env := types.GetEnvKey(ctx)
 
 	attributes := []attribute.KeyValue{
 		{
@@ -47,19 +48,14 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 			Value: attribute.IntValue(int(req.GetDownsample())),
 		},
 	}
-
 	if env != "" {
 		attributes = append(attributes, attribute.String("env", env))
 	}
-
 	span.SetAttributes(attributes...)
 
-	params, err := a.GetParams(env)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+	params := a.paramsByEnv[env]
 
-	if err := api_error.CheckAggregationsCount(len(req.Aggregations), params.options.MaxAggregationsPerRequest); err != nil {
+	if err := api_error.CheckAggregationsCount(len(req.Aggregations), params.options.Limits.MaxAggregationsPerRequest); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -69,7 +65,7 @@ func (a *API) GetAggregation(ctx context.Context, req *seqapi.GetAggregationRequ
 			continue
 		}
 		if err := api_error.CheckAggregationTsInterval(*agg.Interval, fromRaw, toRaw,
-			params.options.MaxBucketsPerAggregationTs,
+			params.options.Limits.MaxBucketsPerAggregationTs,
 		); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}

@@ -24,6 +24,7 @@ const permSep = ":"
 //	@Router		/admin/v1/roles [post]
 //	@ID			admin_v1_create_role
 //	@Tags		admin_v1
+//	@Param		env		query		string				false	"Environment"
 //	@Param		body	body		createRoleRequest	true	"Request body"
 //	@Success	200		{object}	createRoleResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
@@ -33,6 +34,7 @@ func (a *API) serveCreateRole(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+	env := types.GetEnvKey(ctx)
 
 	var httpReq createRoleRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
@@ -40,18 +42,23 @@ func (a *API) serveCreateRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	span.SetAttributes(
-		attribute.KeyValue{
+	attributes := []attribute.KeyValue{
+		{
 			Key:   "role_name",
 			Value: attribute.StringValue(httpReq.Name),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "permissions_count",
 			Value: attribute.IntValue(len(httpReq.Permissions)),
 		},
-	)
+	}
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
-	roleID, err := a.service.CreateRole(ctx, types.CreateRoleRequest{
+	svc := a.serviceByEnv[env]
+	roleID, err := svc.CreateRole(ctx, types.CreateRoleRequest{
 		Name:        httpReq.Name,
 		Permissions: parsePermissionGroupsToStrings(httpReq.Permissions),
 	})
@@ -69,6 +76,7 @@ func (a *API) serveCreateRole(w http.ResponseWriter, r *http.Request) {
 //	@ID			admin_v1_add_users_to_role
 //	@Tags		admin_v1
 //	@Param		id		path		int32					true	"Role ID"
+//	@Param		env		query		string					false	"Environment"
 //	@Param		body	body		addUsersToRoleRequest	true	"Request body"
 //	@Success	200		{object}	nil						"A successful response"
 //	@Failure	default	{object}	httputil.Error			"An unexpected error response"
@@ -78,6 +86,7 @@ func (a *API) serveAddUsersToRole(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+	env := types.GetEnvKey(ctx)
 
 	roleID, err := getRoleID(r)
 	if err != nil {
@@ -91,18 +100,23 @@ func (a *API) serveAddUsersToRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	span.SetAttributes(
-		attribute.KeyValue{
+	attributes := []attribute.KeyValue{
+		{
 			Key:   "role_id",
 			Value: attribute.IntValue(int(roleID)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "users_count",
 			Value: attribute.IntValue(len(httpReq.Usernames)),
 		},
-	)
+	}
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
-	if err := a.service.AddUsersToRole(ctx, types.AddUsersToRoleRequest{
+	svc := a.serviceByEnv[env]
+	if err := svc.AddUsersToRole(ctx, types.AddUsersToRoleRequest{
 		RoleID:    roleID,
 		Usernames: httpReq.Usernames,
 	}); err != nil {
@@ -119,6 +133,7 @@ func (a *API) serveAddUsersToRole(w http.ResponseWriter, r *http.Request) {
 //	@ID			admin_v1_delete_users_from_role
 //	@Tags		admin_v1
 //	@Param		id		path		int32						true	"Role ID"
+//	@Param		env		query		string						false	"Environment"
 //	@Param		body	body		deleteUsersFromRoleRequest	true	"Request body"
 //	@Success	200		{object}	nil							"A successful response"
 //	@Failure	default	{object}	httputil.Error				"An unexpected error response"
@@ -128,6 +143,7 @@ func (a *API) serveDeleteUsersFromRole(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+	env := types.GetEnvKey(ctx)
 
 	roleID, err := getRoleID(r)
 	if err != nil {
@@ -141,18 +157,23 @@ func (a *API) serveDeleteUsersFromRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	span.SetAttributes(
-		attribute.KeyValue{
+	attributes := []attribute.KeyValue{
+		{
 			Key:   "role_id",
 			Value: attribute.IntValue(int(roleID)),
 		},
-		attribute.KeyValue{
+		{
 			Key:   "users_count",
 			Value: attribute.IntValue(len(httpReq.Usernames)),
 		},
-	)
+	}
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
-	if err := a.service.DeleteUsersFromRole(ctx, types.DeleteUsersFromRoleRequest{
+	svc := a.serviceByEnv[env]
+	if err := svc.DeleteUsersFromRole(ctx, types.DeleteUsersFromRoleRequest{
 		RoleID:    roleID,
 		Usernames: httpReq.Usernames,
 	}); err != nil {
@@ -168,6 +189,7 @@ func (a *API) serveDeleteUsersFromRole(w http.ResponseWriter, r *http.Request) {
 //	@Router		/admin/v1/roles [get]
 //	@ID			admin_v1_get_roles
 //	@Tags		admin_v1
+//	@Param		env		query		string				false	"Environment"
 //	@Success	200		{object}	getRolesResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
 //	@Security	bearer
@@ -177,7 +199,8 @@ func (a *API) serveGetRoles(w http.ResponseWriter, r *http.Request) {
 
 	wr := httputil.NewWriter(w)
 
-	resp, err := a.service.GetRoles(ctx)
+	svc := a.serviceByEnv[types.GetEnvKey(ctx)]
+	resp, err := svc.GetRoles(ctx)
 	if err != nil {
 		httputil.ProcessError(wr, err)
 		return
@@ -195,6 +218,7 @@ func (a *API) serveGetRoles(w http.ResponseWriter, r *http.Request) {
 //	@ID			admin_v1_get_role
 //	@Tags		admin_v1
 //	@Param		id		path		int32			true	"Role ID"
+//	@Param		env		query		string			false	"Environment"
 //	@Success	200		{object}	getRoleResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error	"An unexpected error response"
 //	@Security	bearer
@@ -203,6 +227,7 @@ func (a *API) serveGetRole(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+	env := types.GetEnvKey(ctx)
 
 	roleID, err := getRoleID(r)
 	if err != nil {
@@ -210,14 +235,19 @@ func (a *API) serveGetRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	span.SetAttributes(
-		attribute.KeyValue{
+	attributes := []attribute.KeyValue{
+		{
 			Key:   "role_id",
 			Value: attribute.IntValue(int(roleID)),
 		},
-	)
+	}
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
-	roleInfo, err := a.service.GetRole(ctx, types.GetRoleRequest{
+	svc := a.serviceByEnv[env]
+	roleInfo, err := svc.GetRole(ctx, types.GetRoleRequest{
 		RoleID: roleID,
 	})
 	if err != nil {
@@ -236,6 +266,7 @@ func (a *API) serveGetRole(w http.ResponseWriter, r *http.Request) {
 //	@ID			admin_v1_update_role
 //	@Tags		admin_v1
 //	@Param		id		path		int32				true	"Role ID"
+//	@Param		env		query		string				false	"Environment"
 //	@Param		body	body		updateRoleRequest	true	"Request body"
 //	@Success	200		{object}	nil					"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
@@ -245,6 +276,7 @@ func (a *API) serveUpdateRole(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+	env := types.GetEnvKey(ctx)
 
 	roleID, err := getRoleID(r)
 	if err != nil {
@@ -258,7 +290,7 @@ func (a *API) serveUpdateRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	spanAttributes := []attribute.KeyValue{
+	attributes := []attribute.KeyValue{
 		{
 			Key:   "role_id",
 			Value: attribute.IntValue(int(roleID)),
@@ -269,14 +301,19 @@ func (a *API) serveUpdateRole(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	if httpReq.Name != nil {
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "role_name",
 			Value: attribute.StringValue(*httpReq.Name),
 		})
 	}
-	span.SetAttributes(spanAttributes...)
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
 
-	if err := a.service.UpdateRole(ctx, types.UpdateRoleRequest{
+	span.SetAttributes(attributes...)
+
+	svc := a.serviceByEnv[env]
+	if err := svc.UpdateRole(ctx, types.UpdateRoleRequest{
 		RoleID:      roleID,
 		Name:        httpReq.Name,
 		Permissions: parsePermissionGroupsToStrings(httpReq.Permissions),
@@ -294,6 +331,7 @@ func (a *API) serveUpdateRole(w http.ResponseWriter, r *http.Request) {
 //	@ID			admin_v1_delete_role
 //	@Tags		admin_v1
 //	@Param		id		path		int32				true	"Role ID"
+//	@Param		env		query		string				false	"Environment"
 //	@Param		body	body		deleteRoleRequest	false	"Request body"
 //	@Success	200		{object}	nil					"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
@@ -303,6 +341,7 @@ func (a *API) serveDeleteRole(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+	env := types.GetEnvKey(ctx)
 
 	roleID, err := getRoleID(r)
 	if err != nil {
@@ -316,21 +355,25 @@ func (a *API) serveDeleteRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	spanAttributes := []attribute.KeyValue{
+	attributes := []attribute.KeyValue{
 		{
 			Key:   "role_id",
 			Value: attribute.IntValue(int(roleID)),
 		},
 	}
 	if httpReq.ReplacementRoleID != nil {
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "replacement_role_id",
 			Value: attribute.IntValue(int(*httpReq.ReplacementRoleID)),
 		})
 	}
-	span.SetAttributes(spanAttributes...)
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
-	if err := a.service.DeleteRole(ctx, types.DeleteRoleRequest{
+	svc := a.serviceByEnv[types.GetEnvKey(ctx)]
+	if err := svc.DeleteRole(ctx, types.DeleteRoleRequest{
 		RoleID:            roleID,
 		ReplacementRoleID: httpReq.ReplacementRoleID,
 	}); err != nil {

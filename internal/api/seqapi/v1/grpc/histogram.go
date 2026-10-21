@@ -4,9 +4,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/otel/attribute"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
+	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
 )
@@ -15,7 +14,7 @@ func (a *API) GetHistogram(ctx context.Context, req *seqapi.GetHistogramRequest)
 	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_get_histogram")
 	defer span.End()
 
-	env := a.GetEnvFromContext(ctx)
+	env := types.GetEnvKey(ctx)
 
 	attributes := []attribute.KeyValue{
 		{
@@ -39,21 +38,12 @@ func (a *API) GetHistogram(ctx context.Context, req *seqapi.GetHistogramRequest)
 			Value: attribute.IntValue(int(req.GetDownsample())),
 		},
 	}
-
 	if env != "" {
 		attributes = append(attributes, attribute.String("env", env))
 	}
-
 	span.SetAttributes(attributes...)
 
-	params, err := a.GetParams(env)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+	params := a.paramsByEnv[env]
 
-	resp, err := params.client.GetHistogram(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return params.client.GetHistogram(ctx, req)
 }

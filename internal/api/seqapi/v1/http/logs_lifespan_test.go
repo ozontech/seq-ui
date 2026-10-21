@@ -12,7 +12,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/pkg/cache"
 	mock_cache "github.com/ozontech/seq-ui/internal/pkg/cache/mock"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
@@ -21,8 +21,8 @@ import (
 
 func TestServeGetLogsLifespan(t *testing.T) {
 	var (
+		cacheKey  = "seqapi_logs_lifespan"
 		resultStr = "36000" // 10(h) * 60(min/h) * 60(sec/min)
-		cacheKey  = "logs_lifespan"
 		result    = 10 * time.Hour
 		cacheTTL  = time.Minute
 	)
@@ -103,9 +103,12 @@ func TestServeGetLogsLifespan(t *testing.T) {
 
 			seqData := test.APITestData{
 				Cfg: config.SeqAPI{
-					SeqAPIOptions: &config.SeqAPIOptions{
-						LogsLifespanCacheKey: cacheKey,
-						LogsLifespanCacheTTL: cacheTTL,
+					Options: config.SeqAPIOptions{
+						Caches: config.SeqAPICaches{
+							LogsLifespan: &config.HandlerCache{
+								TTL: cacheTTL,
+							},
+						},
 					},
 				},
 			}

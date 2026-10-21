@@ -20,12 +20,9 @@ func newAsyncSearchesRepository(pool *pool) *asyncSearchesRepository {
 	return &asyncSearchesRepository{pool}
 }
 
-func (r *asyncSearchesRepository) SaveAsyncSearch(
-	ctx context.Context,
-	req types.SaveAsyncSearchRequest,
-) error {
-	query, args := "INSERT INTO async_searches (search_id,owner_id,meta,expires_at) VALUES ($1,$2,$3,$4)",
-		[]any{req.SearchID, req.OwnerID, req.Meta, req.ExpiresAt}
+func (r *asyncSearchesRepository) SaveAsyncSearch(ctx context.Context, req types.SaveAsyncSearchRequest) error {
+	query, args := "INSERT INTO async_searches (search_id,owner_id,meta,expires_at,env) VALUES ($1,$2,$3,$4,$5)",
+		[]any{req.SearchID, req.OwnerID, req.Meta, req.ExpiresAt, req.Env}
 
 	metricLabels := []string{"async_searches", "INSERT"}
 	_, err := r.exec(ctx, metricLabels, query, args...)
@@ -37,19 +34,16 @@ func (r *asyncSearchesRepository) SaveAsyncSearch(
 	return nil
 }
 
-func (r *asyncSearchesRepository) GetAsyncSearchById(
-	ctx context.Context,
-	searchID string,
-) (types.AsyncSearchInfo, error) {
+func (r *asyncSearchesRepository) GetAsyncSearchById(ctx context.Context, req types.GetAsyncSearchByIdRequest) (types.AsyncSearchInfo, error) {
 	as := types.AsyncSearchInfo{}
 
 	query, args := `
 		SELECT s.search_id, s.owner_id, p.user_name, s.meta, s.created_at, s.expires_at
 		FROM async_searches AS s
 		JOIN user_profiles AS p	ON p.id = s.owner_id
-		WHERE s.search_id = $1
+		WHERE s.search_id = $1 AND s.env = $2
 		`,
-		[]any{searchID}
+		[]any{req.SearchID, req.Env}
 
 	metricLabels := []string{"async_searches", "SELECT"}
 	err := r.queryRow(ctx, metricLabels, query, args...).Scan(
@@ -74,13 +68,11 @@ func (r *asyncSearchesRepository) GetAsyncSearchById(
 	return as, nil
 }
 
-func (r *asyncSearchesRepository) GetAsyncSearchesList(
-	ctx context.Context,
-	req types.GetAsyncSearchesListRequest,
-) ([]types.AsyncSearchInfo, error) {
+func (r *asyncSearchesRepository) GetAsyncSearchesList(ctx context.Context, req types.GetAsyncSearchesListRequest) ([]types.AsyncSearchInfo, error) {
 	qb := sqlb.Select("s.search_id", "s.owner_id", "p.user_name", "s.created_at", "s.expires_at").
 		From("async_searches AS s").
 		Join("user_profiles AS p ON p.id = s.owner_id").
+		Where(sq.Eq{"s.env": req.Env}).
 		Where(sq.GtOrEq{"s.expires_at": "now()"}).
 		OrderBy("s.created_at DESC")
 
@@ -119,12 +111,9 @@ func (r *asyncSearchesRepository) GetAsyncSearchesList(
 	return asyncSearches, nil
 }
 
-func (r *asyncSearchesRepository) DeleteAsyncSearch(
-	ctx context.Context,
-	searchID string,
-) error {
-	query, args := "DELETE FROM async_searches WHERE search_id = $1",
-		[]any{searchID}
+func (r *asyncSearchesRepository) DeleteAsyncSearch(ctx context.Context, req types.DeleteAsyncSearchRequest) error {
+	query, args := "DELETE FROM async_searches WHERE search_id = $1 AND env = $2",
+		[]any{req.SearchID, req.Env}
 
 	metricLabelsDelete := []string{"async_searches", "DELETE"}
 	if _, err := r.exec(ctx, metricLabelsDelete, query, args...); err != nil {
@@ -135,11 +124,12 @@ func (r *asyncSearchesRepository) DeleteAsyncSearch(
 	return nil
 }
 
-func (r *asyncSearchesRepository) DeleteExpiredAsyncSearches(ctx context.Context) error {
-	query := "DELETE FROM async_searches WHERE expires_at < now()"
+func (r *asyncSearchesRepository) DeleteExpiredAsyncSearches(ctx context.Context, req types.DeleteExpiredAsyncSearchesRequest) error {
+	query, args := "DELETE FROM async_searches WHERE env = $1 AND expires_at < now()",
+		[]any{req.Env}
 
 	metricLabelsDelete := []string{"async_searches", "DELETE"}
-	if _, err := r.exec(ctx, metricLabelsDelete, query); err != nil {
+	if _, err := r.exec(ctx, metricLabelsDelete, query, args...); err != nil {
 		incErrorMetric(err, metricLabelsDelete)
 		return fmt.Errorf("failed to delete expired async searches: %w", err)
 	}

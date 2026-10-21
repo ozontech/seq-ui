@@ -38,3 +38,18 @@ func GetUseSeqQL(ctx context.Context) string {
 	}
 	return useSeqQL
 }
+
+type EnvKey struct{}
+
+// SetEnvKey returns a new context with the env.
+func SetEnvKey(ctx context.Context, env string) context.Context {
+	return context.WithValue(ctx, EnvKey{}, env)
+}
+
+// GetEnvKey returns env from context.
+func GetEnvKey(ctx context.Context) string {
+	if v := ctx.Value(EnvKey{}); v != nil {
+		return v.(string)
+	}
+	return ""
+}

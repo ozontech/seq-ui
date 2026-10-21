@@ -6,7 +6,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 )
 
 func TestServeGetLimits(t *testing.T) {
@@ -21,12 +21,14 @@ func TestServeGetLimits(t *testing.T) {
 			name: "ok",
 			env:  "default",
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
-					MaxSearchLimit:            100,
-					MaxExportLimit:            200,
-					MaxParallelExportRequests: 2,
-					MaxAggregationsPerRequest: 5,
-					SeqCLIMaxSearchLimit:      10000,
+				Options: config.SeqAPIOptions{
+					Limits: config.SeqAPILimits{
+						MaxSearchLimit:            100,
+						MaxExportLimit:            200,
+						MaxParallelExportRequests: 2,
+						MaxAggregationsPerRequest: 5,
+						SeqCLIMaxSearchLimit:      10000,
+					},
 				},
 			},
 			want: getLimitsResponse{
