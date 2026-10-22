@@ -4,9 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"reflect"
 	"time"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/ozontech/seq-ui/internal/app/config/fnc"
 )
 
 const (
@@ -340,6 +343,8 @@ func FromFile(cfgPath string) (Config, error) {
 		return Config{}, fmt.Errorf("error parsing file: %s", err)
 	}
 
+	applyFuncs(reflect.ValueOf(&cfg))
+
 	proxyClientMode := cfg.Clients.ProxyClientMode
 	if proxyClientMode == "" {
 		cfg.Clients.ProxyClientMode = ProxyClientModeGRPC
@@ -487,4 +492,36 @@ func parse(cfg []byte) (Config, error) {
 	}
 
 	return result, nil
+}
+
+func applyFuncs(rv reflect.Value) {
+	if rv.Kind() == reflect.Pointer || rv.Kind() == reflect.Interface {
+		if rv.IsNil() {
+			return
+		}
+		rv = rv.Elem()
+	}
+
+	if rv.Kind() == reflect.String && rv.CanSet() {
+		if newVal, ok := fnc.TryApply(rv.String()); ok {
+			rv.SetString(newVal)
+		}
+		return
+	}
+
+	switch rv.Kind() {
+	case reflect.Struct:
+		for i := 0; i < rv.NumField(); i++ {
+			applyFuncs(rv.Field(i))
+		}
+	case reflect.Slice, reflect.Array:
+		for i := 0; i < rv.Len(); i++ {
+			applyFuncs(rv.Index(i))
+		}
+	case reflect.Map:
+		iter := rv.MapRange()
+		for iter.Next() {
+			applyFuncs(iter.Value())
+		}
+	}
 }
