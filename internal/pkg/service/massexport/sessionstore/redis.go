@@ -363,7 +363,6 @@ type exportInfo struct {
 	From       time.Time     `json:"from"`
 	To         time.Time     `json:"to"`
 	Query      string        `json:"query"`
-	Window     time.Duration `json:"window"`
 	BatchSize  uint64        `json:"batch_size"`
 	PartLength time.Duration `json:"part_length"`
 
@@ -397,7 +396,6 @@ func globalToLocal(info types.ExportInfo) exportInfo {
 		From:       info.From,
 		To:         info.To,
 		Query:      info.Query,
-		Window:     info.Window,
 		BatchSize:  info.BatchSize,
 		PartLength: info.PartLength,
 	}
@@ -439,7 +437,6 @@ func localToGlobal(info exportInfo, sessionID string) (types.ExportInfo, error) 
 		From:       info.From,
 		To:         info.To,
 		Query:      info.Query,
-		Window:     info.Window,
 		BatchSize:  info.BatchSize,
 		PartLength: info.PartLength,
 	}, nil

@@ -79,12 +79,13 @@ func (ExportStatus) EnumDescriptor() ([]byte, []int) {
 }
 
 type StartRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"` // query for SeqDB in key:value format
-	From          *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=from,proto3" json:"from,omitempty"`
-	To            *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=to,proto3" json:"to,omitempty"`
-	Window        string                 `protobuf:"bytes,4,opt,name=window,proto3" json:"window,omitempty"`
-	Name          string                 `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Query string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"` // query for SeqDB in key:value format
+	From  *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=from,proto3" json:"from,omitempty"`
+	To    *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=to,proto3" json:"to,omitempty"`
+	// Deprecated: Marked as deprecated in massexport/v1/massexport.proto.
+	Window        string `protobuf:"bytes,4,opt,name=window,proto3" json:"window,omitempty"`
+	Name          string `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -140,6 +141,7 @@ func (x *StartRequest) GetTo() *timestamppb.Timestamp {
 	return nil
 }
 
+// Deprecated: Marked as deprecated in massexport/v1/massexport.proto.
 func (x *StartRequest) GetWindow() string {
 	if x != nil {
 		return x.Window
@@ -610,12 +612,12 @@ var File_massexport_v1_massexport_proto protoreflect.FileDescriptor
 
 const file_massexport_v1_massexport_proto_rawDesc = "" +
 	"\n" +
-	"\x1emassexport/v1/massexport.proto\x12\rmassexport.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xac\x01\n" +
+	"\x1emassexport/v1/massexport.proto\x12\rmassexport.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb0\x01\n" +
 	"\fStartRequest\x12\x14\n" +
 	"\x05query\x18\x01 \x01(\tR\x05query\x12.\n" +
 	"\x04from\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x04from\x12*\n" +
-	"\x02to\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x02to\x12\x16\n" +
-	"\x06window\x18\x04 \x01(\tR\x06window\x12\x12\n" +
+	"\x02to\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x02to\x12\x1a\n" +
+	"\x06window\x18\x04 \x01(\tB\x02\x18\x01R\x06window\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\".\n" +
 	"\rStartResponse\x12\x1d\n" +
 	"\n" +
