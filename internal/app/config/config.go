@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/ozontech/seq-ui/internal/app/config/fnc"
 )
 
 const (
@@ -339,6 +341,8 @@ func FromFile(cfgPath string) (Config, error) {
 	if err != nil {
 		return Config{}, fmt.Errorf("error parsing file: %s", err)
 	}
+
+	fnc.ApplyFuncs(&cfg)
 
 	proxyClientMode := cfg.Clients.ProxyClientMode
 	if proxyClientMode == "" {
