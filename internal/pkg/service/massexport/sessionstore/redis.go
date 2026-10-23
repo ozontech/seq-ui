@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -20,6 +21,7 @@ import (
 type redisSessionStore struct {
 	client         *redis.Client
 	exportLifetime time.Duration
+	mu             sync.Mutex
 }
 
 const (
@@ -277,6 +279,9 @@ func (s *redisSessionStore) getAllExports(ctx context.Context) ([]string, error)
 }
 
 func (s *redisSessionStore) ConfirmPart(ctx context.Context, sessionID string, partID int, partSize types.Size) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	info, err := s.get(ctx, sessionID)
 	if err != nil {
 		return fmt.Errorf("get: %w", err)
@@ -363,7 +368,6 @@ type exportInfo struct {
 	From       time.Time     `json:"from"`
 	To         time.Time     `json:"to"`
 	Query      string        `json:"query"`
-	Window     time.Duration `json:"window"`
 	BatchSize  uint64        `json:"batch_size"`
 	PartLength time.Duration `json:"part_length"`
 
@@ -397,7 +401,6 @@ func globalToLocal(info types.ExportInfo) exportInfo {
 		From:       info.From,
 		To:         info.To,
 		Query:      info.Query,
-		Window:     info.Window,
 		BatchSize:  info.BatchSize,
 		PartLength: info.PartLength,
 	}
@@ -439,7 +442,6 @@ func localToGlobal(info exportInfo, sessionID string) (types.ExportInfo, error) 
 		From:       info.From,
 		To:         info.To,
 		Query:      info.Query,
-		Window:     info.Window,
 		BatchSize:  info.BatchSize,
 		PartLength: info.PartLength,
 	}, nil

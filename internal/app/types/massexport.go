@@ -6,11 +6,10 @@ import (
 )
 
 type StartExportRequest struct {
-	Query  string
-	From   time.Time
-	To     time.Time
-	Window time.Duration
-	Name   string
+	Query string
+	From  time.Time
+	To    time.Time
+	Name  string
 }
 
 type StartExportResponse struct {
@@ -66,7 +65,6 @@ type ExportInfo struct {
 	From       time.Time
 	To         time.Time
 	Query      string
-	Window     time.Duration
 	BatchSize  uint64
 	PartLength time.Duration
 }
