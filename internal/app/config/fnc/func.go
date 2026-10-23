@@ -3,6 +3,7 @@ package fnc
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -11,10 +12,98 @@ import (
 	"github.com/ozontech/seq-ui/logger"
 )
 
-// TryApply tries to parse and apply the func.
+// ApplyFuncs applies funcs to config
+func ApplyFuncs(v any) {
+	rv := reflect.ValueOf(v)
+	if rv.Kind() != reflect.Pointer || rv.IsNil() {
+		return
+	}
+	applyFuncsReflect(rv)
+}
+
+func applyFuncsReflect(rv reflect.Value) {
+	if rv.Kind() == reflect.Interface {
+		if !rv.IsNil() {
+			applyFuncsReflect(rv.Elem())
+		}
+		return
+	}
+
+	if rv.Kind() == reflect.Pointer {
+		if rv.IsNil() {
+			return
+		}
+		rv = rv.Elem()
+	}
+
+	if rv.Kind() == reflect.String && rv.CanSet() {
+		if newVal, ok := tryApply(rv.String()); ok {
+			rv.SetString(newVal)
+		}
+		return
+	}
+
+	switch rv.Kind() {
+	case reflect.Struct:
+		for i := range rv.NumField() {
+			applyFuncsReflect(rv.Field(i))
+		}
+	case reflect.Slice, reflect.Array:
+		for i := range rv.Len() {
+			applyFuncsReflect(rv.Index(i))
+		}
+	case reflect.Map:
+		out := reflect.MakeMapWithSize(rv.Type(), rv.Len())
+		iter := rv.MapRange()
+		for iter.Next() {
+			out.SetMapIndex(iter.Key(), applyFuncsReflectCopy(iter.Value()))
+		}
+		rv.Set(out)
+	}
+}
+
+// map needs to be completely recreated from since its values are not addressable (CanSet() == false)
+func applyFuncsReflectCopy(rv reflect.Value) reflect.Value {
+	switch rv.Kind() {
+	case reflect.String:
+		if newVal, ok := tryApply(rv.String()); ok {
+			return reflect.ValueOf(newVal)
+		}
+		return rv
+	case reflect.Pointer, reflect.Interface:
+		if rv.IsNil() {
+			return rv
+		}
+		applyFuncsReflect(rv)
+		return rv
+	case reflect.Struct:
+		out := reflect.New(rv.Type()).Elem()
+		for i := range rv.NumField() {
+			out.Field(i).Set(applyFuncsReflectCopy(rv.Field(i)))
+		}
+		return out
+	case reflect.Slice, reflect.Array:
+		out := reflect.MakeSlice(rv.Type(), rv.Len(), rv.Len())
+		for i := range rv.Len() {
+			out.Index(i).Set(applyFuncsReflectCopy(rv.Index(i)))
+		}
+		return out
+	case reflect.Map:
+		out := reflect.MakeMapWithSize(rv.Type(), rv.Len())
+		iter := rv.MapRange()
+		for iter.Next() {
+			out.SetMapIndex(iter.Key(), applyFuncsReflectCopy(iter.Value()))
+		}
+		return out
+	}
+
+	return rv
+}
+
+// tryApply tries to parse and apply the func.
 //
 // Returns the result of the func execution and indicates whether it should be applied.
-func TryApply(fn string) (string, bool) {
+func tryApply(fn string) (string, bool) {
 	f, err := parse(fn)
 	if errors.Is(err, errEscaped) {
 		return fn[1:], true
