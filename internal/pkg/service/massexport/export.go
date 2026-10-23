@@ -219,15 +219,6 @@ func (s *exportService) exportOnePart(ctx context.Context, sessionID string, tas
 }
 
 func (s *exportService) downloadOnePart(ctx context.Context, writer io.Writer, task *loadTask, sessionID string) error {
-	err := s.fetchBatched(ctx, sessionID, task.query, task.from, task.to.Add(-time.Millisecond), writer)
-	if err != nil {
-		return fmt.Errorf("batch fetch: %w", err)
-	}
-
-	return nil
-}
-
-func (s *exportService) fetchBatched(ctx context.Context, sessionID, query string, from, to time.Time, writer io.Writer) error {
 	offsetID := ""
 
 	for {
@@ -252,9 +243,9 @@ func (s *exportService) fetchBatched(ctx context.Context, sessionID, query strin
 		resp, err := s.downloader.Search(ctx,
 			sessionID,
 			&seqapi.SearchRequest{
-				Query:     query,
-				From:      timestamppb.New(from),
-				To:        timestamppb.New(to),
+				Query:     task.query,
+				From:      timestamppb.New(task.from),
+				To:        timestamppb.New(task.to.Add(-time.Millisecond)),
 				Limit:     int32(s.batchSize),
 				OffsetId:  offsetID,
 				WithTotal: false,
