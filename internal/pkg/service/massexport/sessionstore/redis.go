@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -20,6 +21,7 @@ import (
 type redisSessionStore struct {
 	client         *redis.Client
 	exportLifetime time.Duration
+	mu             sync.Mutex
 }
 
 const (
@@ -277,6 +279,9 @@ func (s *redisSessionStore) getAllExports(ctx context.Context) ([]string, error)
 }
 
 func (s *redisSessionStore) ConfirmPart(ctx context.Context, sessionID string, partID int, partSize types.Size) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	info, err := s.get(ctx, sessionID)
 	if err != nil {
 		return fmt.Errorf("get: %w", err)
