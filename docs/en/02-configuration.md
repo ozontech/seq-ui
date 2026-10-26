@@ -882,3 +882,32 @@ export TRACING_SERVICE_NAME=seq-ui
 + **`TRACING_SAMPLER_PARAM`** *`float64`* *`required`*
   
   Sampling rate parameter. Determines the fraction of requests that will be traced. Must be value between 0.0 and 1.0. For instance, use 0.1 to sample 10% of requests.
+
+# Functions
+
+The configuration supports a set of functions that are performed at the parsing stage.
+
+> If you need to pass a literal string that begins with `<func>(`, you should escape the value with a
+backslash: `\<func>(`.
+
+## ENV
+The `env(ENV_NAME)` function allows you to get environment variables.
+
+Params:
++ **ENV_NAME** - name of the environment variable
+
+Suppose you have environment variable `DB_PASS=my-pass`.
+
+Raw config:
+```yaml
+server:
+  db:
+    pass: env(DB_PASS)
+```
+
+Final config:
+```yaml
+server:
+  db:
+    pass: my-pass
+```
