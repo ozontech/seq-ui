@@ -77,8 +77,8 @@ import (
 //       timeout:
 //       avg_doc_size:
 //       addrs:
+//       request_retries:
 //       request_retries_backoff:
-//       backoff:
 // 		   initial_interval:
 // 		   max_interval
 //       client_mode:
@@ -174,7 +174,7 @@ import (
 //           enable_ssl:
 //       session_store:
 //         lifetime:
-//         cache_id:
+//         redis_cache_id:
 //       download_params:
 //         batch_size:
 //         delay:
