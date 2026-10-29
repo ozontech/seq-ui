@@ -8,6 +8,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/ozontech/seq-ui/internal/app/config/fnc"
 	"github.com/ozontech/seq-ui/internal/app/config/migrate"
 	v1 "github.com/ozontech/seq-ui/internal/app/config/v1"
 	v2 "github.com/ozontech/seq-ui/internal/app/config/v2"
@@ -60,6 +61,8 @@ func FromFile(cfgPath string) (*v2.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse config v2: %w", err)
 	}
+
+	fnc.ApplyFuncs(&cfg)
 
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("validate config: %w", err)
