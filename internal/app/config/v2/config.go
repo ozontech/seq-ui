@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"slices"
 	"time"
 )
 
@@ -73,7 +72,7 @@ import (
 //       <env_name>: # same as root options
 // clients:
 //   seq_db:
-//     - id:
+//     <seq_db_id>:
 //       timeout:
 //       avg_doc_size:
 //       addrs:
@@ -88,7 +87,7 @@ import (
 //           timeout:
 //           permit_without_stream:
 //   clickhouse:
-//     - id:
+//     <ch_id>:
 //       addrs:
 //       database:
 //       username:
@@ -99,6 +98,7 @@ import (
 // handlers:
 //   seq_api:
 //     options:
+//       seq_db_id:
 //       limits:
 //         max_search_limit:
 //         max_search_total:
@@ -142,11 +142,11 @@ import (
 //           type:
 //     envs:
 //       <env_name>:
-//         seq_db_id:
 //         options: # same as root options
 //     default_env:
 //   error_groups:
 //     options:
+//       ch_id:
 //       log_tags_mapping:
 //         env:
 //         service:
@@ -155,11 +155,11 @@ import (
 //         <ch_column>:
 //     envs:
 //       <env_name>:
-//         ch_id:
 //         options: # same as root options
 //     default_env:
 //   mass_export:
 //     options:
+//       seq_db_id:
 //       workers_count:
 //       tasks_channel_size:
 //       part_length:
@@ -183,16 +183,15 @@ import (
 //           max_interval:
 //     envs:
 //       <env_name>:
-//         seq_db_id:
 //         options: # same as root options
 //     default_env:
 //   async_search:
 //     options:
+//       seq_db_id:
 //       admin_users:
 //       list_query_length_limit:
 //     envs:
 //       <env_name>:
-//         seq_db_id:
 //         options: # same as root options
 //     default_env:
 //   admin:
@@ -216,12 +215,12 @@ import (
 //   use_prepared_statements:
 // cache:
 //   inmemory:
-//     - id:
+//     <cache_id>:
 //       num_counters:
 //       max_cost:
 //       buffer_items:
 //   redis:
-//     - id:
+//     <cache_id>:
 //       with_inmem_id:
 //       key_prefix:
 //       addr:
@@ -299,14 +298,14 @@ type (
 )
 
 type Inmemory struct {
-	ID          string `yaml:"id"`
+	ID          string `yaml:"-"`
 	NumCounters int64  `yaml:"num_counters,omitempty"`
 	MaxCost     int64  `yaml:"max_cost,omitempty"`
 	BufferItems int64  `yaml:"buffer_items,omitempty"`
 }
 
 type Redis struct {
-	ID              string        `yaml:"id"`
+	ID              string        `yaml:"-"`
 	WithInmemID     string        `yaml:"with_inmem_id,omitempty"`
 	KeyPrefix       string        `yaml:"key_prefix,omitempty"`
 	Addr            string        `yaml:"addr"`
@@ -319,30 +318,8 @@ type Redis struct {
 }
 
 type Cache struct {
-	Inmemory []Inmemory `yaml:"inmemory,omitempty"`
-	Redis    []Redis    `yaml:"redis,omitempty"`
-}
-
-func (c *Cache) InmemByID(id string) *Inmemory {
-	i := slices.IndexFunc(c.Inmemory, func(inm Inmemory) bool {
-		return inm.ID == id
-	})
-	if i == -1 {
-		return nil
-	}
-
-	return &c.Inmemory[i]
-}
-
-func (c *Cache) RedisByID(id string) *Redis {
-	i := slices.IndexFunc(c.Redis, func(r Redis) bool {
-		return r.ID == id
-	})
-	if i == -1 {
-		return nil
-	}
-
-	return &c.Redis[i]
+	Inmemory map[string]*Inmemory `yaml:"inmemory,omitempty"`
+	Redis    map[string]*Redis    `yaml:"redis,omitempty"`
 }
 
 type S3 struct {
@@ -375,11 +352,11 @@ type MassExport struct {
 }
 
 type MassExportEnv struct {
-	SeqDBID string             `yaml:"seq_db_id"`
 	Options *MassExportOptions `yaml:"options,omitempty"`
 }
 
 type MassExportOptions struct {
+	SeqDBID          string         `yaml:"seq_db_id,omitempty"`
 	WorkersCount     int            `yaml:"workers_count"`
 	TasksChannelSize int            `yaml:"tasks_channel_size,omitempty"`
 	PartLength       time.Duration  `yaml:"part_length,omitempty"`
@@ -459,7 +436,7 @@ type GRPCParams struct {
 }
 
 type SeqDBClient struct {
-	ID                    string        `yaml:"id"`
+	ID                    string        `yaml:"-"`
 	Timeout               time.Duration `yaml:"timeout"`
 	AvgDocSize            int           `yaml:"avg_doc_size,omitempty"`
 	Addrs                 []string      `yaml:"addrs"`
@@ -475,7 +452,7 @@ type Backoff struct {
 }
 
 type CHClient struct {
-	ID          string        `yaml:"id"`
+	ID          string        `yaml:"-"`
 	Addrs       []string      `yaml:"addrs"`
 	Database    string        `yaml:"database,omitempty"`
 	Username    string        `yaml:"username,omitempty"`
@@ -486,19 +463,8 @@ type CHClient struct {
 }
 
 type Clients struct {
-	SeqDB      []SeqDBClient `yaml:"seq_db"`
-	ClickHouse []CHClient    `yaml:"clickhouse,omitempty"`
-}
-
-func (c *Clients) ClickHouseByID(id string) *CHClient {
-	i := slices.IndexFunc(c.ClickHouse, func(ch CHClient) bool {
-		return ch.ID == id
-	})
-	if i == -1 {
-		return nil
-	}
-
-	return &c.ClickHouse[i]
+	SeqDB      map[string]*SeqDBClient `yaml:"seq_db"`
+	ClickHouse map[string]*CHClient    `yaml:"clickhouse,omitempty"`
 }
 
 type Handlers struct {
@@ -536,11 +502,11 @@ type SeqAPI struct {
 }
 
 type SeqAPIEnv struct {
-	SeqDBID string         `yaml:"seq_db_id"`
 	Options *SeqAPIOptions `yaml:"options,omitempty"`
 }
 
 type SeqAPIOptions struct {
+	SeqDBID      string       `yaml:"seq_db_id,omitempty"`
 	Limits       SeqAPILimits `yaml:"limits,omitempty"`
 	Caches       SeqAPICaches `yaml:"caches,omitempty"`
 	Masking      *Masking     `yaml:"masking,omitempty"`
@@ -612,11 +578,11 @@ type ErrorGroups struct {
 }
 
 type ErrorGroupsEnv struct {
-	CHID    string              `yaml:"ch_id"`
 	Options *ErrorGroupsOptions `yaml:"options,omitempty"`
 }
 
 type ErrorGroupsOptions struct {
+	CHID           string            `yaml:"ch_id,omitempty"`
 	LogTagsMapping LogTagsMapping    `yaml:"log_tags_mapping"`
 	QueryFilter    map[string]string `yaml:"query_filter,omitempty"`
 }
@@ -628,11 +594,11 @@ type AsyncSearch struct {
 }
 
 type AsyncSearchEnv struct {
-	SeqDBID string              `yaml:"seq_db_id"`
 	Options *AsyncSearchOptions `yaml:"options,omitempty"`
 }
 
 type AsyncSearchOptions struct {
+	SeqDBID              string   `yaml:"seq_db_id,omitempty"`
 	AdminUsers           []string `yaml:"admin_users,omitempty"`
 	ListQueryLengthLimit int      `yaml:"list_query_length_limit,omitempty"`
 }

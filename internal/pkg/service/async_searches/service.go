@@ -3,7 +3,6 @@ package asyncsearches
 import (
 	"context"
 	"fmt"
-	"maps"
 	"slices"
 	"time"
 	"unicode/utf8"
@@ -55,11 +54,10 @@ func New(
 	serviceByEnv := make(map[string]Service, max(1, len(cfg.Envs)))
 	if len(cfg.Envs) > 0 {
 		for envName, envCfg := range cfg.Envs {
-			serviceByEnv[envName] = newService(ctx, repo, seqDBClients[envCfg.SeqDBID], envCfg.Options, envName)
+			serviceByEnv[envName] = newService(ctx, repo, seqDBClients[envCfg.Options.SeqDBID], envCfg.Options, envName)
 		}
 	} else {
-		client := slices.Collect(maps.Values(seqDBClients))[0]
-		serviceByEnv[""] = newService(ctx, repo, client, &cfg.Options, "")
+		serviceByEnv[""] = newService(ctx, repo, seqDBClients[cfg.Options.SeqDBID], &cfg.Options, "")
 	}
 
 	return serviceByEnv

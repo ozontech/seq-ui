@@ -187,13 +187,12 @@ func (m *v1tov2) migrateClients(src *v1.Clients, ch *v1.CH) v2.Clients {
 
 	if src != nil {
 		if len(src.SeqDB) > 0 {
-			dst.SeqDB = make([]v2.SeqDBClient, 0, len(src.SeqDB))
+			dst.SeqDB = make(map[string]*v2.SeqDBClient, len(src.SeqDB))
 			for i := range src.SeqDB {
-				dst.SeqDB = append(dst.SeqDB, m.migrateSeqDBClient(&src.SeqDB[i]))
+				dst.SeqDB[src.SeqDB[i].ID] = m.migrateSeqDBClient(&src.SeqDB[i])
 			}
 		} else {
-			dst.SeqDB = []v2.SeqDBClient{{
-				ID:                    v2.DefaultSeqDBClientID,
+			dst.SeqDB = map[string]*v2.SeqDBClient{v2.DefaultSeqDBClientID: {
 				Timeout:               src.SeqDBTimeout,
 				AvgDocSize:            src.SeqDBAvgDocSize,
 				Addrs:                 src.SeqDBAddrs,
@@ -206,8 +205,7 @@ func (m *v1tov2) migrateClients(src *v1.Clients, ch *v1.CH) v2.Clients {
 	}
 
 	if ch != nil {
-		dst.ClickHouse = []v2.CHClient{{
-			ID:          v2.DefaultCHClientID,
+		dst.ClickHouse = map[string]*v2.CHClient{v2.DefaultCHClientID: {
 			Addrs:       ch.Addrs,
 			Database:    ch.Database,
 			Username:    ch.Username,
@@ -232,9 +230,8 @@ func (m *v1tov2) migrateBackoff(initialInterval, maxInterval time.Duration) *v2.
 	}
 }
 
-func (m *v1tov2) migrateSeqDBClient(src *v1.SeqDBClient) v2.SeqDBClient {
-	return v2.SeqDBClient{
-		ID:                    src.ID,
+func (m *v1tov2) migrateSeqDBClient(src *v1.SeqDBClient) *v2.SeqDBClient {
+	return &v2.SeqDBClient{
 		Timeout:               src.Timeout,
 		AvgDocSize:            src.AvgDocSize,
 		Addrs:                 src.Addrs,
@@ -265,34 +262,34 @@ func (m *v1tov2) migrateDB(src *v1.DB) *v2.DB {
 func (m *v1tov2) migrateCache(src v1.Cache, sessionStore *v1.SessionStore) v2.Cache {
 	// in config v1 inmemory cache is always created
 	cache := v2.Cache{
-		Inmemory: []v2.Inmemory{{
-			ID:          v2.DefaultInmemID,
+		Inmemory: map[string]*v2.Inmemory{v2.DefaultInmemID: {
 			NumCounters: src.Inmemory.NumCounters,
 			MaxCost:     src.Inmemory.MaxCost,
 			BufferItems: src.Inmemory.BufferItems,
 		}},
 	}
 
+	if src.Redis != nil || sessionStore != nil {
+		cache.Redis = make(map[string]*v2.Redis, 3)
+	}
+
 	if src.Redis != nil {
-		cache.Redis = append(cache.Redis,
-			m.migrateRedis(src.Redis, v2.DefaultRedisWithInmemID, v2.DefaultInmemID),
-			m.migrateRedis(src.Redis, v2.DefaultRedisWithoutInmemID, ""),
-		)
+		cache.Redis[v2.DefaultRedisWithInmemID] = m.migrateRedis(src.Redis, v2.DefaultInmemID)
+		cache.Redis[v2.DefaultRedisWithoutInmemID] = m.migrateRedis(src.Redis, "")
 	}
 
 	if sessionStore != nil {
 		// in v1 session store ignored key_prefix
-		redis := m.migrateRedis(&sessionStore.Redis, v2.DefaultMassExportRedisID, "")
+		redis := m.migrateRedis(&sessionStore.Redis, "")
 		redis.KeyPrefix = ""
-		cache.Redis = append(cache.Redis, redis)
+		cache.Redis[v2.DefaultMassExportRedisID] = redis
 	}
 
 	return cache
 }
 
-func (m *v1tov2) migrateRedis(src *v1.Redis, id, withInmemID string) v2.Redis {
-	return v2.Redis{
-		ID:              id,
+func (m *v1tov2) migrateRedis(src *v1.Redis, withInmemID string) *v2.Redis {
+	return &v2.Redis{
 		WithInmemID:     withInmemID,
 		Addr:            src.Addr,
 		Username:        src.Username,
@@ -321,18 +318,22 @@ func (m *v1tov2) migrateSeqAPI(src *v1.SeqAPI, v1Cache v1.Cache) v2.SeqAPI {
 		DefaultEnv: src.DefaultEnv,
 	}
 
-	if len(src.Envs) > 0 {
-		dst.Envs = make(map[string]v2.SeqAPIEnv, len(src.Envs))
-		for envName, envCfg := range src.Envs {
-			dstEnv := v2.SeqAPIEnv{SeqDBID: envCfg.SeqDB}
-			// in v1 env without options uses root options, in v2 root
-			// options are merged into env options
-			if envCfg.Options != nil {
-				options := m.migrateSeqAPIOptions(envCfg.Options, v1Cache)
-				dstEnv.Options = &options
-			}
-			dst.Envs[envName] = dstEnv
+	if len(src.Envs) == 0 {
+		dst.Options.SeqDBID = v2.DefaultSeqDBClientID
+		return dst
+	}
+
+	dst.Envs = make(map[string]v2.SeqAPIEnv, len(src.Envs))
+	for envName, envCfg := range src.Envs {
+		// in v1 env without options uses root options, in v2 root
+		// options are merged into env options, so only seq_db_id is set
+		options := &v2.SeqAPIOptions{}
+		if envCfg.Options != nil {
+			migratedOpts := m.migrateSeqAPIOptions(envCfg.Options, v1Cache)
+			options = &migratedOpts
 		}
+		options.SeqDBID = envCfg.SeqDB
+		dst.Envs[envName] = v2.SeqAPIEnv{Options: options}
 	}
 
 	return dst
@@ -460,6 +461,7 @@ func (m *v1tov2) migrateErrorGroups(src *v1.ErrorGroups, ch *v1.CH) *v2.ErrorGro
 
 	return &v2.ErrorGroups{
 		Options: v2.ErrorGroupsOptions{
+			CHID: v2.DefaultCHClientID,
 			LogTagsMapping: v2.LogTagsMapping{
 				Env:     src.LogTagsMapping.Env,
 				Service: src.LogTagsMapping.Service,
@@ -471,22 +473,18 @@ func (m *v1tov2) migrateErrorGroups(src *v1.ErrorGroups, ch *v1.CH) *v2.ErrorGro
 }
 
 func (m *v1tov2) migrateAsyncSearch(src *v1.AsyncSearch, seqAPI *v1.SeqAPI) *v2.AsyncSearch {
-	dst := &v2.AsyncSearch{
+	seqDBID := v2.DefaultSeqDBClientID
+	if len(seqAPI.Envs) > 0 {
+		seqDBID = seqAPI.Envs[seqAPI.DefaultEnv].SeqDB
+	}
+
+	return &v2.AsyncSearch{
 		Options: v2.AsyncSearchOptions{
+			SeqDBID:              seqDBID,
 			AdminUsers:           src.AdminUsers,
 			ListQueryLengthLimit: src.ListQueryLengthLimit,
 		},
-		DefaultEnv: seqAPI.DefaultEnv,
 	}
-
-	if len(seqAPI.Envs) > 0 {
-		dst.Envs = make(map[string]v2.AsyncSearchEnv, len(seqAPI.Envs))
-		for envName, envCfg := range seqAPI.Envs {
-			dst.Envs[envName] = v2.AsyncSearchEnv{SeqDBID: envCfg.SeqDB}
-		}
-	}
-
-	return dst
 }
 
 func (m *v1tov2) migrateMassExport(src *v1.MassExport, seqAPI *v1.SeqAPI) *v2.MassExport {
@@ -530,18 +528,12 @@ func (m *v1tov2) migrateMassExport(src *v1.MassExport, seqAPI *v1.SeqAPI) *v2.Ma
 		}
 	}
 
-	dst := &v2.MassExport{Options: options}
-
+	options.SeqDBID = v2.DefaultSeqDBClientID
 	if len(seqAPI.Envs) > 0 {
-		dst.Envs = map[string]v2.MassExportEnv{
-			seqAPI.DefaultEnv: {
-				SeqDBID: seqAPI.Envs[seqAPI.DefaultEnv].SeqDB,
-			},
-		}
-		dst.DefaultEnv = seqAPI.DefaultEnv
+		options.SeqDBID = seqAPI.Envs[seqAPI.DefaultEnv].SeqDB
 	}
 
-	return dst
+	return &v2.MassExport{Options: options}
 }
 
 func (m *v1tov2) migrateAdmin(src *v1.Admin, v1Cache v1.Cache) *v2.Admin {

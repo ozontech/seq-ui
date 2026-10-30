@@ -168,12 +168,12 @@ func initApp(ctx context.Context, cfg *config.Config) *api.Registrar {
 
 func initSeqDBClients(ctx context.Context, cfg *config.Config) (map[string]seqdb.Client, error) {
 	clients := make(map[string]seqdb.Client, len(cfg.Clients.SeqDB))
-	for _, clientCfg := range cfg.Clients.SeqDB {
-		client, err := createSeqDBClient(ctx, &clientCfg, &cfg.Handlers.SeqAPI)
+	for id, clientCfg := range cfg.Clients.SeqDB {
+		client, err := createSeqDBClient(ctx, clientCfg, &cfg.Handlers.SeqAPI)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create seq-db client %q: %w", clientCfg.ID, err)
+			return nil, fmt.Errorf("failed to create seq-db client %q: %w", id, err)
 		}
-		clients[clientCfg.ID] = client
+		clients[id] = client
 	}
 
 	return clients, nil
@@ -181,13 +181,13 @@ func initSeqDBClients(ctx context.Context, cfg *config.Config) (map[string]seqdb
 
 func createSeqDBClient(ctx context.Context, cfg *config.SeqDBClient, seqAPI *config.SeqAPI) (seqdb.Client, error) {
 	var maxSearchLimit int32
-	if len(seqAPI.Envs) == 0 {
+	if len(seqAPI.Envs) == 0 && seqAPI.Options.SeqDBID == cfg.ID {
 		maxSearchLimit = seqAPI.Options.Limits.MaxSearchLimit
 	}
 
 	// one seqdb client can be used by several envs, so it must accept the largest one
 	for _, env := range seqAPI.Envs {
-		if env.SeqDBID == cfg.ID {
+		if env.Options.SeqDBID == cfg.ID {
 			maxSearchLimit = max(maxSearchLimit, env.Options.Limits.MaxSearchLimit)
 		}
 	}
@@ -239,12 +239,12 @@ func initDb(ctx context.Context, cfg *config.DB) (*pgxpool.Pool, error) {
 
 func initClickHouseClients(ctx context.Context, cfg *config.Config) (map[string]driver.Conn, error) {
 	clients := make(map[string]driver.Conn, len(cfg.Clients.ClickHouse))
-	for _, clientCfg := range cfg.Clients.ClickHouse {
-		client, err := createClickHouseClient(ctx, &clientCfg)
+	for id, clientCfg := range cfg.Clients.ClickHouse {
+		client, err := createClickHouseClient(ctx, clientCfg)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create clickhouse client %q: %w", clientCfg.ID, err)
+			return nil, fmt.Errorf("failed to create clickhouse client %q: %w", id, err)
 		}
-		clients[clientCfg.ID] = client
+		clients[id] = client
 	}
 
 	return clients, nil

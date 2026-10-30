@@ -10,7 +10,6 @@ import (
 
 	handlercache "github.com/ozontech/seq-ui/internal/api/seqapi/v1/handler_cache"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
-	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches"
 )
@@ -28,11 +27,11 @@ func setupTestAPI(data test.APITestData) *API {
 	asyncSearhesByEnv := make(map[string]asyncsearches.Service, max(1, len(data.Cfg.Envs)))
 
 	if len(data.Cfg.Envs) == 0 {
-		seqDBClients[config.DefaultSeqDBClientID] = data.Mocks.SeqDB
+		seqDBClients[data.Cfg.Options.SeqDBID] = data.Mocks.SeqDB
 		asyncSearhesByEnv[""] = data.Mocks.AsyncSearchesSvc
 	}
 	for envName, envConfig := range data.Cfg.Envs {
-		seqDBClients[envConfig.SeqDBID] = data.Mocks.SeqDB
+		seqDBClients[envConfig.Options.SeqDBID] = data.Mocks.SeqDB
 		asyncSearhesByEnv[envName] = data.Mocks.AsyncSearchesSvc
 	}
 

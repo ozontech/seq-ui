@@ -1,8 +1,6 @@
 package grpc
 
 import (
-	"maps"
-	"slices"
 	"sort"
 	"strconv"
 	"time"
@@ -42,11 +40,10 @@ func New(cfg *config.SeqAPI, seqDBСlients map[string]seqdb.Client, asyncSearche
 	paramsByEnv := make(map[string]apiParams, max(1, len(cfg.Envs)))
 	if len(cfg.Envs) > 0 {
 		for envName, envConfig := range cfg.Envs {
-			paramsByEnv[envName] = newAPIParams(envName, seqDBСlients[envConfig.SeqDBID], envConfig.Options)
+			paramsByEnv[envName] = newAPIParams(envName, seqDBСlients[envConfig.Options.SeqDBID], envConfig.Options)
 		}
 	} else {
-		client := slices.Collect(maps.Values(seqDBСlients))[0]
-		paramsByEnv[""] = newAPIParams("", client, &cfg.Options)
+		paramsByEnv[""] = newAPIParams("", seqDBСlients[cfg.Options.SeqDBID], &cfg.Options)
 	}
 
 	return &API{

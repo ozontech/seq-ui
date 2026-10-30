@@ -68,8 +68,7 @@ const (
 var defaultCORSAllowedMethods = []string{"HEAD", "GET", "POST", "PATCH", "DELETE"}
 
 func (cfg *Config) Validate() error {
-	seqDBIDs, chIDs, err := validateClients(&cfg.Clients)
-	if err != nil {
+	if err := validateClients(&cfg.Clients); err != nil {
 		return err
 	}
 	cacheIDs, err := validateCache(&cfg.Cache)
@@ -82,16 +81,16 @@ func (cfg *Config) Validate() error {
 	if err := validateServer(&cfg.Server, cacheIDs); err != nil {
 		return err
 	}
-	if err := validateSeqAPI(&cfg.Handlers.SeqAPI, seqDBIDs, cacheIDs); err != nil {
+	if err := validateSeqAPI(&cfg.Handlers.SeqAPI, cfg.Clients.SeqDB, cacheIDs); err != nil {
 		return err
 	}
-	if err := validateAsyncSearch(cfg.Handlers.AsyncSearch, seqDBIDs); err != nil {
+	if err := validateAsyncSearch(cfg.Handlers.AsyncSearch, cfg.Clients.SeqDB); err != nil {
 		return err
 	}
-	if err := validateMassExport(cfg.Handlers.MassExport, seqDBIDs, &cfg.Cache); err != nil {
+	if err := validateMassExport(cfg.Handlers.MassExport, cfg.Clients.SeqDB, &cfg.Cache); err != nil {
 		return err
 	}
-	if err := validateErrorGroups(cfg.Handlers.ErrorGroups, chIDs); err != nil {
+	if err := validateErrorGroups(cfg.Handlers.ErrorGroups, cfg.Clients.ClickHouse); err != nil {
 		return err
 	}
 	if err := validateAdmin(cfg.Handlers.Admin, cacheIDs); err != nil {
@@ -161,32 +160,27 @@ func validateOIDC(path string, oidc *OIDC, cacheIDs map[string]struct{}) error {
 	return nil
 }
 
-func validateClients(clients *Clients) (seqDBIDs, chIDs map[string]struct{}, err error) {
+func validateClients(clients *Clients) error {
 	if len(clients.SeqDB) == 0 {
-		return nil, nil, fmt.Errorf("clients.seq_db must contain at least one client")
+		return fmt.Errorf("clients.seq_db must contain at least one client")
 	}
 
-	seqDBIDs = make(map[string]struct{}, len(clients.SeqDB))
-	for i := range clients.SeqDB {
-		c := &clients.SeqDB[i]
-		if c.ID == "" {
-			return nil, nil, fmt.Errorf("clients.seq_db[%d].id cannot be empty", i)
+	for id, c := range clients.SeqDB {
+		if c == nil {
+			return fmt.Errorf("clients.seq_db[%q] cannot be empty", id)
 		}
-		if _, ok := seqDBIDs[c.ID]; ok {
-			return nil, nil, fmt.Errorf("duplicate clients.seq_db.id %q", c.ID)
-		}
-		seqDBIDs[c.ID] = struct{}{}
+		c.ID = id
 
 		if len(c.Addrs) == 0 {
-			return nil, nil, fmt.Errorf("clients.seq_db[%q].addrs cannot be empty", c.ID)
+			return fmt.Errorf("clients.seq_db[%q].addrs cannot be empty", id)
 		}
 		if c.Timeout <= 0 {
-			return nil, nil, fmt.Errorf("clients.seq_db[%q].timeout must be > 0", c.ID)
+			return fmt.Errorf("clients.seq_db[%q].timeout must be > 0", id)
 		}
 		if c.ClientMode == "" {
 			c.ClientMode = SeqDBClientModeGRPC
 		} else if c.ClientMode != SeqDBClientModeGRPC {
-			return nil, nil, fmt.Errorf("invalid clients.seq_db[%q].client_mode: %q (allowed: %q)", c.ID, c.ClientMode, SeqDBClientModeGRPC)
+			return fmt.Errorf("invalid clients.seq_db[%q].client_mode: %q (allowed: %q)", id, c.ClientMode, SeqDBClientModeGRPC)
 		}
 
 		if c.GRPCParams != nil && c.GRPCParams.Keepalive != nil {
@@ -195,19 +189,14 @@ func validateClients(clients *Clients) (seqDBIDs, chIDs map[string]struct{}, err
 		}
 	}
 
-	chIDs = make(map[string]struct{}, len(clients.ClickHouse))
-	for i := range clients.ClickHouse {
-		ch := &clients.ClickHouse[i]
-		if ch.ID == "" {
-			return nil, nil, fmt.Errorf("clients.clickhouse[%d].id cannot be empty", i)
+	for id, ch := range clients.ClickHouse {
+		if ch == nil {
+			return fmt.Errorf("clients.clickhouse[%q] cannot be empty", id)
 		}
-		if _, ok := chIDs[ch.ID]; ok {
-			return nil, nil, fmt.Errorf("duplicate clients.clickhouse.id %q", ch.ID)
-		}
-		chIDs[ch.ID] = struct{}{}
+		ch.ID = id
 
 		if len(ch.Addrs) == 0 {
-			return nil, nil, fmt.Errorf("clients.clickhouse[%q].addrs cannot be empty", ch.ID)
+			return fmt.Errorf("clients.clickhouse[%q].addrs cannot be empty", id)
 		}
 		if ch.DialTimeout <= 0 {
 			ch.DialTimeout = defaultClickHouseDialTimeout
@@ -217,20 +206,21 @@ func validateClients(clients *Clients) (seqDBIDs, chIDs map[string]struct{}, err
 		}
 	}
 
-	return seqDBIDs, chIDs, nil
+	return nil
 }
 
 func validateCache(cache *Cache) (map[string]struct{}, error) {
 	cacheIDs := make(map[string]struct{}, len(cache.Inmemory)+len(cache.Redis))
 
-	for i := range cache.Inmemory {
-		inm := &cache.Inmemory[i]
-		if inm.ID == "" {
-			return nil, fmt.Errorf("cache.inmemory[%d].id cannot be empty", i)
+	for id, inm := range cache.Inmemory {
+		if id == "" {
+			return nil, fmt.Errorf("cache.inmemory: id cannot be empty")
 		}
-		if _, ok := cacheIDs[inm.ID]; ok {
-			return nil, fmt.Errorf("duplicate cache id %q", inm.ID)
+		if inm == nil {
+			inm = &Inmemory{}
+			cache.Inmemory[id] = inm
 		}
+		inm.ID = id
 		cacheIDs[inm.ID] = struct{}{}
 
 		if inm.NumCounters <= 0 {
@@ -244,21 +234,25 @@ func validateCache(cache *Cache) (map[string]struct{}, error) {
 		}
 	}
 
-	for i := range cache.Redis {
-		r := &cache.Redis[i]
-		if r.ID == "" {
-			return nil, fmt.Errorf("cache.redis[%d].id cannot be empty", i)
+	for id, r := range cache.Redis {
+		if id == "" {
+			return nil, fmt.Errorf("cache.redis: id cannot be empty")
 		}
-		if _, ok := cacheIDs[r.ID]; ok {
-			return nil, fmt.Errorf("duplicate cache id %q", r.ID)
+		if _, ok := cacheIDs[id]; ok {
+			return nil, fmt.Errorf("duplicate cache id %q in cache.inmemory and cache.redis", id)
 		}
+		if r == nil {
+			return nil, fmt.Errorf("cache.redis[%q] cannot be empty", id)
+		}
+		r.ID = id
+
 		if r.Addr == "" {
-			return nil, fmt.Errorf("cache.redis[%q].addr cannot be empty", r.ID)
+			return nil, fmt.Errorf("cache.redis[%q].addr cannot be empty", id)
 		}
-		if r.WithInmemID != "" && cache.InmemByID(r.WithInmemID) == nil {
-			return nil, fmt.Errorf("cache.redis[%q].with_inmem_id %q not found in cache.inmemory", r.ID, r.WithInmemID)
+		if _, ok := cache.Inmemory[r.WithInmemID]; r.WithInmemID != "" && !ok {
+			return nil, fmt.Errorf("cache.redis[%q].with_inmem_id %q not found in cache.inmemory", id, r.WithInmemID)
 		}
-		cacheIDs[r.ID] = struct{}{}
+		cacheIDs[id] = struct{}{}
 	}
 
 	return cacheIDs, nil
@@ -271,31 +265,31 @@ func validateDB(db *DB) {
 	}
 }
 
-func validateSeqAPI(seqAPI *SeqAPI, seqDBIDs, cacheIDs map[string]struct{}) error {
+func validateSeqAPI(seqAPI *SeqAPI, seqDBs map[string]*SeqDBClient, cacheIDs map[string]struct{}) error {
 	if err := validateEnvs("handlers.seq_api", seqAPI.Envs, seqAPI.DefaultEnv); err != nil {
 		return err
 	}
-	if len(seqAPI.Envs) == 0 && len(seqDBIDs) != 1 {
-		return fmt.Errorf("handlers.seq_api: clients.seq_db must contain one client when envs are not used")
+	if len(seqAPI.Envs) == 0 {
+		if err := validateClientID("handlers.seq_api.options.seq_db_id", seqAPI.Options.SeqDBID, seqDBs); err != nil {
+			return err
+		}
 	}
 	if err := validateSeqAPIOptions("handlers.seq_api.options", &seqAPI.Options, cacheIDs); err != nil {
 		return err
 	}
 
 	for envName, envConfig := range seqAPI.Envs {
-		if envConfig.SeqDBID == "" {
-			return fmt.Errorf("handlers.seq_api.envs[%q].seq_db_id cannot be empty", envName)
-		}
-		if _, ok := seqDBIDs[envConfig.SeqDBID]; !ok {
-			return fmt.Errorf("unknown handlers.seq_api.envs[%q].seq_db_id %q", envName, envConfig.SeqDBID)
-		}
-
 		// options are nil only if root options are not set, so env uses default options
 		if envConfig.Options == nil {
 			envConfig.Options = &SeqAPIOptions{}
 			seqAPI.Envs[envName] = envConfig
 		}
-		if err := validateSeqAPIOptions(fmt.Sprintf("handlers.seq_api.envs[%q].options", envName), envConfig.Options, cacheIDs); err != nil {
+
+		path := fmt.Sprintf("handlers.seq_api.envs[%q].options", envName)
+		if err := validateClientID(path+".seq_db_id", envConfig.Options.SeqDBID, seqDBs); err != nil {
+			return err
+		}
+		if err := validateSeqAPIOptions(path, envConfig.Options, cacheIDs); err != nil {
 			return err
 		}
 	}
@@ -328,6 +322,16 @@ func validateAdmin(admin *Admin, cacheIDs map[string]struct{}) error {
 	return nil
 }
 
+func validateClientID[T any](path, id string, clients map[string]T) error {
+	if id == "" {
+		return fmt.Errorf("%s cannot be empty", path)
+	}
+	if _, ok := clients[id]; !ok {
+		return fmt.Errorf("unknown %s %q", path, id)
+	}
+	return nil
+}
+
 func validateEnvs[T any](path string, envs map[string]T, defaultEnv string) error {
 	if len(envs) == 0 {
 		return nil
@@ -341,27 +345,32 @@ func validateEnvs[T any](path string, envs map[string]T, defaultEnv string) erro
 	return nil
 }
 
-func validateAsyncSearch(asyncSearch *AsyncSearch, seqDBIDs map[string]struct{}) error {
+func validateAsyncSearch(asyncSearch *AsyncSearch, seqDBs map[string]*SeqDBClient) error {
 	if asyncSearch == nil {
 		return nil
 	}
 	if err := validateEnvs("handlers.async_search", asyncSearch.Envs, asyncSearch.DefaultEnv); err != nil {
 		return err
 	}
+	if len(asyncSearch.Envs) == 0 {
+		if err := validateClientID("handlers.async_search.options.seq_db_id", asyncSearch.Options.SeqDBID, seqDBs); err != nil {
+			return err
+		}
+	}
 	if asyncSearch.Options.ListQueryLengthLimit <= 0 {
 		asyncSearch.Options.ListQueryLengthLimit = defaultAsyncSearchListQueryLengthLimit
 	}
 
 	for envName, envConfig := range asyncSearch.Envs {
-		if envConfig.SeqDBID == "" {
-			return fmt.Errorf("handlers.async_search.envs[%q].seq_db_id cannot be empty", envName)
-		}
-		if _, ok := seqDBIDs[envConfig.SeqDBID]; !ok {
-			return fmt.Errorf("unknown handlers.async_search.envs[%q].seq_db_id %q", envName, envConfig.SeqDBID)
-		}
 		if envConfig.Options == nil {
 			envConfig.Options = &AsyncSearchOptions{}
 			asyncSearch.Envs[envName] = envConfig
+		}
+		if err := validateClientID(
+			fmt.Sprintf("handlers.async_search.envs[%q].options.seq_db_id", envName),
+			envConfig.Options.SeqDBID,
+			seqDBs); err != nil {
+			return err
 		}
 		if envConfig.Options.ListQueryLengthLimit <= 0 {
 			envConfig.Options.ListQueryLengthLimit = defaultAsyncSearchListQueryLengthLimit
@@ -423,33 +432,32 @@ func validateHandlerCache(path string, hc *HandlerCache, cacheIDs map[string]str
 	return nil
 }
 
-func validateErrorGroups(errorGroups *ErrorGroups, chIDs map[string]struct{}) error {
+func validateErrorGroups(errorGroups *ErrorGroups, chs map[string]*CHClient) error {
 	if errorGroups == nil {
 		return nil
 	}
 	if err := validateEnvs("handlers.error_groups", errorGroups.Envs, errorGroups.DefaultEnv); err != nil {
 		return err
 	}
-	if len(errorGroups.Envs) == 0 && len(chIDs) != 1 {
-		return fmt.Errorf("handlers.error_groups: clients must contain one client when envs are not used")
+	if len(errorGroups.Envs) == 0 {
+		if err := validateClientID("handlers.error_groups.options.ch_id", errorGroups.Options.CHID, chs); err != nil {
+			return err
+		}
 	}
 	for envName, envConfig := range errorGroups.Envs {
-		if envConfig.CHID == "" {
-			return fmt.Errorf("handlers.error_groups.envs[%q].ch_id cannot be empty", envName)
-		}
-		if _, ok := chIDs[envConfig.CHID]; !ok {
-			return fmt.Errorf("unknown handlers.error_groups.envs[%q].ch_id %q", envName, envConfig.CHID)
-		}
 		if envConfig.Options == nil {
 			envConfig.Options = &ErrorGroupsOptions{}
 			errorGroups.Envs[envName] = envConfig
+		}
+		if err := validateClientID(fmt.Sprintf("handlers.error_groups.envs[%q].options.ch_id", envName), envConfig.Options.CHID, chs); err != nil {
+			return err
 		}
 	}
 
 	return nil
 }
 
-func validateMassExport(massExport *MassExport, seqDBIDs map[string]struct{}, cache *Cache) error {
+func validateMassExport(massExport *MassExport, seqDBs map[string]*SeqDBClient, cache *Cache) error {
 	if massExport == nil {
 		return nil
 	}
@@ -457,21 +465,23 @@ func validateMassExport(massExport *MassExport, seqDBIDs map[string]struct{}, ca
 		return err
 	}
 	if len(massExport.Envs) == 0 {
+		if err := validateClientID("handlers.mass_export.options.seq_db_id", massExport.Options.SeqDBID, seqDBs); err != nil {
+			return err
+		}
 		return validateMassExportOptions("handlers.mass_export.options", &massExport.Options, cache, "")
 	}
 
 	for envName, envConfig := range massExport.Envs {
-		if envConfig.SeqDBID == "" {
-			return fmt.Errorf("handlers.mass_export.envs[%q].seq_db_id cannot be empty", envName)
-		}
-		if _, ok := seqDBIDs[envConfig.SeqDBID]; !ok {
-			return fmt.Errorf("unknown handlers.mass_export.envs[%q].seq_db_id %q", envName, envConfig.SeqDBID)
-		}
 		if envConfig.Options == nil {
 			envConfig.Options = &MassExportOptions{}
 			massExport.Envs[envName] = envConfig
 		}
-		if err := validateMassExportOptions(fmt.Sprintf("handlers.mass_export.envs[%q].options", envName), envConfig.Options, cache, envName); err != nil {
+
+		path := fmt.Sprintf("handlers.mass_export.envs[%q].options", envName)
+		if err := validateClientID(path+".seq_db_id", envConfig.Options.SeqDBID, seqDBs); err != nil {
+			return err
+		}
+		if err := validateMassExportOptions(path, envConfig.Options, cache, envName); err != nil {
 			return err
 		}
 	}
@@ -484,7 +494,7 @@ func validateMassExportOptions(path string, options *MassExportOptions, cache *C
 		return fmt.Errorf("%s.file_store.s3 cannot be empty", path)
 	}
 
-	redis := cache.RedisByID(options.SessionStore.RedisCacheID)
+	redis := cache.Redis[options.SessionStore.RedisCacheID]
 	if redis == nil || redis.WithInmemID != "" {
 		return fmt.Errorf("%s.session_store.cache_id %q must be cache.redis without with_inmem_id", path, options.SessionStore.RedisCacheID)
 	}

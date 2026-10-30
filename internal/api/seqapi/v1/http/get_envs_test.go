@@ -46,8 +46,8 @@ func TestServeGetEnvs(t *testing.T) {
 			cfg: config.SeqAPI{
 				Envs: map[string]config.SeqAPIEnv{
 					"cluster-220": {
-						SeqDBID: "pro-seqdb",
 						Options: &config.SeqAPIOptions{
+							SeqDBID: "pro-seqdb",
 							Limits: config.SeqAPILimits{
 								MaxSearchLimit:            1000,
 								MaxExportLimit:            500,
@@ -58,8 +58,8 @@ func TestServeGetEnvs(t *testing.T) {
 						},
 					},
 					"cluster-10": {
-						SeqDBID: "prod-seqdb",
 						Options: &config.SeqAPIOptions{
+							SeqDBID: "prod-seqdb",
 							Limits: config.SeqAPILimits{
 								MaxSearchLimit:            1000,
 								MaxExportLimit:            500,
@@ -70,8 +70,8 @@ func TestServeGetEnvs(t *testing.T) {
 						},
 					},
 					"cluster-102": {
-						SeqDBID: "staging-seqdb",
 						Options: &config.SeqAPIOptions{
+							SeqDBID: "staging-seqdb",
 							Limits: config.SeqAPILimits{
 								MaxSearchLimit:            500,
 								MaxExportLimit:            250,
@@ -82,8 +82,8 @@ func TestServeGetEnvs(t *testing.T) {
 						},
 					},
 					"prod": {
-						SeqDBID: "stag-seqdb",
 						Options: &config.SeqAPIOptions{
+							SeqDBID: "stag-seqdb",
 							Limits: config.SeqAPILimits{
 								MaxSearchLimit:            500,
 								MaxExportLimit:            250,
@@ -94,8 +94,8 @@ func TestServeGetEnvs(t *testing.T) {
 						},
 					},
 					"wyanki": {
-						SeqDBID: "sta-seqdb",
 						Options: &config.SeqAPIOptions{
+							SeqDBID: "sta-seqdb",
 							Limits: config.SeqAPILimits{
 								MaxSearchLimit:            500,
 								MaxExportLimit:            250,

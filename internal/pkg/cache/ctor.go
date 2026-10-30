@@ -12,18 +12,15 @@ var caches map[string]Cache
 func Init(ctx context.Context, cfg *config.Cache) error {
 	caches = make(map[string]Cache, len(cfg.Redis)+len(cfg.Inmemory))
 
-	for i := range cfg.Inmemory {
-		inmemCfg := &cfg.Inmemory[i]
+	for id, inmemCfg := range cfg.Inmemory {
 		inmem, err := newInmemoryCache(inmemCfg)
 		if err != nil {
-			return fmt.Errorf("init inmemory cache %q: %w", inmemCfg.ID, err)
+			return fmt.Errorf("init inmemory cache %q: %w", id, err)
 		}
-		caches[inmemCfg.ID] = inmem
+		caches[id] = inmem
 	}
 
-	for i := range cfg.Redis {
-		redisCfg := &cfg.Redis[i]
-
+	for id, redisCfg := range cfg.Redis {
 		var inmem Cache
 		if redisCfg.WithInmemID != "" {
 			inmem = caches[redisCfg.WithInmemID]
@@ -31,9 +28,9 @@ func Init(ctx context.Context, cfg *config.Cache) error {
 
 		redis, err := newRedisCache(ctx, redisCfg, inmem)
 		if err != nil {
-			return fmt.Errorf("init redis cache %q: %w", redisCfg.ID, err)
+			return fmt.Errorf("init redis cache %q: %w", id, err)
 		}
-		caches[redisCfg.ID] = redis
+		caches[id] = redis
 	}
 
 	return nil

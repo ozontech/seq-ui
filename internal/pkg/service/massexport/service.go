@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"slices"
 	"time"
 
@@ -55,15 +54,14 @@ func New(ctx context.Context, cfg *config.MassExport, seqDBClients map[string]se
 	serviceByEnv := make(map[string]Service, max(1, len(cfg.Envs)))
 	if len(cfg.Envs) > 0 {
 		for envName, envCfg := range cfg.Envs {
-			svc, err := newService(ctx, envCfg.Options, seqDBClients[envCfg.SeqDBID], envName)
+			svc, err := newService(ctx, envCfg.Options, seqDBClients[envCfg.Options.SeqDBID], envName)
 			if err != nil {
 				return nil, fmt.Errorf("env %q: %w", envName, err)
 			}
 			serviceByEnv[envName] = svc
 		}
 	} else {
-		client := slices.Collect(maps.Values(seqDBClients))[0]
-		svc, err := newService(ctx, &cfg.Options, client, "")
+		svc, err := newService(ctx, &cfg.Options, seqDBClients[cfg.Options.SeqDBID], "")
 		if err != nil {
 			return nil, err
 		}
