@@ -323,7 +323,7 @@ func (m *v1tov2) migrateSeqAPI(src *v1.SeqAPI, v1Cache v1.Cache) v2.SeqAPI {
 		return dst
 	}
 
-	dst.Envs = make(map[string]v2.SeqAPIEnv, len(src.Envs))
+	dst.Envs = make(map[string]*v2.SeqAPIOptions, len(src.Envs))
 	for envName, envCfg := range src.Envs {
 		// in v1 env without options uses root options, in v2 root
 		// options are merged into env options, so only seq_db_id is set
@@ -333,7 +333,7 @@ func (m *v1tov2) migrateSeqAPI(src *v1.SeqAPI, v1Cache v1.Cache) v2.SeqAPI {
 			options = &migratedOpts
 		}
 		options.SeqDBID = envCfg.SeqDB
-		dst.Envs[envName] = v2.SeqAPIEnv{Options: options}
+		dst.Envs[envName] = options
 	}
 
 	return dst

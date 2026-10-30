@@ -166,11 +166,12 @@ func validateClients(clients *Clients) error {
 	}
 
 	for id, c := range clients.SeqDB {
+		if id == "" {
+			return fmt.Errorf("clients.seq_db: id cannot be empty")
+		}
 		if c == nil {
 			return fmt.Errorf("clients.seq_db[%q] cannot be empty", id)
 		}
-		c.ID = id
-
 		if len(c.Addrs) == 0 {
 			return fmt.Errorf("clients.seq_db[%q].addrs cannot be empty", id)
 		}
@@ -190,11 +191,12 @@ func validateClients(clients *Clients) error {
 	}
 
 	for id, ch := range clients.ClickHouse {
+		if id == "" {
+			return fmt.Errorf("clients.clickhouse: id cannot be empty")
+		}
 		if ch == nil {
 			return fmt.Errorf("clients.clickhouse[%q] cannot be empty", id)
 		}
-		ch.ID = id
-
 		if len(ch.Addrs) == 0 {
 			return fmt.Errorf("clients.clickhouse[%q].addrs cannot be empty", id)
 		}
@@ -220,8 +222,7 @@ func validateCache(cache *Cache) (map[string]struct{}, error) {
 			inm = &Inmemory{}
 			cache.Inmemory[id] = inm
 		}
-		inm.ID = id
-		cacheIDs[inm.ID] = struct{}{}
+		cacheIDs[id] = struct{}{}
 
 		if inm.NumCounters <= 0 {
 			inm.NumCounters = defaultInmemCacheNumCounters
@@ -244,8 +245,6 @@ func validateCache(cache *Cache) (map[string]struct{}, error) {
 		if r == nil {
 			return nil, fmt.Errorf("cache.redis[%q] cannot be empty", id)
 		}
-		r.ID = id
-
 		if r.Addr == "" {
 			return nil, fmt.Errorf("cache.redis[%q].addr cannot be empty", id)
 		}
@@ -278,18 +277,18 @@ func validateSeqAPI(seqAPI *SeqAPI, seqDBs map[string]*SeqDBClient, cacheIDs map
 		return err
 	}
 
-	for envName, envConfig := range seqAPI.Envs {
+	for envName, envOptions := range seqAPI.Envs {
 		// options are nil only if root options are not set, so env uses default options
-		if envConfig.Options == nil {
-			envConfig.Options = &SeqAPIOptions{}
-			seqAPI.Envs[envName] = envConfig
+		if envOptions == nil {
+			envOptions = &SeqAPIOptions{}
+			seqAPI.Envs[envName] = envOptions
 		}
 
-		path := fmt.Sprintf("handlers.seq_api.envs[%q].options", envName)
-		if err := validateClientID(path+".seq_db_id", envConfig.Options.SeqDBID, seqDBs); err != nil {
+		path := fmt.Sprintf("handlers.seq_api.envs[%q]", envName)
+		if err := validateClientID(path+".seq_db_id", envOptions.SeqDBID, seqDBs); err != nil {
 			return err
 		}
-		if err := validateSeqAPIOptions(path, envConfig.Options, cacheIDs); err != nil {
+		if err := validateSeqAPIOptions(path, envOptions, cacheIDs); err != nil {
 			return err
 		}
 	}
@@ -308,13 +307,13 @@ func validateAdmin(admin *Admin, cacheIDs map[string]struct{}) error {
 		return err
 	}
 
-	for envName, envConfig := range admin.Envs {
-		if envConfig.Options == nil {
-			envConfig.Options = &AdminOptions{}
-			admin.Envs[envName] = envConfig
+	for envName, envOptions := range admin.Envs {
+		if envOptions == nil {
+			envOptions = &AdminOptions{}
+			admin.Envs[envName] = envOptions
 		}
 
-		if err := validateHandlerCache(fmt.Sprintf("handlers.admin.envs[%q].options.cache", envName), envConfig.Options.Cache, cacheIDs); err != nil {
+		if err := validateHandlerCache(fmt.Sprintf("handlers.admin.envs[%q].cache", envName), envOptions.Cache, cacheIDs); err != nil {
 			return err
 		}
 	}
@@ -361,19 +360,19 @@ func validateAsyncSearch(asyncSearch *AsyncSearch, seqDBs map[string]*SeqDBClien
 		asyncSearch.Options.ListQueryLengthLimit = defaultAsyncSearchListQueryLengthLimit
 	}
 
-	for envName, envConfig := range asyncSearch.Envs {
-		if envConfig.Options == nil {
-			envConfig.Options = &AsyncSearchOptions{}
-			asyncSearch.Envs[envName] = envConfig
+	for envName, envOptions := range asyncSearch.Envs {
+		if envOptions == nil {
+			envOptions = &AsyncSearchOptions{}
+			asyncSearch.Envs[envName] = envOptions
 		}
 		if err := validateClientID(
-			fmt.Sprintf("handlers.async_search.envs[%q].options.seq_db_id", envName),
-			envConfig.Options.SeqDBID,
+			fmt.Sprintf("handlers.async_search.envs[%q].seq_db_id", envName),
+			envOptions.SeqDBID,
 			seqDBs); err != nil {
 			return err
 		}
-		if envConfig.Options.ListQueryLengthLimit <= 0 {
-			envConfig.Options.ListQueryLengthLimit = defaultAsyncSearchListQueryLengthLimit
+		if envOptions.ListQueryLengthLimit <= 0 {
+			envOptions.ListQueryLengthLimit = defaultAsyncSearchListQueryLengthLimit
 		}
 	}
 
@@ -444,12 +443,12 @@ func validateErrorGroups(errorGroups *ErrorGroups, chs map[string]*CHClient) err
 			return err
 		}
 	}
-	for envName, envConfig := range errorGroups.Envs {
-		if envConfig.Options == nil {
-			envConfig.Options = &ErrorGroupsOptions{}
-			errorGroups.Envs[envName] = envConfig
+	for envName, envOptions := range errorGroups.Envs {
+		if envOptions == nil {
+			envOptions = &ErrorGroupsOptions{}
+			errorGroups.Envs[envName] = envOptions
 		}
-		if err := validateClientID(fmt.Sprintf("handlers.error_groups.envs[%q].options.ch_id", envName), envConfig.Options.CHID, chs); err != nil {
+		if err := validateClientID(fmt.Sprintf("handlers.error_groups.envs[%q].ch_id", envName), envOptions.CHID, chs); err != nil {
 			return err
 		}
 	}
@@ -471,17 +470,17 @@ func validateMassExport(massExport *MassExport, seqDBs map[string]*SeqDBClient, 
 		return validateMassExportOptions("handlers.mass_export.options", &massExport.Options, cache, "")
 	}
 
-	for envName, envConfig := range massExport.Envs {
-		if envConfig.Options == nil {
-			envConfig.Options = &MassExportOptions{}
-			massExport.Envs[envName] = envConfig
+	for envName, envOptions := range massExport.Envs {
+		if envOptions == nil {
+			envOptions = &MassExportOptions{}
+			massExport.Envs[envName] = envOptions
 		}
 
-		path := fmt.Sprintf("handlers.mass_export.envs[%q].options", envName)
-		if err := validateClientID(path+".seq_db_id", envConfig.Options.SeqDBID, seqDBs); err != nil {
+		path := fmt.Sprintf("handlers.mass_export.envs[%q]", envName)
+		if err := validateClientID(path+".seq_db_id", envOptions.SeqDBID, seqDBs); err != nil {
 			return err
 		}
-		if err := validateMassExportOptions(path, envConfig.Options, cache, envName); err != nil {
+		if err := validateMassExportOptions(path, envOptions, cache, envName); err != nil {
 			return err
 		}
 	}

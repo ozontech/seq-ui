@@ -169,7 +169,7 @@ func initApp(ctx context.Context, cfg *config.Config) *api.Registrar {
 func initSeqDBClients(ctx context.Context, cfg *config.Config) (map[string]seqdb.Client, error) {
 	clients := make(map[string]seqdb.Client, len(cfg.Clients.SeqDB))
 	for id, clientCfg := range cfg.Clients.SeqDB {
-		client, err := createSeqDBClient(ctx, clientCfg, &cfg.Handlers.SeqAPI)
+		client, err := createSeqDBClient(ctx, id, clientCfg, &cfg.Handlers.SeqAPI)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create seq-db client %q: %w", id, err)
 		}
@@ -179,16 +179,16 @@ func initSeqDBClients(ctx context.Context, cfg *config.Config) (map[string]seqdb
 	return clients, nil
 }
 
-func createSeqDBClient(ctx context.Context, cfg *config.SeqDBClient, seqAPI *config.SeqAPI) (seqdb.Client, error) {
+func createSeqDBClient(ctx context.Context, id string, cfg *config.SeqDBClient, seqAPI *config.SeqAPI) (seqdb.Client, error) {
 	var maxSearchLimit int32
-	if len(seqAPI.Envs) == 0 && seqAPI.Options.SeqDBID == cfg.ID {
+	if len(seqAPI.Envs) == 0 && seqAPI.Options.SeqDBID == id {
 		maxSearchLimit = seqAPI.Options.Limits.MaxSearchLimit
 	}
 
 	// one seqdb client can be used by several envs, so it must accept the largest one
 	for _, env := range seqAPI.Envs {
-		if env.Options.SeqDBID == cfg.ID {
-			maxSearchLimit = max(maxSearchLimit, env.Options.Limits.MaxSearchLimit)
+		if env.SeqDBID == id {
+			maxSearchLimit = max(maxSearchLimit, env.Limits.MaxSearchLimit)
 		}
 	}
 

@@ -124,10 +124,9 @@ func SetCfgDefaults(cfg config.SeqAPI) config.SeqAPI {
 		cfg.Options.Limits.MaxSearchOffset = 1000000
 	}
 
-	for envName, envConfig := range cfg.Envs {
-		if envConfig.Options == nil {
-			envConfig.Options = &cfg.Options
-			cfg.Envs[envName] = envConfig
+	for envName, envOptions := range cfg.Envs {
+		if envOptions == nil {
+			cfg.Envs[envName] = &cfg.Options
 		}
 	}
 

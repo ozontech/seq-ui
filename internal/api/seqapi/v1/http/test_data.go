@@ -30,8 +30,8 @@ func setupTestAPI(data test.APITestData) *API {
 		seqDBClients[data.Cfg.Options.SeqDBID] = data.Mocks.SeqDB
 		asyncSearhesByEnv[""] = data.Mocks.AsyncSearchesSvc
 	}
-	for envName, envConfig := range data.Cfg.Envs {
-		seqDBClients[envConfig.Options.SeqDBID] = data.Mocks.SeqDB
+	for envName, envOptions := range data.Cfg.Envs {
+		seqDBClients[envOptions.SeqDBID] = data.Mocks.SeqDB
 		asyncSearhesByEnv[envName] = data.Mocks.AsyncSearchesSvc
 	}
 

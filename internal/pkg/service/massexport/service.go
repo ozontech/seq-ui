@@ -53,15 +53,15 @@ const (
 func New(ctx context.Context, cfg *config.MassExport, seqDBClients map[string]seqdb.Client) (map[string]Service, error) {
 	serviceByEnv := make(map[string]Service, max(1, len(cfg.Envs)))
 	if len(cfg.Envs) > 0 {
-		for envName, envCfg := range cfg.Envs {
-			svc, err := newService(ctx, envCfg.Options, seqDBClients[envCfg.Options.SeqDBID], envName)
+		for envName, envOptions := range cfg.Envs {
+			svc, err := newService(ctx, envOptions, seqDBClients, envName)
 			if err != nil {
 				return nil, fmt.Errorf("env %q: %w", envName, err)
 			}
 			serviceByEnv[envName] = svc
 		}
 	} else {
-		svc, err := newService(ctx, &cfg.Options, seqDBClients[cfg.Options.SeqDBID], "")
+		svc, err := newService(ctx, &cfg.Options, seqDBClients, "")
 		if err != nil {
 			return nil, err
 		}
@@ -71,7 +71,7 @@ func New(ctx context.Context, cfg *config.MassExport, seqDBClients map[string]se
 	return serviceByEnv, nil
 }
 
-func newService(ctx context.Context, cfg *config.MassExportOptions, client seqdb.Client, env string) (Service, error) {
+func newService(ctx context.Context, cfg *config.MassExportOptions, seqDBClients map[string]seqdb.Client, env string) (Service, error) {
 	sessionStore, err := sessionstore.NewCacheSessionStore(ctx, &cfg.SessionStore, env)
 	if err != nil {
 		return nil, fmt.Errorf("init session store: %w", err)
@@ -120,7 +120,7 @@ func newService(ctx context.Context, cfg *config.MassExportOptions, client seqdb
 		tasksChannelSize = cfg.TasksChannelSize
 	}
 
-	downloader := newSeqProxyDownloader(client, cfg.DownloadParams)
+	downloader := newSeqProxyDownloader(seqDBClients[cfg.SeqDBID], cfg.DownloadParams)
 
 	return &exportService{
 		sessionStore: sessionStore,

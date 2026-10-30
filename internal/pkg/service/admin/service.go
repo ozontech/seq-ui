@@ -31,8 +31,8 @@ type service struct {
 func New(cfg *config.Admin, adminRepo repository.Admin, userProfilesRepo repository.UserProfiles) map[string]Service {
 	serviceByEnv := make(map[string]Service, max(1, len(cfg.Envs)))
 	if len(cfg.Envs) > 0 {
-		for envName, envCfg := range cfg.Envs {
-			serviceByEnv[envName] = newService(adminRepo, userProfilesRepo, envCfg.Options, envName)
+		for envName, envOptions := range cfg.Envs {
+			serviceByEnv[envName] = newService(adminRepo, userProfilesRepo, envOptions, envName)
 		}
 	} else {
 		serviceByEnv[""] = newService(adminRepo, userProfilesRepo, &cfg.Options, "")

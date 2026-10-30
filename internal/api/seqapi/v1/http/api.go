@@ -41,11 +41,11 @@ type API struct {
 func New(cfg *config.SeqAPI, seqDBСlients map[string]seqdb.Client, asyncSearchesByEnv map[string]asyncsearches.Service) *API {
 	paramsByEnv := make(map[string]apiParams, max(1, len(cfg.Envs)))
 	if len(cfg.Envs) > 0 {
-		for envName, envConfig := range cfg.Envs {
-			paramsByEnv[envName] = newAPIParams(envName, seqDBСlients[envConfig.Options.SeqDBID], envConfig.Options)
+		for envName, envOptions := range cfg.Envs {
+			paramsByEnv[envName] = newAPIParams(envName, seqDBСlients, envOptions)
 		}
 	} else {
-		paramsByEnv[""] = newAPIParams("", seqDBСlients[cfg.Options.SeqDBID], &cfg.Options)
+		paramsByEnv[""] = newAPIParams("", seqDBСlients, &cfg.Options)
 	}
 
 	return &API{
@@ -57,7 +57,9 @@ func New(cfg *config.SeqAPI, seqDBСlients map[string]seqdb.Client, asyncSearche
 	}
 }
 
-func newAPIParams(env string, client seqdb.Client, options *config.SeqAPIOptions) apiParams {
+func newAPIParams(env string, seqDBClients map[string]seqdb.Client, options *config.SeqAPIOptions) apiParams {
+	client := seqDBClients[options.SeqDBID]
+
 	masker, err := mask.New(options.Masking)
 	if err != nil {
 		logger.Fatal("failed to init masking", zap.String("env", env), zap.Error(err))
@@ -158,8 +160,7 @@ func parseEnvs(cfg *config.SeqAPI) getEnvsResponse {
 
 		envs = make([]envInfo, 0, len(cfg.Envs))
 		for _, name := range names {
-			envConfig := cfg.Envs[name]
-			envs = append(envs, createEnvInfo(name, envConfig.Options))
+			envs = append(envs, createEnvInfo(name, cfg.Envs[name]))
 		}
 	} else {
 		envs = []envInfo{createEnvInfo("", &cfg.Options)}

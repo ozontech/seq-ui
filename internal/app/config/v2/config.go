@@ -141,8 +141,7 @@ import (
 //         - name:
 //           type:
 //     envs:
-//       <env_name>:
-//         options: # same as root options
+//       <env_name>: # same as root options
 //     default_env:
 //   error_groups:
 //     options:
@@ -154,8 +153,7 @@ import (
 //       query_filter:
 //         <ch_column>:
 //     envs:
-//       <env_name>:
-//         options: # same as root options
+//       <env_name>: # same as root options
 //     default_env:
 //   mass_export:
 //     options:
@@ -182,8 +180,7 @@ import (
 //           initial_interval:
 //           max_interval:
 //     envs:
-//       <env_name>:
-//         options: # same as root options
+//       <env_name>: # same as root options
 //     default_env:
 //   async_search:
 //     options:
@@ -191,8 +188,7 @@ import (
 //       admin_users:
 //       list_query_length_limit:
 //     envs:
-//       <env_name>:
-//         options: # same as root options
+//       <env_name>: # same as root options
 //     default_env:
 //   admin:
 //     options:
@@ -201,8 +197,7 @@ import (
 //         id:
 //         ttl:
 //     envs:
-//       <env_name>:
-//         options: # same as root options
+//       <env_name>: # same as root options
 //     default_env:
 // db:
 //   name:
@@ -298,14 +293,12 @@ type (
 )
 
 type Inmemory struct {
-	ID          string `yaml:"-"`
-	NumCounters int64  `yaml:"num_counters,omitempty"`
-	MaxCost     int64  `yaml:"max_cost,omitempty"`
-	BufferItems int64  `yaml:"buffer_items,omitempty"`
+	NumCounters int64 `yaml:"num_counters,omitempty"`
+	MaxCost     int64 `yaml:"max_cost,omitempty"`
+	BufferItems int64 `yaml:"buffer_items,omitempty"`
 }
 
 type Redis struct {
-	ID              string        `yaml:"-"`
 	WithInmemID     string        `yaml:"with_inmem_id,omitempty"`
 	KeyPrefix       string        `yaml:"key_prefix,omitempty"`
 	Addr            string        `yaml:"addr"`
@@ -346,13 +339,9 @@ type FileStore struct {
 }
 
 type MassExport struct {
-	Options    MassExportOptions        `yaml:"options"`
-	Envs       map[string]MassExportEnv `yaml:"envs,omitempty"`
-	DefaultEnv string                   `yaml:"default_env,omitempty"`
-}
-
-type MassExportEnv struct {
-	Options *MassExportOptions `yaml:"options,omitempty"`
+	Options    MassExportOptions             `yaml:"options"`
+	Envs       map[string]*MassExportOptions `yaml:"envs,omitempty"`
+	DefaultEnv string                        `yaml:"default_env,omitempty"`
 }
 
 type MassExportOptions struct {
@@ -436,7 +425,6 @@ type GRPCParams struct {
 }
 
 type SeqDBClient struct {
-	ID                    string        `yaml:"-"`
 	Timeout               time.Duration `yaml:"timeout"`
 	AvgDocSize            int           `yaml:"avg_doc_size,omitempty"`
 	Addrs                 []string      `yaml:"addrs"`
@@ -452,7 +440,6 @@ type Backoff struct {
 }
 
 type CHClient struct {
-	ID          string        `yaml:"-"`
 	Addrs       []string      `yaml:"addrs"`
 	Database    string        `yaml:"database,omitempty"`
 	Username    string        `yaml:"username,omitempty"`
@@ -476,13 +463,9 @@ type Handlers struct {
 }
 
 type Admin struct {
-	Options    AdminOptions        `yaml:"options"`
-	Envs       map[string]AdminEnv `yaml:"envs,omitempty"`
-	DefaultEnv string              `yaml:"default_env,omitempty"`
-}
-
-type AdminEnv struct {
-	Options *AdminOptions `yaml:"options,omitempty"`
+	Options    AdminOptions             `yaml:"options"`
+	Envs       map[string]*AdminOptions `yaml:"envs,omitempty"`
+	DefaultEnv string                   `yaml:"default_env,omitempty"`
 }
 
 type AdminOptions struct {
@@ -496,13 +479,9 @@ type Field struct {
 }
 
 type SeqAPI struct {
-	Options    SeqAPIOptions        `yaml:"options"`
-	Envs       map[string]SeqAPIEnv `yaml:"envs,omitempty"`
-	DefaultEnv string               `yaml:"default_env,omitempty"`
-}
-
-type SeqAPIEnv struct {
-	Options *SeqAPIOptions `yaml:"options,omitempty"`
+	Options    SeqAPIOptions             `yaml:"options"`
+	Envs       map[string]*SeqAPIOptions `yaml:"envs,omitempty"`
+	DefaultEnv string                    `yaml:"default_env,omitempty"`
 }
 
 type SeqAPIOptions struct {
@@ -572,13 +551,9 @@ type LogTagsMapping struct {
 }
 
 type ErrorGroups struct {
-	Options    ErrorGroupsOptions        `yaml:"options"`
-	Envs       map[string]ErrorGroupsEnv `yaml:"envs,omitempty"`
-	DefaultEnv string                    `yaml:"default_env,omitempty"`
-}
-
-type ErrorGroupsEnv struct {
-	Options *ErrorGroupsOptions `yaml:"options,omitempty"`
+	Options    ErrorGroupsOptions             `yaml:"options"`
+	Envs       map[string]*ErrorGroupsOptions `yaml:"envs,omitempty"`
+	DefaultEnv string                         `yaml:"default_env,omitempty"`
 }
 
 type ErrorGroupsOptions struct {
@@ -588,13 +563,9 @@ type ErrorGroupsOptions struct {
 }
 
 type AsyncSearch struct {
-	Options    AsyncSearchOptions        `yaml:"options"`
-	Envs       map[string]AsyncSearchEnv `yaml:"envs,omitempty"`
-	DefaultEnv string                    `yaml:"default_env,omitempty"`
-}
-
-type AsyncSearchEnv struct {
-	Options *AsyncSearchOptions `yaml:"options,omitempty"`
+	Options    AsyncSearchOptions             `yaml:"options"`
+	Envs       map[string]*AsyncSearchOptions `yaml:"envs,omitempty"`
+	DefaultEnv string                         `yaml:"default_env,omitempty"`
 }
 
 type AsyncSearchOptions struct {

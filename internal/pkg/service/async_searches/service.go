@@ -53,20 +53,26 @@ func New(
 ) map[string]Service {
 	serviceByEnv := make(map[string]Service, max(1, len(cfg.Envs)))
 	if len(cfg.Envs) > 0 {
-		for envName, envCfg := range cfg.Envs {
-			serviceByEnv[envName] = newService(ctx, repo, seqDBClients[envCfg.Options.SeqDBID], envCfg.Options, envName)
+		for envName, envOptions := range cfg.Envs {
+			serviceByEnv[envName] = newService(ctx, repo, seqDBClients, envOptions, envName)
 		}
 	} else {
-		serviceByEnv[""] = newService(ctx, repo, seqDBClients[cfg.Options.SeqDBID], &cfg.Options, "")
+		serviceByEnv[""] = newService(ctx, repo, seqDBClients, &cfg.Options, "")
 	}
 
 	return serviceByEnv
 }
 
-func newService(ctx context.Context, repo repository.AsyncSearches, seqDB seqdb.Client, cfg *config.AsyncSearchOptions, env string) Service {
+func newService(
+	ctx context.Context,
+	repo repository.AsyncSearches,
+	seqDBClients map[string]seqdb.Client,
+	cfg *config.AsyncSearchOptions,
+	env string,
+) Service {
 	s := &service{
 		repo:  repo,
-		seqDB: seqDB,
+		seqDB: seqDBClients[cfg.SeqDBID],
 		cfg:   cfg,
 		env:   env,
 	}
