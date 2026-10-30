@@ -8,7 +8,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	mock_asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
@@ -36,9 +36,11 @@ func TestServeExportAsyncSearch(t *testing.T) {
 				Offset:   0,
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
-					MaxExportLimit:            100,
-					MaxParallelExportRequests: 1,
+				Options: config.SeqAPIOptions{
+					Limits: config.SeqAPILimits{
+						MaxExportLimit:            100,
+						MaxParallelExportRequests: 1,
+					},
 				},
 			},
 			mockArgs: &mockArgs{
@@ -60,9 +62,11 @@ func TestServeExportAsyncSearch(t *testing.T) {
 				Fields:   []string{"field1", "field2"},
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
-					MaxExportLimit:            100,
-					MaxParallelExportRequests: 1,
+				Options: config.SeqAPIOptions{
+					Limits: config.SeqAPILimits{
+						MaxExportLimit:            100,
+						MaxParallelExportRequests: 1,
+					},
 				},
 			},
 			mockArgs: &mockArgs{
@@ -83,8 +87,10 @@ func TestServeExportAsyncSearch(t *testing.T) {
 				Offset:   0,
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
-					MaxParallelExportRequests: 0,
+				Options: config.SeqAPIOptions{
+					Limits: config.SeqAPILimits{
+						MaxParallelExportRequests: 0,
+					},
 				},
 			},
 			wantErr: true,
@@ -97,9 +103,11 @@ func TestServeExportAsyncSearch(t *testing.T) {
 				Offset:   0,
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
-					MaxExportLimit:            5,
-					MaxParallelExportRequests: 1,
+				Options: config.SeqAPIOptions{
+					Limits: config.SeqAPILimits{
+						MaxExportLimit:            5,
+						MaxParallelExportRequests: 1,
+					},
 				},
 			},
 			wantErr: true,
@@ -113,9 +121,11 @@ func TestServeExportAsyncSearch(t *testing.T) {
 				Format:   efCSV,
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
-					MaxExportLimit:            100,
-					MaxParallelExportRequests: 1,
+				Options: config.SeqAPIOptions{
+					Limits: config.SeqAPILimits{
+						MaxExportLimit:            100,
+						MaxParallelExportRequests: 1,
+					},
 				},
 			},
 			wantErr: true,
@@ -128,9 +138,11 @@ func TestServeExportAsyncSearch(t *testing.T) {
 				Offset:   0,
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
-					MaxExportLimit:            100,
-					MaxParallelExportRequests: 1,
+				Options: config.SeqAPIOptions{
+					Limits: config.SeqAPILimits{
+						MaxExportLimit:            100,
+						MaxParallelExportRequests: 1,
+					},
 				},
 			},
 			wantErr: true,
@@ -143,9 +155,11 @@ func TestServeExportAsyncSearch(t *testing.T) {
 				Offset:   0,
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
-					MaxExportLimit:            100,
-					MaxParallelExportRequests: 1,
+				Options: config.SeqAPIOptions{
+					Limits: config.SeqAPILimits{
+						MaxExportLimit:            100,
+						MaxParallelExportRequests: 1,
+					},
 				},
 			},
 			wantErr: true,

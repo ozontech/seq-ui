@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/metric"
@@ -17,19 +17,19 @@ import (
 )
 
 type seqProxyDownloader struct {
-	cfg    config.SeqProxyDownloader
+	cfg    config.DownloadParams
 	client seqdb.Client
 }
 
 const defaultDelay = 1 * time.Second
 
-func newSeqProxyDownloader(client seqdb.Client, cfg config.SeqProxyDownloader) *seqProxyDownloader {
+func newSeqProxyDownloader(client seqdb.Client, cfg config.DownloadParams) *seqProxyDownloader {
 	if cfg.Delay <= 0 {
 		cfg.Delay = defaultDelay
 	}
 
-	cfg.InitialRetryBackoff = max(cfg.InitialRetryBackoff, cfg.Delay)
-	cfg.MaxRetryBackoff = max(cfg.MaxRetryBackoff, cfg.InitialRetryBackoff)
+	cfg.DelayBackoff.InitialInterval = max(cfg.DelayBackoff.InitialInterval, cfg.Delay)
+	cfg.DelayBackoff.MaxInterval = max(cfg.DelayBackoff.MaxInterval, cfg.DelayBackoff.InitialInterval)
 
 	return &seqProxyDownloader{
 		cfg:    cfg,
@@ -41,8 +41,8 @@ func (d *seqProxyDownloader) Search(ctx context.Context, sessionID string, req *
 	bo := backoff.NewExponentialBackOff()
 	bo.MaxElapsedTime = 0
 	bo.Multiplier = 2
-	bo.InitialInterval = d.cfg.InitialRetryBackoff
-	bo.MaxInterval = d.cfg.MaxRetryBackoff
+	bo.InitialInterval = d.cfg.DelayBackoff.InitialInterval
+	bo.MaxInterval = d.cfg.DelayBackoff.MaxInterval
 	bo.Reset()
 
 	for {

@@ -24,6 +24,8 @@ import (
 	"github.com/ozontech/seq-ui/metric"
 )
 
+const defaultMaxRecvMsgSize = 4 * 1024 * 1024 // 4MB
+
 type grpcSearchResp interface {
 	GetError() *seqproxyapi.Error
 }
@@ -31,8 +33,8 @@ type grpcSearchResp interface {
 func processClientRequestUnaryInterceptor(
 	ctx context.Context,
 	method string,
-	req interface{},
-	reply interface{},
+	req any,
+	reply any,
 	cc *grpc.ClientConn,
 	invoker grpc.UnaryInvoker,
 	opts ...grpc.CallOption,
@@ -130,10 +132,6 @@ type GRPCClient struct {
 }
 
 func NewGRPCClient(ctx context.Context, params ClientParams) (*GRPCClient, error) {
-	if len(params.Addrs) == 0 {
-		panic("addrs is empty")
-	}
-
 	clients := make([]seqproxyapi.SeqProxyApiClient, 0, len(params.Addrs))
 	unaryInterceptors := []grpc.UnaryClientInterceptor{
 		processClientRequestUnaryInterceptor,
@@ -147,7 +145,7 @@ func NewGRPCClient(ctx context.Context, params ClientParams) (*GRPCClient, error
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultCallOptions(
-			grpc.MaxCallRecvMsgSize(params.MaxRecvMsgSize),
+			grpc.MaxCallRecvMsgSize(max(params.MaxRecvMsgSize, defaultMaxRecvMsgSize)),
 		),
 		grpc.WithUnaryInterceptor(grpc_mw.ChainUnaryClient(unaryInterceptors...)),
 		grpc.WithStreamInterceptor(grpc_mw.ChainStreamClient(streamInterceptors...)),

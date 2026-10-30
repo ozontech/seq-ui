@@ -29,6 +29,8 @@ func (a *API) serveStart(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+	env := types.GetEnvKey(ctx)
+	svc := a.serviceByEnv[env]
 
 	var httpReq startRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
@@ -36,7 +38,7 @@ func (a *API) serveStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	span.SetAttributes([]attribute.KeyValue{
+	attributes := []attribute.KeyValue{
 		{
 			Key:   "query",
 			Value: attribute.StringValue(httpReq.Query),
@@ -57,7 +59,11 @@ func (a *API) serveStart(w http.ResponseWriter, r *http.Request) {
 			Key:   "name",
 			Value: attribute.StringValue(httpReq.Name),
 		},
-	}...)
+	}
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
 	if httpReq.Name == "" {
 		wr.Error(errors.New("empty export name"), http.StatusBadRequest)
@@ -80,7 +86,7 @@ func (a *API) serveStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := a.exporter.StartExport(ctx, types.StartExportRequest{
+	result, err := svc.StartExport(ctx, types.StartExportRequest{
 		Query:  httpReq.Query,
 		From:   httpReq.From,
 		To:     httpReq.To,

@@ -23,6 +23,14 @@
                     "admin_v1"
                 ],
                 "operationId": "admin_v1_get_roles",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "A successful response",
@@ -49,6 +57,12 @@
                 ],
                 "operationId": "admin_v1_create_role",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    },
                     {
                         "description": "Request body",
                         "name": "body",
@@ -94,6 +108,12 @@
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -129,6 +149,12 @@
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
                     },
                     {
                         "description": "Request body",
@@ -169,6 +195,12 @@
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
                     },
                     {
                         "description": "Request body",
@@ -214,6 +246,12 @@
                         "required": true
                     },
                     {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    },
+                    {
                         "description": "Request body",
                         "name": "body",
                         "in": "body",
@@ -253,6 +291,12 @@
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
                     },
                     {
                         "description": "Request body",
@@ -549,6 +593,12 @@
                 "operationId": "errorgroups_v1_get_details",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    },
+                    {
                         "description": "Request body",
                         "name": "body",
                         "in": "body",
@@ -586,6 +636,12 @@
                 ],
                 "operationId": "errorgroups_v1_diff_by_releases",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    },
                     {
                         "description": "Request body",
                         "name": "body",
@@ -625,6 +681,12 @@
                 "operationId": "errorgroups_v1_get_groups",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    },
+                    {
                         "description": "Request body",
                         "name": "body",
                         "in": "body",
@@ -662,6 +724,12 @@
                 ],
                 "operationId": "errorgroups_v1_get_hist",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    },
                     {
                         "description": "Request body",
                         "name": "body",
@@ -701,6 +769,12 @@
                 "operationId": "errorgroups_v1_get_releases",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    },
+                    {
                         "description": "Request body",
                         "name": "body",
                         "in": "body",
@@ -738,6 +812,12 @@
                 ],
                 "operationId": "errorgroups_v1_get_service_filters",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    },
                     {
                         "description": "Request body",
                         "name": "body",
@@ -777,6 +857,12 @@
                 "operationId": "errorgroups_v1_get_services",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    },
+                    {
                         "description": "Request body",
                         "name": "body",
                         "in": "body",
@@ -814,6 +900,12 @@
                 ],
                 "operationId": "errorgroups_v1_get_top_groups",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    },
                     {
                         "description": "Request body",
                         "name": "body",
@@ -1170,6 +1262,12 @@
                 "operationId": "seqapi_v1_fetch_async_search_result",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    },
+                    {
                         "description": "Request body",
                         "name": "body",
                         "in": "body",
@@ -1208,6 +1306,12 @@
                 "operationId": "seqapi_v1_get_async_searches_list",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    },
+                    {
                         "description": "Request body",
                         "name": "body",
                         "in": "body",
@@ -1245,6 +1349,12 @@
                 ],
                 "operationId": "seqapi_v1_start_async_search",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
+                    },
                     {
                         "description": "Request body",
                         "name": "body",
@@ -1289,6 +1399,12 @@
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1322,6 +1438,12 @@
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Environment",
+                        "name": "env",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -3500,24 +3622,19 @@
             "type": "object",
             "properties": {
                 "maxAggregationsPerRequest": {
-                    "type": "integer",
-                    "format": "int32"
+                    "type": "integer"
                 },
                 "maxExportLimit": {
-                    "type": "integer",
-                    "format": "int32"
+                    "type": "integer"
                 },
                 "maxParallelExportRequests": {
-                    "type": "integer",
-                    "format": "int32"
+                    "type": "integer"
                 },
                 "maxSearchLimit": {
-                    "type": "integer",
-                    "format": "int32"
+                    "type": "integer"
                 },
                 "seqCliMaxSearchLimit": {
-                    "type": "integer",
-                    "format": "int32"
+                    "type": "integer"
                 }
             }
         },

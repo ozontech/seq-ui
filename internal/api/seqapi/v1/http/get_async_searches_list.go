@@ -20,6 +20,7 @@ import (
 //	@Router		/seqapi/v1/async_search/list [post]
 //	@ID			seqapi_v1_get_async_searches_list
 //	@Tags		seqapi_v1
+//	@Param		env		query		string							false	"Environment"
 //	@Param		body	body		getAsyncSearchesListRequest		true	"Request body"
 //	@Success	200		{object}	getAsyncSearchesListResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error					"An unexpected error response"
@@ -27,7 +28,7 @@ import (
 func (a *API) serveGetAsyncSearchesList(w http.ResponseWriter, r *http.Request) {
 	wr := httputil.NewWriter(w)
 
-	if a.asyncSearches == nil {
+	if a.asyncSearchesByEnv == nil {
 		wr.Error(types.ErrAsyncSearchesDisabled, http.StatusBadRequest)
 		return
 	}
@@ -35,13 +36,16 @@ func (a *API) serveGetAsyncSearchesList(w http.ResponseWriter, r *http.Request) 
 	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_get_async_searches_list")
 	defer span.End()
 
+	env := types.GetEnvKey(ctx)
+	svc := a.asyncSearchesByEnv[env]
+
 	var httpReq getAsyncSearchesListRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
 		wr.Error(fmt.Errorf("failed to parse search request: %w", err), http.StatusBadRequest)
 		return
 	}
 
-	spanAttributes := []attribute.KeyValue{
+	attributes := []attribute.KeyValue{
 		{
 			Key:   "offset",
 			Value: attribute.IntValue(int(httpReq.Offset)),
@@ -52,19 +56,21 @@ func (a *API) serveGetAsyncSearchesList(w http.ResponseWriter, r *http.Request) 
 		},
 	}
 	if httpReq.Status != nil {
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "status",
 			Value: attribute.StringValue(string(*httpReq.Status)),
 		})
 	}
 	if httpReq.Owner != nil {
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "owner",
 			Value: attribute.StringValue(*httpReq.Owner),
 		})
 	}
-
-	span.SetAttributes(spanAttributes...)
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
 	if err := checkLimitOffset(httpReq.Limit, httpReq.Offset); err != nil {
 		wr.Error(err, http.StatusBadRequest)
@@ -77,7 +83,7 @@ func (a *API) serveGetAsyncSearchesList(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	resp, err := a.asyncSearches.GetAsyncSearchesList(ctx, parsedReq)
+	resp, err := svc.GetAsyncSearchesList(ctx, parsedReq)
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return

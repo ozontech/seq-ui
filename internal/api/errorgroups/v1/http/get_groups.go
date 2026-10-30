@@ -19,6 +19,7 @@ import (
 //	@Router		/errorgroups/v1/groups [post]
 //	@ID			errorgroups_v1_get_groups
 //	@Tags		errorgroups_v1
+//	@Param		env		query		string				false	"Environment"
 //	@Param		body	body		getGroupsRequest	true	"Request body"
 //	@Success	200		{object}	getGroupsResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
@@ -35,6 +36,8 @@ func (a *API) serveGetGroups(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	svc, httpReqEnv := a.serviceByEnv(ctx, httpReq.Env)
+
 	attributes := []attribute.KeyValue{
 		{Key: "service", Value: attribute.StringValue(httpReq.Service)},
 		{Key: "limit", Value: attribute.IntValue(int(httpReq.Limit))},
@@ -42,8 +45,8 @@ func (a *API) serveGetGroups(w http.ResponseWriter, r *http.Request) {
 		{Key: "order", Value: attribute.StringValue(string(httpReq.Order))},
 		{Key: "with_total", Value: attribute.BoolValue(httpReq.WithTotal)},
 	}
-	if httpReq.Env != nil {
-		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReq.Env)})
+	if httpReqEnv != nil && *httpReqEnv != "" {
+		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReqEnv)})
 	}
 	if httpReq.Release != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "release", Value: attribute.StringValue(*httpReq.Release)})
@@ -72,7 +75,7 @@ func (a *API) serveGetGroups(w http.ResponseWriter, r *http.Request) {
 
 	req := types.GetErrorGroupsRequest{
 		Service:   httpReq.Service,
-		Env:       httpReq.Env,
+		Env:       httpReqEnv,
 		Source:    httpReq.Source,
 		Release:   httpReq.Release,
 		TimeRange: tr,
@@ -93,9 +96,9 @@ func (a *API) serveGetGroups(w http.ResponseWriter, r *http.Request) {
 		total  uint64
 	)
 	if httpReq.Filter != nil && httpReq.Filter.IsNew {
-		groups, total, err = a.service.GetNewErrorGroups(ctx, req)
+		groups, total, err = svc.GetNewErrorGroups(ctx, req)
 	} else {
-		groups, total, err = a.service.GetErrorGroups(ctx, req)
+		groups, total, err = svc.GetErrorGroups(ctx, req)
 	}
 
 	if err != nil {

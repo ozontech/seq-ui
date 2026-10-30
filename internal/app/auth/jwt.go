@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 )
 
 type JWTClaims struct {
@@ -23,9 +25,9 @@ type jwtProvider struct {
 	secretKey string
 }
 
-func NewJWTProvider(secretKey string) JWTProvider {
+func NewJWTProvider(cfg *config.JWT) JWTProvider {
 	return &jwtProvider{
-		secretKey: secretKey,
+		secretKey: cfg.SecretKey,
 	}
 }
 

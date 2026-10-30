@@ -19,13 +19,14 @@ import (
 //	@ID			seqapi_v1_cancel_async_search
 //	@Tags		seqapi_v1
 //	@Param		id		path		string			true	"search id"
+//	@Param		env		query		string			false	"Environment"
 //	@Success	200		{object}	nil				"A successful response"
 //	@Failure	default	{object}	httputil.Error	"An unexpected error response"
 //	@Security	bearer
 func (a *API) serveCancelAsyncSearch(w http.ResponseWriter, r *http.Request) {
 	wr := httputil.NewWriter(w)
 
-	if a.asyncSearches == nil {
+	if a.asyncSearchesByEnv == nil {
 		wr.Error(types.ErrAsyncSearchesDisabled, http.StatusBadRequest)
 		return
 	}
@@ -33,21 +34,27 @@ func (a *API) serveCancelAsyncSearch(w http.ResponseWriter, r *http.Request) {
 	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_cancel_async_search")
 	defer span.End()
 
-	searchID := chi.URLParam(r, "id")
+	env := types.GetEnvKey(ctx)
+	svc := a.asyncSearchesByEnv[env]
 
+	searchID := chi.URLParam(r, "id")
 	if err := checkUUID(searchID); err != nil {
 		wr.Error(err, http.StatusBadRequest)
 		return
 	}
 
-	span.SetAttributes(
-		attribute.KeyValue{
+	attributes := []attribute.KeyValue{
+		{
 			Key:   "search_id",
 			Value: attribute.StringValue(searchID),
 		},
-	)
+	}
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
-	_, err := a.asyncSearches.CancelAsyncSearch(ctx, &seqapi.CancelAsyncSearchRequest{SearchId: searchID})
+	_, err := svc.CancelAsyncSearch(ctx, &seqapi.CancelAsyncSearchRequest{SearchId: searchID})
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, types.ErrPermissionDenied) {

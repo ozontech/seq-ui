@@ -15,19 +15,21 @@ func (a *API) GetServiceFilters(ctx context.Context, req *errorgroups.GetService
 	ctx, span := tracing.StartSpan(ctx, "errorgroups_v1_get_service_filters")
 	defer span.End()
 
+	svc, reqEnv := a.serviceByEnv(ctx, req.Env)
+
 	attributes := []attribute.KeyValue{
 		{Key: "service", Value: attribute.StringValue(req.Service)},
 	}
-	if req.Env != nil {
-		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*req.Env)})
+	if reqEnv != nil && *reqEnv != "" {
+		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*reqEnv)})
 	}
 	span.SetAttributes(attributes...)
 
 	request := types.GetServiceFiltersRequest{
 		Service: req.Service,
-		Env:     req.Env,
+		Env:     reqEnv,
 	}
-	filters, err := a.service.GetServiceFilters(ctx, request)
+	filters, err := svc.GetServiceFilters(ctx, request)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}

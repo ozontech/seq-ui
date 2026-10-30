@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"strconv"
 	"time"
 
@@ -11,13 +12,21 @@ import (
 )
 
 type API struct {
-	service errorgroups.Service
+	services map[string]errorgroups.Service
 }
 
-func New(svc errorgroups.Service) *API {
+func New(serviceByEnv map[string]errorgroups.Service) *API {
 	return &API{
-		service: svc,
+		services: serviceByEnv,
 	}
+}
+
+func (a *API) serviceByEnv(ctx context.Context, reqEnv *string) (errorgroups.Service, *string) {
+	env := types.GetEnvKey(ctx)
+	if (reqEnv == nil || *reqEnv == "") && env != "" {
+		reqEnv = &env
+	}
+	return a.services[env], reqEnv
 }
 
 func (a *API) Router() chi.Router {

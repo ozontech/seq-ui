@@ -7,7 +7,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	"github.com/ozontech/seq-ui/internal/pkg/service/massexport/filestore"
@@ -50,16 +50,43 @@ const (
 	defaultPartLength       = 1 * time.Hour
 )
 
-func NewService(
-	ctx context.Context,
-	cfg config.MassExport,
-	sessionStore sessionstore.SessionStore,
-	fileStore filestore.FileStore,
-	client seqdb.Client,
-) (Service, error) {
+func New(ctx context.Context, cfg *config.MassExport, seqDBClients map[string]seqdb.Client) (map[string]Service, error) {
+	serviceByEnv := make(map[string]Service, max(1, len(cfg.Envs)))
+	if len(cfg.Envs) > 0 {
+		for envName, envOptions := range cfg.Envs {
+			svc, err := newService(ctx, envOptions, seqDBClients, envName)
+			if err != nil {
+				return nil, fmt.Errorf("env %q: %w", envName, err)
+			}
+			serviceByEnv[envName] = svc
+		}
+	} else {
+		svc, err := newService(ctx, &cfg.Options, seqDBClients, "")
+		if err != nil {
+			return nil, err
+		}
+		serviceByEnv[""] = svc
+	}
+
+	return serviceByEnv, nil
+}
+
+func newService(ctx context.Context, cfg *config.MassExportOptions, seqDBClients map[string]seqdb.Client, env string) (Service, error) {
+	sessionStore, err := sessionstore.NewCacheSessionStore(ctx, &cfg.SessionStore, env)
+	if err != nil {
+		return nil, fmt.Errorf("init session store: %w", err)
+	}
+	logger.Info("session store initialized")
+
+	fileStore, err := filestore.NewS3(ctx, cfg.FileStore.S3)
+	if err != nil {
+		return nil, fmt.Errorf("init file store: %w", err)
+	}
+	logger.Info("file store initialized")
+
 	batchSize := defaultBatchSize
-	if cfg.BatchSize > 0 {
-		batchSize = cfg.BatchSize
+	if cfg.DownloadParams.BatchSize > 0 {
+		batchSize = cfg.DownloadParams.BatchSize
 	}
 
 	if cfg.WorkersCount <= 0 {
@@ -68,7 +95,7 @@ func NewService(
 
 	partLength := defaultPartLength
 	if cfg.PartLength > 0 {
-		err := checkPartLength(cfg.PartLength)
+		err = checkPartLength(cfg.PartLength)
 		if err != nil {
 			return nil, fmt.Errorf("check part length: %w", err)
 		}
@@ -93,7 +120,7 @@ func NewService(
 		tasksChannelSize = cfg.TasksChannelSize
 	}
 
-	downloader := newSeqProxyDownloader(client, *cfg.SeqProxyDownloader)
+	downloader := newSeqProxyDownloader(seqDBClients[cfg.SeqDBID], cfg.DownloadParams)
 
 	return &exportService{
 		sessionStore: sessionStore,

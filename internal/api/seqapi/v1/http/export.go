@@ -32,8 +32,7 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
-
-	env := getEnvFromContext(ctx)
+	env := types.GetEnvKey(ctx)
 
 	userStr := "_"
 	if userName, err := types.GetUserKey(ctx); err == nil {
@@ -84,18 +83,12 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 			Value: attribute.IntValue(int(httpReq.Downsample)),
 		},
 	}
-
 	if env != "" {
 		attributes = append(attributes, attribute.String("env", env))
 	}
-
 	span.SetAttributes(attributes...)
 
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		wr.Error(err, http.StatusBadRequest)
-		return
-	}
+	params := a.paramsByEnv[env]
 
 	if params.exportLimiter.Limited(userStr) {
 		metric.ServerExportRequestLimits.Inc()
@@ -104,9 +97,9 @@ func (a *API) serveExport(w http.ResponseWriter, r *http.Request) {
 	}
 	defer params.exportLimiter.Fill(userStr)
 
-	if httpReq.Limit > params.options.MaxExportLimit {
+	if httpReq.Limit > params.options.Limits.MaxExportLimit {
 		wr.Error(fmt.Errorf("too many events are requested: count=%d, max=%d",
-			httpReq.Limit, params.options.MaxExportLimit),
+			httpReq.Limit, params.options.Limits.MaxExportLimit),
 			http.StatusBadRequest)
 		return
 	}

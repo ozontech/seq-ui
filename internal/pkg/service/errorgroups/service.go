@@ -7,9 +7,10 @@ import (
 	"math"
 	"slices"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	repositorych "github.com/ozontech/seq-ui/internal/pkg/repository_ch"
 )
@@ -39,7 +40,22 @@ type service struct {
 	logTagsMapping config.LogTagsMapping
 }
 
-func New(repo repositorych.Repository, logTagsMapping config.LogTagsMapping) Service {
+func New(cfg *config.ErrorGroups, clientsCfg *config.Clients, chClients map[string]driver.Conn) map[string]Service {
+	serviceByEnv := make(map[string]Service, max(1, len(cfg.Envs)))
+	if len(cfg.Envs) > 0 {
+		for envName, envOptions := range cfg.Envs {
+			repo := repositorych.New(chClients[envOptions.CHID], clientsCfg.ClickHouse[envOptions.CHID].Sharded, envOptions.QueryFilter)
+			serviceByEnv[envName] = newService(repo, envOptions.LogTagsMapping)
+		}
+	} else {
+		repo := repositorych.New(chClients[cfg.Options.CHID], clientsCfg.ClickHouse[cfg.Options.CHID].Sharded, cfg.Options.QueryFilter)
+		serviceByEnv[""] = newService(repo, cfg.Options.LogTagsMapping)
+	}
+
+	return serviceByEnv
+}
+
+func newService(repo repositorych.Repository, logTagsMapping config.LogTagsMapping) Service {
 	return &service{
 		repo:           repo,
 		logTagsMapping: logTagsMapping,

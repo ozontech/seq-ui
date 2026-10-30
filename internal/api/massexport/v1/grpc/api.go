@@ -8,11 +8,11 @@ import (
 type API struct {
 	api.UnimplementedMassExportServiceServer
 
-	exporter massexport.Service
+	serviceByEnv map[string]massexport.Service
 }
 
-func New(exporter massexport.Service) *API {
+func New(serviceByEnv map[string]massexport.Service) *API {
 	return &API{
-		exporter: exporter,
+		serviceByEnv: serviceByEnv,
 	}
 }

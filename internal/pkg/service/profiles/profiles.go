@@ -11,7 +11,7 @@ type getOrCreateFn func(context.Context, types.GetOrCreateUserProfileRequest) (t
 
 var profile *profiles
 
-func InitProfiles(fn getOrCreateFn) {
+func Init(fn getOrCreateFn) {
 	profile = &profiles{
 		idByName:      make(map[string]int64),
 		getOrCreateFn: fn,

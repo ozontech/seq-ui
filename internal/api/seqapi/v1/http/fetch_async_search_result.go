@@ -20,6 +20,7 @@ import (
 //	@Router		/seqapi/v1/async_search/fetch [post]
 //	@ID			seqapi_v1_fetch_async_search_result
 //	@Tags		seqapi_v1
+//	@Param		env		query		string							false	"Environment"
 //	@Param		body	body		fetchAsyncSearchResultRequest	true	"Request body"
 //	@Success	200		{object}	fetchAsyncSearchResultResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error					"An unexpected error response"
@@ -27,7 +28,7 @@ import (
 func (a *API) serveFetchAsyncSearchResult(w http.ResponseWriter, r *http.Request) {
 	wr := httputil.NewWriter(w)
 
-	if a.asyncSearches == nil {
+	if a.asyncSearchesByEnv == nil {
 		wr.Error(types.ErrAsyncSearchesDisabled, http.StatusBadRequest)
 		return
 	}
@@ -35,13 +36,16 @@ func (a *API) serveFetchAsyncSearchResult(w http.ResponseWriter, r *http.Request
 	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_fetch_async_search_result")
 	defer span.End()
 
+	env := types.GetEnvKey(ctx)
+	svc := a.asyncSearchesByEnv[env]
+
 	var httpReq fetchAsyncSearchResultRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
 		wr.Error(fmt.Errorf("failed to parse search request: %w", err), http.StatusBadRequest)
 		return
 	}
 
-	spanAttributes := []attribute.KeyValue{
+	attributes := []attribute.KeyValue{
 		{
 			Key:   "search_id",
 			Value: attribute.StringValue(httpReq.SearchID),
@@ -59,7 +63,10 @@ func (a *API) serveFetchAsyncSearchResult(w http.ResponseWriter, r *http.Request
 			Value: attribute.StringValue(string(httpReq.Order)),
 		},
 	}
-	span.SetAttributes(spanAttributes...)
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
 	if err := checkUUID(httpReq.SearchID); err != nil {
 		wr.Error(err, http.StatusBadRequest)
@@ -71,7 +78,7 @@ func (a *API) serveFetchAsyncSearchResult(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	resp, err := a.asyncSearches.FetchAsyncSearchResult(ctx, httpReq.toProto())
+	resp, err := svc.FetchAsyncSearchResult(ctx, httpReq.toProto())
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return

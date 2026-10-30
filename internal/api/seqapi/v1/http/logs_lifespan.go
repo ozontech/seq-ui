@@ -10,7 +10,7 @@ import (
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/lifespan"
-	"github.com/ozontech/seq-ui/internal/pkg/cache"
+	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 	"github.com/ozontech/seq-ui/tracing"
@@ -29,28 +29,16 @@ func (a *API) serveGetLogsLifespan(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+	params := a.paramsByEnv[types.GetEnvKey(ctx)]
 
-	env := getEnvFromContext(ctx)
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		wr.Error(err, http.StatusBadRequest)
-		return
-	}
-
-	cacheKey := params.options.LogsLifespanCacheKey
-
-	if resStr, err := a.redisCache.Get(ctx, cacheKey); err == nil {
-		res := 0
-		res, err = strconv.Atoi(resStr)
+	if resStr, ok := params.caches.LogsLifespan.Get(ctx, ""); ok {
+		res, err := strconv.Atoi(resStr)
 		if err == nil {
 			logger.Debug("got logs lifespan from cache")
-			wr.WriteJson(getLogsLifespanResponse{Lifespan: int64(res)})
+			wr.WriteJson(getLogsLifespanResponse{Lifespan: res})
 			return
 		}
-
-		logger.Error("can't parse logs lifespan", zap.Error(err))
-	} else if !errors.Is(err, cache.ErrNotFound) {
-		logger.Error("can't get logs lifespan from cache", zap.Error(err))
+		logger.Error("failed to parse logs lifespan", zap.Error(err))
 	}
 
 	clientStatus, err := params.client.Status(ctx, &seqapi.StatusRequest{})
@@ -66,15 +54,12 @@ func (a *API) serveGetLogsLifespan(w http.ResponseWriter, r *http.Request) {
 
 	res := int(a.nowFn().Sub(clientStatus.OldestStorageTime.AsTime()) / lifespan.MeasureUnit)
 
-	err = a.redisCache.SetWithTTL(ctx, cacheKey, strconv.Itoa(res), params.options.LogsLifespanCacheTTL)
-	if err != nil {
-		logger.Error("can't set logs lifespan to cache", zap.Error(err))
-	}
+	params.caches.LogsLifespan.Set(ctx, "", strconv.Itoa(res))
 
 	logger.Debug("got logs lifespan from seq-proxy")
-	wr.WriteJson(getLogsLifespanResponse{Lifespan: int64(res)})
+	wr.WriteJson(getLogsLifespanResponse{Lifespan: res})
 }
 
 type getLogsLifespanResponse struct {
-	Lifespan int64 `json:"lifespan"`
+	Lifespan int `json:"lifespan"`
 } //	@name	seqapi.v1.GetLogsLifespanResponse
