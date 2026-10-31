@@ -28,7 +28,7 @@ import (
 func (a *API) serveExportAsyncSearch(w http.ResponseWriter, r *http.Request) {
 	wr := httputil.NewWriter(w)
 
-	if a.asyncSearches == nil {
+	if a.asyncSearchesByEnv == nil {
 		wr.Error(types.ErrAsyncSearchesDisabled, http.StatusBadRequest)
 		return
 	}
@@ -36,7 +36,8 @@ func (a *API) serveExportAsyncSearch(w http.ResponseWriter, r *http.Request) {
 	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_export_async_search_http")
 	defer span.End()
 
-	env := getEnvFromContext(ctx)
+	env := types.GetEnvKey(ctx)
+	svc := a.asyncSearchesByEnv[env]
 
 	userStr := "_"
 	if userName, err := types.GetUserKey(ctx); err == nil {
@@ -75,11 +76,9 @@ func (a *API) serveExportAsyncSearch(w http.ResponseWriter, r *http.Request) {
 			Value: attribute.StringSliceValue(httpReq.Fields),
 		},
 	}
-
 	if env != "" {
 		attributes = append(attributes, attribute.String("env", env))
 	}
-
 	span.SetAttributes(attributes...)
 
 	if err := checkUUID(httpReq.SearchID); err != nil {
@@ -92,11 +91,7 @@ func (a *API) serveExportAsyncSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		wr.Error(err, http.StatusBadRequest)
-		return
-	}
+	params := a.paramsByEnv[env]
 
 	if params.exportLimiter.Limited(userStr) {
 		metric.ServerExportRequestLimits.Inc()
@@ -105,9 +100,9 @@ func (a *API) serveExportAsyncSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	defer params.exportLimiter.Fill(userStr)
 
-	if httpReq.Limit > params.options.MaxExportLimit {
+	if httpReq.Limit > params.options.Limits.MaxExportLimit {
 		wr.Error(fmt.Errorf("too many events are requested: count=%d, max=%d",
-			httpReq.Limit, params.options.MaxExportLimit),
+			httpReq.Limit, params.options.Limits.MaxExportLimit),
 			http.StatusBadRequest)
 		return
 	}
@@ -123,7 +118,7 @@ func (a *API) serveExportAsyncSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.asyncSearches.ExportAsyncSearch(ctx, httpReq.toProto(), cw); err != nil {
+	if err := svc.ExportAsyncSearch(ctx, httpReq.toProto(), cw); err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return
 	}

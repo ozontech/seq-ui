@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/ozontech/seq-ui/internal/app/types"
+	admin_service "github.com/ozontech/seq-ui/internal/pkg/service/admin"
 	mock "github.com/ozontech/seq-ui/internal/pkg/service/admin/mock"
 	"github.com/ozontech/seq-ui/pkg/admin/v1"
 )
@@ -26,14 +27,7 @@ func setupTestAPI(t *testing.T) (*API, *mock.MockService) {
 	ctrl := gomock.NewController(t)
 	mockedSvc := mock.NewMockService(ctrl)
 
-	mockedSvc.EXPECT().
-		GetAvailablePermissions().
-		Return([]types.PermissionGroup{
-			{Group: "roles", Permissions: []string{"create", "read", "update", "delete"}},
-		}).
-		Times(1)
-
-	return New(mockedSvc), mockedSvc
+	return New(map[string]admin_service.Service{"": mockedSvc}), mockedSvc
 }
 
 func TestCreateRole(t *testing.T) {

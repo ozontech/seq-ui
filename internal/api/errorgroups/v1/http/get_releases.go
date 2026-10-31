@@ -17,6 +17,7 @@ import (
 //	@Router		/errorgroups/v1/releases [post]
 //	@ID			errorgroups_v1_get_releases
 //	@Tags		errorgroups_v1
+//	@Param		env		query		string				false	"Environment"
 //	@Param		body	body		getReleasesRequest	true	"Request body"
 //	@Success	200		{object}	getReleasesResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
@@ -33,19 +34,21 @@ func (a *API) serveGetReleases(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	svc, httpReqEnv := a.serviceByEnv(ctx, httpReq.Env)
+
 	attributes := []attribute.KeyValue{
 		{Key: "service", Value: attribute.StringValue(httpReq.Service)},
 	}
-	if httpReq.Env != nil {
-		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReq.Env)})
+	if httpReqEnv != nil && *httpReqEnv != "" {
+		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReqEnv)})
 	}
 	span.SetAttributes(attributes...)
 
 	req := types.GetReleasesRequest{
 		Service: httpReq.Service,
-		Env:     httpReq.Env,
+		Env:     httpReqEnv,
 	}
-	releases, err := a.service.GetReleases(ctx, req)
+	releases, err := svc.GetReleases(ctx, req)
 	if err != nil {
 		httputil.ProcessError(wr, err)
 		return

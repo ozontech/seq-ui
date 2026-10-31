@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
+	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/tracing"
 )
 
@@ -20,8 +21,9 @@ func (a *API) serveJobs(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+	svc := a.serviceByEnv[types.GetEnvKey(ctx)]
 
-	exports, err := a.exporter.GetAll(ctx)
+	exports, err := svc.GetAll(ctx)
 	if err != nil {
 		httputil.ProcessError(wr, err)
 		return

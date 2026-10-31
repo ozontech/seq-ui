@@ -27,6 +27,7 @@ type CreateRoleResponse struct {
 type AddUsersToRoleRequest struct {
 	RoleID    int32
 	Usernames []string
+	Env       string
 }
 
 type GetRolesResponse struct {
@@ -35,6 +36,7 @@ type GetRolesResponse struct {
 
 type GetRoleRequest struct {
 	RoleID int32
+	Env    string
 }
 
 type GetRoleResponse struct {
@@ -54,6 +56,7 @@ type DeleteRoleRequest struct {
 
 type GetUserPermissionsRequest struct {
 	Username string
+	Env      string
 }
 
 type GetUserPermissionsResponse struct {
@@ -63,4 +66,5 @@ type GetUserPermissionsResponse struct {
 type DeleteUsersFromRoleRequest struct {
 	RoleID    int32
 	Usernames []string
+	Env       string
 }

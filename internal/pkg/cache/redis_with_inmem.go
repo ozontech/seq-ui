@@ -10,16 +10,16 @@ import (
 	"github.com/ozontech/seq-ui/logger"
 )
 
-type inmemWithRedis struct {
-	inmem *inmemoryCache
-	redis *redisCache
+type redisWithInmem struct {
+	redis Cache
+	inmem Cache
 }
 
-func (c *inmemWithRedis) Set(ctx context.Context, key string, value string) error {
+func (c *redisWithInmem) Set(ctx context.Context, key string, value string) error {
 	return c.SetWithTTL(ctx, key, value, 0)
 }
 
-func (c *inmemWithRedis) SetWithTTL(ctx context.Context, key string, value string, ttl time.Duration) error {
+func (c *redisWithInmem) SetWithTTL(ctx context.Context, key string, value string, ttl time.Duration) error {
 	if err := c.redis.SetWithTTL(ctx, key, value, ttl); err != nil {
 		logger.Error("failed to set value in redis sub cache", zap.String("key", key), zap.Error(err))
 	}
@@ -27,7 +27,7 @@ func (c *inmemWithRedis) SetWithTTL(ctx context.Context, key string, value strin
 	return c.inmem.SetWithTTL(ctx, key, value, ttl)
 }
 
-func (c *inmemWithRedis) Get(ctx context.Context, key string) (string, error) {
+func (c *redisWithInmem) Get(ctx context.Context, key string) (string, error) {
 	val, err := c.inmem.Get(ctx, key)
 	if err == nil {
 		return val, nil
@@ -49,7 +49,7 @@ func (c *inmemWithRedis) Get(ctx context.Context, key string) (string, error) {
 	return "", err
 }
 
-func (c *inmemWithRedis) GetTTL(ctx context.Context, key string) (time.Duration, error) {
+func (c *redisWithInmem) GetTTL(ctx context.Context, key string) (time.Duration, error) {
 	val, err := c.inmem.GetTTL(ctx, key)
 	if err == nil {
 		return val, nil
@@ -67,7 +67,7 @@ func (c *inmemWithRedis) GetTTL(ctx context.Context, key string) (time.Duration,
 	return 0, err
 }
 
-func (c *inmemWithRedis) Del(ctx context.Context, key string) {
+func (c *redisWithInmem) Del(ctx context.Context, key string) {
 	c.redis.Del(ctx, key)
 	c.inmem.Del(ctx, key)
 }

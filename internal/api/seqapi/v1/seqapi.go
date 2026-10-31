@@ -5,8 +5,7 @@ import (
 
 	grpc_api "github.com/ozontech/seq-ui/internal/api/seqapi/v1/grpc"
 	http_api "github.com/ozontech/seq-ui/internal/api/seqapi/v1/http"
-	"github.com/ozontech/seq-ui/internal/app/config"
-	"github.com/ozontech/seq-ui/internal/pkg/cache"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	asyncsearches "github.com/ozontech/seq-ui/internal/pkg/service/async_searches"
 )
@@ -16,16 +15,10 @@ type SeqAPI struct {
 	httpAPI *http_api.API
 }
 
-func New(
-	cfg config.SeqAPI,
-	seqDB map[string]seqdb.Client,
-	inmemWithRedisCache cache.Cache,
-	redisCache cache.Cache,
-	asyncSearches asyncsearches.Service,
-) *SeqAPI {
+func New(cfg *config.SeqAPI, seqDBClients map[string]seqdb.Client, asyncSearchesByEnv map[string]asyncsearches.Service) *SeqAPI {
 	return &SeqAPI{
-		grpcAPI: grpc_api.New(cfg, seqDB, inmemWithRedisCache, redisCache, asyncSearches),
-		httpAPI: http_api.New(cfg, seqDB, inmemWithRedisCache, redisCache, asyncSearches),
+		grpcAPI: grpc_api.New(cfg, seqDBClients, asyncSearchesByEnv),
+		httpAPI: http_api.New(cfg, seqDBClients, asyncSearchesByEnv),
 	}
 }
 

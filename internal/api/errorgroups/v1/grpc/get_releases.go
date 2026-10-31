@@ -15,19 +15,21 @@ func (a *API) GetReleases(ctx context.Context, req *errorgroups.GetReleasesReque
 	ctx, span := tracing.StartSpan(ctx, "errorgroups_v1_get_releases")
 	defer span.End()
 
+	svc, reqEnv := a.serviceByEnv(ctx, req.Env)
+
 	attributes := []attribute.KeyValue{
 		{Key: "service", Value: attribute.StringValue(req.Service)},
 	}
-	if req.Env != nil {
-		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*req.Env)})
+	if reqEnv != nil && *reqEnv != "" {
+		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*reqEnv)})
 	}
 	span.SetAttributes(attributes...)
 
 	request := types.GetReleasesRequest{
 		Service: req.Service,
-		Env:     req.Env,
+		Env:     reqEnv,
 	}
-	releases, err := a.service.GetReleases(ctx, request)
+	releases, err := svc.GetReleases(ctx, request)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}

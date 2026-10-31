@@ -18,6 +18,8 @@ func (a *API) GetHist(ctx context.Context, req *errorgroups.GetHistRequest) (*er
 	ctx, span := tracing.StartSpan(ctx, "errorgroups_v1_get_hist")
 	defer span.End()
 
+	svc, reqEnv := a.serviceByEnv(ctx, req.Env)
+
 	attributes := []attribute.KeyValue{}
 	if req.GroupHash != nil {
 		attributes = append(attributes, attribute.KeyValue{
@@ -27,8 +29,8 @@ func (a *API) GetHist(ctx context.Context, req *errorgroups.GetHistRequest) (*er
 	if req.Service != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "service", Value: attribute.StringValue(*req.Service)})
 	}
-	if req.Env != nil {
-		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*req.Env)})
+	if reqEnv != nil && *reqEnv != "" {
+		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*reqEnv)})
 	}
 	if req.Release != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "release", Value: attribute.StringValue(*req.Release)})
@@ -52,7 +54,7 @@ func (a *API) GetHist(ctx context.Context, req *errorgroups.GetHistRequest) (*er
 	request := types.GetErrorHistRequest{
 		Service:   req.Service,
 		GroupHash: req.GroupHash,
-		Env:       req.Env,
+		Env:       reqEnv,
 		Source:    req.Source,
 		Release:   req.Release,
 		TimeRange: parseTimeRange(req),
@@ -64,7 +66,7 @@ func (a *API) GetHist(ctx context.Context, req *errorgroups.GetHistRequest) (*er
 		}
 	}
 
-	hist, err := a.service.GetHist(ctx, request)
+	hist, err := svc.GetHist(ctx, request)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}

@@ -12,7 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/ozontech/seq-ui/internal/api/seqapi/v1/test"
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	mock_seqdb "github.com/ozontech/seq-ui/internal/pkg/client/seqdb/mock"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
 )
@@ -50,8 +50,10 @@ func TestGetAggregation(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
-					MaxAggregationsPerRequest: 3,
+				Options: config.SeqAPIOptions{
+					Limits: config.SeqAPILimits{
+						MaxAggregationsPerRequest: 3,
+					},
 				},
 			},
 		},
@@ -65,8 +67,10 @@ func TestGetAggregation(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
-					MaxAggregationsPerRequest: 2,
+				Options: config.SeqAPIOptions{
+					Limits: config.SeqAPILimits{
+						MaxAggregationsPerRequest: 2,
+					},
 				},
 			},
 			apiErr: true,
@@ -82,8 +86,10 @@ func TestGetAggregation(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
-					MaxAggregationsPerRequest: 1,
+				Options: config.SeqAPIOptions{
+					Limits: config.SeqAPILimits{
+						MaxAggregationsPerRequest: 1,
+					},
 				},
 			},
 			clientErr: errors.New("client error"),
@@ -178,8 +184,10 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
-					MaxAggregationsPerRequest: 3,
+				Options: config.SeqAPIOptions{
+					Limits: config.SeqAPILimits{
+						MaxAggregationsPerRequest: 3,
+					},
 				},
 			},
 		},
@@ -221,8 +229,10 @@ func TestGetAggregationWithNormalization(t *testing.T) {
 				},
 			},
 			cfg: config.SeqAPI{
-				SeqAPIOptions: &config.SeqAPIOptions{
-					MaxAggregationsPerRequest: 3,
+				Options: config.SeqAPIOptions{
+					Limits: config.SeqAPILimits{
+						MaxAggregationsPerRequest: 3,
+					},
 				},
 			},
 		},

@@ -60,6 +60,7 @@ func (s *service) AddUsersToRole(ctx context.Context, req types.AddUsersToRoleRe
 		}
 	}
 
+	req.Env = s.env
 	if err := s.adminRepo.AddUsersToRole(ctx, req); err != nil {
 		return err
 	}
@@ -86,6 +87,7 @@ func (s *service) DeleteUsersFromRole(ctx context.Context, req types.DeleteUsers
 		return types.NewErrInvalidRequestField("empty username")
 	}
 
+	req.Env = s.env
 	if err := s.adminRepo.DeleteUsersFromRole(ctx, req); err != nil {
 		return err
 	}
@@ -125,6 +127,7 @@ func (s *service) GetRole(ctx context.Context, req types.GetRoleRequest) (types.
 		return types.RoleInfo{}, types.NewErrInvalidRequestField("value role_id must be greater than 0")
 	}
 
+	req.Env = s.env
 	return s.adminRepo.GetRole(ctx, req)
 }
 
@@ -154,7 +157,7 @@ func (s *service) UpdateRole(ctx context.Context, req types.UpdateRoleRequest) e
 	s.cache.resetRoles(ctx)
 
 	if len(req.Permissions) > 0 {
-		if roleInfo, err := s.adminRepo.GetRole(ctx, types.GetRoleRequest{RoleID: req.RoleID}); err == nil {
+		if roleInfo, err := s.adminRepo.GetRole(ctx, types.GetRoleRequest{RoleID: req.RoleID, Env: s.env}); err == nil {
 			s.cache.resetUsersPermissions(ctx, roleInfo.Usernames...)
 		}
 	}
@@ -180,7 +183,7 @@ func (s *service) DeleteRole(ctx context.Context, req types.DeleteRoleRequest) e
 		}
 	}
 
-	if roleInfo, err := s.adminRepo.GetRole(ctx, types.GetRoleRequest{RoleID: req.RoleID}); err == nil {
+	if roleInfo, err := s.adminRepo.GetRole(ctx, types.GetRoleRequest{RoleID: req.RoleID, Env: s.env}); err == nil {
 		s.cache.resetUsersPermissions(ctx, roleInfo.Usernames...)
 	}
 

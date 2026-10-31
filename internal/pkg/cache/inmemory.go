@@ -7,7 +7,7 @@ import (
 
 	"github.com/dgraph-io/ristretto/v2"
 
-	"github.com/ozontech/seq-ui/internal/app/config"
+	"github.com/ozontech/seq-ui/internal/app/config/v2"
 	"github.com/ozontech/seq-ui/metric"
 )
 
@@ -17,7 +17,7 @@ type inmemoryCache struct {
 	cache *ristretto.Cache[string, string]
 }
 
-func newInmemoryCache(cfg config.InmemoryCache) (*inmemoryCache, error) {
+func newInmemoryCache(cfg *config.Inmemory) (Cache, error) {
 	c, err := ristretto.NewCache(&ristretto.Config[string, string]{
 		NumCounters: cfg.NumCounters,
 		MaxCost:     cfg.MaxCost,

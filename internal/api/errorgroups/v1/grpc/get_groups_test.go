@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/ozontech/seq-ui/internal/app/types"
+	"github.com/ozontech/seq-ui/internal/pkg/service/errorgroups"
 	svc_mock "github.com/ozontech/seq-ui/internal/pkg/service/errorgroups/mock"
 	errorgroups_v1 "github.com/ozontech/seq-ui/pkg/errorgroups/v1"
 )
@@ -445,7 +446,7 @@ func TestGetGroups(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			mockedSvc := svc_mock.NewMockService(ctrl)
 
-			api := New(mockedSvc)
+			api := New(map[string]errorgroups.Service{"": mockedSvc})
 
 			if ma := tt.mockArgs; ma != nil {
 				if tt.req.Filter != nil && tt.req.Filter.IsNew {

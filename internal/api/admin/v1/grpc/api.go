@@ -9,14 +9,14 @@ import (
 type API struct {
 	api.UnimplementedAdminServiceServer
 
-	service              admin.Service
+	serviceByEnv         map[string]admin.Service
 	availablePermissions []*api.PermissionGroup
 }
 
-func New(svc admin.Service) *API {
+func New(serviceByEnv map[string]admin.Service) *API {
 	return &API{
-		service:              svc,
-		availablePermissions: availablePermissionsToProto(svc.GetAvailablePermissions()),
+		serviceByEnv:         serviceByEnv,
+		availablePermissions: availablePermissionsToProto(admin.GetAvailablePermissions()),
 	}
 }
 

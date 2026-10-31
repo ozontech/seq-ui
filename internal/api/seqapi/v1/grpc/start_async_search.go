@@ -15,14 +15,17 @@ import (
 )
 
 func (a *API) StartAsyncSearch(ctx context.Context, req *seqapi.StartAsyncSearchRequest) (*seqapi.StartAsyncSearchResponse, error) {
-	if a.asyncSearches == nil {
+	if a.asyncSearchesByEnv == nil {
 		return nil, status.Error(codes.Unimplemented, types.ErrAsyncSearchesDisabled.Error())
 	}
 
 	ctx, span := tracing.StartSpan(ctx, "seqapi_v1_start_async_search")
 	defer span.End()
 
-	spanAttributes := []attribute.KeyValue{
+	env := types.GetEnvKey(ctx)
+	svc := a.asyncSearchesByEnv[env]
+
+	attributes := []attribute.KeyValue{
 		{
 			Key:   "query",
 			Value: attribute.StringValue(req.GetQuery()),
@@ -49,22 +52,24 @@ func (a *API) StartAsyncSearch(ctx context.Context, req *seqapi.StartAsyncSearch
 		},
 	}
 	if req.Hist != nil && req.Hist.Interval != "" {
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "histogram_interval",
 			Value: attribute.StringValue(req.Hist.Interval),
 		})
 	}
 	if len(req.Aggs) > 0 {
 		aggregations, _ := json.Marshal(req.Aggs)
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "aggregations",
 			Value: attribute.StringValue(string(aggregations)),
 		})
 	}
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
-	span.SetAttributes(spanAttributes...)
-
-	resp, err := a.asyncSearches.StartAsyncSearch(ctx, req)
+	resp, err := svc.StartAsyncSearch(ctx, req)
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)
 	}

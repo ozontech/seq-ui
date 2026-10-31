@@ -20,6 +20,7 @@ import (
 //	@Router		/errorgroups/v1/details [post]
 //	@ID			errorgroups_v1_get_details
 //	@Tags		errorgroups_v1
+//	@Param		env		query		string				false	"Environment"
 //	@Param		body	body		getDetailsRequest	true	"Request body"
 //	@Success	200		{object}	getDetailsResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error		"An unexpected error response"
@@ -36,6 +37,8 @@ func (a *API) serveGetDetails(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	svc, httpReqEnv := a.serviceByEnv(ctx, httpReq.Env)
+
 	parsedGroupHash, err := parseGroupHash(&httpReq.GroupHash)
 	if err != nil {
 		wr.Error(fmt.Errorf("failed to parse group_hash: %w", err), http.StatusBadRequest)
@@ -45,8 +48,8 @@ func (a *API) serveGetDetails(w http.ResponseWriter, r *http.Request) {
 	attributes := []attribute.KeyValue{
 		{Key: "group_hash", Value: attribute.StringValue(httpReq.GroupHash)},
 	}
-	if httpReq.Env != nil {
-		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReq.Env)})
+	if httpReqEnv != nil && *httpReqEnv != "" {
+		attributes = append(attributes, attribute.KeyValue{Key: "env", Value: attribute.StringValue(*httpReqEnv)})
 	}
 	if httpReq.Service != nil {
 		attributes = append(attributes, attribute.KeyValue{Key: "service", Value: attribute.StringValue(*httpReq.Service)})
@@ -65,7 +68,7 @@ func (a *API) serveGetDetails(w http.ResponseWriter, r *http.Request) {
 
 	req := types.GetErrorGroupDetailsRequest{
 		GroupHash: *parsedGroupHash,
-		Env:       httpReq.Env,
+		Env:       httpReqEnv,
 		Source:    httpReq.Source,
 		Service:   httpReq.Service,
 		Release:   httpReq.Release,
@@ -77,7 +80,7 @@ func (a *API) serveGetDetails(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	details, err := a.service.GetDetails(ctx, req)
+	details, err := svc.GetDetails(ctx, req)
 	if err != nil {
 		httputil.ProcessError(wr, err)
 		return

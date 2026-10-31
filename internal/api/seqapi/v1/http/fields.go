@@ -1,12 +1,13 @@
 package http
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
+	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/internal/pkg/client/seqdb"
 	"github.com/ozontech/seq-ui/logger"
 	"github.com/ozontech/seq-ui/pkg/seqapi/v1"
@@ -26,67 +27,41 @@ func (a *API) serveGetFields(w http.ResponseWriter, r *http.Request) {
 	defer span.End()
 
 	wr := httputil.NewWriter(w)
+	params := a.paramsByEnv[types.GetEnvKey(ctx)]
 
-	env := getEnvFromContext(ctx)
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		wr.Error(err, http.StatusBadRequest)
-		return
-	}
-
-	if params.fieldsCache == nil {
-		resp, err := params.client.GetFields(ctx, &seqapi.GetFieldsRequest{})
-		if err != nil {
-			wr.Error(err, http.StatusInternalServerError)
+	if cached, ok := params.caches.Fields.Get(ctx, ""); ok {
+		var resp seqapi.GetFieldsResponse
+		err := proto.Unmarshal([]byte(cached), &resp)
+		if err == nil {
+			wr.WriteJson(getFieldsResponse{
+				Fields:       fieldsFromProto(resp.GetFields()),
+				SystemFields: params.systemFields,
+				PinnedFields: params.pinnedFields,
+			})
 			return
 		}
-
-		res := getFieldsResponse{
-			Fields:       fieldsFromProto(resp.GetFields()),
-			SystemFields: params.systemFields,
-			PinnedFields: params.pinnedFields,
-		}
-		wr.WriteJson(res)
-		return
-	}
-
-	rawFields, cached, isActual := params.fieldsCache.getFields()
-	if cached && isActual {
-		_, _ = wr.Write(rawFields)
-		return
+		logger.Error("failed to unmarshal cached fields", zap.Error(err))
 	}
 
 	resp, err := params.client.GetFields(ctx, &seqapi.GetFieldsRequest{})
 	if err != nil {
-		if cached {
-			logger.Error("can't get fields; use cached fields", zap.Error(err))
-			_, _ = wr.Write(rawFields)
-			return
-		}
-
 		wr.Error(err, http.StatusInternalServerError)
 		return
 	}
 
-	res := getFieldsResponse{
+	if params.caches.Fields != nil {
+		if data, err := proto.Marshal(&seqapi.GetFieldsResponse{Fields: resp.GetFields()}); err == nil {
+			params.caches.Fields.Set(ctx, "", string(data))
+		} else {
+			logger.Error("failed to marshal fields proto for caching", zap.Error(err))
+		}
+	}
+
+	wr.WriteJson(getFieldsResponse{
 		Fields:       fieldsFromProto(resp.GetFields()),
 		SystemFields: params.systemFields,
 		PinnedFields: params.pinnedFields,
-	}
-	resData, err := json.Marshal(res)
-	if err != nil {
-		if cached {
-			logger.Error("can't marshal fields; use cached fields", zap.Error(err))
-			_, _ = wr.Write(rawFields)
-			return
-		}
-
-		wr.Error(err, http.StatusInternalServerError)
-		return
-	}
-
-	params.fieldsCache.setFields(resData)
-	_, _ = wr.Write(resData)
+	})
 }
 
 // serveGetPinnedFields go doc.
@@ -101,14 +76,10 @@ func (a *API) serveGetPinnedFields(w http.ResponseWriter, r *http.Request) {
 	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_get_pinned_fields")
 	defer span.End()
 
-	env := getEnvFromContext(ctx)
-	params, err := a.GetEnvParams(env)
-	if err != nil {
-		httputil.NewWriter(w).Error(err, http.StatusBadRequest)
-		return
-	}
+	wr := httputil.NewWriter(w)
+	params := a.paramsByEnv[types.GetEnvKey(ctx)]
 
-	httputil.NewWriter(w).WriteJson(getFieldsResponse{
+	wr.WriteJson(getFieldsResponse{
 		Fields: params.pinnedFields,
 	})
 }
@@ -118,18 +89,18 @@ type field struct {
 	Type string `json:"type" default:"unknown" enums:"unknown,keyword,text"`
 } //	@name	seqapi.v1.Field
 
-func fieldFromProto(proto *seqapi.Field) field {
+func fieldFromProto(f *seqapi.Field) field {
 	return field{
-		Name: proto.GetName(),
-		Type: seqdb.FieldTypeFromProto(proto.GetType()),
+		Name: f.GetName(),
+		Type: seqdb.FieldTypeFromProto(f.GetType()),
 	}
 }
 
 type fields []field
 
-func fieldsFromProto(proto []*seqapi.Field) fields {
-	res := make(fields, len(proto))
-	for i, f := range proto {
+func fieldsFromProto(fs []*seqapi.Field) fields {
+	res := make(fields, len(fs))
+	for i, f := range fs {
 		res[i] = fieldFromProto(f)
 	}
 	return res

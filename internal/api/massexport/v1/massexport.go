@@ -13,10 +13,10 @@ type MassExport struct {
 	httpAPI *http_api.API
 }
 
-func New(service massexport.Service) *MassExport {
+func New(serviceByEnv map[string]massexport.Service) *MassExport {
 	return &MassExport{
-		grpcAPI: grpc_api.New(service),
-		httpAPI: http_api.New(service),
+		grpcAPI: grpc_api.New(serviceByEnv),
+		httpAPI: http_api.New(serviceByEnv),
 	}
 }
 

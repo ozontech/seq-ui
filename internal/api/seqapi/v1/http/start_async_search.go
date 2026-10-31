@@ -22,6 +22,7 @@ import (
 //	@Router		/seqapi/v1/async_search/start [post]
 //	@ID			seqapi_v1_start_async_search
 //	@Tags		seqapi_v1
+//	@Param		env		query		string						false	"Environment"
 //	@Param		body	body		startAsyncSearchRequest		true	"Request body"
 //	@Success	200		{object}	startAsyncSearchResponse	"A successful response"
 //	@Failure	default	{object}	httputil.Error				"An unexpected error response"
@@ -29,13 +30,17 @@ import (
 func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
 	wr := httputil.NewWriter(w)
 
-	if a.asyncSearches == nil {
+	if a.asyncSearchesByEnv == nil {
 		wr.Error(types.ErrAsyncSearchesDisabled, http.StatusBadRequest)
 		return
 	}
 
 	ctx, span := tracing.StartSpan(r.Context(), "seqapi_v1_start_async_search")
 	defer span.End()
+
+	env := types.GetEnvKey(ctx)
+	svc := a.asyncSearchesByEnv[env]
+	params := a.paramsByEnv[env]
 
 	var httpReq startAsyncSearchRequest
 	if err := json.NewDecoder(r.Body).Decode(&httpReq); err != nil {
@@ -54,14 +59,14 @@ func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if err := api_error.CheckAggregationTsInterval(agg.Interval, httpReq.From, httpReq.To,
-			a.config.MaxBucketsPerAggregationTs,
+			params.options.Limits.MaxBucketsPerAggregationTs,
 		); err != nil {
 			wr.Error(err, http.StatusBadRequest)
 			return
 		}
 	}
 
-	spanAttributes := []attribute.KeyValue{
+	attributes := []attribute.KeyValue{
 		{
 			Key:   "query",
 			Value: attribute.StringValue(httpReq.Query),
@@ -88,22 +93,24 @@ func (a *API) serveStartAsyncSearch(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 	if httpReq.Histogram != nil && httpReq.Histogram.Interval != "" {
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "histogram_interval",
 			Value: attribute.StringValue(httpReq.Histogram.Interval),
 		})
 	}
 	if len(httpReq.Aggregations) > 0 {
 		aggsRaw, _ := json.Marshal(httpReq.Aggregations)
-		spanAttributes = append(spanAttributes, attribute.KeyValue{
+		attributes = append(attributes, attribute.KeyValue{
 			Key:   "aggregations",
 			Value: attribute.StringValue(string(aggsRaw)),
 		})
 	}
+	if env != "" {
+		attributes = append(attributes, attribute.String("env", env))
+	}
+	span.SetAttributes(attributes...)
 
-	span.SetAttributes(spanAttributes...)
-
-	resp, err := a.asyncSearches.StartAsyncSearch(ctx, httpReq.toProto(parsedRetention))
+	resp, err := svc.StartAsyncSearch(ctx, httpReq.toProto(parsedRetention))
 	if err != nil {
 		wr.Error(err, http.StatusInternalServerError)
 		return
