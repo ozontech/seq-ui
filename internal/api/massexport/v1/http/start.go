@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/ozontech/seq-ui/internal/api/httputil"
-	"github.com/ozontech/seq-ui/internal/api/massexport/v1/util"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	"github.com/ozontech/seq-ui/tracing"
 )
@@ -52,10 +51,6 @@ func (a *API) serveStart(w http.ResponseWriter, r *http.Request) {
 			Value: attribute.StringValue(httpReq.To.Format(time.RFC3339)),
 		},
 		{
-			Key:   "window",
-			Value: attribute.StringValue(httpReq.Window),
-		},
-		{
 			Key:   "name",
 			Value: attribute.StringValue(httpReq.Name),
 		},
@@ -69,29 +64,16 @@ func (a *API) serveStart(w http.ResponseWriter, r *http.Request) {
 		wr.Error(errors.New("empty export name"), http.StatusBadRequest)
 		return
 	}
-
-	window, err := util.ParseWindow(httpReq.Window)
-	if err != nil {
-		wr.Error(fmt.Errorf("parse 'window': %w", err), http.StatusBadRequest)
-		return
-	}
-
 	if !(httpReq.From.Before(httpReq.To)) {
 		wr.Error(errors.New("'from' is not before 'to'"), http.StatusBadRequest)
 		return
 	}
 
-	if window > httpReq.To.Sub(httpReq.From) {
-		wr.Error(errors.New("'window' is larger than whole interval"), http.StatusBadRequest)
-		return
-	}
-
 	result, err := svc.StartExport(ctx, types.StartExportRequest{
-		Query:  httpReq.Query,
-		From:   httpReq.From,
-		To:     httpReq.To,
-		Window: window,
-		Name:   httpReq.Name,
+		Query: httpReq.Query,
+		From:  httpReq.From,
+		To:    httpReq.To,
+		Name:  httpReq.Name,
 	})
 
 	if err != nil {
@@ -108,7 +90,7 @@ type startRequest struct {
 	Query  string    `json:"query"`
 	From   time.Time `json:"from" format:"date-time"`
 	To     time.Time `json:"to" format:"date-time"`
-	Window string    `json:"window"`
+	Window string    `json:"window"` // Deprecated
 	Name   string    `json:"name"`
 } //	@name	massexport.v1.StartRequest
 
