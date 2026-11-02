@@ -3,16 +3,43 @@ package loader
 import (
 	"fmt"
 	"maps"
+	"os"
 
 	"gopkg.in/yaml.v3"
 )
 
-func mergeEnvOptions(cfgBytes []byte) ([]byte, error) {
-	var root map[string]any
-	if err := yaml.Unmarshal(cfgBytes, &root); err != nil {
-		return nil, fmt.Errorf("parse yaml for merge: %w", err)
+// mergeFiles merges configs in the given order, later files override earlier ones.
+func mergeFiles(cfgPaths []string) (map[string]any, int, error) {
+	mergedConfig := make(map[string]any, len(cfgPaths))
+	version := 0
+
+	for i, path := range cfgPaths {
+		yamlContents, err := os.ReadFile(path) //nolint:gosec
+		if err != nil {
+			return nil, 0, fmt.Errorf("read config file %q: %w", path, err)
+		}
+
+		v, err := readVersion(yamlContents)
+		if err != nil {
+			return nil, 0, fmt.Errorf("read config %q version: %w", path, err)
+		}
+		if i > 0 && v != version {
+			return nil, 0, fmt.Errorf("different config versions: %d and %d", version, v)
+		}
+		version = v
+
+		var currentCfg map[string]any
+		if err := yaml.Unmarshal(yamlContents, &currentCfg); err != nil {
+			return nil, 0, fmt.Errorf("parse config file yaml %q: %w", path, err)
+		}
+
+		mergedConfig = mergeYAMLs(mergedConfig, currentCfg)
 	}
 
+	return mergedConfig, version, nil
+}
+
+func mergeEnvOptions(root map[string]any) {
 	mergeOptions := func(root map[string]any) {
 		rootOpts, _ := root["options"].(map[string]any)
 		envs, _ := root["envs"].(map[string]any)
@@ -40,18 +67,13 @@ func mergeEnvOptions(cfgBytes []byte) ([]byte, error) {
 	if rl, _ := server["rate_limiting"].(map[string]any); rl != nil {
 		mergeOptions(rl)
 	}
-	out, err := yaml.Marshal(root)
-	if err != nil {
-		return nil, fmt.Errorf("marshal merged yaml: %w", err)
-	}
-	return out, nil
 }
 
-func mergeYAMLs(rootOpts, envOpts map[string]any) map[string]any {
+func mergeYAMLs(base, override map[string]any) map[string]any {
 	merged := make(map[string]any)
-	maps.Copy(merged, rootOpts)
+	maps.Copy(merged, base)
 
-	for k, v := range envOpts {
+	for k, v := range override {
 		if existingValue, exists := merged[k]; exists {
 			if existingMap, ok := existingValue.(map[string]any); ok {
 				if newMap, ok := v.(map[string]any); ok {

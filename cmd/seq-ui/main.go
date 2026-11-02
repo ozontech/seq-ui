@@ -48,7 +48,11 @@ func main() {
 	// OS environment variables take precedence.
 	_ = godotenv.Load()
 
-	configPath := flag.String("config", defaultConfig, "application config")
+	var configPaths []string
+	flag.Func("config", "application config, repeat the flag to merge several configs of the same version", func(path string) error {
+		configPaths = append(configPaths, path)
+		return nil
+	})
 	flag.Parse()
 
 	logger.Info("hi, I am seq-ui",
@@ -59,15 +63,16 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	run(ctx, *configPath)
+	run(ctx, configPaths)
 }
 
-func run(ctx context.Context, configPath string) {
-	if configPath == defaultConfig {
+func run(ctx context.Context, configPaths []string) {
+	if len(configPaths) == 0 {
 		logger.Warn("app uses the default config file, to provide your own config use -config flag")
+		configPaths = append(configPaths, defaultConfig)
 	}
 
-	cfg, err := loader.FromFile(configPath)
+	cfg, err := loader.FromFiles(configPaths)
 	if err != nil {
 		logger.Fatal("failed to read config", zap.Error(err))
 	}
