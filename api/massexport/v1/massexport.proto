@@ -23,7 +23,7 @@ message StartRequest {
   string query = 1; // query for SeqDB in key:value format
   google.protobuf.Timestamp from = 2;
   google.protobuf.Timestamp to = 3;
-  string window = 4;
+  string window = 4 [deprecated=true];
   string name = 5;
 }
 
