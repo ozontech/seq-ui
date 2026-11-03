@@ -153,10 +153,6 @@ func (s *exportService) StartExport(ctx context.Context, req types.StartExportRe
 	from := floor(req.From, s.partLength)
 	to := ceil(req.To, s.partLength)
 
-	if req.Window > s.partLength {
-		return types.StartExportResponse{}, fmt.Errorf("'window' is larger then part length (%s)", s.partLength)
-	}
-
 	curTime := time.Now().UnixMilli()
 	jobID := fmt.Sprintf("%s_%d", req.Name, curTime)
 	sessionID := fmt.Sprintf("job#%s#export#%s", userName, jobID)
@@ -180,7 +176,6 @@ func (s *exportService) StartExport(ctx context.Context, req types.StartExportRe
 		From:       from,
 		To:         to,
 		Query:      req.Query,
-		Window:     req.Window,
 		BatchSize:  s.batchSize,
 		PartLength: s.partLength,
 	})

@@ -7,7 +7,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/ozontech/seq-ui/internal/api/grpcutil"
-	"github.com/ozontech/seq-ui/internal/api/massexport/v1/util"
 	"github.com/ozontech/seq-ui/internal/app/types"
 	massexport_v1 "github.com/ozontech/seq-ui/pkg/massexport/v1"
 	"github.com/ozontech/seq-ui/tracing"
@@ -36,10 +35,6 @@ func (a *API) Start(ctx context.Context, req *massexport_v1.StartRequest) (*mass
 			Value: attribute.StringValue(to.Format(time.RFC3339)),
 		},
 		{
-			Key:   "window",
-			Value: attribute.StringValue(req.GetWindow()),
-		},
-		{
 			Key:   "name",
 			Value: attribute.StringValue(req.GetName()),
 		},
@@ -53,25 +48,15 @@ func (a *API) Start(ctx context.Context, req *massexport_v1.StartRequest) (*mass
 		return nil, grpcutil.ProcessError(types.NewErrInvalidRequestField("empty export name"))
 	}
 
-	window, err := util.ParseWindow(req.GetWindow())
-	if err != nil {
-		return nil, grpcutil.ProcessError(types.NewErrInvalidRequestField(err.Error()))
-	}
-
 	if !(from.Before(to)) {
 		return nil, grpcutil.ProcessError(types.NewErrInvalidRequestField("'from' is not before 'to'"))
 	}
 
-	if window > to.Sub(from) {
-		return nil, grpcutil.ProcessError(types.NewErrInvalidRequestField("'window' is larger than whole interval"))
-	}
-
 	result, err := svc.StartExport(ctx, types.StartExportRequest{
-		Query:  req.GetQuery(),
-		From:   from,
-		To:     to,
-		Window: window,
-		Name:   req.GetName(),
+		Query: req.GetQuery(),
+		From:  from,
+		To:    to,
+		Name:  req.GetName(),
 	})
 	if err != nil {
 		return nil, grpcutil.ProcessError(err)

@@ -2911,6 +2911,7 @@
                     "format": "date-time"
                 },
                 "window": {
+                    "description": "Deprecated",
                     "type": "string"
                 }
             }

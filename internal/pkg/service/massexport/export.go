@@ -28,9 +28,8 @@ type loadTask struct {
 
 	partID int
 
-	from   time.Time
-	to     time.Time
-	window time.Duration
+	from time.Time
+	to   time.Time
 }
 
 func (s *exportService) exportAllParts(
@@ -57,8 +56,7 @@ func (s *exportService) exportAllParts(
 		fileStorePathPrefix = info.FileStorePathPrefix
 		linksPath           = fmt.Sprintf("%s/links", info.FileStorePathPrefix)
 
-		query  = info.Query
-		window = info.Window
+		query = info.Query
 	)
 
 	// buffered channel is required to prevent producer blocking
@@ -92,7 +90,6 @@ func (s *exportService) exportAllParts(
 				query:         query,
 				from:          subFrom,
 				to:            subTo,
-				window:        window,
 				partID:        partID,
 			}
 		}
@@ -222,7 +219,9 @@ func (s *exportService) exportOnePart(ctx context.Context, sessionID string, tas
 }
 
 func (s *exportService) downloadOnePart(ctx context.Context, writer io.Writer, task *loadTask, sessionID string) error {
-	for subTo := task.to; subTo.After(task.from); subTo = subTo.Add(-task.window) {
+	offsetID := ""
+
+	for {
 		info, err := s.sessionStore.CheckExport(ctx, sessionID)
 		if err != nil {
 			return fmt.Errorf("check export status: %w", err)
@@ -241,39 +240,14 @@ func (s *exportService) downloadOnePart(ctx context.Context, writer io.Writer, t
 			}
 		}
 
-		subFrom := subTo.Add(-task.window)
-		if subFrom.Before(task.from) {
-			subFrom = task.from
-		}
-
-		err = s.fetchBatched(
-			ctx,
-			sessionID,
-			task.query,
-			subFrom,
-			subTo.Add(-time.Millisecond),
-			writer,
-		)
-		if err != nil {
-			return fmt.Errorf("batch fetch: %w", err)
-		}
-	}
-
-	return nil
-}
-
-func (s *exportService) fetchBatched(ctx context.Context, sessionID string, query string, from, to time.Time, writer io.Writer) error {
-	offset := 0
-
-	for {
 		resp, err := s.downloader.Search(ctx,
 			sessionID,
 			&seqapi.SearchRequest{
-				Query:     query,
-				From:      timestamppb.New(from),
-				To:        timestamppb.New(to),
+				Query:     task.query,
+				From:      timestamppb.New(task.from),
+				To:        timestamppb.New(task.to.Add(-time.Millisecond)),
 				Limit:     int32(s.batchSize),
-				Offset:    int32(offset),
+				OffsetId:  offsetID,
 				WithTotal: false,
 			})
 		if err != nil {
@@ -295,7 +269,7 @@ func (s *exportService) fetchBatched(ctx context.Context, sessionID string, quer
 			break
 		}
 
-		offset += len(resp.Events)
+		offsetID = resp.Events[len(resp.Events)-1].GetId()
 	}
 
 	return nil
