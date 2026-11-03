@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"os"
 
 	"gopkg.in/yaml.v3"
 
@@ -25,20 +24,19 @@ type configMeta struct {
 	Version *int `yaml:"version"`
 }
 
-// FromFile parse config from config path.
-func FromFile(cfgPath string) (*v2.Config, error) {
-	cfgBytes, err := os.ReadFile(cfgPath) //nolint:gosec
+// FromFiles merges configs from config paths and parses the result.
+func FromFiles(cfgPaths []string) (*v2.Config, error) {
+	root, version, err := mergeFiles(cfgPaths)
 	if err != nil {
-		return nil, fmt.Errorf("read file: %w", err)
-	}
-
-	version, err := readVersion(cfgBytes)
-	if err != nil {
-		return nil, fmt.Errorf("read version: %w", err)
+		return nil, err
 	}
 
 	switch version {
 	case V1:
+		cfgBytes, err := yaml.Marshal(root)
+		if err != nil {
+			return nil, fmt.Errorf("marshal config v1: %w", err)
+		}
 		cfgV1, err := decode[v1.Config](cfgBytes, true)
 		if err != nil {
 			return nil, fmt.Errorf("parse config v1: %w", err)
@@ -47,14 +45,20 @@ func FromFile(cfgPath string) (*v2.Config, error) {
 		if err != nil {
 			return nil, err
 		}
+		root = nil
+		if err := yaml.Unmarshal(cfgBytes, &root); err != nil {
+			return nil, fmt.Errorf("unmarshal migrated config: %w", err)
+		}
 	case V2:
 	default:
 		return nil, fmt.Errorf("unsupported config version: %d", version)
 	}
 
-	cfgBytes, err = mergeEnvOptions(cfgBytes)
+	mergeEnvOptions(root)
+
+	cfgBytes, err := yaml.Marshal(root)
 	if err != nil {
-		return nil, fmt.Errorf("merge env options: %w", err)
+		return nil, fmt.Errorf("marshal config: %w", err)
 	}
 
 	cfg, err := decode[v2.Config](cfgBytes, true)
