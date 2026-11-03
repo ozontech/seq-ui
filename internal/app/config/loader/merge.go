@@ -10,7 +10,7 @@ import (
 
 // mergeFiles merges configs in the given order, later files override earlier ones.
 func mergeFiles(cfgPaths []string) (map[string]any, int, error) {
-	mergedConfig := make(map[string]any, len(cfgPaths))
+	mergedConfig := make(map[string]any)
 	version := 0
 
 	for i, path := range cfgPaths {
