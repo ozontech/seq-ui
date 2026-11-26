@@ -27,7 +27,7 @@ type Caches struct {
 func New(env string, cfg config.SeqAPICaches) Caches {
 	keyPrefix := "seqapi_"
 	if env != "" {
-		keyPrefix += env + "_"
+		keyPrefix = env + "_" + keyPrefix
 	}
 
 	return Caches{
